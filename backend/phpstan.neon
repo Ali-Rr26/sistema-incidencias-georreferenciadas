@@ -1,0 +1,14 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+    excludes_analyse:
+        - app/Http/Controllers/Controller.php
+    level: 5
+    parallel:
+        maxProcesses: 4
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#PHPDoc tag @param#'
