@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  # ==========================================
+  # FRONTEND (Servidor Nginx Estático)
+  # ==========================================
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    networks:
+      - dev-network
+
+  # ==========================================
+  # BACKEND (PHP Artisan Serve)
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+    ports:
+      - "8000:8000"
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    networks:
+      - dev-network
+
+  # ==========================================
+  # BASE DE DATOS
+  # ==========================================
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: incidencias_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - dev-network
+
+volumes:
+  db_data:
+
+networks:
+  dev-network:
+    driver: bridge
