@@ -1,7 +1,7 @@
 # 🌍 Sistema Web de Gestión de Incidencias Georreferenciadas
 
 > Proyecto integrador de la Carrera de Software — Facultad de Sistemas y Telecomunicaciones, UPSE  
-> *Desarrollado con Laravel, Bootstrap, JavaScript, MySQL y Docker*
+> *Desarrollado con Laravel, Bootstrap, JavaScript, MySQL/PostgreSQL y Docker*
 
 ---
 
@@ -68,6 +68,10 @@ El sistema debe permitir:
 - Tiempo promedio de resolución.
 - Visualización mediante tablas o componentes gráficos simples (dashboard).
 
+### Despliegue
+- Ejecución de la aplicación en contenedores.
+- Configuración de un entorno que incluya: aplicación backend y base de datos.
+
 ---
 
 ## 👥 Organización del Trabajo
@@ -84,19 +88,34 @@ El sistema debe permitir:
 
 ## 🛠️ Tecnologías y Lineamientos de Desarrollo
 
-| Componente       | Tecnología                     |
-|------------------|--------------------------------|
-| Backend          | Laravel (API REST)             |
-| Frontend         | HTML, CSS, Bootstrap (dashboard) |
-| Cliente          | JavaScript (fetch)             |
-| Base de datos    | MySQL                          |
-| Despliegue       | Contenedores (Docker)          |
+| Componente       | Tecnología                                          |
+|------------------|-----------------------------------------------------|
+| Backend          | Laravel (API REST)                                  |
+| Frontend         | HTML, CSS, Bootstrap                                |
+| Cliente          | JavaScript (fetch)                                  |
+| Base de datos    | MySQL, PostgreSQL o motores relacionales equivalentes |
+| Despliegue       | Contenedores (Docker)                               |
 
 ### Requisitos Técnicos
 
 - La aplicación debe ser **completa e integrada**.
 - Mantener **consistencia en el diseño de la interfaz**.
 - Usar **buenas prácticas en la organización del código** (naming, separación de responsabilidades, comentarios, etc.).
+
+---
+
+## 🔍 Requerimientos de Calidad del Software
+
+Como parte de la integración con la asignatura de Calidad de Software, el proyecto debe incorporar prácticas básicas de validación y aseguramiento de calidad:
+
+- Validaciones y manejo de errores tanto en frontend como en backend.
+- Diseño y ejecución de casos de prueba funcionales sobre los principales módulos del sistema.
+- Evidencias de testing realizadas durante el desarrollo.
+- Uso básico de métricas o indicadores relacionados con el funcionamiento del sistema.
+- Prueba básica de carga o estrés sobre funcionalidades principales.
+- Uso de herramientas de apoyo para validación, pruebas o análisis de calidad.
+
+> Las evidencias deben incorporarse tanto en el documento técnico como en la demostración funcional del sistema.
 
 ---
 
@@ -121,6 +140,7 @@ El proyecto podrá desplegarse en servidores de la carrera, permitiendo acceso m
 1. Código fuente del sistema.
 2. Archivo de base de datos (SQL).
 3. Documento técnico del proyecto (8–12 páginas máximo).
+4. Enlaces URLs para evidenciar funcionalidad completa del proyecto.
 
 ---
 
@@ -167,12 +187,21 @@ Debe evidenciar implementación, decisiones y resultados obtenidos. No debe copi
 - Entorno donde se ejecuta.
 - URL del sistema (para verificar funcionalidad).
 
-#### 8. Evidencias
-- Capturas de pantalla principales:
-  - Pantalla principal
-  - Registro
-  - Listado
-  - Dashboard
+#### 8. Evidencias de Implementación y Calidad del Sistema
+
+**Capturas del sistema:**
+- Pantalla principal del sistema.
+- Registro y gestión de incidencias.
+- Listados y consultas.
+- Dashboard, reportes o componentes de visualización.
+
+**Evidencias de calidad:**
+- Validaciones implementadas.
+- Evidencias de pruebas funcionales realizadas.
+- Resultados básicos de testing o pruebas de carga.
+
+**Evidencias adicionales:**
+- Capturas, resultados de pruebas, tablas, métricas y registros técnicos como **anexos** del documento.
 
 #### 9. Dificultades y Soluciones
 - Problemas encontrados y cómo los resolvieron.
@@ -185,40 +214,52 @@ Debe evidenciar implementación, decisiones y resultados obtenidos. No debe copi
 
 ## 📊 Rúbrica Aplicada
 
-### Tecnologías y Desarrollo Web (50%)
+### Tecnologías y Desarrollo Web (40%)
 
-| Criterio                 | Descripción                                                                 | Puntaje |
-|--------------------------|-----------------------------------------------------------------------------|---------|
-| Interfaz de usuario      | Diseño claro, organizado y funcional utilizando Bootstrap (dashboard)       | 8       |
-| Integración frontend-backend | Consumo correcto de servicios web (fetch), envío, recepción y visualización de datos | 8       |
-| Funcionalidad del sistema | Implementación del CRUD y funcionalidades adicionales (comentarios, asignación, seguimiento) | 8       |
-| Lógica del sistema       | Manejo de estados, roles, flujo funcional y trazabilidad de incidencias     | 6       |
-| Dashboard / visualización | Conteos, filtros y visualización de información relevante                   | 5       |
-| Organización del código  | Estructura clara, orden y buenas prácticas                                  | 5       |
-| Documento técnico        | Claridad, coherencia y evidencia de decisiones de implementación            | 5       |
-| Demostración del sistema | Explicación clara del flujo completo del sistema y participación del equipo | 5       |
-| **Total**                |                                                                             | **50**  |
+| Criterio                     | Descripción                                                                                      | Puntaje |
+|------------------------------|--------------------------------------------------------------------------------------------------|---------|
+| Interfaz de usuario          | Diseño claro, organizado y funcional utilizando Bootstrap                                        | 6       |
+| Integración frontend-backend | Consumo correcto de servicios web (fetch), envío, recepción y visualización de datos             | 6       |
+| Funcionalidad del sistema    | Implementación del CRUD y funcionalidades adicionales (comentarios, asignación, seguimiento)     | 6       |
+| Lógica del sistema           | Manejo de estados, roles, flujo funcional y trazabilidad de incidencias                          | 5       |
+| Visualización y experiencia  | Conteos, filtros y visualización organizada de información relevante                             | 4       |
+| Organización del código      | Estructura clara, orden y buenas prácticas                                                       | 4       |
+| Documento técnico            | Claridad, coherencia y evidencia de decisiones de implementación                                 | 4       |
+| Demostración del sistema     | Explicación clara del flujo completo del sistema y participación del equipo                      | 5       |
+| **Total**                    |                                                                                                  | **40**  |
 
-### Administración de Data Center (25%)
+### Calidad de Software (20%)
 
-| Criterio                     | Descripción                                                                 | Puntaje |
-|------------------------------|-----------------------------------------------------------------------------|---------|
-| Uso de contenedores          | Implementación del sistema utilizando contenedores (backend + base de datos) | 10      |
-| Configuración del entorno    | Ejecución correcta del sistema, configuración funcional y persistencia de datos | 7       |
-| Integración de servicios     | Comunicación adecuada entre componentes (backend, base de datos, red)        | 5       |
-| Organización del despliegue  | Estructura clara del entorno, archivos de configuración organizados          | 3       |
-| **Total**                    |                                                                             | **25**  |
+| Criterio                      | Descripción                                                                  | Puntaje |
+|-------------------------------|------------------------------------------------------------------------------|---------|
+| Validaciones del sistema      | Implementación de validaciones y manejo de errores en frontend y backend     | 4       |
+| Casos de prueba funcionales   | Diseño y ejecución de pruebas sobre funcionalidades principales              | 4       |
+| Evidencias de testing         | Presentación de capturas, resultados o registros de pruebas realizadas       | 4       |
+| Pruebas de carga o estrés     | Ejecución básica de pruebas sobre funcionalidades relevantes                 | 3       |
+| Uso de herramientas de calidad | Uso de herramientas de validación, testing o análisis del sistema           | 3       |
+| Métricas e indicadores        | Presentación de métricas relacionadas con pruebas, errores o funcionamiento  | 2       |
+| **Total**                     |                                                                              | **20**  |
 
-### Base de Datos I y II (25%)
+### Administración de Data Center (20%)
 
-| Criterio           | Descripción                                                                 | Puntaje |
-|--------------------|-----------------------------------------------------------------------------|---------|
-| Modelo de datos    | Diseño adecuado de entidades, relaciones y estructura (incluye ubicación normalizada y manejo de historial) | 8       |
-| Normalización      | Estructura relacional correcta, evitando redundancias y aplicando niveles adecuados de normalización | 5       |
-| Integridad de datos | Uso adecuado de claves primarias, foráneas y reglas de integridad           | 5       |
-| Implementación     | Creación correcta de tablas, relaciones y consistencia de datos en el sistema | 4       |
-| Consultas          | Consultas para reportes que incluyan filtros, agrupaciones y análisis de datos | 3       |
-| **Total**          |                                                                             | **25**  |
+| Criterio                    | Descripción                                                                              | Puntaje |
+|-----------------------------|------------------------------------------------------------------------------------------|---------|
+| Uso de contenedores         | Implementación del sistema utilizando contenedores (backend y base de datos)             | 8       |
+| Configuración del entorno   | Ejecución correcta del sistema, configuración funcional y persistencia de datos          | 5       |
+| Integración de servicios    | Comunicación adecuada entre los componentes (backend, base de datos, red)                | 4       |
+| Organización del despliegue | Estructura clara del entorno, archivos de configuración organizados y comprensibles      | 3       |
+| **Total**                   |                                                                                          | **20**  |
+
+### Base de Datos I y II (20%)
+
+| Criterio                      | Descripción                                                                                        | Puntaje |
+|-------------------------------|----------------------------------------------------------------------------------------------------|---------|
+| Modelo de datos               | Diseño adecuado de entidades, relaciones y estructura del sistema                                  | 5       |
+| Normalización e integridad    | Aplicación adecuada de normalización, claves y reglas de integridad                               | 4       |
+| Implementación de la BD       | Creación correcta de tablas, relaciones y consistencia de datos                                    | 3       |
+| Consultas y análisis de datos | Consultas con filtros, agrupaciones, métricas y análisis de información                            | 3       |
+| Programación SQL              | Uso de procedimientos almacenados, vistas, triggers, funciones o componentes SQL avanzados         | 5       |
+| **Total**                     |                                                                                                    | **20**  |
 
 ---
 
