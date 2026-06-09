@@ -308,8 +308,8 @@ cd incidencias-georreferenciadas
 docker-compose up -d
 
 # Acceder al sistema
-# Frontend: http://localhost:8080
-# Backend: http://localhost:8081/api
+# Frontend: http://localhost:3000
+# Backend: http://localhost:8000/api
 # Base de datos: localhost:3306
 ```
 
