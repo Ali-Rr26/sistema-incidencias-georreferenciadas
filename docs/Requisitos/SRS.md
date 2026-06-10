@@ -89,13 +89,13 @@ El sistema consistirá en una aplicación web completa que permitirá:
 - La clasificación jerárquica de incidencias por tipo y subtipo
 - La visualización de métricas y dashboards con filtros avanzados
 - La gestión de ubicaciones normalizadas (País → Provincia → Ciudad)
+- Sistema de Roles y Permisos
 
 El sistema NO incluirá (dentro del alcance inicial):
 
 - Aplicaciones móviles nativas
 - Integración con sistemas externos de terceros
 - Módulo de reportes avanzados con exportación a PDF/Excel
-- Sistema de Roles y Permisos granular (más allá de admin/usuario)
 
 ### 1.3 Definiciones, Acrónimos y Abreviaturas
 
@@ -198,7 +198,7 @@ El sistema proporcionará las siguientes funcionalidades principales:
 |------------|----------------------|---------------------------|
 | Servidor de Aplicaciones | CPU: 2 cores, RAM: 4GB | CPU: 4 cores, RAM: 8GB |
 | Servidor de Base de Datos | CPU: 2 cores, RAM: 4GB | CPU: 4 cores, RAM: 8GB |
-| Almacenamiento | 20 GB SSD | 50 GB SSD |
+| Almacenamiento | 20 GB SSD/HDD | 50 GB SSD/HDD |
 | Red | 100 Mbps | 1 Gbps |
 
 #### 2.4.2 Plataforma de Software
@@ -207,7 +207,7 @@ El sistema proporcionará las siguientes funcionalidades principales:
 |------------|-----------|
 | Sistema Operativo del Servidor | Linux (Ubuntu 22.04 LTS o equivalente) |
 | Contenedores | Docker Engine 20.10+ con Docker Compose |
-| Servidor Web | Nginx (incluido en contenedor Laravel) |
+| Servidor Web | Nginx |
 | Runtime PHP | PHP 8.2+ |
 | Framework Backend | Laravel 10.x |
 | Base de Datos | MySQL 8.0 o PostgreSQL 15 |
@@ -355,8 +355,7 @@ El sistema operará en un entorno de red estándar con las siguientes considerac
 - Panel desplegable con lista de notificaciones
 - Cada notificación muestra: tipo de evento, mensaje, tiempo relativo
 - Indicador visual de leída/no leída
-- Click para marcar como leída
-- Botón "Marcar todas como leídas"
+- Click para marcar como leída - Botón "Marcar todas como leídas"
 
 #### 3.1.2 Interfaces de Hardware
 

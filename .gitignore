@@ -1,1 +1,4 @@
 /openspec
+# Local Pi runtime state
+.atl/
+.pi/settings.json
