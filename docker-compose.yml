@@ -23,33 +23,53 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DB_CONNECTION=pgsql
       - DB_HOST=db
-      - DB_PORT=3306
+      - DB_PORT=5432
       - DB_DATABASE=incidencias_db
       - DB_USERNAME=user
       - DB_PASSWORD=password
+      - REDIS_HOST=redis
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - dev-network
 
   # ==========================================
-  # DATABASE (MySQL 8.0)
+  # DATABASE (PostgreSQL 15 + PostGIS 3.3)
   # ==========================================
   db:
-    image: mysql:8.0
+    image: postgis/postgis:15-3.3
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: incidencias_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      POSTGRES_DB: incidencias_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
     ports:
-      - "3306:3306"
+      - "5432:5432"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U user -d incidencias_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - dev-network
+
+  # ==========================================
+  # CACHE & QUEUE (Redis)
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -58,6 +78,7 @@ services:
 
 volumes:
   db_data:
+  redis_data:
 
 networks:
   dev-network:

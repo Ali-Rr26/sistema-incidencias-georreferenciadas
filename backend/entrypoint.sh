@@ -2,16 +2,16 @@
 set -e
 
 # -------------------------------------------------------
-# Wait for MySQL to be ready (TCP poll, 30s timeout)
+# Wait for PostgresSQL to be ready (TCP poll, 30s timeout)
 # -------------------------------------------------------
-echo "Waiting for database connection at ${DB_HOST:-db}:${DB_PORT:-3306}..."
+echo "Waiting for database connection at ${DB_HOST:-db}:${DB_PORT:-5432}..."
 
 TIMEOUT=30
 INTERVAL=1
 ELAPSED=0
 
 while ! php -r "
-    \$sock = @fsockopen('${DB_HOST:-db}', ${DB_PORT:-3306}, \$errno, \$errstr, 1);
+    \$sock = @fsockopen('${DB_HOST:-db}', ${DB_PORT:-5432}, \$errno, \$errstr, 1);
     if (\$sock) { fclose(\$sock); exit(0); }
     exit(1);
 " 2>/dev/null; do
