@@ -3,16 +3,16 @@ services:
   # FRONTEND (Static Nginx Server)
   # ==========================================
   frontend:
-    image: nginx:alpine
+    image: ${NGINX_IMAGE:-nginx:alpine}
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
     networks:
       - dev-network
 
   # ==========================================
-  # BACKEND (Laravel Octane + RoadRunner)
+  # BACKEND
   # ==========================================
   backend:
     build:
@@ -21,15 +21,15 @@ services:
     env_file:
       - ./backend/.env
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      - DB_CONNECTION=pgsql
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_DATABASE=incidencias_db
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - REDIS_HOST=redis
+      - DB_CONNECTION=${DB_CONNECTION:-pgsql}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_DATABASE=${DB_DATABASE:-incidencias_db}
+      - DB_USERNAME=${DB_USERNAME:-user}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - REDIS_HOST=${REDIS_HOST:-redis}
     depends_on:
       db:
         condition: service_healthy
@@ -39,20 +39,20 @@ services:
       - dev-network
 
   # ==========================================
-  # DATABASE (PostgreSQL 15 + PostGIS 3.3)
+  # DATABASE
   # ==========================================
   db:
-    image: postgis/postgis:15-3.3
+    image: ${POSTGIS_IMAGE:-postgis/postgis:17-3.5-alpine}
     environment:
-      POSTGRES_DB: incidencias_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DB_DATABASE:-incidencias_db}
+      POSTGRES_USER: ${DB_USERNAME:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d incidencias_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -60,12 +60,12 @@ services:
       - dev-network
 
   # ==========================================
-  # CACHE & QUEUE (Redis)
+  # CACHE & QUEUE
   # ==========================================
   redis:
-    image: redis:7-alpine
+    image: ${REDIS_IMAGE:-redis:8-alpine}
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
