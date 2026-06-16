@@ -19,18 +19,10 @@
         </div>
     </div>
 
-    <div id="main-wrapper"
-        data-theme="light"
-        data-layout="vertical"
-        data-navbarbg="skin6"
-        data-sidebartype="full"
-        data-sidebar-position="fixed"
-        data-header-position="fixed"
-        data-boxed-layout="full">
+    <div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+        data-sidebar-position="fixed" data-header-position="fixed" data-boxed-layout="full">
 
-        <!-- ================================================ -->
-        <!-- 1. TOPBAR                                        -->
-        <!-- ================================================ -->
+        <!-- 1. TOPBAR -->
         <header class="topbar" data-navbarbg="skin6">
             <nav class="navbar top-navbar navbar-expand-md navbar-dark">
                 <div class="navbar-header" data-logobg="skin6">
@@ -48,13 +40,15 @@
                 <div class="navbar-collapse collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto d-flex align-items-center">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-white" href="#"
-                                role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle text-white" href="#" role="button"
+                                data-bs-toggle="dropdown">
                                 <span class="d-none d-md-inline-block">Admin</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="#">Mi perfil</a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li><a class="dropdown-item" href="authentication-login.html">Cerrar sesión</a></li>
                             </ul>
                         </li>
@@ -63,9 +57,7 @@
             </nav>
         </header>
 
-        <!-- ================================================ -->
-        <!-- 2. SIDEBAR                                       -->
-        <!-- ================================================ -->
+        <!-- 2. SIDEBAR -->
         <aside class="left-sidebar" data-sidebarbg="skin6">
             <div class="scroll-sidebar">
                 <nav class="sidebar-nav">
@@ -77,11 +69,8 @@
 
                         <!-- Gestión de Incidencias -->
                         <li class="sidebar-item has-arrow active">
-                            <a class="sidebar-link waves-effect waves-dark"
-                                href="javascript:void(0)"
-                                aria-expanded="true"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#submenu-incidencias">
+                            <a class="sidebar-link waves-effect waves-dark" href="javascript:void(0)"
+                                aria-expanded="true" data-bs-toggle="collapse" data-bs-target="#submenu-incidencias">
                                 <i data-feather="alert-circle" class="feather-icon"></i>
                                 <span class="hide-menu">Gestión de Incidencias</span>
                             </a>
@@ -106,9 +95,7 @@
             </div>
         </aside>
 
-        <!-- ================================================ -->
-        <!-- 3. CONTENIDO PRINCIPAL                           -->
-        <!-- ================================================ -->
+        <!-- 3. CONTENIDO PRINCIPAL -->
         <div class="page-wrapper">
             <div class="page-breadcrumb">
                 <div class="row">
@@ -151,13 +138,8 @@
                                             <label for="titulo" class="form-label fw-bold">
                                                 Título <span class="text-danger">*</span>
                                             </label>
-                                            <input type="text"
-                                                class="form-control"
-                                                id="titulo"
-                                                name="titulo"
-                                                maxlength="100"
-                                                placeholder="Ingrese un título descriptivo"
-                                                required>
+                                            <input type="text" class="form-control" id="titulo" name="titulo"
+                                                maxlength="100" placeholder="Ingrese un título descriptivo" required>
                                             <div class="d-flex justify-content-between mt-1">
                                                 <div class="invalid-feedback" id="error-titulo">
                                                     El campo título es obligatorio.
@@ -187,18 +169,15 @@
                                             <label for="descripcion" class="form-label fw-bold">
                                                 Descripción <span class="text-danger">*</span>
                                             </label>
-                                            <textarea class="form-control"
-                                                id="descripcion"
-                                                name="descripcion"
-                                                rows="4"
-                                                maxlength="500"
-                                                placeholder="Describa la incidencia en detalle"
+                                            <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                                                maxlength="500" placeholder="Describa la incidencia en detalle"
                                                 required></textarea>
                                             <div class="d-flex justify-content-between mt-1">
                                                 <div class="invalid-feedback" id="error-descripcion">
                                                     El campo descripción es obligatorio.
                                                 </div>
-                                                <small class="text-muted ms-auto" id="contador-descripcion">0/500</small>
+                                                <small class="text-muted ms-auto"
+                                                    id="contador-descripcion">0/500</small>
                                             </div>
                                         </div>
 
@@ -207,13 +186,8 @@
                                             <label for="telefono" class="form-label fw-bold">
                                                 Teléfono de contacto
                                             </label>
-                                            <input type="tel"
-                                                class="form-control"
-                                                id="telefono"
-                                                name="telefono"
-                                                maxlength="15"
-                                                placeholder="Ej: 04121234567"
-                                                inputmode="numeric">
+                                            <input type="tel" class="form-control" id="telefono" name="telefono"
+                                                maxlength="15" placeholder="Ej: 04121234567" inputmode="numeric">
                                             <div class="invalid-feedback" id="error-telefono">
                                                 Ingrese solo números (máximo 15 dígitos).
                                             </div>
@@ -275,7 +249,8 @@
                                             <label for="provincia" class="form-label fw-bold">
                                                 Estado / Provincia <span class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select" id="provincia" name="provincia" required disabled>
+                                            <select class="form-select" id="provincia" name="provincia" required
+                                                disabled>
                                                 <option value="">-- Seleccione país primero --</option>
                                             </select>
                                             <div class="invalid-feedback" id="error-provincia">
@@ -304,7 +279,8 @@
                                                     Guardar Incidencia
                                                 </span>
                                                 <span id="btn-loading" class="d-none">
-                                                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                    <span class="spinner-border spinner-border-sm me-1" role="status"
+                                                        aria-hidden="true"></span>
                                                     Guardando...
                                                 </span>
                                             </button>
@@ -323,13 +299,15 @@
 
             <!-- Toast de éxito -->
             <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
-                <div id="toast-exito" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div id="toast-exito" class="toast align-items-center text-white bg-success border-0" role="alert"
+                    aria-live="assertive" aria-atomic="true">
                     <div class="d-flex">
                         <div class="toast-body">
                             <i data-feather="check-circle" class="feather-icon me-2"></i>
                             Incidencia registrada correctamente.
                         </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
                     </div>
                 </div>
             </div>
@@ -337,59 +315,57 @@
         </div><!-- /page-wrapper -->
     </div><!-- /main-wrapper -->
 
-    <!-- ================================================ -->
-    <!-- SCRIPTS                                          -->
-    <!-- ================================================ -->
+    <!-- SCRIPTS -->
     <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
     <script src="../assets/libs/popper.js/dist/umd/popper.min.js"></script>
     <script src="../assets/libs/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
 
     <script>
-        // ── Preloader ────────────────────────────────────────────────
+        // Preloader
         $(".preloader").fadeOut(500);
 
-        // ── Feather icons ────────────────────────────────────────────
+        // Feather icons
         feather.replace();
 
-        // ── Sidebar toggle (móvil) ───────────────────────────────────
+        // Sidebar toggle (móvil)
         $("#sidebar-toggler").on("click", function () {
             $("body").toggleClass("show-sidebar");
         });
 
-        // ── Datos cascada: Tipo → Subtipo ────────────────────────────
+        // Datos cascada: Tipo → Subtipo
         const subtipos = {
             infraestructura: ["Bache / Pavimento", "Alumbrado público", "Puentes / Vías", "Edificios públicos"],
-            seguridad:       ["Robo / Asalto", "Vandalismo", "Zona de riesgo", "Violencia doméstica"],
-            ambiental:       ["Basura / Desechos", "Contaminación del agua", "Deforestación", "Ruido excesivo"],
-            servicios:       ["Falla de agua", "Falla eléctrica", "Falla de gas", "Internet / Telefonía"]
+            seguridad: ["Robo / Asalto", "Vandalismo", "Zona de riesgo", "Violencia doméstica"],
+            ambiental: ["Basura / Desechos", "Contaminación del agua", "Deforestación", "Ruido excesivo"],
+            servicios: ["Falla de agua", "Falla eléctrica", "Falla de gas", "Internet / Telefonía"]
         };
 
-        // ── Datos cascada: País → Provincia → Ciudad ─────────────────
+        // Datos cascada: País → Provincia → Ciudad
         const geografía = {
             venezuela: {
-                "Distrito Capital":  ["Caracas"],
-                "Miranda":           ["Los Teques", "Guarenas", "Guatire"],
-                "Carabobo":          ["Valencia", "Maracay", "San Carlos"],
-                "Zulia":             ["Maracaibo", "Cabimas", "Ciudad Ojeda"],
-                "Lara":              ["Barquisimeto", "Carora"]
+                "Distrito Capital": ["Caracas"],
+                "Miranda": ["Los Teques", "Guarenas", "Guatire"],
+                "Carabobo": ["Valencia", "Maracay", "San Carlos"],
+                "Zulia": ["Maracaibo", "Cabimas", "Ciudad Ojeda"],
+                "Lara": ["Barquisimeto", "Carora"]
             },
             colombia: {
-                "Cundinamarca":  ["Bogotá", "Soacha", "Facatativá"],
-                "Antioquia":     ["Medellín", "Bello", "Itagüí"],
+                "Cundinamarca": ["Bogotá", "Soacha", "Facatativá"],
+                "Antioquia": ["Medellín", "Bello", "Itagüí"],
                 "Valle del Cauca": ["Cali", "Buenaventura", "Palmira"]
             },
             peru: {
-                "Lima":     ["Lima", "Callao", "San Juan de Lurigancho"],
+                "Lima": ["Lima", "Callao", "San Juan de Lurigancho"],
                 "Arequipa": ["Arequipa", "Camaná"],
-                "Cusco":    ["Cusco", "Urubamba"]
+                "Cusco": ["Cusco", "Urubamba"]
             }
         };
 
-        // ── Helpers cascada ──────────────────────────────────────────
+        // Helpers cascada
         function poblarSelect(selectEl, opciones, placeholderTexto) {
             selectEl.innerHTML = `<option value="">${placeholderTexto}</option>`;
-            opciones.forEach(function(op) {
+            opciones.forEach(function (op) {
                 const opt = document.createElement("option");
                 opt.value = op;
                 opt.textContent = op;
@@ -404,7 +380,7 @@
             selectEl.classList.remove("is-valid", "is-invalid");
         }
 
-        // ── Cascada Tipo → Subtipo ───────────────────────────────────
+        // Cascada Tipo → Subtipo
         document.getElementById("tipo").addEventListener("change", function () {
             const subtipoEl = document.getElementById("subtipo");
             const tipoVal = this.value;
@@ -415,9 +391,9 @@
             }
         });
 
-        // ── Cascada País → Provincia → Ciudad ────────────────────────
+        // Cascada País → Provincia → Ciudad
         document.getElementById("pais").addEventListener("change", function () {
-            const provEl  = document.getElementById("provincia");
+            const provEl = document.getElementById("provincia");
             const ciudadEl = document.getElementById("ciudad");
             const paisVal = this.value;
             resetSelect(ciudadEl, "-- Seleccione estado primero --");
@@ -430,8 +406,8 @@
 
         document.getElementById("provincia").addEventListener("change", function () {
             const ciudadEl = document.getElementById("ciudad");
-            const paisVal  = document.getElementById("pais").value;
-            const provVal  = this.value;
+            const paisVal = document.getElementById("pais").value;
+            const provVal = this.value;
             if (paisVal && provVal && geografía[paisVal] && geografía[paisVal][provVal]) {
                 poblarSelect(ciudadEl, geografía[paisVal][provVal], "-- Seleccione ciudad --");
             } else {
@@ -439,22 +415,22 @@
             }
         });
 
-        // ── Contador Título ──────────────────────────────────────────
+        // Contador Título
         document.getElementById("titulo").addEventListener("input", function () {
             document.getElementById("contador-titulo").textContent = this.value.length + "/100";
         });
 
-        // ── Contador Descripción ─────────────────────────────────────
+        // Contador Descripción
         document.getElementById("descripcion").addEventListener("input", function () {
             document.getElementById("contador-descripcion").textContent = this.value.length + "/500";
         });
 
-        // ── Teléfono: solo números ───────────────────────────────────
+        // Teléfono: solo números
         document.getElementById("telefono").addEventListener("input", function () {
             this.value = this.value.replace(/\D/g, "").slice(0, 15);
         });
 
-        // ── Envío del formulario ─────────────────────────────────────
+        // Envío del formulario
         document.getElementById("form-incidencia").addEventListener("submit", function (e) {
             e.preventDefault();
 
@@ -486,52 +462,52 @@
             document.getElementById("btn-guardar").disabled = true;
 
             const payload = {
-                titulo:      document.getElementById("titulo").value.trim(),
+                titulo: document.getElementById("titulo").value.trim(),
                 descripcion: document.getElementById("descripcion").value.trim(),
-                prioridad:   document.getElementById("prioridad").value,
-                telefono:    document.getElementById("telefono").value || null,
-                tipo:        document.getElementById("tipo").value,
-                subtipo:     document.getElementById("subtipo").value,
-                pais:        document.getElementById("pais").value,
-                provincia:   document.getElementById("provincia").value,
-                ciudad:      document.getElementById("ciudad").value
+                prioridad: document.getElementById("prioridad").value,
+                telefono: document.getElementById("telefono").value || null,
+                tipo: document.getElementById("tipo").value,
+                subtipo: document.getElementById("subtipo").value,
+                pais: document.getElementById("pais").value,
+                provincia: document.getElementById("provincia").value,
+                ciudad: document.getElementById("ciudad").value
             };
 
             fetch("http://localhost:8000/api/incidencias", {
-                method:  "POST",
+                method: "POST",
                 headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                body:    JSON.stringify(payload)
+                body: JSON.stringify(payload)
             })
-            .then(function (res) {
-                if (!res.ok) throw new Error("Error " + res.status);
-                return res.json();
-            })
-            .then(function () {
-                // Mostrar toast de éxito
-                const toastEl = document.getElementById("toast-exito");
-                const toast   = new bootstrap.Toast(toastEl, { delay: 4000 });
-                toast.show();
-                feather.replace();
+                .then(function (res) {
+                    if (!res.ok) throw new Error("Error " + res.status);
+                    return res.json();
+                })
+                .then(function () {
+                    // Mostrar toast de éxito
+                    const toastEl = document.getElementById("toast-exito");
+                    const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                    toast.show();
+                    feather.replace();
 
-                // Limpiar formulario
-                form.reset();
-                form.classList.remove("was-validated");
-                document.getElementById("contador-titulo").textContent     = "0/100";
-                document.getElementById("contador-descripcion").textContent = "0/500";
-                resetSelect(document.getElementById("subtipo"), "-- Seleccione tipo primero --");
-                resetSelect(document.getElementById("provincia"), "-- Seleccione país primero --");
-                resetSelect(document.getElementById("ciudad"), "-- Seleccione estado primero --");
-            })
-            .catch(function (err) {
-                console.error("Error al guardar incidencia:", err);
-                alert("No se pudo guardar la incidencia. Intente nuevamente.");
-            })
-            .finally(function () {
-                // Restaurar botón
-                document.getElementById("btn-texto").classList.remove("d-none");
-                document.getElementById("btn-loading").classList.add("d-none");
-                document.getElementById("btn-guardar").disabled = false;
-            });
+                    // Limpiar formulario
+                    form.reset();
+                    form.classList.remove("was-validated");
+                    document.getElementById("contador-titulo").textContent = "0/100";
+                    document.getElementById("contador-descripcion").textContent = "0/500";
+                    resetSelect(document.getElementById("subtipo"), "-- Seleccione tipo primero --");
+                    resetSelect(document.getElementById("provincia"), "-- Seleccione país primero --");
+                    resetSelect(document.getElementById("ciudad"), "-- Seleccione estado primero --");
+                })
+                .catch(function (err) {
+                    console.error("Error al guardar incidencia:", err);
+                    alert("No se pudo guardar la incidencia. Intente nuevamente.");
+                })
+                .finally(function () {
+                    // Restaurar botón
+                    document.getElementById("btn-texto").classList.remove("d-none");
+                    document.getElementById("btn-loading").classList.add("d-none");
+                    document.getElementById("btn-guardar").disabled = false;
+                });
         });
     </script>
 </body>
