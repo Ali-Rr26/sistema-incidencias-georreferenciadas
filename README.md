@@ -1,7 +1,7 @@
 # 🌍 Sistema Web de Gestión de Incidencias Georreferenciadas
 
 > Proyecto integrador de la Carrera de Software — Facultad de Sistemas y Telecomunicaciones, UPSE  
-> *Desarrollado con Laravel, Bootstrap, JavaScript, MySQL/PostgreSQL y Docker*
+> *Desarrollado con Laravel, Bootstrap, JavaScript, PostgreSQL/Redis y Docker*
 
 ---
 
