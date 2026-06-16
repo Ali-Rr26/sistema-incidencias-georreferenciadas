@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "clickbar/laravel-magellan": "^2.2",
+        "dedoc/scramble": "^0.13.28",
         "laravel/framework": "^13.8",
         "laravel/octane": "*",
         "laravel/sanctum": "^4.3",
