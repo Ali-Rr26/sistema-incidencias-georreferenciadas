@@ -10,8 +10,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "clickbar/laravel-magellan": "^2.2",
         "laravel/framework": "^13.8",
         "laravel/octane": "*",
+        "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "spiral/roadrunner-cli": "^2.7",
         "spiral/roadrunner-http": "^4.1"
