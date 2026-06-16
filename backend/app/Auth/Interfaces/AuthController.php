@@ -23,7 +23,7 @@ class AuthController
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+                'email' => ['Las credenciales proporcionadas son incorrectas.'],
             ]);
         }
 
@@ -49,7 +49,7 @@ class AuthController
 
         $parts = explode('|', $request->refresh_token);
         if (count($parts) !== 2) {
-            return response()->json(['message' => 'Invalid token format'], Response::HTTP_UNAUTHORIZED);
+            return response()->json(['message' => 'El formato del token es inválido'], Response::HTTP_UNAUTHORIZED);
         }
 
         [$tokenId, $plainToken] = $parts;
@@ -58,15 +58,15 @@ class AuthController
         $token = PersonalAccessToken::find($tokenId);
 
         if (! $token || ! hash_equals($token->token, hash('sha256', $plainToken))) {
-            return response()->json(['message' => 'Invalid refresh token'], Response::HTTP_UNAUTHORIZED);
+            return response()->json(['message' => 'El token de refresco es inválido'], Response::HTTP_UNAUTHORIZED);
         }
 
         if (! $token->can('refresh')) {
-            return response()->json(['message' => 'Token is not a refresh token'], Response::HTTP_UNAUTHORIZED);
+            return response()->json(['message' => 'El token no es un token de refresco'], Response::HTTP_UNAUTHORIZED);
         }
 
         if ($token->expires_at && $token->expires_at->isPast()) {
-            return response()->json(['message' => 'Refresh token has expired'], Response::HTTP_UNAUTHORIZED);
+            return response()->json(['message' => 'El token de refresco ha expirado'], Response::HTTP_UNAUTHORIZED);
         }
 
         /** @var User $user */
@@ -88,7 +88,7 @@ class AuthController
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json(['message' => 'Sesión cerrada exitosamente']);
     }
 
     public function me(Request $request): JsonResponse

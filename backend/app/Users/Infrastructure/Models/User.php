@@ -25,6 +25,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
+
     protected function casts(): array
     {
         return [
