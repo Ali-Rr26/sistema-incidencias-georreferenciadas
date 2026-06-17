@@ -11,8 +11,15 @@ $(function () {
     $("body, .page-wrapper").trigger("resize");
     $(".page-wrapper").delay(20).show();
 
-    // Sidebar toggle (móvil)
+    // Sidebar toggle (móvil): abre/cierra el sidebar y cambia el ícono ≡ ↔ ✕
     $(".nav-toggler").on("click", function () {
         $("#main-wrapper").toggleClass("show-sidebar");
+        $(".nav-toggler i").toggleClass("ti-menu");
+    });
+
+    // Cerrar sidebar al hacer clic en el overlay oscuro
+    $("#sidebar-overlay").on("click", function () {
+        $("#main-wrapper").removeClass("show-sidebar");
+        $(".nav-toggler i").addClass("ti-menu");
     });
 });
