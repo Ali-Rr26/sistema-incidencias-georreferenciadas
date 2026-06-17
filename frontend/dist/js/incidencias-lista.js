@@ -70,13 +70,14 @@ function cargarIncidencias(pagina) {
         });
 }
 
-// ── Renderizar tabla ──────────────────────────────────────────────────────────
+// ── Renderizar tabla + cards ──────────────────────────────────────────────────
 function renderTabla(datos, total) {
     if (!datos || datos.length === 0) {
         mostrarEstado("vacio");
         return;
     }
 
+    // — Filas de tabla (desktop) —
     const tbody = document.getElementById("tabla-body");
     tbody.innerHTML = datos.map(function (inc) {
         return `
@@ -108,6 +109,48 @@ function renderTabla(datos, total) {
                     </div>
                 </td>
             </tr>`;
+    }).join("");
+
+    // — Cards (móvil) —
+    const cards = document.getElementById("contenedor-cards");
+    cards.innerHTML = datos.map(function (inc) {
+        const titulo = inc.titulo || "—";
+        const desc   = inc.descripcion
+            ? inc.descripcion.substring(0, 80) + (inc.descripcion.length > 80 ? "…" : "")
+            : "";
+        return `
+            <div class="card mb-2 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <h6 class="card-title mb-0 me-2" style="font-size:.9rem;">${titulo}</h6>
+                        ${badgePrioridad(inc.prioridad)}
+                    </div>
+                    ${desc ? `<p class="text-muted mb-2" style="font-size:.8rem;">${desc}</p>` : ""}
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="badge bg-light text-dark border" style="font-size:.75rem;">
+                            <i data-feather="tag" class="feather-icon" style="width:11px;height:11px;"></i>
+                            ${inc.tipo || "—"}${inc.subtipo ? " / " + inc.subtipo : ""}
+                        </span>
+                        ${badgeEstado(inc.estado)}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i data-feather="calendar" class="feather-icon" style="width:12px;height:12px;"></i>
+                            ${formatearFecha(inc.created_at)}
+                        </small>
+                        <div class="d-flex gap-1">
+                            <a href="incidencias-detalle.html?id=${inc.id}"
+                                class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                <i data-feather="eye" class="feather-icon"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
+                                data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
+                                <i data-feather="trash-2" class="feather-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
     }).join("");
 
     const desde = (paginaActual - 1) * POR_PAGINA + 1;
@@ -146,15 +189,18 @@ function renderPaginacion() {
     ul.appendChild(crearLi("&raquo;", paginaActual + 1, paginaActual === totalPaginas, false));
 }
 
-// ── Eliminar ──────────────────────────────────────────────────────────────────
-document.getElementById("tabla-body").addEventListener("click", function (e) {
+// ── Eliminar (tabla y cards comparten el mismo handler) ───────────────────────
+function abrirModalEliminar(e) {
     const btn = e.target.closest(".btn-eliminar");
     if (!btn) return;
     idEliminar = btn.dataset.id;
     document.getElementById("modal-eliminar-titulo").textContent = btn.dataset.titulo;
     new bootstrap.Modal(document.getElementById("modal-eliminar")).show();
     feather.replace();
-});
+}
+
+document.getElementById("tabla-body").addEventListener("click", abrirModalEliminar);
+document.getElementById("contenedor-cards").addEventListener("click", abrirModalEliminar);
 
 document.getElementById("btn-confirmar-eliminar").addEventListener("click", function () {
     if (!idEliminar) return;

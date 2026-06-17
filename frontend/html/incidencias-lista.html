@@ -218,7 +218,9 @@
 
                         <!-- Tabla de datos -->
                         <div id="contenedor-tabla" class="d-none">
-                            <div class="table-responsive">
+
+                            <!-- Vista tabla (md en adelante) -->
+                            <div class="table-responsive d-none d-md-block">
                                 <table class="table table-hover mb-0">
                                     <thead class="table-light">
                                         <tr>
@@ -231,12 +233,14 @@
                                             <th style="width:100px;" class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="tabla-body">
-                                    </tbody>
+                                    <tbody id="tabla-body"></tbody>
                                 </table>
                             </div>
 
-                            <!-- Paginación + conteo -->
+                            <!-- Vista cards (solo móvil) -->
+                            <div id="contenedor-cards" class="d-md-none p-2"></div>
+
+                            <!-- Paginación + conteo (compartida) -->
                             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
                                 <small class="text-muted" id="info-resultados"></small>
                                 <nav>
