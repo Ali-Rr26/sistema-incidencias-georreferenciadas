@@ -67,21 +67,21 @@
                         </li>
 
                         <!-- Gestión de Incidencias -->
-                        <li class="sidebar-item has-arrow active selected">
-                            <a class="sidebar-link waves-effect waves-dark" href="javascript:void(0)"
-                                aria-expanded="true">
+                        <li class="sidebar-item">
+                            <a class="sidebar-link has-arrow waves-effect waves-dark" href="javascript:void(0)"
+                                aria-expanded="false">
                                 <i data-feather="alert-circle" class="feather-icon"></i>
                                 <span class="hide-menu">Gestión de Incidencias</span>
                             </a>
-                            <ul class="first-level base-level-line" id="submenu-incidencias" style="display:block">
-                                <li class="sidebar-item active">
-                                    <a href="incidencias-lista.html" class="sidebar-link active">
+                            <ul aria-expanded="false" class="collapse first-level base-level-line">
+                                <li class="sidebar-item">
+                                    <a href="incidencias-lista.html" class="sidebar-link">
                                         <span class="hide-menu">Lista</span>
                                     </a>
                                 </li>
                                 <li class="sidebar-item">
                                     <a href="incidencias-crear.html" class="sidebar-link">
-                                        <span class="hide-menu">Crear</span>
+                                        <span class="hide-menu">+ Crear</span>
                                     </a>
                                 </li>
                             </ul>
@@ -289,8 +289,8 @@
     <script src="../assets/libs/popper.js/dist/umd/popper.min.js"></script>
     <script src="../assets/libs/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+    <script src="../dist/js/sidebarmenu.js"></script>
     <script src="../dist/js/app.js"></script>
-
     <script src="../dist/js/incidencias-lista.js"></script>
 </body>
 
