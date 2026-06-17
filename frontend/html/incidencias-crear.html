@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon.png">
     <title>Crear Incidencia — Sistema de Incidencias</title>
     <link href="../dist/css/style.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 
 <body>
@@ -68,22 +69,20 @@
                         </li>
 
                         <!-- Gestión de Incidencias -->
-                        <li class="sidebar-item has-arrow active">
+                        <li class="sidebar-item has-arrow active selected">
                             <a class="sidebar-link waves-effect waves-dark" href="javascript:void(0)"
-                                aria-expanded="true" data-bs-toggle="collapse" data-bs-target="#submenu-incidencias">
+                                aria-expanded="true">
                                 <i data-feather="alert-circle" class="feather-icon"></i>
                                 <span class="hide-menu">Gestión de Incidencias</span>
                             </a>
-                            <ul class="collapse first-level show" id="submenu-incidencias">
+                            <ul class="first-level base-level-line" id="submenu-incidencias">
                                 <li class="sidebar-item">
                                     <a href="incidencias-lista.html" class="sidebar-link">
-                                        <i data-feather="list" class="feather-icon"></i>
                                         <span class="hide-menu">Lista</span>
                                     </a>
                                 </li>
-                                <li class="sidebar-item active selected">
+                                <li class="sidebar-item active">
                                     <a href="incidencias-crear.html" class="sidebar-link active">
-                                        <i data-feather="plus-circle" class="feather-icon"></i>
                                         <span class="hide-menu">Crear</span>
                                     </a>
                                 </li>
@@ -225,50 +224,45 @@
 
                                         <!-- Separador ubicación -->
                                         <div class="col-12 mb-2">
-                                            <h6 class="text-muted border-bottom pb-2">Ubicación</h6>
+                                            <h6 class="text-muted border-bottom pb-2">
+                                                Ubicación <span class="text-danger">*</span>
+                                            </h6>
+                                            <small class="text-muted">Haga clic en el mapa para marcar la ubicación de la incidencia, o use el botón para detectar su posición actual.</small>
                                         </div>
 
-                                        <!-- País -->
-                                        <div class="col-md-4 mb-3">
-                                            <label for="pais" class="form-label fw-bold">
-                                                País <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select" id="pais" name="pais" required>
-                                                <option value="">-- Seleccione país --</option>
-                                                <option value="venezuela">Venezuela</option>
-                                                <option value="colombia">Colombia</option>
-                                                <option value="peru">Perú</option>
-                                            </select>
-                                            <div class="invalid-feedback" id="error-pais">
-                                                Seleccione un país.
+                                        <!-- Mapa Leaflet -->
+                                        <div class="col-12 mb-3">
+                                            <div id="mapa-incidencia" style="height: 320px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
+                                            <div id="error-mapa" class="text-danger mt-1 d-none" style="font-size: 0.875em;">
+                                                Debe marcar una ubicación en el mapa.
                                             </div>
                                         </div>
 
-                                        <!-- Provincia / Estado -->
-                                        <div class="col-md-4 mb-3">
-                                            <label for="provincia" class="form-label fw-bold">
-                                                Estado / Provincia <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select" id="provincia" name="provincia" required
-                                                disabled>
-                                                <option value="">-- Seleccione país primero --</option>
-                                            </select>
-                                            <div class="invalid-feedback" id="error-provincia">
-                                                Seleccione un estado/provincia.
-                                            </div>
+                                        <!-- Botón geolocalización + coordenadas -->
+                                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                                            <button type="button" class="btn btn-outline-primary w-100" id="btn-geolocalizacion">
+                                                <i data-feather="navigation" class="feather-icon me-1"></i>
+                                                Usar mi ubicación actual
+                                            </button>
                                         </div>
 
-                                        <!-- Ciudad -->
                                         <div class="col-md-4 mb-3">
-                                            <label for="ciudad" class="form-label fw-bold">
-                                                Ciudad <span class="text-danger">*</span>
-                                            </label>
-                                            <select class="form-select" id="ciudad" name="ciudad" required disabled>
-                                                <option value="">-- Seleccione estado primero --</option>
-                                            </select>
-                                            <div class="invalid-feedback" id="error-ciudad">
-                                                Seleccione una ciudad.
-                                            </div>
+                                            <label for="latitud" class="form-label fw-bold">Latitud</label>
+                                            <input type="text" class="form-control" id="latitud" name="latitud"
+                                                readonly placeholder="—" tabindex="-1">
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="longitud" class="form-label fw-bold">Longitud</label>
+                                            <input type="text" class="form-control" id="longitud" name="longitud"
+                                                readonly placeholder="—" tabindex="-1">
+                                        </div>
+
+                                        <!-- Dirección de referencia -->
+                                        <div class="col-12 mb-3">
+                                            <label for="direccion" class="form-label fw-bold">Dirección de referencia</label>
+                                            <input type="text" class="form-control" id="direccion" name="direccion"
+                                                maxlength="200" placeholder="Ej: Av. Principal frente al parque central">
                                         </div>
 
                                         <!-- Botones -->
@@ -320,6 +314,7 @@
     <script src="../assets/libs/popper.js/dist/umd/popper.min.js"></script>
     <script src="../assets/libs/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         // Preloader
@@ -341,28 +336,63 @@
             servicios: ["Falla de agua", "Falla eléctrica", "Falla de gas", "Internet / Telefonía"]
         };
 
-        // Datos cascada: País → Provincia → Ciudad
-        const geografía = {
-            venezuela: {
-                "Distrito Capital": ["Caracas"],
-                "Miranda": ["Los Teques", "Guarenas", "Guatire"],
-                "Carabobo": ["Valencia", "Maracay", "San Carlos"],
-                "Zulia": ["Maracaibo", "Cabimas", "Ciudad Ojeda"],
-                "Lara": ["Barquisimeto", "Carora"]
-            },
-            colombia: {
-                "Cundinamarca": ["Bogotá", "Soacha", "Facatativá"],
-                "Antioquia": ["Medellín", "Bello", "Itagüí"],
-                "Valle del Cauca": ["Cali", "Buenaventura", "Palmira"]
-            },
-            peru: {
-                "Lima": ["Lima", "Callao", "San Juan de Lurigancho"],
-                "Arequipa": ["Arequipa", "Camaná"],
-                "Cusco": ["Cusco", "Urubamba"]
-            }
-        };
+        // Mapa Leaflet — centrado en Santa Elena de Uairén por defecto (ajustar según proyecto)
+        const mapaInicial = { lat: -0.9537, lng: -80.7286, zoom: 13 };
+        const mapa = L.map("mapa-incidencia").setView([mapaInicial.lat, mapaInicial.lng], mapaInicial.zoom);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapa);
 
-        // Helpers cascada
+        let marcador = null;
+
+        function colocarMarcador(lat, lng) {
+            if (marcador) {
+                marcador.setLatLng([lat, lng]);
+            } else {
+                marcador = L.marker([lat, lng], { draggable: true }).addTo(mapa);
+                marcador.on("dragend", function () {
+                    const pos = marcador.getLatLng();
+                    document.getElementById("latitud").value = pos.lat.toFixed(6);
+                    document.getElementById("longitud").value = pos.lng.toFixed(6);
+                });
+            }
+            document.getElementById("latitud").value = lat.toFixed(6);
+            document.getElementById("longitud").value = lng.toFixed(6);
+            document.getElementById("error-mapa").classList.add("d-none");
+        }
+
+        mapa.on("click", function (e) {
+            colocarMarcador(e.latlng.lat, e.latlng.lng);
+        });
+
+        document.getElementById("btn-geolocalizacion").addEventListener("click", function () {
+            if (!navigator.geolocation) {
+                alert("Su navegador no soporta geolocalización.");
+                return;
+            }
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Detectando...';
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    mapa.setView([lat, lng], 16);
+                    colocarMarcador(lat, lng);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-feather="navigation" class="feather-icon me-1"></i> Usar mi ubicación actual';
+                    feather.replace();
+                },
+                function () {
+                    alert("No se pudo obtener la ubicación. Verifique los permisos del navegador.");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-feather="navigation" class="feather-icon me-1"></i> Usar mi ubicación actual';
+                    feather.replace();
+                }
+            );
+        });
+
+        // Helpers cascada tipo → subtipo
         function poblarSelect(selectEl, opciones, placeholderTexto) {
             selectEl.innerHTML = `<option value="">${placeholderTexto}</option>`;
             opciones.forEach(function (op) {
@@ -391,30 +421,6 @@
             }
         });
 
-        // Cascada País → Provincia → Ciudad
-        document.getElementById("pais").addEventListener("change", function () {
-            const provEl = document.getElementById("provincia");
-            const ciudadEl = document.getElementById("ciudad");
-            const paisVal = this.value;
-            resetSelect(ciudadEl, "-- Seleccione estado primero --");
-            if (paisVal && geografía[paisVal]) {
-                poblarSelect(provEl, Object.keys(geografía[paisVal]), "-- Seleccione estado --");
-            } else {
-                resetSelect(provEl, "-- Seleccione país primero --");
-            }
-        });
-
-        document.getElementById("provincia").addEventListener("change", function () {
-            const ciudadEl = document.getElementById("ciudad");
-            const paisVal = document.getElementById("pais").value;
-            const provVal = this.value;
-            if (paisVal && provVal && geografía[paisVal] && geografía[paisVal][provVal]) {
-                poblarSelect(ciudadEl, geografía[paisVal][provVal], "-- Seleccione ciudad --");
-            } else {
-                resetSelect(ciudadEl, "-- Seleccione estado primero --");
-            }
-        });
-
         // Contador Título
         document.getElementById("titulo").addEventListener("input", function () {
             document.getElementById("contador-titulo").textContent = this.value.length + "/100";
@@ -436,6 +442,12 @@
 
             const form = this;
             let valido = true;
+
+            // Validar ubicación en mapa
+            if (!document.getElementById("latitud").value) {
+                document.getElementById("error-mapa").classList.remove("d-none");
+                valido = false;
+            }
 
             // Validar teléfono (opcional, pero si tiene valor debe ser ≥7 dígitos)
             const telEl = document.getElementById("telefono");
@@ -468,9 +480,9 @@
                 telefono: document.getElementById("telefono").value || null,
                 tipo: document.getElementById("tipo").value,
                 subtipo: document.getElementById("subtipo").value,
-                pais: document.getElementById("pais").value,
-                provincia: document.getElementById("provincia").value,
-                ciudad: document.getElementById("ciudad").value
+                latitud: parseFloat(document.getElementById("latitud").value),
+                longitud: parseFloat(document.getElementById("longitud").value),
+                direccion: document.getElementById("direccion").value.trim() || null
             };
 
             fetch("http://localhost:8000/api/incidencias", {
@@ -483,20 +495,15 @@
                     return res.json();
                 })
                 .then(function () {
-                    // Mostrar toast de éxito
+                    // Mostrar toast de éxito y redirigir a lista
                     const toastEl = document.getElementById("toast-exito");
-                    const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                    const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
                     toast.show();
                     feather.replace();
 
-                    // Limpiar formulario
-                    form.reset();
-                    form.classList.remove("was-validated");
-                    document.getElementById("contador-titulo").textContent = "0/100";
-                    document.getElementById("contador-descripcion").textContent = "0/500";
-                    resetSelect(document.getElementById("subtipo"), "-- Seleccione tipo primero --");
-                    resetSelect(document.getElementById("provincia"), "-- Seleccione país primero --");
-                    resetSelect(document.getElementById("ciudad"), "-- Seleccione estado primero --");
+                    setTimeout(function () {
+                        window.location.href = "incidencias-lista.html";
+                    }, 2000);
                 })
                 .catch(function (err) {
                     console.error("Error al guardar incidencia:", err);
