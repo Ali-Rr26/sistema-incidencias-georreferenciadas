@@ -1,0 +1,39 @@
+/* Animación de entrada */
+.auth-box {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Auth layout — desde template Freedash */
+.auth-wrapper {
+  height: 100vh;
+  width: 100%;
+}
+
+.auth-wrapper .auth-box {
+  box-shadow: 3px 3px 3px 9px rgba(162, 176, 190, 0.15);
+  max-width: 1000px;
+  width: 100%;
+  margin: 5% 0;
+  position: relative;
+}
+
+.auth-wrapper .auth-box .modal-bg-img {
+  background-size: cover;
+  background-position: center center;
+  min-height: 600px;
+}
+
+.auth-wrapper #recoverform {
+  display: none;
+}

@@ -1,0 +1,43 @@
+/* ==============================================
+   Global Styles — Sistema de Incidencias
+   Solo estilos complementarios a Freedash.
+   ============================================== */
+
+:root {
+  /* Gradientes reutilizables */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-dark:    linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ==============================================
+   Utility classes — gradientes
+   ============================================== */
+.bg-gradient-primary { background: var(--gradient-primary); }
+.bg-gradient-dark    { background: var(--gradient-dark); }
+.btn-gradient {
+  background: var(--gradient-primary);
+  border: none;
+  color: #fff;
+}
+.btn-gradient:hover {
+  opacity: 0.9;
+  color: #fff;
+}
+
+/* ==============================================
+   Animaciones
+   ============================================== */
+.animated {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
