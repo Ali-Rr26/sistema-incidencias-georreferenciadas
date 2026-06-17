@@ -1,12 +1,19 @@
 /* Comportamiento del sidebar en móvil para data-sidebartype="full"
    FreeDash solo aplica el toggle a mini-sidebar; este bloque lo extiende. */
 @media (max-width: 1169.98px) {
+    /* Ocultar sidebar fuera de la pantalla */
     .left-sidebar {
         left: -260px !important;
     }
 
+    /* Mostrar sidebar al abrir */
     #main-wrapper.show-sidebar .left-sidebar {
         left: 0 !important;
+    }
+
+    /* Quitar el margen izquierdo del contenido — en móvil el sidebar no ocupa espacio */
+    #main-wrapper[data-layout=vertical][data-sidebartype=full] .page-wrapper {
+        margin-left: 0 !important;
     }
 
     /* Overlay oscuro detrás del sidebar cuando está abierto */
