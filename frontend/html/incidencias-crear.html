@@ -75,7 +75,7 @@
                                 <i data-feather="alert-circle" class="feather-icon"></i>
                                 <span class="hide-menu">Gestión de Incidencias</span>
                             </a>
-                            <ul class="first-level base-level-line" id="submenu-incidencias">
+                            <ul class="first-level base-level-line" id="submenu-incidencias" style="display:block">
                                 <li class="sidebar-item">
                                     <a href="incidencias-lista.html" class="sidebar-link">
                                         <span class="hide-menu">Lista</span>
@@ -327,6 +327,15 @@
         $("#sidebar-toggler").on("click", function () {
             $("body").toggleClass("show-sidebar");
         });
+
+        // Sidebar sub-menú: expandir / contraer al hacer clic en el módulo padre
+        $(".sidebar-item.has-arrow > .sidebar-link").on("click", function () {
+            const $li = $(this).closest(".sidebar-item");
+            const $sub = $(this).next("ul");
+            $sub.slideToggle(200);
+            $li.toggleClass("active");
+        });
+
 
         // Datos cascada: Tipo → Subtipo
         const subtipos = {

@@ -40,13 +40,14 @@
                 <div class="navbar-collapse collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto d-flex align-items-center">
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button"
-                                data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <span class="d-none d-md-inline-block">Admin</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="#">Mi perfil</a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li><a class="dropdown-item" href="authentication-login.html">Cerrar sesión</a></li>
                             </ul>
                         </li>
@@ -72,7 +73,7 @@
                                 <i data-feather="alert-circle" class="feather-icon"></i>
                                 <span class="hide-menu">Gestión de Incidencias</span>
                             </a>
-                            <ul class="first-level base-level-line" id="submenu-incidencias">
+                            <ul class="first-level base-level-line" id="submenu-incidencias" style="display:block">
                                 <li class="sidebar-item active">
                                     <a href="incidencias-lista.html" class="sidebar-link active">
                                         <span class="hide-menu">Lista</span>
@@ -196,7 +197,8 @@
 
                         <!-- Estado: error -->
                         <div id="estado-error" class="text-center py-5 d-none">
-                            <i data-feather="alert-triangle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
+                            <i data-feather="alert-triangle" class="feather-icon text-danger"
+                                style="width:48px;height:48px;"></i>
                             <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
                             <button type="button" class="btn btn-outline-primary btn-sm mt-1" id="btn-reintentar">
                                 Reintentar
@@ -296,13 +298,22 @@
             $("body").toggleClass("show-sidebar");
         });
 
-        // ── Estado ────────────────────────────────────────────────
+        // Sidebar sub-menú: expandir / contraer al hacer clic en el módulo padre
+        $(".sidebar-item.has-arrow > .sidebar-link").on("click", function () {
+            const $li = $(this).closest(".sidebar-item");
+            const $sub = $(this).next("ul");
+            $sub.slideToggle(200);
+            $li.toggleClass("active");
+        });
+
+
+        // Estado
         const POR_PAGINA = 10;
         let paginaActual = 1;
         let totalPaginas = 1;
         let idEliminar = null;
 
-        // ── Helpers de badge ─────────────────────────────────────
+        // Helpers de badge
         function badgePrioridad(p) {
             const map = { alta: "danger", media: "warning", baja: "success" };
             const label = p ? p.charAt(0).toUpperCase() + p.slice(1) : "—";
@@ -311,9 +322,9 @@
 
         function badgeEstado(e) {
             const map = {
-                pendiente:  { color: "secondary", label: "Pendiente" },
-                en_proceso: { color: "primary",   label: "En proceso" },
-                resuelto:   { color: "success",   label: "Resuelto" }
+                pendiente: { color: "secondary", label: "Pendiente" },
+                en_proceso: { color: "primary", label: "En proceso" },
+                resuelto: { color: "success", label: "Resuelto" }
             };
             const cfg = map[e] || { color: "secondary", label: e || "—" };
             return `<span class="badge bg-${cfg.color}">${cfg.label}</span>`;
@@ -325,7 +336,7 @@
             return d.toLocaleDateString("es-EC", { day: "2-digit", month: "2-digit", year: "numeric" });
         }
 
-        // ── Mostrar / ocultar estados ────────────────────────────
+        // Mostrar / ocultar estados
         function mostrarEstado(cual) {
             ["cargando", "vacio", "error", "tabla"].forEach(function (s) {
                 const el = document.getElementById(s === "tabla" ? "contenedor-tabla" : "estado-" + s);
@@ -334,7 +345,7 @@
             feather.replace();
         }
 
-        // ── Cargar incidencias ───────────────────────────────────
+        // Cargar incidencias
         function cargarIncidencias(pagina) {
             paginaActual = pagina || 1;
             mostrarEstado("cargando");
@@ -342,10 +353,10 @@
             const params = new URLSearchParams({
                 page: paginaActual,
                 per_page: POR_PAGINA,
-                buscar:    document.getElementById("filtro-buscar").value.trim(),
+                buscar: document.getElementById("filtro-buscar").value.trim(),
                 prioridad: document.getElementById("filtro-prioridad").value,
-                tipo:      document.getElementById("filtro-tipo").value,
-                estado:    document.getElementById("filtro-estado").value
+                tipo: document.getElementById("filtro-tipo").value,
+                estado: document.getElementById("filtro-estado").value
             });
 
             fetch("http://localhost:8000/api/incidencias?" + params.toString(), {
@@ -367,7 +378,7 @@
                 });
         }
 
-        // ── Renderizar tabla ─────────────────────────────────────
+        // Renderizar tabla
         function renderTabla(datos, total) {
             if (!datos || datos.length === 0) {
                 mostrarEstado("vacio");
@@ -382,8 +393,8 @@
                         <td>
                             <span class="fw-semibold">${inc.titulo || "—"}</span>
                             ${inc.descripcion
-                                ? `<br><small class="text-muted">${inc.descripcion.substring(0, 60)}${inc.descripcion.length > 60 ? "…" : ""}</small>`
-                                : ""}
+                        ? `<br><small class="text-muted">${inc.descripcion.substring(0, 60)}${inc.descripcion.length > 60 ? "…" : ""}</small>`
+                        : ""}
                         </td>
                         <td>${badgePrioridad(inc.prioridad)}</td>
                         <td>
@@ -418,7 +429,7 @@
             feather.replace();
         }
 
-        // ── Paginación ───────────────────────────────────────────
+        // Paginación
         function renderPaginacion() {
             const ul = document.getElementById("paginacion");
             ul.innerHTML = "";
@@ -444,7 +455,7 @@
             ul.appendChild(crearLi("&raquo;", paginaActual + 1, paginaActual === totalPaginas, false));
         }
 
-        // ── Eliminar ─────────────────────────────────────────────
+        // Eliminar
         document.getElementById("tabla-body").addEventListener("click", function (e) {
             const btn = e.target.closest(".btn-eliminar");
             if (!btn) return;
@@ -481,7 +492,7 @@
                 });
         });
 
-        // ── Filtros ──────────────────────────────────────────────
+        // Filtros
         document.getElementById("btn-filtrar").addEventListener("click", function () {
             cargarIncidencias(1);
         });
@@ -502,7 +513,7 @@
             cargarIncidencias(paginaActual);
         });
 
-        // ── Toast ────────────────────────────────────────────────
+        // Toast
         function mostrarToast(mensaje, tipo) {
             const el = document.getElementById("toast-msg");
             el.className = "toast align-items-center text-white border-0 bg-" + tipo;
@@ -510,7 +521,7 @@
             new bootstrap.Toast(el, { delay: 3000 }).show();
         }
 
-        // ── Carga inicial ────────────────────────────────────────
+        // Carga inicial
         cargarIncidencias(1);
     </script>
 </body>
