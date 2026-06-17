@@ -7,16 +7,12 @@ $(function () {
     // Activar íconos Feather
     feather.replace();
 
-    // Sidebar toggle (móvil)
-    $("#sidebar-toggler").on("click", function () {
-        $("body").toggleClass("show-sidebar");
-    });
+    // FreeDash oculta .page-wrapper por defecto en su CSS; hay que mostrarlo
+    $("body, .page-wrapper").trigger("resize");
+    $(".page-wrapper").delay(20).show();
 
-    // Sidebar sub-menú: expandir / contraer al hacer clic en el módulo padre
-    $(".sidebar-item.has-arrow > .sidebar-link").on("click", function () {
-        const $li = $(this).closest(".sidebar-item");
-        const $sub = $(this).next("ul");
-        $sub.slideToggle(200);
-        $li.toggleClass("active");
+    // Sidebar toggle (móvil)
+    $(".nav-toggler").on("click", function () {
+        $("#main-wrapper").toggleClass("show-sidebar");
     });
 });
