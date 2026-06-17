@@ -181,7 +181,7 @@ Descripción: Validación del flujo de cambios de estado y registro histórico c
 | CP-02-04-F | Validación de flujo de estados (no permite estados inválidos) | Frontend | 1. Ver opciones disponibles según estado actual<br>2. Intentar seleccionar un estado no permitido por flujo | Ejemplo: Intentar cambiar "Pendiente" → "Cerrado" si no está permitido | Opción no aparece en dropdown o aparece deshabilitada con tooltip "No permitido" | Integrante 1 |
 | CP-02-05-F | Fecha de resolución visible al marcar como Resuelto | Frontend | 1. Cambiar estado a "Resuelto"<br>2. Observar datos mostrados | Estado: Resuelto | Campo "Fecha resolución: [dd/mm/aaaa hh:mm]" visible, tooltip muestra fecha completa | Integrante 1 |
 | CP-02-05-B | Fecha resolución guardada correctamente en BD | Backend | Consultar incidencia con estado "Resuelto" | - | Campo fecha_resolucion en tabla incidencias tiene timestamp válido, coincide con último cambio de estado | Integrante 3 |
-| CP-02-06-B | Trigger automático que genera registro de historial | BD | Cambiar estado de incidencia via SQL | UPDATE incidencias SET estado_id = 3 WHERE id = 1 | Nuevo registro insertado en tabla historial_estados con todos los campos requeridos | Integrante 3 |
+| CP-02-06-BD | Trigger automático que genera registro de historial | BD | Cambiar estado de incidencia via SQL | UPDATE incidencias SET estado_id = 3 WHERE id = 1 | Nuevo registro insertado en tabla historial_estados con todos los campos requeridos | Integrante 3 |
 
 ### 8.03. Módulo 03: Asignación responsable
 Descripción: Validación de asignación de uno o varios usuarios con roles diferenciados.
@@ -250,7 +250,7 @@ Descripción: Validación de creación y gestión de notificaciones del sistema
 | CP-07-02-F | Click en notificación la marca como leída | Frontend | 1. Click en notificación no leída<br>2. Verificar badge | - | Badge decrementa (ejemplo: 3 → 2), notificación cambia estilo (fondo gris a blanco) | Integrante 1 |
 | CP-07-02-B | PATCH actualiza campo leido a true | Backend | PATCH /api/notificaciones/{id} | { "leido": true } | HTTP 200, campo leido actualizado a true, timestamp leido_en registrado | Integrante 2 |
 | CP-07-03-F | Panel desplegable muestra lista de notificaciones | Frontend | 1. Click en icono de campana<br>2. Ver panel | - | Panel se despliega con lista de notificaciones, cada una muestra: icono de tipo, mensaje resumido, tiempo relativo | Integrante 1 |
-| CP-07-04-B | Trigger/Evento crea notificación al cambiar estado | BD | 1. Asignar incidencia a usuario<br>2. Cambiar estado de la incidencia | - | Tabla notificaciones tiene nuevo registro: usuario_id (destinatario), tipo (cambio estado), incidencia_id, leido=false, timestamps | Integrante 3 |
+| CP-07-04-BD | Trigger/Evento crea notificación al cambiar estado | BD | 1. Asignar incidencia a usuario<br>2. Cambiar estado de la incidencia | - | Tabla notificaciones tiene nuevo registro: usuario_id (destinatario), tipo (cambio estado), incidencia_id, leido=false, timestamps | Integrante 3 |
 | CP-07-05-F | Botón "Marcar todas como leídas" funciona | Frontend | 1. Tener múltiples notificaciones sin leer<br>2. Click en "Marcar todas como leídas" | - | Todas las notificaciones cambian a estado leído, badge desaparece o muestra 0 | Integrante 1 |
 | CP-07-05-B | PATCH masivo actualiza todas las notificaciones | Backend | PATCH /api/notificaciones/marcar-leidas | - | HTTP 200, todas las notificaciones del usuario actual actualizan leido=true | Integrante 2 |
 
@@ -308,23 +308,23 @@ Descripción: Validación de login, logout y protección de rutas
 
 | Integrante | Casos Frontend (F) | Casos Backend (B) | Casos BD (BD) | Total Casos |
 | :--- | :---: | :---: | :---: | :---: |
-| **Integrante 1 (Frontend)** | 46 | 0 | 0 | 46 |
-| **Integrante 2 (Backend)** | 0 | 40 | 0 | 40 |
-| **Integrante 3 (Base de Datos)** | 0 | 0 | 8 | 8 |
-| **Total General** | **46** | **40** | **8** | **94** |
+| **Integrante 1 (Frontend)** | 48 | 0 | 0 | 48 |
+| **Integrante 2 (Backend)** | 0 | 36 | 0 | 36 |
+| **Integrante 3 (Base de Datos)** | 0 | 0 | 6 | 6 |
+| **Total General** | **48** | **36** | **6** | **90** |
 
 ### 9.2. Casos de Prueba por Módulo
 
 | Módulo | Descripción | Total Casos |
 | :--- | :--- | :---: |
-| **01** | Gestión de Incidencias (CRUD) | 12 |
-| **02** | Estados e Historial | 11 |
+| **01** | Gestión de Incidencias (CRUD) | 11 |
+| **02** | Estados e Historial | 10 |
 | **03** | Asignación de Responsables | 10 |
-| **04** | Sistema de Comentarios | 10 |
-| **05** | Ubicación Georreferenciada | 9 |
-| **06** | Clasificación Jerárquica (Tipo/Subtipo) | 8 |
-| **07** | Sistema de Notificaciones | 10 |
-| **08** | Dashboard y Métricas | 12 |
+| **04** | Sistema de Comentarios | 9 |
+| **05** | Ubicación Georreferenciada | 8 |
+| **06** | Clasificación Jerárquica (Tipo/Subtipo) | 7 |
+| **07** | Sistema de Notificaciones | 7 |
+| **08** | Dashboard y Métricas | 11 |
 | **09** | Autenticación y Control de Acceso | 9 |
 | **10** | Validaciones de Formato y Tipo de Datos | 8 |
 
@@ -365,6 +365,92 @@ Descripción: Validación de login, logout y protección de rutas
 | **CP-01-01-B** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
 | **CP-01-02-F** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
 | **CP-01-02-B** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-03-F** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-03-B** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-04-F** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-04-B** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-05-F** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-06-F** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-01-06-B** | --/06/2026 | | 01 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-01-F** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-01-B** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-02-F** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-02-B** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-03-F** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-03-B** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-04-F** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-05-F** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-05-B** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-02-06-BD** | --/06/2026 | | 02 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-01-F** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-01-B** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-02-F** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-02-B** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-03-F** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-03-B** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-04-F** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-04-B** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-05-F** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-03-05-B** | --/06/2026 | | 03 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-01-F** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-01-B** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-02-F** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-02-B** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-03-F** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-04-F** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-04-B** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-05-F** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-04-05-B** | --/06/2026 | | 04 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-01-F** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-01-B** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-02-F** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-02-B** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-03-F** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-03-B** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-04-F** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-05-04-BD** | --/06/2026 | | 05 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-01-F** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-01-B** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-02-F** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-02-B** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-03-F** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-03-B** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-06-04-BD** | --/06/2026 | | 06 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-01-F** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-02-F** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-02-B** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-03-F** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-04-BD** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-05-F** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-07-05-B** | --/06/2026 | | 07 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-01-F** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-01-B** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-02-F** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-02-BD** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-03-F** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-03-B** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-04-F** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-04-B** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-05-F** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-05-B** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-08-06-BD** | --/06/2026 | | 08 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-01-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-01-B** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-02-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-02-B** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-03-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-04-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-04-B** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-05-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-09-06-F** | --/06/2026 | | 09 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-01-F** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-01-B** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-02-F** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-03-F** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-03-B** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-04-F** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-05-F** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
+| **CP-10-06-B** | --/06/2026 | | 10 | ☐ Aprobado ☐ Fallido | | | |
 
 ### 11.2. Leyenda de Severidad (para casos fallidos)
 
@@ -422,7 +508,7 @@ El plan de calidad se considera completado y aprobado cuando se cumplan los sigu
 
 | # | Criterio | Indicador de Éxito | Estado |
 | :---: | :--- | :--- | :---: |
-| **1** | 100% de casos de prueba ejecutados | Total ejecutados = Total planificados (94) | ☐ |
+| **1** | 100% de casos de prueba ejecutados | Total ejecutados = Total planificados (90) | ☐ |
 | **2** | 100% de casos aprobados | Casos aprobados / Total ejecutados = 100% | ☐ |
 | **3** | Validaciones frontend verificadas | Todos los casos `CP-XX-F` aprobados | ☐ |
 | **4** | Validaciones backend verificadas | Todos los casos `CP-XX-B` aprobados | ☐ |
