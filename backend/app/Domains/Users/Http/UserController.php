@@ -7,14 +7,22 @@ use App\Domains\Users\Http\Requests\StoreUserRequest;
 use App\Domains\Users\Http\Requests\UpdateUserRequest;
 use App\Domains\Users\Http\Resources\UserCollection;
 use App\Domains\Users\Http\Resources\UserResource;
+use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\UserRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Routing\Controller;
 
-class UserController
+class UserController extends Controller
 {
-    public function __construct(private readonly UserRepository $users){}
+    use AuthorizesRequests;
+
+    public function __construct(private readonly UserRepository $users)
+    {
+        $this->authorizeResource(User::class, 'user');
+    }
 
     public function index( Request $request): JsonResponse
     {

@@ -4,18 +4,26 @@ declare(strict_types=1);
 
 namespace App\Domains\Roles\Http;
 
+use App\Domains\Roles\Models\Role;
 use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Roles\Http\Requests\StoreRoleRequest;
 use App\Domains\Roles\Http\Requests\UpdateRoleRequest;
 use App\Domains\Roles\Http\Resources\RoleCollection;
 use App\Domains\Roles\Http\Resources\RoleResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
 
-class RoleController
+class RoleController extends Controller
 {
-    public function __construct(private readonly RoleRepository $roles){}
+    use AuthorizesRequests;
+
+    public function __construct(private readonly RoleRepository $roles)
+    {
+        $this->authorizeResource(Role::class, 'role');
+    }
 
     public function index(Request $request): JsonResponse
     {
