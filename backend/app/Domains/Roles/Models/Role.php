@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domains\Roles\Models;
 
 use App\Domains\Permissions\Models\Permission;
@@ -25,4 +27,5 @@ class Role extends Model
         return $this->belongsToMany(Permission::class, 'role_permission', 'role_id', 'permission_id')
             ->using(RolePermission::class);
     }
+
 }

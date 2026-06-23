@@ -6,6 +6,8 @@ use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Domain\Repositories\SessionRepository;
 use App\Domains\Sessions\Repositories\EloquentSessionRepository;
 use App\Domains\Users\Models\User;
+use App\Domains\Roles\Repositories\EloquentRoleRepository;
+use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(SessionRepository::class, EloquentSessionRepository::class);
         $this->app->bind(UserRepository::class, EloquentUserRepository::class);
+        $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
     }
 
     public function boot(): void
