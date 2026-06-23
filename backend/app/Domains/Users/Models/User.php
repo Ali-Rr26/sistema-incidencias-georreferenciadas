@@ -54,7 +54,7 @@ class User extends Authenticatable
         return $this->role_id === 1;
     }
     
-    public function hasPermissions(string $permission): bool 
+    public function hasPermission(string $permission): bool 
     {
         [$resource, $action] = explode('.', $permission);
 
