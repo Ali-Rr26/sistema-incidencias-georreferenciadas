@@ -18,11 +18,14 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->string('assignment_role');
             $table->timestamp('created_at')->useCurrent();
+            $table->softDeletes();
 
             $table->unique(['incident_id', 'user_id']);
         });
 
-        DB::statement("ALTER TABLE assignments ADD CONSTRAINT assignments_role_check CHECK (assignment_role IN ('responsible', 'support'))");
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE assignments ADD CONSTRAINT assignments_role_check CHECK (assignment_role IN ('responsible', 'support'))");
+        }
     }
 
     /**

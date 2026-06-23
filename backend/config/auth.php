@@ -1,6 +1,6 @@
 <?php
 
-use App\Users\Infrastructure\Models\User;
+use App\Domains\Users\Models\User;
 
 return [
 

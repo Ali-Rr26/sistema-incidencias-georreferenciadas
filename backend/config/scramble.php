@@ -50,7 +50,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Sistema de Incidencias Georreferenciadas API — gestión de incidencias con soporte geoespacial (PostGIS), autenticación Bearer (Sanctum) y control de acceso basado en roles y permisos.',
+        'description' => 'Sistema de Incidencias Georreferenciadas API — gestión de incidencias con soporte geoespacial (PostGIS), autenticación JWT Bearer y control de acceso basado en roles y permisos.',
     ],
 
     'ui' => [
@@ -172,7 +172,7 @@ return [
     'security_strategy' => [
         \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
         [
-            'middleware' => ['auth:sanctum', 'auth'],
+            'middleware' => ['jwt', 'auth'],
             'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer'),
         ],
     ],

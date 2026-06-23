@@ -16,7 +16,12 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('level');
-            $table->geometry('geom', 'MultiPolygon', 4326)->nullable();
+
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                $table->geometry('geom', 'MultiPolygon', 4326)->nullable();
+            }
+
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -28,7 +33,9 @@ return new class extends Migration
                 ->nullOnDelete();
         });
 
-        DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_level_check CHECK (level IN ('country', 'province', 'city', 'neighborhood'))");
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_level_check CHECK (level IN ('country', 'province', 'city', 'neighborhood'))");
+        }
     }
 
     /**
