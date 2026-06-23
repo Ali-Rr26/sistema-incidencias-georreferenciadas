@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Sessions\Domain\Repositories;
+namespace App\Domains\Sessions\Repositories;
 
-use App\Domains\Sessions\Domain\Entities\Session;
+use App\Domains\Sessions\Models\Session;
 use Carbon\Carbon;
 
 interface SessionRepository

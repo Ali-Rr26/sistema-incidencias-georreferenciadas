@@ -45,5 +45,6 @@ Route::middleware('jwt')->group(function () {
     // RBAC
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('permissions', PermissionController::class);
+    Route::get('menus/my', [MenuController::class, 'myMenus']);
     Route::apiResource('menus', MenuController::class);
 });
