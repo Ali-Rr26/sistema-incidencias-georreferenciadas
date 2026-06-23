@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "es-ES"
+
+tone_instructions: |
+  Senior backend architect. Direct and educational.
+  For every finding: **Problem** → **Why it matters** (concrete consequence) → **Fix** (with code if needed) → **Pattern** (named pattern or tool that solves this class of problem).
+
+reviews:
+  profile: "assertive"
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  request_changes_workflow: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "develop"
+
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/vendor/**"
+    - "!**/storage/**"
+    - "!**/bootstrap/cache/**"
+    - "!**/dist/**"
+    - "!**/coverage/**"
+    - "!**/*.lock"
+    - "!package-lock.json"
+    - "!composer.lock"
+    - "!**/*.snap"
+    - "!**/migrations/**"
+    - "!**/plantilla_Frontend/**"
+
+  path_instructions:
+    # ─── DOMAIN MODELS (Eloquent) ──────────────────────────────────────────────
+    - path: "backend/app/**/Models/**"
+      instructions: |
+        [RISK] Eloquent models must not contain direct controller, request, or framework-specific HTTP/Session dependencies.
+        They must remain focused on attributes, relationships, database cast configurations, and internal model helper methods.
+        Pattern: Active Record, Single Responsibility.
+
+        [READABILITY] Flag anemic models that do not define relationships, scopes, or logic when they should. Ensure proper types and documentation for custom scopes or dynamic properties.
+
+    # ─── APPLICATION SERVICES (Business Logic) ──────────────────────────────────
+    - path: "backend/app/**/Services/**"
+      instructions: |
+        [RISK] Services should not access HTTP requests, global helpers like request(), or session() directly.
+        They must receive primitive data or validated DTOs/Request values.
+        Why it matters: direct HTTP coupling makes services untestable in isolation and breaks CLI/Queue execution contexts.
+        Fix: pass parameters explicitly to service methods.
+        Pattern: Dependency Inversion, Service Layer.
+
+        [RELIABILITY] Wrapping multiple database writes in a transaction:
+        Verify that methods performing multiple DB insertions/updates use DB::transaction() or Unit of Work patterns.
+        Pattern: Database Transactions.
+
+    # ─── PERSISTENCE (Repositories) ─────────────────────────────────────────────
+    - path: "backend/app/**/Repositories/**"
+      instructions: |
+        [RISK] Never concatenate user input directly in database queries (e.g. raw SQL or DB::raw).
+        Why it matters: SQL injection vulnerability.
+        Fix: use Eloquent's query builder parameter binding.
+        Pattern: Parameterized Queries.
+
+        [RESILIENCE] Verify queries handling PostGIS coordinates (Laravel Magellan) check for null/empty boundaries or invalid coordinate formats before executing geo-queries.
+
+    # ─── AUTHENTICATION / JWT ───────────────────────────────────────────────────
+    - path: "backend/app/**/Auth/**"
+      instructions: |
+        [RISK - HIGH PRIORITY] Security-critical module. Look out for:
+        - Weak JWT configurations or hardcoded secrets (must load via config/env).
+        - Passwords handled in plain text (must always use Hash::make() or Hash::check()).
+        - Sensitive fields exposed in public endpoints (ensure they are excluded or hidden via Eloquent's $hidden or JsonResources).
+        Pattern: Secure Cryptography, Hash Algorithm.
+
+    # ─── AUTHORIZATION / POLICIES ───────────────────────────────────────────────
+    - path: "backend/app/**/Policies/**"
+      instructions: |
+        [RISK] Authorization rules must be strictly enforced.
+        Ensure permission checks map to Laravel policies using Gate or User authorization capabilities ($user->can()).
+        Avoid hardcoded permission strings unless they are defined in constants/enums.
+        Pattern: Role-Based Access Control (RBAC).
+
+    # ─── API CONTROLLERS ────────────────────────────────────────────────────────
+    - path: "backend/app/**/*Controller.php"
+      instructions: |
+        [RISK] Controllers must not contain core business logic.
+        Why it matters: logic inside controllers cannot be reused in CLI commands, jobs, or tests.
+        Fix: delegate business logic to Service classes and data fetching/persistence to Repositories.
+        Pattern: Controller-Service-Repository Pattern.
+
+        [RISK] Controllers must use FormRequests for input validation (e.g. StoreUserRequest) instead of validating inside the controller method.
+        Pattern: Form Request Validation.
+
+    # ─── VALIDATION REQUESTS ────────────────────────────────────────────────────
+    - path: "backend/app/**/Http/Requests/**"
+      instructions: |
+        [RISK] FormRequest validation rules must cover all user-input attributes.
+        Ensure proper rules (e.g. required, email, max, exists) to prevent bad data from reaching models/services.
+        Pattern: Input Validation at Boundary.
+
+    # ─── TESTING (Pest / PHPUnit) ───────────────────────────────────────────────
+    - path: "backend/tests/**/*.php"
+      instructions: |
+        [RELIABILITY] Feature tests interacting with database must use the RefreshDatabase or DatabaseTransactions trait.
+        Ensure assertions exist and verify both success and error paths (e.g., validation errors, 404, authorization denial).
+        Pattern: AAA (Arrange-Act-Assert).
+
+    # ─── FRONTEND SPA COMPONENTS ────────────────────────────────────────────────
+    - path: "frontend/app/**/*.js"
+      instructions: |
+        [RISK] Component files (*.component.js) should focus purely on DOM representation and view events.
+        HTTP communication or business logic must be delegated to dedicated services (e.g., auth.service.js, http.service.js).
+        Pattern: Container-Presentational Pattern, Service Abstraction.
+
+        [RISK] Avoid direct rendering of unescaped user input (potential XSS).
+        Ensure use of safe methods or sanitization where HTML is dynamically inserted.
+        Pattern: Cross-Site Scripting (XSS) Prevention.
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+chat:
+  auto_reply: true

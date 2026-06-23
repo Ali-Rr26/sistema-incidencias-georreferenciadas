@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Auth\Services;
 
 use App\Domains\Auth\Exceptions\AuthenticationException;
-use App\Domains\Sessions\Domain\Repositories\SessionRepository;
+use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -89,11 +89,11 @@ class AuthService
             throw new AuthenticationException('La sesión no es válida o ha sido revocada.');
         }
 
-        if ((int) $session->getUserId() !== (int) $claims['sub']) {
+        if ((int) $session->user_id !== (int) $claims['sub']) {
             throw new AuthenticationException('El token de refresco no corresponde a la sesión.');
         }
 
-        if (! Hash::check($refreshToken, $session->getRefreshTokenHash())) {
+        if (! Hash::check($refreshToken, $session->refresh_token_hash)) {
             throw new AuthenticationException('El token de refresco no coincide con nuestros registros.');
         }
 
@@ -106,18 +106,18 @@ class AuthService
 
         $newAccess = $this->jwtService->issueAccessToken(
             (string) $user->id,
-            $session->getId(),
+            $session->id,
             $user->email,
         );
 
         $newRefresh = $this->jwtService->issueRefreshToken(
             (string) $user->id,
-            $session->getId(),
+            $session->id,
             $user->email,
         );
 
         $this->sessionRepository->update(
-            id: $session->getId(),
+            id: $session->id,
             newHash: Hash::make($newRefresh),
             ip: $ip,
             ua: $ua,

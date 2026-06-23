@@ -53,8 +53,8 @@ class User extends Authenticatable
     {
         return $this->role_id === 1;
     }
-    
-    public function hasPermission(string $permission): bool 
+
+    public function hasPermission(string $permission): bool
     {
         [$resource, $action] = explode('.', $permission);
 
@@ -62,7 +62,7 @@ class User extends Authenticatable
             ?->permissions()
             ->where('resource', $resource)
             ->where('action', $action)
-            ->exists() ?? false;    
+            ->exists() ?? false;
         }
 
 

@@ -4,33 +4,20 @@ declare(strict_types=1);
 
 namespace App\Domains\Menus\Http;
 
+use App\Domains\Menus\Services\MenuService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MenuController
 {
-    public function index(Request $request): JsonResponse
-    {
-        return response()->json(['data' => []]);
-    }
+    public function __construct(
+        private readonly MenuService $menuService,
+    ) {}
 
-    public function store(Request $request): JsonResponse
+    public function myMenus(Request $request): JsonResponse
     {
-        return response()->json(['data' => []], 201);
-    }
-
-    public function show(int $id): JsonResponse
-    {
-        return response()->json(['data' => []]);
-    }
-
-    public function update(Request $request, int $id): JsonResponse
-    {
-        return response()->json(['data' => []]);
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        return response()->json(null, 204);
+        return response()->json([
+            'data' => $this->menuService->getMyMenus($request->user()),
+        ]);
     }
 }

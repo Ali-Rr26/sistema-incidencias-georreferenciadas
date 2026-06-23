@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Sessions\Domain\Repositories\SessionRepository;
+use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Sessions\Repositories\EloquentSessionRepository;
 use App\Domains\Users\Models\User;
 use App\Domains\Roles\Repositories\EloquentRoleRepository;

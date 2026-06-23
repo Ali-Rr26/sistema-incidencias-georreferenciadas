@@ -42,4 +42,9 @@ class Session extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function isValid(): bool
+    {
+        return ! $this->is_revoked && $this->expires_at->isFuture();
+    }
 }

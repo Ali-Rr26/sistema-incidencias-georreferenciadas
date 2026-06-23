@@ -7,6 +7,7 @@ namespace App\Domains\Auth\Http;
 use App\Domains\Auth\Exceptions\AuthenticationException;
 use App\Domains\Auth\Http\Requests\LoginRequest;
 use App\Domains\Auth\Services\AuthService;
+use App\Domains\Users\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,7 +43,7 @@ class AuthController
             'access_token' => $result['accessToken'],
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
-            'user' => $result['user'],
+            'user' => new UserResource($result['user']),
         ])->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
@@ -93,7 +94,7 @@ class AuthController
     public function me(Request $request): JsonResponse
     {
         return response()->json(
-            $request->user()->load('role'),
+            new UserResource($request->user()->load('role')),
         );
     }
 
