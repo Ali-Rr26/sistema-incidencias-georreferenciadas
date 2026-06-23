@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('message');
             $table->boolean('read')->default(false);
             $table->timestamp('created_at')->useCurrent();
+            $table->softDeletes();
         });
     }
 

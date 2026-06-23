@@ -20,13 +20,19 @@ return new class extends Migration
             $table->string('status');
             $table->string('priority');
             $table->timestamp('resolution_date')->nullable();
-            $table->geometry('geom', 'Point', 4326)->nullable();
+
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                $table->geometry('geom', 'Point', 4326)->nullable();
+            }
+
             $table->timestamps();
             $table->softDeletes();
         });
 
-        DB::statement("ALTER TABLE incidents ADD CONSTRAINT incidents_status_check CHECK (status IN ('pending', 'in_progress', 'resolved'))");
-        DB::statement("ALTER TABLE incidents ADD CONSTRAINT incidents_priority_check CHECK (priority IN ('low', 'medium', 'high'))");
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement("ALTER TABLE incidents ADD CONSTRAINT incidents_status_check CHECK (status IN ('pending', 'in_progress', 'resolved'))");
+            DB::statement("ALTER TABLE incidents ADD CONSTRAINT incidents_priority_check CHECK (priority IN ('low', 'medium', 'high'))");
+        }
     }
 
     /**

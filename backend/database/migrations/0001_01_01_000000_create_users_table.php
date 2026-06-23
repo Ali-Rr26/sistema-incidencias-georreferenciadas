@@ -27,7 +27,6 @@ return new class extends Migration
             $table->string('last_name')->nullable();
             $table->string('phone')->nullable();
             $table->jsonb('avatar')->nullable();
-            $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
         });
