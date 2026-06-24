@@ -1,0 +1,61 @@
+# ============================================
+# Deploy - Sistema de Incidencias Georreferenciadas
+# ============================================
+# Runs on the self-hosted runner of the server.
+# Pulls the code, rebuilds containers, and restarts services.
+#
+# Requirements:
+#   - Configured self-hosted runner
+#   - Docker and Docker Compose (v2) installed
+#   - .env files placed in the runner workspace:
+#     - Root .env (for docker-compose variables)
+#     - backend/.env (for Laravel/FrankenPHP application secrets)
+#     (clean: false preserves these between runs)
+# ============================================
+
+name: Deploy App
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
+      - name: Ensure environment files exist
+        run: |
+          if [ ! -f .env ]; then
+            echo "❌ Root .env not found!"
+            echo "Create it manually in the runner workspace root first."
+            exit 1
+          fi
+          if [ ! -f backend/.env ]; then
+            echo "❌ backend/.env not found!"
+            echo "Create it manually in the runner workspace/backend/ first."
+            exit 1
+          fi
+
+      - name: Rebuild and restart services
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+        run: |
+          docker compose up -d --build --remove-orphans
+
+      - name: Health check
+        run: |
+          echo "Waiting for services to stabilize..."
+          sleep 15
+          docker compose ps
+
+      - name: Clean up old images
+        run: docker image prune -f
