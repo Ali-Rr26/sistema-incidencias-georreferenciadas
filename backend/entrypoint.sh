@@ -36,9 +36,9 @@ php artisan migrate --force || echo "WARNING: Migrations failed. Continuing star
 # Start Octane (RoadRunner) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
-echo "Starting Octane (RoadRunner) on 0.0.0.0:8000..."
+echo "Starting Octane (FrankenPHP) on 0.0.0.0:8000..."
 exec php artisan octane:start \
-    --server=roadrunner \
+    --server=frankenphp \
     --host=0.0.0.0 \
     --port=8000 \
     --workers=4 \

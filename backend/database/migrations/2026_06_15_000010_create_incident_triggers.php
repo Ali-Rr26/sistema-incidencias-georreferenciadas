@@ -10,6 +10,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // 1. Leaf category validation trigger
         DB::statement("
             CREATE OR REPLACE FUNCTION check_is_leaf_category()
@@ -101,6 +105,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement('DROP TRIGGER IF EXISTS trg_validate_leaf_category ON incidents');
         DB::statement('DROP TRIGGER IF EXISTS trg_log_incident_status ON incidents');
         DB::statement('DROP TRIGGER IF EXISTS trg_auto_assign_location ON incidents');

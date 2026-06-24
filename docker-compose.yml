@@ -24,12 +24,12 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       - DB_CONNECTION=${DB_CONNECTION:-pgsql}
-      - DB_HOST=${DB_HOST:-db}
-      - DB_PORT=${DB_PORT:-5432}
+      - DB_HOST=db
+      - DB_PORT=5432
       - DB_DATABASE=${DB_DATABASE:-incidencias_db}
       - DB_USERNAME=${DB_USERNAME:-user}
       - DB_PASSWORD=${DB_PASSWORD:-password}
-      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_HOST=redis
     depends_on:
       db:
         condition: service_healthy
