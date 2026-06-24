@@ -4,33 +4,67 @@ declare(strict_types=1);
 
 namespace App\Domains\IncidentCategories\Http;
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
+use App\Domains\IncidentCategories\Http\Requests\StoreIncidentCategoryRequest;
+use App\Domains\IncidentCategories\Http\Requests\UpdateIncidentCategoryRequest;
+use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryCollection;
+use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
 
-class IncidentCategoryController
+class IncidentCategoryController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    use AuthorizesRequests;
+
+    public function __construct(private readonly IncidentCategoryRepository $categories)
     {
-        return response()->json(['data' => []]);
+        $this->authorizeResource(IncidentCategory::class, 'incident_category');
     }
 
-    public function store(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => []], 201);
+        $categories = $this->categories->paginate(
+            $request->only(['search', 'organization_id', 'parent_id', 'per_page']),
+        );
+
+        return (new IncidentCategoryCollection($categories))->response();
+    }
+
+    public function store(StoreIncidentCategoryRequest $request): JsonResponse
+    {
+        $category = $this->categories->create($request->validated());
+
+        return (new IncidentCategoryResource($category))
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        return response()->json(['data' => []]);
+        $category = $this->categories->findById($id);
+
+        if ($category === null) {
+            return response()->json(['message' => 'Incident category not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return (new IncidentCategoryResource($category))->response();
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateIncidentCategoryRequest $request, int $id): JsonResponse
     {
-        return response()->json(['data' => []]);
+        $category = $this->categories->update($id, $request->validated());
+
+        return (new IncidentCategoryResource($category))->response();
     }
 
     public function destroy(int $id): JsonResponse
     {
-        return response()->json(null, 204);
+        $this->categories->delete($id);
+
+        return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 }

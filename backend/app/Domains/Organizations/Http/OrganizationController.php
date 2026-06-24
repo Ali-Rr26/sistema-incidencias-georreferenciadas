@@ -4,33 +4,67 @@ declare(strict_types=1);
 
 namespace App\Domains\Organizations\Http;
 
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Organizations\Repositories\OrganizationRepository;
+use App\Domains\Organizations\Http\Requests\StoreOrganizationRequest;
+use App\Domains\Organizations\Http\Requests\UpdateOrganizationRequest;
+use App\Domains\Organizations\Http\Resources\OrganizationCollection;
+use App\Domains\Organizations\Http\Resources\OrganizationResource;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
 
-class OrganizationController
+class OrganizationController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    use AuthorizesRequests;
+
+    public function __construct(private readonly OrganizationRepository $organizations)
     {
-        return response()->json(['data' => []]);
+        $this->authorizeResource(Organization::class, 'organization');
     }
 
-    public function store(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => []], 201);
+        $organizations = $this->organizations->paginate(
+            $request->only(['search', 'location_id', 'per_page']),
+        );
+
+        return (new OrganizationCollection($organizations))->response();
+    }
+
+    public function store(StoreOrganizationRequest $request): JsonResponse
+    {
+        $organization = $this->organizations->create($request->validated());
+
+        return (new OrganizationResource($organization))
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function show(int $id): JsonResponse
     {
-        return response()->json(['data' => []]);
+        $organization = $this->organizations->findById($id);
+
+        if ($organization === null) {
+            return response()->json(['message' => 'Organization not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return (new OrganizationResource($organization))->response();
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateOrganizationRequest $request, int $id): JsonResponse
     {
-        return response()->json(['data' => []]);
+        $organization = $this->organizations->update($id, $request->validated());
+
+        return (new OrganizationResource($organization))->response();
     }
 
     public function destroy(int $id): JsonResponse
     {
-        return response()->json(null, 204);
+        $this->organizations->delete($id);
+
+        return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 }
