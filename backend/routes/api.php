@@ -3,12 +3,12 @@
 use App\Assignments\Interfaces\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Comments\Interfaces\CommentController;
-use App\IncidentCategories\Interfaces\IncidentCategoryController;
+use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Notifications\Interfaces\NotificationController;
-use App\Organizations\Interfaces\OrganizationController;
+use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
