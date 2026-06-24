@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RolePermissionSeeder::class,
             MenuSeeder::class,
+            EcuadorLocationSeeder::class,
         ]);
     }
 }

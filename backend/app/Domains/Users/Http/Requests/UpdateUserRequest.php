@@ -28,9 +28,9 @@ class UpdateUserRequest extends FormRequest
         return[
             'email' => "sometimes|email|unique:users,email,{$userId}",
             'password' => 'sometimes|string|min:8',
-            'role_id' => 'sometimes|integer|exists:role_id',
+            'role_id' => 'sometimes|integer|exists:roles,id',
             'first_name' => 'sometimes|string|max:100',
-            'last_name' => 'somestimes|string|max:100',
+            'last_name' => 'sometimes|string|max:100',
             'phone' => 'nullable|string|max:50',
             'avatar' => 'nullable|array',
         ];
@@ -41,7 +41,7 @@ class UpdateUserRequest extends FormRequest
         return[
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
-            'passowrd.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres',
         ];
     }
 }
