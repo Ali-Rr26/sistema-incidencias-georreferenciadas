@@ -16,9 +16,11 @@
         "laravel/octane": "*",
         "laravel/tinker": "^3.0",
         "lcobucci/jwt": "6.0.x-dev",
+        "matanyadaev/laravel-eloquent-spatial": "^4.8",
         "paragonie/sodium_compat": "^2.5",
         "spiral/roadrunner-cli": "^2.7",
-        "spiral/roadrunner-http": "^4.1"
+        "spiral/roadrunner-http": "^4.1",
+        "staudenmeir/laravel-adjacency-list": "^1.26"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

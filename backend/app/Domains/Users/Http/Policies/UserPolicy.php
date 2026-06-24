@@ -4,36 +4,29 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http\Policies;
 
+use App\Domains\Shared\Http\Policies\PermissionPolicy;
 use App\Domains\Users\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
-class UserPolicy
+class UserPolicy extends PermissionPolicy
 {
-    public function viewAny(User $currentUser): bool
+    protected function resource(): string
     {
-        return $currentUser->can('users.view');
+        return 'users';
     }
 
-    public function view(User $currentUser, User $targetUser): bool
+    public function view(User $user, Model $model): bool
     {
-        return $currentUser->can('users.view') 
-            || $currentUser->id === $targetUser->id;
+        return $user->can('users.view') || $user->id === $model->id;
     }
 
-    public function create(User $currentUser): bool
+    public function update(User $user, Model $model): bool
     {
-        return $currentUser->can('users.create');
+        return $user->can('users.update') || $user->id === $model->id;
     }
 
-    public function update(User $currentUser, User $targetUser): bool
+    public function delete(User $user, Model $model): bool
     {
-        return $currentUser->can('users.update')
-            || $currentUser->id === $targetUser->id;
-    }
-
-    public function delete(User $currentUser, User $targetUser): bool
-    {
-        return $currentUser->can('users.delete')
-            || $currentUser->id === $targetUser->id;
+        return $user->can('users.delete') || $user->id === $model->id;
     }
 }
-

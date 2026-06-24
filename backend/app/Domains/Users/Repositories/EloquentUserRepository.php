@@ -23,11 +23,11 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['role_id'] ?? null, fn(Builder $q, string $v) => $q->where('role_id', $v))
-            ->when($filters['search'] ?? null, fn(Builder $q, string $v) => $q->where(function(Builder $q) use($v) {
-                $q->where('first_name', 'LIKE', "%{$v}%")
-                  ->orWhere('last_name', 'LIKE', "%{$v}%")
-                  ->orWhere('email', 'LIKE', "%{$v}%");
+            ->when($filters['role_id'] ?? null, fn(Builder $query, string $value) => $query->where('role_id', $value))
+            ->when($filters['search'] ?? null, fn(Builder $query, string $value) => $query->where(function(Builder $query) use($value) {
+                $query->where('first_name', 'LIKE', "%{$value}%")
+                  ->orWhere('last_name', 'LIKE', "%{$value}%")
+                  ->orWhere('email', 'LIKE', "%{$value}%");
             }));
     }
 }

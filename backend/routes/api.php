@@ -5,7 +5,7 @@ use App\Domains\Auth\Http\AuthController;
 use App\Comments\Interfaces\CommentController;
 use App\IncidentCategories\Interfaces\IncidentCategoryController;
 use App\Domains\Incidents\Http\IncidentController;
-use App\Locations\Interfaces\LocationController;
+use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Notifications\Interfaces\NotificationController;
 use App\Organizations\Interfaces\OrganizationController;
@@ -37,6 +37,7 @@ Route::middleware('jwt')->group(function () {
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
 
     // Catálogos
+    Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::apiResource('organizations', OrganizationController::class);
     Route::apiResource('incident-categories', IncidentCategoryController::class);

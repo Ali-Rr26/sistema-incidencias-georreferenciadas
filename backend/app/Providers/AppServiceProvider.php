@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Domains\Locations\Repositories\EloquentLocationRepository;
+use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Sessions\Repositories\EloquentSessionRepository;
@@ -20,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SessionRepository::class, EloquentSessionRepository::class);
         $this->app->bind(UserRepository::class, EloquentUserRepository::class);
         $this->app->bind(RoleRepository::class, EloquentRoleRepository::class);
+        $this->app->bind(LocationRepository::class, EloquentLocationRepository::class);
     }
 
     public function boot(): void
