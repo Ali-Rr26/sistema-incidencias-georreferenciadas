@@ -1,0 +1,89 @@
+<div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+     data-sidebar-position="fixed" data-header-position="fixed" data-boxed-layout="full">
+
+  <header class="topbar" data-navbarbg="skin6">
+    <nav class="navbar top-navbar navbar-expand-lg">
+      <div class="navbar-header" data-logobg="skin6">
+        <a class="nav-toggler waves-effect waves-light d-block d-lg-none" href="javascript:void(0)">
+          <i class="ti-menu ti-close"></i>
+        </a>
+        <div class="navbar-brand">
+          <a href="#/dashboard">
+            <b class="d-none d-md-block text-dark fw-bold fs-5">Sistema de Incidencias</b>
+            <b class="d-block d-md-none text-dark fw-bold fs-5">SIG</b>
+          </a>
+        </div>
+        <a class="topbartoggler d-block d-lg-none waves-effect waves-light" href="javascript:void(0)"
+           data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+           aria-controls="navbarSupportedContent" aria-expanded="false">
+          <i class="ti-more"></i>
+        </a>
+      </div>
+      <div class="navbar-collapse collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav float-end">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-bs-toggle="dropdown">
+              <span class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center text-white"
+                    style="width:40px;height:40px;font-size:16px;" id="user-avatar">U</span>
+              <span class="ms-2 d-none d-lg-inline-block">
+                <span>Hola,</span>
+                <span class="text-dark" id="user-name">Usuario</span>
+                <i data-feather="chevron-down" class="svg-icon"></i>
+              </span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end user-dd animated flipInY">
+              <a class="dropdown-item" href="javascript:void(0)"><i data-feather="user" class="svg-icon me-2 ms-1"></i> Mi Perfil</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" id="logout-btn"><i data-feather="power" class="svg-icon me-2 ms-1"></i> Cerrar sesión</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <aside class="left-sidebar" data-sidebarbg="skin6">
+    <div class="scroll-sidebar">
+      <nav class="sidebar-nav">
+        <ul id="sidebarnav">
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/dashboard"><i data-feather="home" class="feather-icon"></i><span class="hide-menu">Dashboard</span></a>
+          </li>
+          <li class="list-divider"></li>
+          <li class="nav-small-cap"><span class="hide-menu">Gestión</span></li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/incidencias"><i data-feather="map-pin" class="feather-icon"></i><span class="hide-menu">Incidencias</span></a>
+          </li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/reportes"><i data-feather="bar-chart" class="feather-icon"></i><span class="hide-menu">Reportes</span></a>
+          </li>
+          <li class="list-divider"></li>
+          <li class="nav-small-cap"><span class="hide-menu">Configuración</span></li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/usuarios"><i data-feather="users" class="feather-icon"></i><span class="hide-menu">Usuarios</span></a>
+          </li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="javascript:void(0)" id="logout-sidebar"><i data-feather="log-out" class="feather-icon"></i><span class="hide-menu">Salir</span></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    <div class="container-fluid">
+      <div class="row justify-content-center align-items-center" style="min-height: calc(100vh - 120px);">
+        <div class="col-md-6 text-center py-5">
+          <i data-feather="compass" class="feather-icon text-muted mb-4" style="width:72px;height:72px;"></i>
+          <h1 class="display-4 fw-bold text-dark mb-2">404</h1>
+          <h5 class="text-muted mb-4">Esta sección aún no está disponible.</h5>
+          <a href="#/dashboard" class="btn btn-primary">
+            <i data-feather="home" class="feather-icon me-2"></i>Volver al Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+    <footer class="footer text-center text-muted">Sistema de Incidencias Georreferenciadas &copy; 2026</footer>
+  </div>
+
+</div>

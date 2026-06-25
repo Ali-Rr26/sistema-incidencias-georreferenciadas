@@ -1,0 +1,226 @@
+<div id="main-wrapper" data-theme="light" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+     data-sidebar-position="fixed" data-header-position="fixed" data-boxed-layout="full">
+
+  <header class="topbar" data-navbarbg="skin6">
+    <nav class="navbar top-navbar navbar-expand-lg">
+      <div class="navbar-header" data-logobg="skin6">
+        <a class="nav-toggler waves-effect waves-light d-block d-lg-none" href="javascript:void(0)">
+          <i class="ti-menu ti-close"></i>
+        </a>
+        <div class="navbar-brand">
+          <a href="#/dashboard">
+            <b class="d-none d-md-block text-dark fw-bold fs-5">Sistema de Incidencias</b>
+            <b class="d-block d-md-none text-dark fw-bold fs-5">SIG</b>
+          </a>
+        </div>
+        <a class="topbartoggler d-block d-lg-none waves-effect waves-light" href="javascript:void(0)"
+           data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+           aria-controls="navbarSupportedContent" aria-expanded="false">
+          <i class="ti-more"></i>
+        </a>
+      </div>
+      <div class="navbar-collapse collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav float-end">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-bs-toggle="dropdown">
+              <span class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center text-white"
+                    style="width:40px;height:40px;font-size:16px;" id="user-avatar">U</span>
+              <span class="ms-2 d-none d-lg-inline-block">
+                <span>Hola,</span>
+                <span class="text-dark" id="user-name">Usuario</span>
+                <i data-feather="chevron-down" class="svg-icon"></i>
+              </span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end user-dd animated flipInY">
+              <a class="dropdown-item" href="javascript:void(0)"><i data-feather="user" class="svg-icon me-2 ms-1"></i> Mi Perfil</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" id="logout-btn"><i data-feather="power" class="svg-icon me-2 ms-1"></i> Cerrar sesión</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <aside class="left-sidebar" data-sidebarbg="skin6">
+    <div class="scroll-sidebar">
+      <nav class="sidebar-nav">
+        <ul id="sidebarnav">
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/dashboard"><i data-feather="home" class="feather-icon"></i><span class="hide-menu">Dashboard</span></a>
+          </li>
+          <li class="list-divider"></li>
+          <li class="nav-small-cap"><span class="hide-menu">Gestión</span></li>
+          <li class="sidebar-item active">
+            <a class="sidebar-link active" href="#/incidencias"><i data-feather="map-pin" class="feather-icon"></i><span class="hide-menu">Incidencias</span></a>
+          </li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/reportes"><i data-feather="bar-chart" class="feather-icon"></i><span class="hide-menu">Reportes</span></a>
+          </li>
+          <li class="list-divider"></li>
+          <li class="nav-small-cap"><span class="hide-menu">Configuración</span></li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="#/usuarios"><i data-feather="users" class="feather-icon"></i><span class="hide-menu">Usuarios</span></a>
+          </li>
+          <li class="sidebar-item">
+            <a class="sidebar-link" href="javascript:void(0)" id="logout-sidebar"><i data-feather="log-out" class="feather-icon"></i><span class="hide-menu">Salir</span></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    <div class="page-breadcrumb">
+      <div class="row">
+        <div class="col-7 align-self-center">
+          <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">Crear Incidencia</h4>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb m-0 p-0">
+              <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
+              <li class="breadcrumb-item"><a href="#/incidencias" class="text-muted">Incidencias</a></li>
+              <li class="breadcrumb-item text-muted active" aria-current="page">Crear</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Nueva Incidencia</h5>
+              <h6 class="card-subtitle mb-4 text-muted">
+                Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+              </h6>
+
+              <form id="form-incidencia" novalidate>
+                <div class="row">
+
+                  <div class="col-md-8 mb-3">
+                    <label for="titulo" class="form-label fw-bold">Título <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="titulo" name="titulo"
+                      maxlength="100" placeholder="Ingrese un título descriptivo" required>
+                    <div class="d-flex justify-content-between mt-1">
+                      <div class="invalid-feedback">El campo título es obligatorio.</div>
+                      <small class="text-muted ms-auto" id="contador-titulo">0/100</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="prioridad" class="form-label fw-bold">Prioridad <span class="text-danger">*</span></label>
+                    <select class="form-select" id="prioridad" name="prioridad" required>
+                      <option value="">-- Seleccione --</option>
+                      <option value="alta">Alta</option>
+                      <option value="media">Media</option>
+                      <option value="baja">Baja</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione una prioridad.</div>
+                  </div>
+
+                  <div class="col-12 mb-3">
+                    <label for="descripcion" class="form-label fw-bold">Descripción <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                      maxlength="500" placeholder="Describa la incidencia en detalle" required></textarea>
+                    <div class="d-flex justify-content-between mt-1">
+                      <div class="invalid-feedback">El campo descripción es obligatorio.</div>
+                      <small class="text-muted ms-auto" id="contador-descripcion">0/500</small>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="telefono" class="form-label fw-bold">Teléfono de contacto</label>
+                    <input type="tel" class="form-control" id="telefono" name="telefono"
+                      maxlength="15" placeholder="Ej: 04121234567" inputmode="numeric">
+                    <div class="invalid-feedback">Ingrese solo números (máximo 15 dígitos).</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
+                    <select class="form-select" id="tipo" name="tipo" required>
+                      <option value="">-- Seleccione tipo --</option>
+                      <option value="infraestructura">Infraestructura</option>
+                      <option value="seguridad">Seguridad</option>
+                      <option value="ambiental">Ambiental</option>
+                      <option value="servicios">Servicios Públicos</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione un tipo.</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="subtipo" class="form-label fw-bold">Subtipo <span class="text-danger">*</span></label>
+                    <select class="form-select" id="subtipo" name="subtipo" required disabled>
+                      <option value="">-- Seleccione tipo primero --</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione un subtipo.</div>
+                  </div>
+
+                  <div class="col-12 mb-2">
+                    <h6 class="text-muted border-bottom pb-2">Ubicación <span class="text-danger">*</span></h6>
+                    <small class="text-muted">Haga clic en el mapa para marcar la ubicación, o use el botón para detectar su posición actual.</small>
+                  </div>
+
+                  <div class="col-12 mb-3">
+                    <div id="mapa-incidencia" style="height:320px;border-radius:8px;border:1px solid #dee2e6;"></div>
+                    <div id="error-mapa" class="text-danger mt-1 d-none" style="font-size:0.875em;">
+                      Debe marcar una ubicación en el mapa.
+                    </div>
+                  </div>
+
+                  <div class="col-md-4 mb-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-primary w-100" id="btn-geolocalizacion">
+                      <i data-feather="navigation" class="feather-icon me-1"></i>Usar mi ubicación actual
+                    </button>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="latitud" class="form-label fw-bold">Latitud</label>
+                    <input type="text" class="form-control" id="latitud" name="latitud" readonly placeholder="—" tabindex="-1">
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="longitud" class="form-label fw-bold">Longitud</label>
+                    <input type="text" class="form-control" id="longitud" name="longitud" readonly placeholder="—" tabindex="-1">
+                  </div>
+
+                  <div class="col-12 mb-3">
+                    <label for="direccion" class="form-label fw-bold">Dirección de referencia</label>
+                    <input type="text" class="form-control" id="direccion" name="direccion"
+                      maxlength="200" placeholder="Ej: Av. Principal frente al parque central">
+                  </div>
+
+                  <div class="col-12 mt-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" id="btn-guardar">
+                      <span id="btn-texto"><i data-feather="save" class="feather-icon me-1"></i>Guardar Incidencia</span>
+                      <span id="btn-loading" class="d-none">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...
+                      </span>
+                    </button>
+                    <a href="#/incidencias" class="btn btn-outline-secondary">Cancelar</a>
+                  </div>
+
+                </div>
+              </form>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+      <div id="toast-exito" class="toast align-items-center text-white bg-success border-0" role="alert"
+           aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body"><i data-feather="check-circle" class="feather-icon me-2"></i>Incidencia registrada correctamente.</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer text-center text-muted">Sistema de Incidencias Georreferenciadas &copy; 2026</footer>
+  </div>
+
+</div>

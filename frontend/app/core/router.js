@@ -7,6 +7,8 @@
  *
  * Cada ruta puede tener guards (como Angular canActivate).
  */
+import { initLayout } from '../utils/layout.js';
+
 class Router {
   constructor() {
     this.routes = [];
@@ -41,7 +43,7 @@ class Router {
 
     const route = this.routes.find(r => r.pattern === path);
     if (!route) {
-      this.navigate('/login');
+      this.navigate('/not-found');
       return;
     }
 
@@ -62,6 +64,7 @@ class Router {
     // Montar nuevo componente
     this.currentComponent = component;
     await this._mount(component);
+    initLayout();
     await component.onInit();
   }
 

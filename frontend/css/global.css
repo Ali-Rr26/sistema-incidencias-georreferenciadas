@@ -3,6 +3,9 @@
    Solo estilos complementarios a Freedash.
    ============================================== */
 
+/* Sidebar — shared across all authenticated views */
+@import url("../app/shared/sidebar/sidebar.component.css");
+
 :root {
   /* Gradientes reutilizables */
   --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

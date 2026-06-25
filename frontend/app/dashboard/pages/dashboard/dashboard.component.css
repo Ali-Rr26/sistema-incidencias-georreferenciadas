@@ -1,18 +1,4 @@
-/* Dashboard styles — Freedash CSS maneja todo el layout */
-/* Sidebar styles (reutilizados desde shared component) */
-@import url("app/shared/sidebar/sidebar.component.css");
-
+/* Dashboard styles */
 #main-wrapper {
   animation: fadeInUp 0.3s ease;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }

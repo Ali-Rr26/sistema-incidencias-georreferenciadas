@@ -21,8 +21,8 @@ export default defineComponent({
     const errorAlert = document.getElementById('login-error');
     const submitBtn = form.querySelector('button[type="submit"]');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
 
       // Resetear error
       errorAlert.classList.add('d-none');
