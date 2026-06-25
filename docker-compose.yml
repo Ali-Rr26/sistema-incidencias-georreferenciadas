@@ -18,18 +18,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    env_file:
-      - ./backend/.env
+    env_file: .env
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
-      - DB_CONNECTION=${DB_CONNECTION:-pgsql}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_DATABASE=${DB_DATABASE:-incidencias_db}
-      - DB_USERNAME=${DB_USERNAME:-user}
-      - DB_PASSWORD=${DB_PASSWORD:-password}
-      - REDIS_HOST=redis
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       db:
         condition: service_healthy
