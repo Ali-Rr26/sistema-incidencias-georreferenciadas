@@ -1,0 +1,154 @@
+<div class="page-breadcrumb">
+  <div class="row align-items-center">
+    <div class="col-7 align-self-center">
+      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">Organizaciones</h4>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0 p-0">
+          <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
+          <li class="breadcrumb-item text-muted active">Organizaciones</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-5 text-end">
+      <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-org-form">
+        <i data-feather="plus" class="feather-icon me-1"></i>Nueva
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+
+  <div class="card mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-8">
+          <input type="text" class="form-control form-control-sm" id="filtro-buscar" placeholder="Buscar por nombre...">
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar">
+            <i data-feather="search" class="feather-icon me-1"></i>Buscar
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar" title="Limpiar">
+            <i data-feather="x" class="feather-icon"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+
+      <div id="estado-cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+        <p class="text-muted mt-2 mb-0">Cargando organizaciones...</p>
+      </div>
+
+      <div id="estado-vacio" class="text-center py-5 d-none">
+        <i data-feather="inbox" class="feather-icon text-muted" style="width:48px;height:48px;"></i>
+        <p class="text-muted mt-3 mb-0">No se encontraron organizaciones.</p>
+      </div>
+
+      <div id="estado-error" class="text-center py-5 d-none">
+        <i data-feather="alert-circle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
+        <p class="text-muted mt-3 mb-1">Error al cargar los datos.</p>
+        <button class="btn btn-sm btn-outline-primary" id="btn-reintentar">Reintentar</button>
+      </div>
+
+      <div id="contenedor-tabla" class="d-none">
+        <div class="table-responsive d-none d-md-block">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Nombre</th>
+                <th>Localización</th>
+                <th>Creado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
+        </div>
+
+        <div id="contenedor-cards" class="d-md-none p-3"></div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+          <small class="text-muted" id="info-resultados"></small>
+          <nav><ul class="pagination pagination-sm mb-0" id="paginacion"></ul></nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modal-org-form" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-org-titulo">Nueva Organización</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-org" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="org-id">
+          <div class="mb-3">
+            <label for="org-nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="org-nombre" maxlength="100" required>
+            <div class="invalid-feedback">El nombre es obligatorio (máx. 100 caracteres).</div>
+          </div>
+          <div class="mb-3">
+            <label for="org-location" class="form-label">Localización <span class="text-danger">*</span></label>
+            <select class="form-select" id="org-location" required>
+              <option value="">-- Seleccione --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una localización.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-guardar-org">
+            <span id="org-btn-texto">Guardar</span>
+            <span id="org-btn-loading" class="d-none">
+              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div class="modal fade" id="modal-eliminar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">¿Eliminar "<strong id="modal-eliminar-nombre"></strong>"?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-confirmar-eliminar">
+          <span id="eliminar-texto">Eliminar</span>
+          <span id="eliminar-loading" class="d-none"><span class="spinner-border spinner-border-sm"></span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg-texto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>

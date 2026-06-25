@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http;
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
@@ -36,8 +37,12 @@ class IncidentController extends Controller
 
     public function store(StoreIncidentRequest $request): JsonResponse
     {
-        $data = array_merge($request->validated(), [
-            'user_id' => $request->user()->id,
+        $validated = $request->validated();
+        $category  = IncidentCategory::findOrFail($validated['incident_category_id']);
+
+        $data = array_merge($validated, [
+            'user_id'         => $request->user()->id,
+            'organization_id' => $category->organization_id,
         ]);
 
         $incident = $this->incidents->create($data);
