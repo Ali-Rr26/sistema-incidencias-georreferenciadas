@@ -1,5 +1,4 @@
 import { defineComponent } from '../../../utils/component.js';
-import { auth } from '../../../auth/auth.service.js';
 import { http } from '../../../core/http.service.js';
 
 const POR_PAGINA = 10;
@@ -11,26 +10,6 @@ export default defineComponent({
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;
-
-    // User info
-    try {
-      const user = await auth.me();
-      const nameEl = document.getElementById('user-name');
-      const avatarEl = document.getElementById('user-avatar');
-      if (nameEl) nameEl.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
-      if (avatarEl) avatarEl.textContent = (user.first_name || user.email)[0].toUpperCase();
-    } catch { /* defaults */ }
-
-    // Logout handlers
-    document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      await auth.logout();
-      window.location.hash = '#/login';
-    });
-    document.getElementById('logout-sidebar')?.addEventListener('click', async () => {
-      await auth.logout();
-      window.location.hash = '#/login';
-    });
 
     // Helpers
     function badgePrioridad(p) {

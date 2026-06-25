@@ -4,7 +4,8 @@
    ============================================== */
 
 /* Sidebar — shared across all authenticated views */
-@import url("../app/shared/sidebar/sidebar.component.css");
+@import url("../app/layout/sidebar/sidebar.component.css");
+@import url("../app/layout/navbar/navbar.component.css");
 
 :root {
   /* Gradientes reutilizables */

@@ -1,4 +1,4 @@
 /* Dashboard styles */
-#main-wrapper {
-  animation: fadeInUp 0.3s ease;
+#page-outlet {
+  animation: fadeInUp 0.25s ease;
 }
