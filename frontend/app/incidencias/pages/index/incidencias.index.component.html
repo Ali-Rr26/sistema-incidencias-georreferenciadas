@@ -1,0 +1,149 @@
+<div class="page-breadcrumb">
+  <div class="row align-items-center">
+    <div class="col-7 align-self-center">
+      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">Lista de Incidencias</h4>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0 p-0">
+          <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
+          <li class="breadcrumb-item text-muted active" aria-current="page">Incidencias</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-5 text-end">
+      <a href="#/incidencias/crear" class="btn btn-primary btn-sm">
+        <i data-feather="plus" class="feather-icon me-1"></i>Nueva Incidencia
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+
+  <div class="card mb-3">
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label for="filtro-buscar" class="form-label mb-1 small fw-bold">Buscar</label>
+          <input type="text" class="form-control form-control-sm" id="filtro-buscar" placeholder="Título o descripción...">
+        </div>
+        <div class="col-md-2">
+          <label for="filtro-prioridad" class="form-label mb-1 small fw-bold">Prioridad</label>
+          <select class="form-select form-select-sm" id="filtro-prioridad">
+            <option value="">Todas</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="filtro-tipo" class="form-label mb-1 small fw-bold">Tipo</label>
+          <select class="form-select form-select-sm" id="filtro-tipo">
+            <option value="">Todos</option>
+            <option value="infraestructura">Infraestructura</option>
+            <option value="seguridad">Seguridad</option>
+            <option value="ambiental">Ambiental</option>
+            <option value="servicios">Servicios Públicos</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="filtro-estado" class="form-label mb-1 small fw-bold">Estado</label>
+          <select class="form-select form-select-sm" id="filtro-estado">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="resuelto">Resuelto</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+          <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar">
+            <i data-feather="search" class="feather-icon me-1"></i>Filtrar
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar" title="Limpiar filtros">
+            <i data-feather="x" class="feather-icon"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+
+      <div id="estado-cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+        <p class="text-muted mt-2 mb-0">Cargando incidencias...</p>
+      </div>
+
+      <div id="estado-vacio" class="text-center py-5 d-none">
+        <i data-feather="inbox" class="feather-icon text-muted" style="width:48px;height:48px;"></i>
+        <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
+        <a href="#/incidencias/crear" class="btn btn-primary btn-sm mt-1">Registrar la primera</a>
+      </div>
+
+      <div id="estado-error" class="text-center py-5 d-none">
+        <i data-feather="alert-triangle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
+        <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
+        <button type="button" class="btn btn-outline-primary btn-sm mt-1" id="btn-reintentar">Reintentar</button>
+      </div>
+
+      <div id="contenedor-tabla" class="d-none">
+        <div class="table-responsive d-none d-md-block">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3" style="width:60px;">#</th>
+                <th>Título</th>
+                <th style="width:100px;">Prioridad</th>
+                <th style="width:140px;">Tipo</th>
+                <th style="width:120px;">Estado</th>
+                <th style="width:120px;">Fecha</th>
+                <th style="width:100px;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
+        </div>
+
+        <div id="contenedor-cards" class="d-md-none p-2"></div>
+
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+          <small class="text-muted" id="info-resultados"></small>
+          <nav><ul class="pagination pagination-sm mb-0" id="paginacion"></ul></nav>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="modal fade" id="modal-eliminar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"><i data-feather="trash-2" class="feather-icon me-2"></i>Eliminar incidencia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1">¿Está seguro que desea eliminar la siguiente incidencia?</p>
+        <p class="fw-bold mb-0" id="modal-eliminar-titulo"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirmar-eliminar">
+          <span id="eliminar-texto">Eliminar</span>
+          <span id="eliminar-loading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Eliminando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg-texto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>

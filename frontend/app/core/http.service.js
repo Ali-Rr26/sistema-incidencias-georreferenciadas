@@ -2,10 +2,24 @@
  * HTTP Service — equivalente a HttpClient + HttpInterceptor de Angular.
  *
  * - Inyecta automáticamente el Bearer token en cada request
- * - Maneja errores 401: redirige a login
+ * - Maneja errores 401: intenta refresh con cookie HttpOnly, luego redirige a login
  * - Parsea respuestas JSON
+ * - Tokens almacenados en memoria (module-level variables), no en localStorage
  */
 import { API_URL } from './config.js';
+
+// Module-level auth state (single source of truth)
+let access_token = null;
+let session_id = null;
+let refreshPromise = null;
+let queue = [];
+
+// Exported auth state functions (used by auth.service.js)
+export function setAccessToken(token) { access_token = token; }
+export function setSessionId(id) { session_id = id; }
+export function clearAuthState() { access_token = null; session_id = null; }
+export function getSessionId() { return session_id; }
+export function getAccessToken() { return access_token; }
 
 class HttpService {
   constructor() {
@@ -13,30 +27,26 @@ class HttpService {
   }
 
   async request(method, path, body = null) {
-    const token = localStorage.getItem('access_token');
     const headers = {};
 
     if (body && !(body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (access_token) {
+      headers['Authorization'] = `Bearer ${access_token}`;
     }
 
-    const options = { method, headers };
+    const options = { method, headers, credentials: 'include' };
     if (body) {
       options.body = body instanceof FormData ? body : JSON.stringify(body);
     }
 
     const res = await fetch(`${this.baseUrl}${path}`, options);
 
-    // 401 → token inválido/expirado, redirigir a login
+    // 401 → token inválido/expirado, intentar refresh
     if (res.status === 401) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      window.location.hash = '#/login';
-      throw new Error('Sesión expirada. Inicia sesión nuevamente.');
+      return this.handle401({ method, path, body });
     }
 
     const data = await res.json();
@@ -48,6 +58,59 @@ class HttpService {
       throw err;
     }
 
+    return data;
+  }
+
+  async handle401(originalRequest) {
+    if (refreshPromise) {
+      // Queue request while refresh is in-flight
+      return new Promise((resolve, reject) => {
+        queue.push({ resolve, reject, originalRequest });
+      });
+    }
+
+    // Start refresh
+    refreshPromise = this.doRefresh();
+
+    try {
+      await refreshPromise;
+      // Retry original request
+      const result = await this.request(originalRequest.method, originalRequest.path, originalRequest.body);
+      // Process any queued requests
+      const pendingQueue = [...queue];
+      queue = [];
+      pendingQueue.forEach(({ resolve, reject, originalRequest: queuedRequest }) => {
+        this.request(queuedRequest.method, queuedRequest.path, queuedRequest.body)
+          .then(resolve)
+          .catch(reject);
+      });
+      return result;
+    } catch (err) {
+      // Refresh failed — clear state and redirect
+      clearAuthState();
+      window.location.hash = '#/login';
+      // Reject all queued requests
+      queue.forEach(({ reject }) => reject(new Error('Sesión expirada. Inicia sesión nuevamente.')));
+      queue = [];
+      throw err;
+    } finally {
+      refreshPromise = null;
+    }
+  }
+
+  async doRefresh() {
+    const res = await fetch(`${this.baseUrl}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error('Refresh failed');
+    }
+
+    const data = await res.json();
+    setAccessToken(data.access_token);
+    setSessionId(data.session_id);
     return data;
   }
 
