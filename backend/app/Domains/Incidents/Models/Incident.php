@@ -24,6 +24,8 @@ class Incident extends Model
 
     public const STATUS_RESOLVED = 'resolved';
 
+    public const STATUS_CLOSED = 'closed';
+
     public const PRIORITY_LOW = 'low';
 
     public const PRIORITY_MEDIUM = 'medium';

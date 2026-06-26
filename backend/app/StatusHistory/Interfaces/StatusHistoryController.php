@@ -14,6 +14,7 @@ class StatusHistoryController
         Incident::STATUS_PENDING     => 'Pendiente',
         Incident::STATUS_IN_PROGRESS => 'En Proceso',
         Incident::STATUS_RESOLVED    => 'Resuelto',
+        Incident::STATUS_CLOSED      => 'Cerrado',
     ];
 
     public function index(Request $request, int $incidentId): JsonResponse
