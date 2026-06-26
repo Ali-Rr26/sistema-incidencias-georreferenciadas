@@ -1,8 +1,6 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
-import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
-import { initSelect, clearSelect, destroyAll } from '../../../../shared/select-search.js';
 
 const POR_PAGINA = 15;
 const NIVEL_LABELS = { country: 'País', province: 'Provincia', city: 'Ciudad', neighborhood: 'Barrio' };
@@ -21,6 +19,7 @@ export default defineComponent({
         let expandedIds = new Set();
         let modoArbol = true;   // false when a search/level filter is active
 
+        const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-loc-form'));
         const tbody  = () => document.getElementById('tabla-body');
         const thead  = () => document.getElementById('thead-locs');
 
@@ -36,6 +35,7 @@ export default defineComponent({
                 const el = document.getElementById(s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s);
                 if (el) el.classList.toggle('d-none', s !== cual);
             });
+            if (window.feather) feather.replace();
         }
 
         function nivelBadge(level) {
@@ -104,7 +104,7 @@ export default defineComponent({
                     <td style="padding-left:${10 + indent}px">
                         ${hasChildren
                             ? `<button class="btn btn-link btn-sm p-0 me-1 btn-toggle text-muted" data-id="${loc.id}">
-                                   <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
+                                   <i data-feather="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="feather-icon"></i>
                                </button>`
                             : `<span style="display:inline-block;width:20px;margin-right:4px"></span>`}
                         ${loc.name}
@@ -116,11 +116,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                 data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                <i class="fas fa-pencil-alt"></i>
+                                <i data-feather="edit-2" class="feather-icon"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${loc.id}" data-nombre="${loc.name}">
-                                <i class="fas fa-trash-alt"></i>
+                                <i data-feather="trash-2" class="feather-icon"></i>
                             </button>
                         </div>
                     </td>
@@ -138,17 +138,17 @@ export default defineComponent({
                             <div class="d-flex gap-1">
                                 ${loc.children?.length
                                     ? `<button class="btn btn-sm btn-outline-primary btn-toggle" data-id="${loc.id}">
-                                           <i class="fas ${expandedIds.has(loc.id) ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+                                           <i data-feather="${expandedIds.has(loc.id) ? 'chevron-up' : 'chevron-down'}" class="feather-icon"></i>
                                        </button>`
                                     : ''}
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                     data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                    <i class="fas fa-pencil-alt"></i>
+                                    <i data-feather="edit-2" class="feather-icon"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${loc.id}" data-nombre="${loc.name}">
-                                    <i class="fas fa-trash-alt"></i>
+                                    <i data-feather="trash-2" class="feather-icon"></i>
                                 </button>
                             </div>
                         </div>
@@ -158,6 +158,7 @@ export default defineComponent({
             document.getElementById('info-resultados').textContent = `${flat.length} localización${flat.length !== 1 ? 'es' : ''} visible${flat.length !== 1 ? 's' : ''}`;
             document.getElementById('paginacion').innerHTML = '';
             mostrarEstado('tabla');
+            if (window.feather) feather.replace();
         }
 
         async function cargarArbol() {
@@ -201,11 +202,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                 data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                <i class="fas fa-pencil-alt"></i>
+                                <i data-feather="edit-2" class="feather-icon"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${loc.id}" data-nombre="${loc.name}">
-                                <i class="fas fa-trash-alt"></i>
+                                <i data-feather="trash-2" class="feather-icon"></i>
                             </button>
                         </div>
                     </td>
@@ -224,11 +225,11 @@ export default defineComponent({
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                     data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                    <i class="fas fa-pencil-alt"></i>
+                                    <i data-feather="edit-2" class="feather-icon"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${loc.id}" data-nombre="${loc.name}">
-                                    <i class="fas fa-trash-alt"></i>
+                                    <i data-feather="trash-2" class="feather-icon"></i>
                                 </button>
                             </div>
                         </div>
@@ -240,6 +241,7 @@ export default defineComponent({
             document.getElementById('info-resultados').textContent = `Mostrando ${desde}–${hasta} de ${total}`;
             renderPaginacion(document.getElementById('paginacion'), paginaActual, totalPaginas, buscar);
             mostrarEstado('tabla');
+            if (window.feather) feather.replace();
         }
 
         async function buscar(pagina = 1) {
@@ -294,6 +296,14 @@ export default defineComponent({
                 });
         }
 
+        function limpiarModal() {
+            document.getElementById('loc-id').value = '';
+            document.getElementById('loc-nombre').value = '';
+            document.getElementById('loc-codigo').value = '';
+            document.getElementById('loc-nivel').value = '';
+            document.getElementById('form-loc').classList.remove('was-validated');
+        }
+
         // ─── Events ───────────────────────────────────────────────────────────
 
         // Expand/collapse toggle (delegated on tbody — fires before edit/delete)
@@ -316,20 +326,71 @@ export default defineComponent({
                 }
 
                 if (editar) {
-                    router.navigate('/localizaciones/crear?id=' + editar.dataset.id);
-                    return;
+                    document.getElementById('modal-loc-titulo').textContent = 'Editar Localización';
+                    document.getElementById('loc-id').value = editar.dataset.id;
+                    document.getElementById('loc-nombre').value = editar.dataset.nombre;
+                    document.getElementById('loc-codigo').value = editar.dataset.codigo;
+                    document.getElementById('loc-nivel').value = editar.dataset.nivel;
+                    document.getElementById('form-loc').classList.remove('was-validated');
+                    await cargarPadres(editar.dataset.id);
+                    document.getElementById('loc-padre').value = editar.dataset.padre ?? '';
+                    modal().show();
+                    if (window.feather) feather.replace();
                 }
 
                 if (eliminar) {
                     idEliminar = eliminar.dataset.id;
                     document.getElementById('modal-eliminar-nombre').textContent = eliminar.dataset.nombre;
                     new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+                    if (window.feather) feather.replace();
                 }
             });
         }
 
         delegarClicks(document.getElementById('tabla-body'));
         delegarClicks(document.getElementById('contenedor-cards'));
+
+        document.getElementById('btn-nueva-loc').addEventListener('click', async () => {
+            document.getElementById('modal-loc-titulo').textContent = 'Nueva Localización';
+            limpiarModal();
+            await cargarPadres();
+            modal().show();
+            if (window.feather) feather.replace();
+        });
+
+        document.getElementById('form-loc').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
+
+            const id = document.getElementById('loc-id').value;
+            const padreVal = document.getElementById('loc-padre').value;
+            const payload = {
+                name:      document.getElementById('loc-nombre').value.trim(),
+                code:      document.getElementById('loc-codigo').value.trim(),
+                level:     document.getElementById('loc-nivel').value,
+                parent_id: padreVal ? parseInt(padreVal) : null,
+            };
+
+            document.getElementById('loc-btn-texto').classList.add('d-none');
+            document.getElementById('loc-btn-loading').classList.remove('d-none');
+            document.getElementById('btn-guardar-loc').disabled = true;
+
+            try {
+                id ? await http.put('/locations/' + id, payload)
+                   : await http.post('/locations', payload);
+                modal().hide();
+                todasLasLocs = [];
+                treeRoots = null; // invalidate tree cache
+                mostrarToast(id ? 'Localización actualizada.' : 'Localización creada.', 'success');
+                cargar();
+            } catch (err) {
+                mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
+            } finally {
+                document.getElementById('loc-btn-texto').classList.remove('d-none');
+                document.getElementById('loc-btn-loading').classList.add('d-none');
+                document.getElementById('btn-guardar-loc').disabled = false;
+            }
+        });
 
         document.getElementById('btn-confirmar-eliminar').addEventListener('click', async function () {
             if (!idEliminar) return;
@@ -356,17 +417,14 @@ export default defineComponent({
         document.getElementById('filtro-buscar').addEventListener('keydown', e => { if (e.key === 'Enter') cargar(); });
         document.getElementById('btn-limpiar').addEventListener('click', () => {
             document.getElementById('filtro-buscar').value = '';
-            clearSelect('filtro-nivel');
+            document.getElementById('filtro-nivel').value = '';
             cargar();
         });
         document.getElementById('btn-reintentar').addEventListener('click', cargar);
 
-
-        // ─── Tom Select en filtros ─────────────────────────────────────────
-        initSelect('filtro-nivel', { placeholder: 'Filtrar por nivel...' });
-
+        if (window.feather) feather.replace();
         cargar();
     },
 
-    onDestroy() { destroyAll(); }
+    onDestroy() {}
 });

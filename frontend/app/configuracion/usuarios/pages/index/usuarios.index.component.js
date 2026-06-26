@@ -1,8 +1,6 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
-import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
-import { initSelect, clearSelect, destroyAll } from '../../../../shared/select-search.js';
 
 const POR_PAGINA = 15;
 
@@ -14,6 +12,8 @@ export default defineComponent({
         let totalPaginas = 1;
         let idEliminar = null;
         let roles = [];
+        let esEdicion = false;
+        const modal = () => bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-user-form'));
 
         function mostrarToast(mensaje, tipo) {
             const el = document.getElementById('toast-msg');
@@ -27,6 +27,7 @@ export default defineComponent({
                 const el = document.getElementById(s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s);
                 if (el) el.classList.toggle('d-none', s !== cual);
             });
+            if (window.feather) feather.replace();
         }
 
         function iniciales(user) {
@@ -56,11 +57,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
                                 data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
-                                <i class="fas fa-pencil-alt"></i>
+                                <i data-feather="edit-2" class="feather-icon"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                <i class="fas fa-trash-alt"></i>
+                                <i data-feather="trash-2" class="feather-icon"></i>
                             </button>
                         </div>
                     </td>
@@ -83,11 +84,11 @@ export default defineComponent({
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
                                     data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
-                                    <i class="fas fa-pencil-alt"></i>
+                                    <i data-feather="edit-2" class="feather-icon"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                    <i class="fas fa-trash-alt"></i>
+                                    <i data-feather="trash-2" class="feather-icon"></i>
                                 </button>
                             </div>
                         </div>
@@ -99,6 +100,7 @@ export default defineComponent({
             document.getElementById('info-resultados').textContent = `Mostrando ${desde}–${hasta} de ${total}`;
             renderPaginacion(document.getElementById('paginacion'), paginaActual, totalPaginas, cargar);
             mostrarEstado('tabla');
+            if (window.feather) feather.replace();
         }
 
         async function cargar(pagina = 1) {
@@ -125,28 +127,114 @@ export default defineComponent({
             if (roles.length) return;
             const resp = await http.get('/roles?per_page=100');
             roles = resp.data ?? resp;
-            const sel = document.getElementById('filtro-rol');
-            sel.innerHTML = '<option value="">Todos los roles</option>';
-            roles.forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.id;
-                opt.textContent = r.name;
-                sel.appendChild(opt);
+            [document.getElementById('user-rol'), document.getElementById('filtro-rol')].forEach(sel => {
+                const esFiltro = sel.id === 'filtro-rol';
+                if (esFiltro) sel.innerHTML = '<option value="">Todos los roles</option>';
+                else sel.innerHTML = '<option value="">-- Seleccione --</option>';
+                roles.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.id;
+                    opt.textContent = r.name;
+                    sel.appendChild(opt);
+                });
             });
         }
+
+        function configurarPassword(edicion) {
+            esEdicion = edicion;
+            const passEl = document.getElementById('user-password');
+            const hint = document.getElementById('pass-hint');
+            const req = document.getElementById('pass-requerido');
+            if (edicion) {
+                passEl.removeAttribute('required');
+                passEl.placeholder = 'Dejar vacío para no cambiar';
+                hint.textContent = 'Solo completar si desea cambiar la contraseña.';
+                req.classList.add('d-none');
+            } else {
+                passEl.setAttribute('required', '');
+                passEl.placeholder = '';
+                hint.textContent = 'Mínimo 8 caracteres.';
+                req.classList.remove('d-none');
+            }
+        }
+
+        document.getElementById('btn-nuevo-usuario').addEventListener('click', async () => {
+            document.getElementById('modal-user-titulo').textContent = 'Nuevo Usuario';
+            document.getElementById('user-id').value = '';
+            document.getElementById('user-nombre').value = '';
+            document.getElementById('user-apellido').value = '';
+            document.getElementById('user-email').value = '';
+            document.getElementById('user-password').value = '';
+            document.getElementById('user-telefono').value = '';
+            document.getElementById('user-rol').value = '';
+            document.getElementById('form-user').classList.remove('was-validated');
+            configurarPassword(false);
+            await cargarRoles();
+            modal().show();
+            if (window.feather) feather.replace();
+        });
+
+        document.getElementById('form-user').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            if (!this.checkValidity()) { this.classList.add('was-validated'); return; }
+
+            const id = document.getElementById('user-id').value;
+            const password = document.getElementById('user-password').value;
+            const payload = {
+                first_name: document.getElementById('user-nombre').value.trim(),
+                last_name: document.getElementById('user-apellido').value.trim(),
+                email: document.getElementById('user-email').value.trim(),
+                role_id: parseInt(document.getElementById('user-rol').value),
+                phone: document.getElementById('user-telefono').value.trim() || null,
+            };
+            if (!id || password) payload.password = password;
+
+            document.getElementById('user-btn-texto').classList.add('d-none');
+            document.getElementById('user-btn-loading').classList.remove('d-none');
+            document.getElementById('btn-guardar-user').disabled = true;
+
+            try {
+                if (id) {
+                    await http.put('/users/' + id, payload);
+                } else {
+                    await http.post('/users', payload);
+                }
+                modal().hide();
+                mostrarToast(id ? 'Usuario actualizado.' : 'Usuario creado.', 'success');
+                cargar(paginaActual);
+            } catch (err) {
+                mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
+            } finally {
+                document.getElementById('user-btn-texto').classList.remove('d-none');
+                document.getElementById('user-btn-loading').classList.add('d-none');
+                document.getElementById('btn-guardar-user').disabled = false;
+            }
+        });
 
         function delegarClicks(contenedor) {
             contenedor.addEventListener('click', async e => {
                 const editar = e.target.closest('.btn-editar');
                 const eliminar = e.target.closest('.btn-eliminar');
                 if (editar) {
-                    router.navigate('/usuarios/crear?id=' + editar.dataset.id);
-                    return;
+                    document.getElementById('modal-user-titulo').textContent = 'Editar Usuario';
+                    document.getElementById('user-id').value = editar.dataset.id;
+                    document.getElementById('user-nombre').value = editar.dataset.nombre;
+                    document.getElementById('user-apellido').value = editar.dataset.apellido;
+                    document.getElementById('user-email').value = editar.dataset.email;
+                    document.getElementById('user-telefono').value = editar.dataset.telefono;
+                    document.getElementById('user-password').value = '';
+                    document.getElementById('form-user').classList.remove('was-validated');
+                    configurarPassword(true);
+                    await cargarRoles();
+                    document.getElementById('user-rol').value = editar.dataset.rol;
+                    modal().show();
+                    if (window.feather) feather.replace();
                 }
                 if (eliminar) {
                     idEliminar = eliminar.dataset.id;
                     document.getElementById('modal-eliminar-nombre').textContent = eliminar.dataset.nombre;
                     new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+                    if (window.feather) feather.replace();
                 }
             });
         }
@@ -177,18 +265,15 @@ export default defineComponent({
         document.getElementById('filtro-buscar').addEventListener('keydown', e => { if (e.key === 'Enter') cargar(1); });
         document.getElementById('btn-limpiar').addEventListener('click', () => {
             document.getElementById('filtro-buscar').value = '';
-            clearSelect('filtro-rol');
+            document.getElementById('filtro-rol').value = '';
             cargar(1);
         });
         document.getElementById('btn-reintentar').addEventListener('click', () => cargar(paginaActual));
 
-        await cargarRoles().catch(() => {});
-
-        // ─── Tom Select en filtros ─────────────────────────────────────────
-        initSelect('filtro-rol', { placeholder: 'Buscar rol...' });
-
+        cargarRoles().catch(() => {});
+        if (window.feather) feather.replace();
         cargar(1);
     },
 
-    onDestroy() { destroyAll(); }
+    onDestroy() {}
 });

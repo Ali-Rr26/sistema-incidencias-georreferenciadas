@@ -10,9 +10,9 @@
       </nav>
     </div>
     <div class="col-5 text-end">
-      <a href="#/localizaciones/crear" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i>Nueva
-      </a>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-nueva-loc">
+        <i data-feather="plus" class="feather-icon me-1"></i>Nueva
+      </button>
     </div>
   </div>
 </div>
@@ -36,10 +36,10 @@
         </div>
         <div class="col-md-4 d-flex gap-2">
           <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar">
-            <i class="fas fa-search me-1"></i>Buscar
+            <i data-feather="search" class="feather-icon me-1"></i>Buscar
           </button>
           <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar">
-            <i class="fas fa-times"></i>
+            <i data-feather="x" class="feather-icon"></i>
           </button>
         </div>
       </div>
@@ -53,11 +53,11 @@
         <p class="text-muted mt-2 mb-0">Cargando localizaciones...</p>
       </div>
       <div id="estado-vacio" class="text-center py-5 d-none">
-        <i class="fas fa-map text-muted" style="font-size:2.5rem;"></i>
+        <i data-feather="map" class="feather-icon text-muted" style="width:48px;height:48px;"></i>
         <p class="text-muted mt-3 mb-0">No se encontraron localizaciones.</p>
       </div>
       <div id="estado-error" class="text-center py-5 d-none">
-        <i class="fas fa-exclamation-circle text-danger" style="font-size:2.5rem;"></i>
+        <i data-feather="alert-circle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
         <p class="text-muted mt-3 mb-1">Error al cargar los datos.</p>
         <button class="btn btn-sm btn-outline-primary" id="btn-reintentar">Reintentar</button>
       </div>
@@ -85,6 +85,56 @@
   </div>
 </div>
 
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modal-loc-form" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-loc-titulo">Nueva Localización</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-loc" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="loc-id">
+          <div class="mb-3">
+            <label class="form-label">Nombre <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="loc-nombre" maxlength="50" required>
+            <div class="invalid-feedback">El nombre es obligatorio.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Código <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="loc-codigo" maxlength="20" required>
+            <div class="invalid-feedback">El código es obligatorio.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nivel <span class="text-danger">*</span></label>
+            <select class="form-select" id="loc-nivel" required>
+              <option value="">-- Seleccione --</option>
+              <option value="country">País</option>
+              <option value="province">Provincia</option>
+              <option value="city">Ciudad</option>
+              <option value="neighborhood">Barrio</option>
+            </select>
+            <div class="invalid-feedback">Seleccione un nivel.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Localización padre</label>
+            <select class="form-select" id="loc-padre">
+              <option value="">-- Ninguna (raíz) --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-guardar-loc">
+            <span id="loc-btn-texto">Guardar</span>
+            <span id="loc-btn-loading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Guardando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Eliminar -->
 <div class="modal fade" id="modal-eliminar" tabindex="-1">

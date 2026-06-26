@@ -10,9 +10,9 @@
       </nav>
     </div>
     <div class="col-5 text-end">
-      <a href="#/usuarios/crear" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i>Nuevo
-      </a>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-nuevo-usuario">
+        <i data-feather="plus" class="feather-icon me-1"></i>Nuevo
+      </button>
     </div>
   </div>
 </div>
@@ -31,10 +31,10 @@
         </div>
         <div class="col-md-3 d-flex gap-2">
           <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar">
-            <i class="fas fa-search me-1"></i>Buscar
+            <i data-feather="search" class="feather-icon me-1"></i>Buscar
           </button>
           <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar">
-            <i class="fas fa-times"></i>
+            <i data-feather="x" class="feather-icon"></i>
           </button>
         </div>
       </div>
@@ -48,11 +48,11 @@
         <p class="text-muted mt-2 mb-0">Cargando usuarios...</p>
       </div>
       <div id="estado-vacio" class="text-center py-5 d-none">
-        <i class="fas fa-users text-muted" style="font-size:2.5rem;"></i>
+        <i data-feather="users" class="feather-icon text-muted" style="width:48px;height:48px;"></i>
         <p class="text-muted mt-3 mb-0">No se encontraron usuarios.</p>
       </div>
       <div id="estado-error" class="text-center py-5 d-none">
-        <i class="fas fa-exclamation-circle text-danger" style="font-size:2.5rem;"></i>
+        <i data-feather="alert-circle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
         <p class="text-muted mt-3 mb-1">Error al cargar los datos.</p>
         <button class="btn btn-sm btn-outline-primary" id="btn-reintentar">Reintentar</button>
       </div>
@@ -82,6 +82,63 @@
   </div>
 </div>
 
+<!-- Modal Crear / Editar -->
+<div class="modal fade" id="modal-user-form" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-user-titulo">Nuevo Usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-user" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="user-id">
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="user-nombre" maxlength="100" required>
+              <div class="invalid-feedback">Obligatorio.</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Apellido <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="user-apellido" maxlength="100" required>
+              <div class="invalid-feedback">Obligatorio.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="user-email" required>
+              <div class="invalid-feedback">Email válido requerido.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Contraseña <span id="pass-requerido" class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="user-password" minlength="8">
+              <div class="form-text" id="pass-hint">Mínimo 8 caracteres.</div>
+              <div class="invalid-feedback">Mínimo 8 caracteres.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Rol <span class="text-danger">*</span></label>
+              <select class="form-select" id="user-rol" required>
+                <option value="">-- Seleccione --</option>
+              </select>
+              <div class="invalid-feedback">Seleccione un rol.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Teléfono</label>
+              <input type="text" class="form-control" id="user-telefono" maxlength="50">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btn-guardar-user">
+            <span id="user-btn-texto">Guardar</span>
+            <span id="user-btn-loading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Guardando...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Eliminar -->
 <div class="modal fade" id="modal-eliminar" tabindex="-1">
