@@ -11,7 +11,7 @@
     </div>
     <div class="col-5 text-end">
       <a href="#/incidencias/crear" class="btn btn-primary btn-sm">
-        <i data-feather="plus" class="feather-icon me-1"></i>Nueva Incidencia
+        <i class="fas fa-plus me-1"></i>Nueva Incidencia
       </a>
     </div>
   </div>
@@ -56,10 +56,10 @@
         </div>
         <div class="col-md-2 d-flex gap-2">
           <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar">
-            <i data-feather="search" class="feather-icon me-1"></i>Filtrar
+            <i class="fas fa-search me-1"></i>Filtrar
           </button>
           <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-limpiar" title="Limpiar filtros">
-            <i data-feather="x" class="feather-icon"></i>
+            <i class="fas fa-times"></i>
           </button>
         </div>
       </div>
@@ -75,13 +75,13 @@
       </div>
 
       <div id="estado-vacio" class="text-center py-5 d-none">
-        <i data-feather="inbox" class="feather-icon text-muted" style="width:48px;height:48px;"></i>
+        <i class="fas fa-inbox text-muted" style="font-size:2.5rem;"></i>
         <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
         <a href="#/incidencias/crear" class="btn btn-primary btn-sm mt-1">Registrar la primera</a>
       </div>
 
       <div id="estado-error" class="text-center py-5 d-none">
-        <i data-feather="alert-triangle" class="feather-icon text-danger" style="width:48px;height:48px;"></i>
+        <i class="fas fa-exclamation-triangle text-danger" style="font-size:2.5rem;"></i>
         <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
         <button type="button" class="btn btn-outline-primary btn-sm mt-1" id="btn-reintentar">Reintentar</button>
       </div>
@@ -121,7 +121,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title text-danger"><i data-feather="trash-2" class="feather-icon me-2"></i>Eliminar incidencia</h5>
+        <h5 class="modal-title text-danger"><i class="fas fa-trash-alt me-2"></i>Eliminar incidencia</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">

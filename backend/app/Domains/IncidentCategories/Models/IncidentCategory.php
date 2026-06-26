@@ -7,6 +7,7 @@ namespace App\Domains\IncidentCategories\Models;
 use App\Domains\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -16,13 +17,12 @@ class IncidentCategory extends Model
 
     protected $fillable = [
         'name',
-        'organization_id',
         'parent_id',
     ];
 
-    public function organization(): BelongsTo
+    public function organizations(): BelongsToMany
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsToMany(Organization::class, 'category_organization');
     }
 
     public function parent(): BelongsTo

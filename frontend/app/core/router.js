@@ -44,12 +44,17 @@ class Router {
   }
 
   async resolve() {
-    const path = window.location.hash.slice(1) || '/';
+    const fullPath = window.location.hash.slice(1) || '/';
 
-    if (path === '/') {
+    if (fullPath === '/') {
       this.navigate('/login');
       return;
     }
+
+    // Split query params from path for matching
+    const qsIndex = fullPath.indexOf('?');
+    const path = qsIndex >= 0 ? fullPath.substring(0, qsIndex) : fullPath;
+    this.queryParams = qsIndex >= 0 ? new URLSearchParams(fullPath.substring(qsIndex + 1)) : new URLSearchParams();
 
     const route = this.routes.find(r => r.pattern === path);
     if (!route) {

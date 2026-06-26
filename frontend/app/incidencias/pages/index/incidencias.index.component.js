@@ -1,6 +1,7 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
+import { initSelect, clearSelect, destroyAll } from '../../../shared/select-search.js';
 
 const POR_PAGINA = 10;
 
@@ -39,7 +40,6 @@ export default defineComponent({
         const el = document.getElementById(s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s);
         if (el) el.classList.toggle('d-none', s !== cual);
       });
-      if (window.feather) feather.replace();
     }
 
     function mostrarToast(mensaje, tipo) {
@@ -71,11 +71,11 @@ export default defineComponent({
           <td class="text-center">
             <div class="d-flex justify-content-center gap-1">
               <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                <i data-feather="eye" class="feather-icon"></i>
+                <i class="fas fa-eye"></i>
               </a>
               <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
                 data-id="${inc.id}" data-titulo="${inc.titulo}" title="Eliminar">
-                <i data-feather="trash-2" class="feather-icon"></i>
+                <i class="fas fa-trash-alt"></i>
               </button>
             </div>
           </td>
@@ -95,23 +95,23 @@ export default defineComponent({
               ${desc ? `<p class="text-muted mb-2" style="font-size:.8rem;">${desc}</p>` : ''}
               <div class="d-flex flex-wrap gap-2 mb-2">
                 <span class="badge bg-light text-dark border" style="font-size:.75rem;">
-                  <i data-feather="tag" class="feather-icon" style="width:11px;height:11px;"></i>
+                  <i class="fas fa-tag" style="font-size:0.7rem;"></i>
                   ${inc.tipo || '—'}${inc.subtipo ? ' / ' + inc.subtipo : ''}
                 </span>
                 ${badgeEstado(inc.estado)}
               </div>
               <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">
-                  <i data-feather="calendar" class="feather-icon" style="width:12px;height:12px;"></i>
+                  <i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i>
                   ${formatearFecha(inc.created_at)}
                 </small>
                 <div class="d-flex gap-1">
                   <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                    <i data-feather="eye" class="feather-icon"></i>
+                    <i class="fas fa-eye"></i>
                   </a>
                   <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
                     data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
-                    <i data-feather="trash-2" class="feather-icon"></i>
+                    <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
               </div>
@@ -125,7 +125,6 @@ export default defineComponent({
 
       renderPaginacion(document.getElementById('paginacion'), paginaActual, totalPaginas, cargarIncidencias);
       mostrarEstado('tabla');
-      if (window.feather) feather.replace();
     }
 
     async function cargarIncidencias(pagina) {
@@ -159,7 +158,6 @@ export default defineComponent({
       idEliminar = btn.dataset.id;
       document.getElementById('modal-eliminar-titulo').textContent = btn.dataset.titulo;
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-      if (window.feather) feather.replace();
     }
 
     document.getElementById('tabla-body').addEventListener('click', abrirModalEliminar);
@@ -190,16 +188,21 @@ export default defineComponent({
     document.getElementById('filtro-buscar').addEventListener('keydown', e => { if (e.key === 'Enter') cargarIncidencias(1); });
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-buscar').value = '';
-      document.getElementById('filtro-prioridad').value = '';
-      document.getElementById('filtro-tipo').value = '';
-      document.getElementById('filtro-estado').value = '';
+      clearSelect('filtro-prioridad');
+      clearSelect('filtro-tipo');
+      clearSelect('filtro-estado');
       cargarIncidencias(1);
     });
     document.getElementById('btn-reintentar').addEventListener('click', () => cargarIncidencias(paginaActual));
 
-    if (window.feather) feather.replace();
+
+    // ─── Tom Select en filtros ─────────────────────────────────────────
+    initSelect('filtro-prioridad', { placeholder: 'Buscar prioridad...' });
+    initSelect('filtro-tipo', { placeholder: 'Buscar tipo...' });
+    initSelect('filtro-estado', { placeholder: 'Buscar estado...' });
+
     cargarIncidencias(1);
   },
 
-  onDestroy() {}
+  onDestroy() { destroyAll(); }
 });

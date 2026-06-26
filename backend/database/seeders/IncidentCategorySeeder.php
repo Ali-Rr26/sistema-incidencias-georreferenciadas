@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 class IncidentCategorySeeder extends Seeder
 {
     /**
-     * Category tree applied to every organization.
+     * Category tree applied globally, then assigned to all organizations.
      * Structure: [ parent_name => [child_name, ...] ]
      */
     private const CATEGORY_TREE = [
@@ -53,30 +53,25 @@ class IncidentCategorySeeder extends Seeder
             return;
         }
 
-        foreach ($organizations as $organization) {
-            $this->command?->info("Seeding categories for [{$organization->name}]...");
+        $this->command?->info('Creating global categories...');
 
-            foreach (self::CATEGORY_TREE as $parentName => $children) {
-                $parent = IncidentCategory::updateOrCreate(
-                    [
-                        'organization_id' => $organization->id,
-                        'name'            => $parentName,
-                        'parent_id'       => null,
-                    ],
-                    [],
+        foreach (self::CATEGORY_TREE as $parentName => $children) {
+            $parent = IncidentCategory::firstOrCreate(
+                ['name' => $parentName, 'parent_id' => null],
+            );
+
+            foreach ($children as $childName) {
+                IncidentCategory::firstOrCreate(
+                    ['name' => $childName, 'parent_id' => $parent->id],
                 );
-
-                foreach ($children as $childName) {
-                    IncidentCategory::updateOrCreate(
-                        [
-                            'organization_id' => $organization->id,
-                            'name'            => $childName,
-                            'parent_id'       => $parent->id,
-                        ],
-                        [],
-                    );
-                }
             }
+        }
+
+        $this->command?->info('Assigning categories to all organizations...');
+
+        $allCategoryIds = IncidentCategory::pluck('id');
+        foreach ($organizations as $organization) {
+            $organization->incidentCategories()->syncWithoutDetaching($allCategoryIds);
         }
     }
 }

@@ -104,7 +104,7 @@ export default defineComponent({
                     <td style="padding-left:${10 + indent}px">
                         ${hasChildren
                             ? `<button class="btn btn-link btn-sm p-0 me-1 btn-toggle text-muted" data-id="${loc.id}">
-                                   <i data-feather="${isExpanded ? 'chevron-down' : 'chevron-right'}" class="feather-icon"></i>
+                                   <i class="fas ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
                                </button>`
                             : `<span style="display:inline-block;width:20px;margin-right:4px"></span>`}
                         ${loc.name}
@@ -116,11 +116,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                 data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                <i data-feather="edit-2" class="feather-icon"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${loc.id}" data-nombre="${loc.name}">
-                                <i data-feather="trash-2" class="feather-icon"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -138,17 +138,17 @@ export default defineComponent({
                             <div class="d-flex gap-1">
                                 ${loc.children?.length
                                     ? `<button class="btn btn-sm btn-outline-primary btn-toggle" data-id="${loc.id}">
-                                           <i data-feather="${expandedIds.has(loc.id) ? 'chevron-up' : 'chevron-down'}" class="feather-icon"></i>
+                                           <i class="fas ${expandedIds.has(loc.id) ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
                                        </button>`
                                     : ''}
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                     data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                    <i data-feather="edit-2" class="feather-icon"></i>
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${loc.id}" data-nombre="${loc.name}">
-                                    <i data-feather="trash-2" class="feather-icon"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>
@@ -202,11 +202,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                 data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                <i data-feather="edit-2" class="feather-icon"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${loc.id}" data-nombre="${loc.name}">
-                                <i data-feather="trash-2" class="feather-icon"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -225,11 +225,11 @@ export default defineComponent({
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${loc.id}" data-nombre="${loc.name}" data-codigo="${loc.code ?? ''}"
                                     data-nivel="${loc.level}" data-padre="${loc.parent_id ?? ''}">
-                                    <i data-feather="edit-2" class="feather-icon"></i>
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${loc.id}" data-nombre="${loc.name}">
-                                    <i data-feather="trash-2" class="feather-icon"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>

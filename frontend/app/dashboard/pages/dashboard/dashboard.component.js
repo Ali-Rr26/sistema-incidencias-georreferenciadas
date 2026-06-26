@@ -170,7 +170,6 @@ export default defineComponent({
       buildActivityFeed(items);
     } catch { /* mantener estado vacío */ }
 
-    if (window.feather) feather.replace();
   },
 
   onDestroy() {}

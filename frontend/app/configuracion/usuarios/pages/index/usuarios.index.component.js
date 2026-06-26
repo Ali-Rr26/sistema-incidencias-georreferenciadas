@@ -57,11 +57,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
                                 data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
-                                <i data-feather="edit-2" class="feather-icon"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                <i data-feather="trash-2" class="feather-icon"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -84,11 +84,11 @@ export default defineComponent({
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
                                     data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
-                                    <i data-feather="edit-2" class="feather-icon"></i>
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                    <i data-feather="trash-2" class="feather-icon"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>

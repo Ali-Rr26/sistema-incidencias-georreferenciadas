@@ -72,14 +72,12 @@ export default defineComponent({
           mapa.setView([lat, lng], 16);
           colocarMarcador(lat, lng);
           btn.disabled = false;
-          btn.innerHTML = '<i data-feather="navigation" class="feather-icon me-1"></i> Usar mi ubicación actual';
-          if (window.feather) feather.replace();
+          btn.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Usar mi ubicación actual';
         },
         () => {
           alert('No se pudo obtener la ubicación. Verifique los permisos del navegador.');
           btn.disabled = false;
-          btn.innerHTML = '<i data-feather="navigation" class="feather-icon me-1"></i> Usar mi ubicación actual';
-          if (window.feather) feather.replace();
+          btn.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Usar mi ubicación actual';
         }
       );
     });
@@ -184,7 +182,6 @@ export default defineComponent({
         await http.post('/incidencias', payload);
         const toastEl = document.getElementById('toast-exito');
         new bootstrap.Toast(toastEl, { delay: 2000 }).show();
-        if (window.feather) feather.replace();
         setTimeout(() => { window.location.hash = '#/incidencias'; }, 2000);
       } catch (err) {
         console.error('Error al guardar incidencia:', err);
@@ -196,7 +193,6 @@ export default defineComponent({
       }
     });
 
-    if (window.feather) feather.replace();
   },
 
   onDestroy() {}

@@ -33,7 +33,6 @@ export function initShell() {
   updateSidebarActiveState();
   window.addEventListener('hashchange', updateSidebarActiveState);
 
-  if (window.feather) window.feather.replace();
 }
 
 function updateSidebarActiveState() {
@@ -63,7 +62,6 @@ export function initPage() {
     }
   });
 
-  if (window.feather) window.feather.replace();
 }
 
 /** Backwards-compat alias used by any code that still imports initLayout. */
