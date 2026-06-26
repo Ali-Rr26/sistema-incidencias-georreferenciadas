@@ -47,18 +47,6 @@ function updateSidebarActiveState() {
   });
 }
 
-function updateSidebarActiveState() {
-  const hash = window.location.hash || '#/dashboard';
-
-  document.querySelectorAll('#sidebarnav .sidebar-item').forEach(li => {
-    const a = li.querySelector(':scope > a.sidebar-link');
-    if (!a) return;
-    const href = a.getAttribute('href') || '';
-    const isActive = href && href !== 'javascript:void(0)' && hash === href;
-    li.classList.toggle('selected', isActive);
-  });
-}
-
 export function initPage() {
   document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
     if (typeof bootstrap !== 'undefined') {

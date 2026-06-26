@@ -44,11 +44,11 @@ export default defineComponent({
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${cat.id}" data-nombre="${cat.name}"
                                 data-org="${cat.organization_id ?? ''}" data-padre="${cat.parent_id ?? ''}">
-                                <i data-feather="edit-2" class="feather-icon"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${cat.id}" data-nombre="${cat.name}">
-                                <i data-feather="trash-2" class="feather-icon"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -67,11 +67,11 @@ export default defineComponent({
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${cat.id}" data-nombre="${cat.name}"
                                     data-org="${cat.organization_id ?? ''}" data-padre="${cat.parent_id ?? ''}">
-                                    <i data-feather="edit-2" class="feather-icon"></i>
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${cat.id}" data-nombre="${cat.name}">
-                                    <i data-feather="trash-2" class="feather-icon"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>

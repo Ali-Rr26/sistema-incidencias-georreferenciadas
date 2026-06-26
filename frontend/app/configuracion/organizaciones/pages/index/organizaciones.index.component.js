@@ -47,11 +47,11 @@ export default defineComponent({
                         <div class="d-flex justify-content-center gap-1">
                             <button class="btn btn-sm btn-outline-secondary btn-editar"
                                 data-id="${org.id}" data-nombre="${org.name}" data-location="${org.location_id}">
-                                <i data-feather="edit-2" class="feather-icon"></i>
+                                <i class="fas fa-pencil-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                 data-id="${org.id}" data-nombre="${org.name}">
-                                <i data-feather="trash-2" class="feather-icon"></i>
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -69,11 +69,11 @@ export default defineComponent({
                             <div class="d-flex gap-1">
                                 <button class="btn btn-sm btn-outline-secondary btn-editar"
                                     data-id="${org.id}" data-nombre="${org.name}" data-location="${org.location_id}">
-                                    <i data-feather="edit-2" class="feather-icon"></i>
+                                    <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
                                     data-id="${org.id}" data-nombre="${org.name}">
-                                    <i data-feather="trash-2" class="feather-icon"></i>
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </div>
