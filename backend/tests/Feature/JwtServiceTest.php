@@ -10,10 +10,9 @@ use App\Domains\Auth\Services\JwtService;
  * These tests verify that access and refresh tokens can be issued and validated,
  * and that tampered or expired tokens are rejected.
  */
-
 beforeEach(function (): void {
     // JWT_SECRET is set in phpunit.xml
-    $this->service = new JwtService();
+    $this->service = new JwtService;
 });
 
 it('issues and validates an access token', function (): void {

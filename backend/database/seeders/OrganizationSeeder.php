@@ -54,6 +54,7 @@ class OrganizationSeeder extends Seeder
 
             if ($location === null) {
                 $this->command?->warn("Location [{$locationCode}] not found — skipping [{$config['name']}].");
+
                 continue;
             }
 
@@ -68,6 +69,7 @@ class OrganizationSeeder extends Seeder
                 $branchLocation = Location::where('code', $branchLocationCode)->first();
                 if ($branchLocation === null) {
                     $this->command?->warn("Location [{$branchLocationCode}] not found — skipping branch [{$branchName}].");
+
                     continue;
                 }
 

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\IncidentCategories\Http;
 
-use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\IncidentCategories\Http\Requests\StoreIncidentCategoryRequest;
 use App\Domains\IncidentCategories\Http\Requests\UpdateIncidentCategoryRequest;
 use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryCollection;
 use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryResource;
+use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

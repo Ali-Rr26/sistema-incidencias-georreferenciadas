@@ -12,14 +12,17 @@ class UpdateIncidentCategoryRequest extends FormRequest
     public function authorize(): bool
     {
         $category = IncidentCategory::find($this->route('incident_category'));
-        if ($category === null) return false;
+        if ($category === null) {
+            return false;
+        }
+
         return $this->user()?->can('update', $category) ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'name'      => 'sometimes|string|max:100',
+            'name' => 'sometimes|string|max:100',
             'parent_id' => 'nullable|integer|exists:incident_categories,id',
         ];
     }

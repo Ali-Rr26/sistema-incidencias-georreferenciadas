@@ -16,15 +16,19 @@ use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
 
 class Incident extends Model
 {
-    use SoftDeletes, HasSpatial;
+    use HasSpatial, SoftDeletes;
 
-    public const STATUS_PENDING     = 'pending';
+    public const STATUS_PENDING = 'pending';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
-    public const STATUS_RESOLVED    = 'resolved';
 
-    public const PRIORITY_LOW    = 'low';
+    public const STATUS_RESOLVED = 'resolved';
+
+    public const PRIORITY_LOW = 'low';
+
     public const PRIORITY_MEDIUM = 'medium';
-    public const PRIORITY_HIGH   = 'high';
+
+    public const PRIORITY_HIGH = 'high';
 
     protected $fillable = [
         'incident_category_id',
@@ -44,7 +48,7 @@ class Incident extends Model
     protected function casts(): array
     {
         return [
-            'geom'            => Point::class,
+            'geom' => Point::class,
             'resolution_date' => 'datetime',
         ];
     }

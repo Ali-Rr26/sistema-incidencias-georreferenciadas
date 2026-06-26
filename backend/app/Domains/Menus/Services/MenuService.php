@@ -64,12 +64,12 @@ class MenuService
         $map = [];
         foreach ($menus as $menu) {
             $map[$menu->menu_id] = [
-                'id'        => $menu->menu_id,
+                'id' => $menu->menu_id,
                 'parent_id' => $menu->parent_id,
-                'name'      => $menu->name,
-                'route'     => $menu->route,
-                'icon'      => $menu->icon,
-                'children'  => [],
+                'name' => $menu->name,
+                'route' => $menu->route,
+                'icon' => $menu->icon,
+                'children' => [],
             ];
         }
 

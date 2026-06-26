@@ -15,7 +15,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
 {
     public function __construct()
     {
-        parent::__construct(new Organization());
+        parent::__construct(new Organization);
     }
 
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator

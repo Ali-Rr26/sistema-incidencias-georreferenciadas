@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Locations\Http;
 
-use App\Domains\Locations\Models\Location;
-use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Locations\Http\Requests\StoreLocationRequest;
 use App\Domains\Locations\Http\Requests\UpdateLocationRequest;
 use App\Domains\Locations\Http\Resources\LocationCollection;
 use App\Domains\Locations\Http\Resources\LocationResource;
+use App\Domains\Locations\Models\Location;
+use App\Domains\Locations\Repositories\LocationRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

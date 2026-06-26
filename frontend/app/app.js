@@ -19,20 +19,40 @@ import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.ind
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
 import feedComponent from './feed/feed.component.js';
 
-router.addRoute('/login',             loginComponent);
-router.addRoute('/feed',              feedComponent);
-router.addRoute('/dashboard',         dashboardComponent,        [authGuard], true);
-router.addRoute('/incidencias',       incidenciasIndexComponent, [authGuard], true);
-router.addRoute('/incidencias/crear', incidenciasFormComponent,  [authGuard], true);
-router.addRoute('/usuarios',          usuariosComponent,               [authGuard], true);
-router.addRoute('/usuarios/crear',    usuariosFormComponent,           [authGuard], true);
-router.addRoute('/organizaciones',    organizacionesComponent,         [authGuard], true);
-router.addRoute('/organizaciones/crear', organizacionesFormComponent,  [authGuard], true);
-router.addRoute('/localizaciones',    localizacionesComponent,         [authGuard], true);
-router.addRoute('/localizaciones/crear', localizacionesFormComponent,  [authGuard], true);
-router.addRoute('/categorias',        categoriasComponent,             [authGuard], true);
-router.addRoute('/categorias/crear',  categoriasFormComponent,         [authGuard], true);
-router.addRoute('/not-found',         notFoundComponent,         [authGuard], true);
+router.addRoute('/login', loginComponent);
+router.addRoute('/feed', feedComponent);
+router.addRoute('/dashboard', dashboardComponent, [authGuard], true);
+router.addRoute('/incidencias', incidenciasIndexComponent, [authGuard], true);
+router.addRoute(
+  '/incidencias/crear',
+  incidenciasFormComponent,
+  [authGuard],
+  true,
+);
+router.addRoute('/usuarios', usuariosComponent, [authGuard], true);
+router.addRoute('/usuarios/crear', usuariosFormComponent, [authGuard], true);
+router.addRoute('/organizaciones', organizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/organizaciones/crear',
+  organizacionesFormComponent,
+  [authGuard],
+  true,
+);
+router.addRoute('/localizaciones', localizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/localizaciones/crear',
+  localizacionesFormComponent,
+  [authGuard],
+  true,
+);
+router.addRoute('/categorias', categoriasComponent, [authGuard], true);
+router.addRoute(
+  '/categorias/crear',
+  categoriasFormComponent,
+  [authGuard],
+  true,
+);
+router.addRoute('/not-found', notFoundComponent, [authGuard], true);
 
 router.setShellInitFn(shellInitFn);
 

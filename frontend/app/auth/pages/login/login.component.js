@@ -36,13 +36,15 @@ export default defineComponent({
 
       // Estado loading
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Ingresando...';
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Ingresando...';
 
       try {
         await auth.login(emailInput.value, passwordInput.value);
         window.location.hash = '#/dashboard';
       } catch (err) {
-        errorAlert.textContent = err.message || 'Error al iniciar sesión. Verificá tus credenciales.';
+        errorAlert.textContent =
+          err.message || 'Error al iniciar sesión. Verificá tus credenciales.';
         errorAlert.classList.remove('d-none');
       } finally {
         submitBtn.disabled = false;
@@ -53,5 +55,5 @@ export default defineComponent({
 
   onDestroy() {
     // Sin cleanup necesario por ahora
-  }
+  },
 });

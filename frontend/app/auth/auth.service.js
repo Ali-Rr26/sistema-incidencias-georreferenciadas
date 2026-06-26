@@ -5,7 +5,14 @@
  * - Refresh token stored in HttpOnly cookie (managed by backend)
  * - Logout sends session_id for revocation
  */
-import { http, setAccessToken, setSessionId, clearAuthState, getSessionId, getAccessToken } from '../core/http.service.js';
+import {
+  http,
+  setAccessToken,
+  setSessionId,
+  clearAuthState,
+  getSessionId,
+  getAccessToken,
+} from '../core/http.service.js';
 
 class AuthService {
   async login(email, password) {

@@ -78,10 +78,11 @@ class IncidentSeeder extends Seeder
         foreach (self::INCIDENTS as $spec) {
             $category = $categories->get($spec['category'])?->first();
             $location = $locations->get($spec['location']);
-            $user     = $users->get($spec['user']);
+            $user = $users->get($spec['user']);
 
-            if (!$category || !$location || !$user) {
+            if (! $category || ! $location || ! $user) {
                 $this->command?->warn("Skipping incident — missing: category=[{$spec['category']}] location=[{$spec['location']}] user=[{$spec['user']}]");
+
                 continue;
             }
 
@@ -93,15 +94,15 @@ class IncidentSeeder extends Seeder
 
             Incident::create([
                 'incident_category_id' => $category->id,
-                'user_id'              => $user->id,
-                'location_id'          => $location->id,
-                'status'               => $spec['status'],
-                'priority'             => $spec['priority'],
-                'resolution_date'      => $spec['resolution_date'],
-                'geom'                 => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
+                'user_id' => $user->id,
+                'location_id' => $location->id,
+                'status' => $spec['status'],
+                'priority' => $spec['priority'],
+                'resolution_date' => $spec['resolution_date'],
+                'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
             ]);
         }
 
-        $this->command?->info(count(self::INCIDENTS) . ' incidents seeded.');
+        $this->command?->info(count(self::INCIDENTS).' incidents seeded.');
     }
 }

@@ -12,7 +12,7 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
 {
     public function __construct()
     {
-        parent::__construct(new User());
+        parent::__construct(new User);
     }
 
     public function findByEmail(string $email): ?User
@@ -23,11 +23,11 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['role_id'] ?? null, fn(Builder $query, string $value) => $query->where('role_id', $value))
-            ->when($filters['search'] ?? null, fn(Builder $query, string $value) => $query->where(function(Builder $query) use($value) {
+            ->when($filters['role_id'] ?? null, fn (Builder $query, string $value) => $query->where('role_id', $value))
+            ->when($filters['search'] ?? null, fn (Builder $query, string $value) => $query->where(function (Builder $query) use ($value) {
                 $query->where('first_name', 'LIKE', "%{$value}%")
-                  ->orWhere('last_name', 'LIKE', "%{$value}%")
-                  ->orWhere('email', 'LIKE', "%{$value}%");
+                    ->orWhere('last_name', 'LIKE', "%{$value}%")
+                    ->orWhere('email', 'LIKE', "%{$value}%");
             }));
     }
 }

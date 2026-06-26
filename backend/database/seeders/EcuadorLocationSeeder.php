@@ -180,7 +180,7 @@ class EcuadorLocationSeeder extends Seeder
                         ['code' => 'EC-07-01-03', 'name' => 'El Retiro'],
                         ['code' => 'EC-07-01-04', 'name' => 'La Providencia'],
                         ['code' => 'EC-07-01-05', 'name' => 'Puerto Bolívar'],
-    ]],
+                    ]],
                     ['code' => 'EC-07-02', 'name' => 'Arenillas', 'parishes' => []],
                     ['code' => 'EC-07-03', 'name' => 'Atahualpa', 'parishes' => []],
                     ['code' => 'EC-07-04', 'name' => 'Balsas', 'parishes' => []],

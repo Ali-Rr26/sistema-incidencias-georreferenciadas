@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Domains\Locations\Models;
@@ -14,7 +15,7 @@ use Staudenmeir\LaravelAdjacencyList\Eloquent\HasRecursiveRelationships;
 
 class Location extends Model
 {
-    use SoftDeletes, HasSpatial, HasRecursiveRelationships;
+    use HasRecursiveRelationships, HasSpatial, SoftDeletes;
 
     protected $fillable = [
         'name',

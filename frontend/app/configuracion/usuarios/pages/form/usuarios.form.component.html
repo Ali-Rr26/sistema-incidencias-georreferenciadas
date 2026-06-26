@@ -1,12 +1,23 @@
 <div class="page-breadcrumb">
   <div class="row">
     <div class="col-7 align-self-center">
-      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1" id="form-titulo">Nuevo Usuario</h4>
+      <h4
+        class="page-title text-truncate text-dark font-weight-medium mb-1"
+        id="form-titulo"
+      >
+        Nuevo Usuario
+      </h4>
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb m-0 p-0">
-          <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="#/usuarios" class="text-muted">Usuarios</a></li>
-          <li class="breadcrumb-item text-muted active" id="breadcrumb-actual">Crear</li>
+          <li class="breadcrumb-item">
+            <a href="#/dashboard" class="text-muted">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#/usuarios" class="text-muted">Usuarios</a>
+          </li>
+          <li class="breadcrumb-item text-muted active" id="breadcrumb-actual">
+            Crear
+          </li>
         </ol>
       </nav>
     </div>
@@ -20,32 +31,56 @@
         <div class="card-body">
           <h5 class="card-title" id="card-titulo">Nuevo Usuario</h5>
           <h6 class="card-subtitle mb-4 text-muted">
-            Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+            Los campos marcados con <span class="text-danger">*</span> son
+            obligatorios.
           </h6>
 
           <form id="form-user" novalidate>
-            <input type="hidden" id="user-id">
+            <input type="hidden" id="user-id" />
 
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="user-nombre" class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-lg" id="user-nombre" maxlength="100" required
-                  placeholder="Ej: Juan">
+                <label for="user-nombre" class="form-label fw-bold"
+                  >Nombre <span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="user-nombre"
+                  maxlength="100"
+                  required
+                  placeholder="Ej: Juan"
+                />
                 <div class="invalid-feedback">Obligatorio.</div>
               </div>
               <div class="col-md-6 mb-3">
-                <label for="user-apellido" class="form-label fw-bold">Apellido <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-lg" id="user-apellido" maxlength="100" required
-                  placeholder="Ej: Pérez">
+                <label for="user-apellido" class="form-label fw-bold"
+                  >Apellido <span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="user-apellido"
+                  maxlength="100"
+                  required
+                  placeholder="Ej: Pérez"
+                />
                 <div class="invalid-feedback">Obligatorio.</div>
               </div>
             </div>
 
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="user-email" class="form-label fw-bold">Email <span class="text-danger">*</span></label>
-                <input type="email" class="form-control form-control-lg" id="user-email" required
-                  placeholder="Ej: juan@example.com">
+                <label for="user-email" class="form-label fw-bold"
+                  >Email <span class="text-danger">*</span></label
+                >
+                <input
+                  type="email"
+                  class="form-control form-control-lg"
+                  id="user-email"
+                  required
+                  placeholder="Ej: juan@example.com"
+                />
                 <div class="invalid-feedback">Email válido requerido.</div>
               </div>
             </div>
@@ -53,38 +88,66 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="user-password" class="form-label fw-bold">
-                  Contraseña <span id="pass-requerido" class="text-danger">*</span>
+                  Contraseña
+                  <span id="pass-requerido" class="text-danger">*</span>
                 </label>
-                <input type="password" class="form-control form-control-lg" id="user-password" minlength="8"
-                  placeholder="Mínimo 8 caracteres">
-                <div class="form-text">Mínimo 8 caracteres. Si se deja vacío al editar, no cambia.</div>
+                <input
+                  type="password"
+                  class="form-control form-control-lg"
+                  id="user-password"
+                  minlength="8"
+                  placeholder="Mínimo 8 caracteres"
+                />
+                <div class="form-text">
+                  Mínimo 8 caracteres. Si se deja vacío al editar, no cambia.
+                </div>
                 <div class="invalid-feedback">Mínimo 8 caracteres.</div>
               </div>
             </div>
 
             <div class="row">
               <div class="col-md-4 mb-3">
-                <label for="user-rol" class="form-label fw-bold">Rol <span class="text-danger">*</span></label>
-                <select class="form-select form-select-lg" id="user-rol" required>
+                <label for="user-rol" class="form-label fw-bold"
+                  >Rol <span class="text-danger">*</span></label
+                >
+                <select
+                  class="form-select form-select-lg"
+                  id="user-rol"
+                  required
+                >
                   <option value="">-- Seleccione --</option>
                 </select>
                 <div class="invalid-feedback">Seleccione un rol.</div>
               </div>
               <div class="col-md-4 mb-4">
-                <label for="user-telefono" class="form-label fw-bold">Teléfono</label>
-                <input type="text" class="form-control form-control-lg" id="user-telefono" maxlength="50"
-                  placeholder="Ej: +593 99 999 9999">
+                <label for="user-telefono" class="form-label fw-bold"
+                  >Teléfono</label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="user-telefono"
+                  maxlength="50"
+                  placeholder="Ej: +593 99 999 9999"
+                />
               </div>
             </div>
 
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary px-4" id="btn-guardar-user">
+              <button
+                type="submit"
+                class="btn btn-primary px-4"
+                id="btn-guardar-user"
+              >
                 <span id="user-btn-texto">Guardar</span>
                 <span id="user-btn-loading" class="d-none">
-                  <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+                  <span class="spinner-border spinner-border-sm me-1"></span
+                  >Guardando...
                 </span>
               </button>
-              <a href="#/usuarios" class="btn btn-outline-secondary px-4">Cancelar</a>
+              <a href="#/usuarios" class="btn btn-outline-secondary px-4"
+                >Cancelar</a
+              >
             </div>
           </form>
         </div>
@@ -93,11 +156,19 @@
   </div>
 </div>
 
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
-  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+  <div
+    id="toast-msg"
+    class="toast align-items-center text-white border-0"
+    role="alert"
+  >
     <div class="d-flex">
       <div class="toast-body" id="toast-msg-texto"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>

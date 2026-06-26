@@ -13,19 +13,18 @@ class UpdateUserRequest extends FormRequest
     {
         $targetUser = User::find($this->route('user'));
 
-        if($targetUser === null){
+        if ($targetUser === null) {
             return false;
         }
 
         return $this->user()?->can('update', $targetUser) ?? false;
     }
 
-
     public function rules(): array
     {
         $userId = $this->route('user');
 
-        return[
+        return [
             'email' => "sometimes|email|unique:users,email,{$userId}",
             'password' => 'sometimes|string|min:8',
             'role_id' => 'sometimes|integer|exists:roles,id',
@@ -38,7 +37,7 @@ class UpdateUserRequest extends FormRequest
 
     public function messages(): array
     {
-        return[
+        return [
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',

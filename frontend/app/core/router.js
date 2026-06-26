@@ -54,9 +54,12 @@ class Router {
     // Split query params from path for matching
     const qsIndex = fullPath.indexOf('?');
     const path = qsIndex >= 0 ? fullPath.substring(0, qsIndex) : fullPath;
-    this.queryParams = qsIndex >= 0 ? new URLSearchParams(fullPath.substring(qsIndex + 1)) : new URLSearchParams();
+    this.queryParams =
+      qsIndex >= 0
+        ? new URLSearchParams(fullPath.substring(qsIndex + 1))
+        : new URLSearchParams();
 
-    const route = this.routes.find(r => r.pattern === path);
+    const route = this.routes.find((r) => r.pattern === path);
     if (!route) {
       this.navigate('/not-found');
       return;
@@ -90,7 +93,10 @@ class Router {
     const shell = document.getElementById('main-wrapper');
     const authOutlet = document.getElementById('auth-outlet');
     if (shell) shell.style.display = 'block';
-    if (authOutlet) { authOutlet.innerHTML = ''; authOutlet.style.display = 'none'; }
+    if (authOutlet) {
+      authOutlet.innerHTML = '';
+      authOutlet.style.display = 'none';
+    }
 
     if (!this._shellInitialized) {
       initShell();
@@ -139,7 +145,7 @@ class Router {
   }
 
   _updateSidebarActive(path) {
-    document.querySelectorAll('#sidebarnav .sidebar-item').forEach(item => {
+    document.querySelectorAll('#sidebarnav .sidebar-item').forEach((item) => {
       const link = item.querySelector('.sidebar-link');
       if (!link) return;
       const href = link.getAttribute('href');

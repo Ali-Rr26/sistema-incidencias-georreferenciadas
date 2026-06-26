@@ -32,13 +32,12 @@ export function initShell() {
 
   updateSidebarActiveState();
   window.addEventListener('hashchange', updateSidebarActiveState);
-
 }
 
 function updateSidebarActiveState() {
   const hash = window.location.hash || '#/dashboard';
 
-  document.querySelectorAll('#sidebarnav .sidebar-item').forEach(li => {
+  document.querySelectorAll('#sidebarnav .sidebar-item').forEach((li) => {
     const a = li.querySelector(':scope > a.sidebar-link');
     if (!a) return;
     const href = a.getAttribute('href') || '';
@@ -48,20 +47,19 @@ function updateSidebarActiveState() {
 }
 
 export function initPage() {
-  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
     if (typeof bootstrap !== 'undefined') {
       bootstrap.Tooltip.getInstance(el)?.dispose();
       new bootstrap.Tooltip(el);
     }
   });
 
-  document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+  document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => {
     if (typeof bootstrap !== 'undefined') {
       bootstrap.Popover.getInstance(el)?.dispose();
       new bootstrap.Popover(el);
     }
   });
-
 }
 
 /** Backwards-compat alias used by any code that still imports initLayout. */

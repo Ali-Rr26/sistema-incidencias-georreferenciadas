@@ -10,13 +10,17 @@ use App\Domains\Auth\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController
 {
     private const REFRESH_COOKIE = 'refresh_token';
+
     private const COOKIE_PATH = '/api/auth';
+
     private const COOKIE_MINUTES = 60 * 24 * 30; // 30 días
+
     private const ACCESS_TTL = 900;
 
     public function __construct(
@@ -101,7 +105,7 @@ class AuthController
     /**
      * Build HttpOnly cookie with the refresh token.
      */
-    private function refreshCookie(string $token): \Symfony\Component\HttpFoundation\Cookie
+    private function refreshCookie(string $token): Cookie
     {
         return cookie(
             self::REFRESH_COOKIE,
@@ -119,7 +123,7 @@ class AuthController
     /**
      * Build cookie that expires immediately (for logout).
      */
-    private function expiredCookie(): \Symfony\Component\HttpFoundation\Cookie
+    private function expiredCookie(): Cookie
     {
         return cookie(
             self::REFRESH_COOKIE,

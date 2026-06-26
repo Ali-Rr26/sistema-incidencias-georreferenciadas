@@ -12,5 +12,5 @@ export const authGuard = {
       return false;
     }
     return true;
-  }
+  },
 };

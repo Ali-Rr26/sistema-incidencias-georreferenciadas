@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -61,14 +60,15 @@ class RolePermissionSeeder extends Seeder
 
             if ($permission === null) {
                 $this->command?->warn("Permission {$def['resource']}.{$def['action']} not found — skipping.");
+
                 continue;
             }
 
             DB::table('role_permission')->insert([
-                'role_id'       => $roleId,
+                'role_id' => $roleId,
                 'permission_id' => $permission->permission_id,
-                'created_at'    => $now,
-                'updated_at'    => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }
