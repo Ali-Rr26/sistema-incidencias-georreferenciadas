@@ -14,6 +14,7 @@ use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\UserController;
 use App\Notifications\Interfaces\NotificationController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
+
 use Illuminate\Support\Facades\Route;
 
 // Public
@@ -32,6 +33,7 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents', IncidentController::class);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
     Route::apiResource('incidents.assignments', AssignmentController::class)->shallow();
+    Route::get('estados', [StatusHistoryController::class, 'estados']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
 
     // Notificaciones del usuario autenticado
