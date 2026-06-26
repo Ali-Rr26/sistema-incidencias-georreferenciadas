@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Auth\Services\AuthService;
 use App\Domains\Users\Models\User;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Mockery\MockInterface;
 
 it('logs in and returns access tokens plus the user payload', function (): void {
@@ -66,7 +67,7 @@ it('refreshes the access token from the refresh cookie', function (): void {
             ]);
     });
 
-    $response = $this->withoutMiddleware(\Illuminate\Cookie\Middleware\EncryptCookies::class)
+    $response = $this->withoutMiddleware(EncryptCookies::class)
         ->withCookie('refresh_token', 'refresh-token-1')
         ->post('/api/auth/refresh');
 

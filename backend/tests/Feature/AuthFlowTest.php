@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Auth\Services\AuthService;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
 
@@ -59,7 +60,7 @@ it('keeps the cookie-based auth contract working end to end', function (): void 
         ])
         ->assertCookie('refresh_token');
 
-    $refresh = $this->withoutMiddleware(\Illuminate\Cookie\Middleware\EncryptCookies::class)
+    $refresh = $this->withoutMiddleware(EncryptCookies::class)
         ->withCookie('refresh_token', 'refresh-token-1')
         ->post('/api/auth/refresh');
 

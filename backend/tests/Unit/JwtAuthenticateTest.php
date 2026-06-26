@@ -11,6 +11,7 @@ use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -121,11 +122,11 @@ it('allows the request through when the token and session are valid', function (
         ]);
     });
 
-    $testResponse = \Illuminate\Testing\TestResponse::fromBaseResponse($response);
+    $testResponse = TestResponse::fromBaseResponse($response);
 
     $testResponse->assertOk()
         ->assertJson([
-            'user_id'     => $user->id,
+            'user_id' => $user->id,
             '_session_id' => 'session-2',
         ]);
 });
