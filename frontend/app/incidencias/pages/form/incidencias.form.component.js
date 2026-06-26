@@ -114,6 +114,10 @@ export default defineComponent({
     // Character counters
     document.getElementById('titulo').addEventListener('input', function () {
       document.getElementById('contador-titulo').textContent = this.value.length + '/100';
+      const btn = document.getElementById('btn-guardar');
+      if (btn.disabled && this.value.trim()) {
+        btn.disabled = false;
+      }
     });
     document.getElementById('descripcion').addEventListener('input', function () {
       document.getElementById('contador-descripcion').textContent = this.value.length + '/500';
@@ -148,7 +152,10 @@ export default defineComponent({
 
       if (!form.checkValidity()) valido = false;
       form.classList.add('was-validated');
-      if (!valido) return;
+      if (!valido) {
+        document.getElementById('btn-guardar').disabled = true;
+        return;
+      }
 
       document.getElementById('btn-texto').classList.add('d-none');
       document.getElementById('btn-loading').classList.remove('d-none');
