@@ -34,6 +34,7 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents.assignments', AssignmentController::class)->shallow();
     Route::get('estados', [StatusHistoryController::class, 'estados']);
     Route::put('incidencias/{incident}/estado', [StatusHistoryController::class, 'updateEstado']);
+    Route::get('incidencias/{incident}/historial', [StatusHistoryController::class, 'index']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
 
     // Notificaciones del usuario autenticado

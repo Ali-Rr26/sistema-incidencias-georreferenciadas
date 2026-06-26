@@ -6,10 +6,19 @@ namespace App\StatusHistory\Repositories;
 
 use App\Domains\Incidents\Models\Incident;
 use App\StatusHistory\Models\StatusHistory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EloquentStatusHistoryRepository implements StatusHistoryRepository
 {
+    public function byIncident(int $incidentId): Collection
+    {
+        return StatusHistory::with('user')
+            ->where('incident_id', $incidentId)
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function cambiarEstado(
         Incident $incident,
         string $newStatus,

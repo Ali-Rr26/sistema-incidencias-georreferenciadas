@@ -7,6 +7,7 @@ namespace App\StatusHistory\Interfaces;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\StatusHistory\Interfaces\Requests\UpdateEstadoRequest;
+use App\StatusHistory\Interfaces\Resources\StatusHistoryResource;
 use App\StatusHistory\Repositories\StatusHistoryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,7 +50,20 @@ class StatusHistoryController extends Controller
 
     public function index(Request $request, int $incidentId): JsonResponse
     {
-        return response()->json(['data' => []]);
+        $incident = $this->incidents->findById($incidentId);
+
+        if ($incident === null) {
+            return response()->json(
+                ['message' => 'Incidencia no encontrada'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        $historial = $this->statusHistory->byIncident($incidentId);
+
+        return response()->json([
+            'data' => StatusHistoryResource::collection($historial),
+        ]);
     }
 
     public function updateEstado(UpdateEstadoRequest $request, int $incidentId): JsonResponse
