@@ -20,6 +20,9 @@ abstract class EloquentRepository implements Repository
      */
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
+        unset($filters['per_page']);
+
         return $this->newQuery()
             ->when(count($filters) > 0, fn (Builder $query) => $this->applyFilters($query, $filters))
             ->paginate(min($perPage, 100));

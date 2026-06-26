@@ -4,6 +4,7 @@ use App\Assignments\Interfaces\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Comments\Interfaces\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
+use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
+Route::get('/incidents/feed', FeedController::class);
 
 Route::middleware('jwt')->group(function () {
 

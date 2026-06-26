@@ -1,5 +1,6 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
+import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 
 const POR_PAGINA = 10;
 
@@ -48,27 +49,6 @@ export default defineComponent({
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-    function renderPaginacion() {
-      const ul = document.getElementById('paginacion');
-      ul.innerHTML = '';
-      if (totalPaginas <= 1) return;
-
-      function crearLi(label, pagina, deshabilitado, activo) {
-        const li = document.createElement('li');
-        li.className = 'page-item' + (deshabilitado ? ' disabled' : '') + (activo ? ' active' : '');
-        li.innerHTML = `<a class="page-link" href="#">${label}</a>`;
-        if (!deshabilitado && !activo) {
-          li.querySelector('a').addEventListener('click', e => { e.preventDefault(); cargarIncidencias(pagina); });
-        }
-        return li;
-      }
-
-      ul.appendChild(crearLi('&laquo;', paginaActual - 1, paginaActual === 1, false));
-      for (let i = 1; i <= totalPaginas; i++) {
-        ul.appendChild(crearLi(i, i, false, i === paginaActual));
-      }
-      ul.appendChild(crearLi('&raquo;', paginaActual + 1, paginaActual === totalPaginas, false));
-    }
 
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) { mostrarEstado('vacio'); return; }
@@ -143,7 +123,7 @@ export default defineComponent({
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
       document.getElementById('info-resultados').textContent = `Mostrando ${desde}–${hasta} de ${total} incidencias`;
 
-      renderPaginacion();
+      renderPaginacion(document.getElementById('paginacion'), paginaActual, totalPaginas, cargarIncidencias);
       mostrarEstado('tabla');
       if (window.feather) feather.replace();
     }

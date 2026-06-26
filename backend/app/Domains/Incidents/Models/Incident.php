@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,7 @@ class Incident extends Model
 
     protected $fillable = [
         'incident_category_id',
+        'organization_id',
         'user_id',
         'location_id',
         'status',
@@ -60,5 +62,10 @@ class Incident extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 }
