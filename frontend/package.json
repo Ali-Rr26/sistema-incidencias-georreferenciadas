@@ -7,10 +7,10 @@
     "lint:fix": "eslint \"app/**/*.js\" --fix",
     "format": "prettier --check \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
     "format:fix": "prettier --write \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
-    "test": "vitest run",
-    "test:unit": "vitest run \"app/**/*.test.js\" --exclude \"app/**/*.integration.test.js\" --exclude \"app/**/*.snapshot.test.js\"",
-    "test:integration": "vitest run \"app/**/*.integration.test.js\"",
-    "test:snapshot": "vitest run \"app/**/*.snapshot.test.js\"",
+    "test": "vitest run --config vitest.config.js",
+    "test:unit": "vitest run --config vitest.unit.config.js",
+    "test:integration": "vitest run --config vitest.integration.config.js",
+    "test:snapshot": "vitest run --config vitest.snapshot.config.js",
     "test:watch": "vitest"
   },
   "devDependencies": {
