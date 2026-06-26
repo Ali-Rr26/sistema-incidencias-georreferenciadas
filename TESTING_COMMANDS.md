@@ -63,6 +63,7 @@ The GitHub Actions workflow mirrors the local checks:
 - Frontend quality: `npm run lint`, `npm run format`
 - Frontend suites: `npm run test:unit`, `npm run test:integration`, `npm run test:snapshot`
 - Backend: `composer run lint`, `composer run format:check`, `composer run test`
+- CI backend job runs on PHP 8.4 because the locked dependency set requires it.
 
 ## Notes
 
