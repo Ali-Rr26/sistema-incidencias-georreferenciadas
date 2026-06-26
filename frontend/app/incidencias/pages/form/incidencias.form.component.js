@@ -109,9 +109,13 @@ export default defineComponent({
       }
     });
 
-    // Character counters
+    // Character counters + rehabilitar botón al corregir título
     document.getElementById('titulo').addEventListener('input', function () {
       document.getElementById('contador-titulo').textContent = this.value.length + '/100';
+      if (this.value.trim()) {
+        this.classList.remove('is-invalid');
+        document.getElementById('btn-guardar').disabled = false;
+      }
     });
     document.getElementById('descripcion').addEventListener('input', function () {
       document.getElementById('contador-descripcion').textContent = this.value.length + '/500';
@@ -128,6 +132,16 @@ export default defineComponent({
 
       const form = this;
       let valido = true;
+
+      // Validar título explícitamente para mostrar mensaje y deshabilitar botón
+      const tituloEl = document.getElementById('titulo');
+      if (!tituloEl.value.trim()) {
+        tituloEl.classList.add('is-invalid');
+        document.getElementById('btn-guardar').disabled = true;
+        valido = false;
+      } else {
+        tituloEl.classList.remove('is-invalid');
+      }
 
       if (!document.getElementById('latitud').value) {
         document.getElementById('error-mapa').classList.remove('d-none');

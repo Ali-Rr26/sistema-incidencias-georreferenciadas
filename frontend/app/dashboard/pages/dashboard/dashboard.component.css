@@ -1,4 +1,32 @@
-/* Dashboard styles */
+/* Dashboard component styles */
 #page-outlet {
   animation: fadeInUp 0.25s ease;
+}
+
+/* ------------------------------------------------
+   Activity feed — border-left-line (FreeDash pattern)
+   Crea la línea vertical de timeline en el feed
+   ------------------------------------------------ */
+.border-left-line {
+  border-left: 2px solid #e9ecef;
+  padding-left: 20px;
+  margin-left: 19px;
+  position: relative;
+}
+
+/* ------------------------------------------------
+   list-style-none — leyenda del gráfico
+   ------------------------------------------------ */
+.list-style-none {
+  padding-left: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------
+   C3 chart — oculta tooltip default y ajusta fuente
+   ------------------------------------------------ */
+#chart-estados .c3-chart-arcs-title {
+  font-size: 1.4rem;
+  font-weight: 500;
+  fill: #343a40;
 }

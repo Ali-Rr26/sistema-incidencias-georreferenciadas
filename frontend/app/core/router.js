@@ -145,7 +145,7 @@ class Router {
       const href = link.getAttribute('href');
       const active = href === `#${path}`;
       link.classList.toggle('active', active);
-      item.classList.toggle('active', active);
+      item.classList.toggle('selected', active);
     });
   }
 
