@@ -111,12 +111,12 @@ export default defineComponent({
       }
     });
 
-    // Character counters
+    // Character counters + rehabilitar botón al corregir título
     document.getElementById('titulo').addEventListener('input', function () {
       document.getElementById('contador-titulo').textContent = this.value.length + '/100';
-      const btn = document.getElementById('btn-guardar');
-      if (btn.disabled && this.value.trim()) {
-        btn.disabled = false;
+      if (this.value.trim()) {
+        this.classList.remove('is-invalid');
+        document.getElementById('btn-guardar').disabled = false;
       }
     });
     document.getElementById('descripcion').addEventListener('input', function () {
@@ -135,6 +135,16 @@ export default defineComponent({
       const form = this;
       let valido = true;
 
+      // Validar título explícitamente para mostrar mensaje y deshabilitar botón
+      const tituloEl = document.getElementById('titulo');
+      if (!tituloEl.value.trim()) {
+        tituloEl.classList.add('is-invalid');
+        document.getElementById('btn-guardar').disabled = true;
+        valido = false;
+      } else {
+        tituloEl.classList.remove('is-invalid');
+      }
+
       if (!document.getElementById('latitud').value) {
         document.getElementById('error-mapa').classList.remove('d-none');
         valido = false;
@@ -152,10 +162,7 @@ export default defineComponent({
 
       if (!form.checkValidity()) valido = false;
       form.classList.add('was-validated');
-      if (!valido) {
-        document.getElementById('btn-guardar').disabled = true;
-        return;
-      }
+      if (!valido) return;
 
       document.getElementById('btn-texto').classList.add('d-none');
       document.getElementById('btn-loading').classList.remove('d-none');
