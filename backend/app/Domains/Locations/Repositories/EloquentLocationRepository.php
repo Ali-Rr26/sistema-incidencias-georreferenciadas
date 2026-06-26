@@ -14,7 +14,7 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
 {
     public function __construct()
     {
-        parent::__construct(new Location());
+        parent::__construct(new Location);
     }
 
     public function findByLevel(string $level): Collection
@@ -30,28 +30,26 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
     public function findByPoint(Point $point): ?Location
     {
         return $this->newQuery()
-                    ->whereContains('geom', $point)
-                    ->first();
+            ->whereContains('geom', $point)
+            ->first();
     }
 
     public function tree(): Collection
     {
         return $this->newQuery()
-                    ->whereNull('parent_id')
-                    ->with('children.children.children')
-                    ->get();
+            ->whereNull('parent_id')
+            ->with('children.children.children')
+            ->get();
     }
 
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['search'] ?? null, fn(Builder $query, string $value) => $query->where(function(Builder $query) use($value){
+            ->when($filters['search'] ?? null, fn (Builder $query, string $value) => $query->where(function (Builder $query) use ($value) {
                 $query->where('name', 'LIKE', "%{$value}%")
-                      ->orWhere('code','LIKE', "%{$value}%");
+                    ->orWhere('code', 'LIKE', "%{$value}%");
             }))
-            ->when($filters['level'] ?? null, fn(Builder $query, string $value) => $query->where('level', $value))
-            ->when($filters['parent_id'] ?? null, fn(Builder $query, string $value) => $query->where('parent_id', $value));
+            ->when($filters['level'] ?? null, fn (Builder $query, string $value) => $query->where('level', $value))
+            ->when($filters['parent_id'] ?? null, fn (Builder $query, string $value) => $query->where('parent_id', $value));
     }
-
 }
-

@@ -13,12 +13,12 @@ class IncidentCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'              => $this->id,
-            'name'            => $this->name,
-            'parent_id'       => $this->parent_id,
-            'organizations'   => OrganizationResource::collection($this->whenLoaded('organizations')),
-            'parent'          => new self($this->whenLoaded('parent')),
-            'children'        => self::collection($this->whenLoaded('children')),
+            'id' => $this->id,
+            'name' => $this->name,
+            'parent_id' => $this->parent_id,
+            'organizations' => OrganizationResource::collection($this->whenLoaded('organizations')),
+            'parent' => new self($this->whenLoaded('parent')),
+            'children' => self::collection($this->whenLoaded('children')),
         ];
     }
 }

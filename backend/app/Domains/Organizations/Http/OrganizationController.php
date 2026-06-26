@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Organizations\Http;
 
-use App\Domains\Organizations\Models\Organization;
-use App\Domains\Organizations\Repositories\OrganizationRepository;
 use App\Domains\Organizations\Http\Requests\StoreOrganizationRequest;
 use App\Domains\Organizations\Http\Requests\UpdateOrganizationRequest;
 use App\Domains\Organizations\Http\Resources\OrganizationCollection;
 use App\Domains\Organizations\Http\Resources\OrganizationResource;
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Organizations\Repositories\OrganizationRepository;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

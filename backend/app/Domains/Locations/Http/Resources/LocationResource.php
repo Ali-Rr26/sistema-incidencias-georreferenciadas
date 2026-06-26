@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Domains\Locations\Http\Resources;
@@ -10,7 +11,7 @@ class LocationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return[
+        return [
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
@@ -18,7 +19,7 @@ class LocationResource extends JsonResource
             'parent_id' => $this->parent_id,
             'parent' => new self($this->whenLoaded('parent')),
             'children' => self::collection($this->whenLoaded('children')),
-            'geom' => $this->when($this->geom !== null, fn() => json_decode($this->geom->toJson()))
+            'geom' => $this->when($this->geom !== null, fn () => json_decode($this->geom->toJson())),
         ];
     }
 }

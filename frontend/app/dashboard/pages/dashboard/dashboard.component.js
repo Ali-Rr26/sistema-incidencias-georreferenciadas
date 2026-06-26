@@ -31,7 +31,10 @@ function loadC3() {
 // Counter animation — cuenta desde 0 al valor final
 // ─────────────────────────────────────────────
 function animateCounter(el, target, duration = 900) {
-  if (!el || target === 0) { if (el) el.textContent = 0; return; }
+  if (!el || target === 0) {
+    if (el) el.textContent = 0;
+    return;
+  }
   const start = Date.now();
   const tick = () => {
     const elapsed = Date.now() - start;
@@ -50,17 +53,19 @@ function initDonut(pendientes, en_proceso, resueltas, total) {
   if (!window.c3 || !document.getElementById('chart-estados')) return;
 
   // Si no hay datos, mostrar el donut vacío con un placeholder
-  const cols = total > 0
-    ? [
-        ['Pendientes', pendientes],
-        ['En proceso', en_proceso],
-        ['Resueltas',  resueltas]
-      ]
-    : [['Sin datos', 1]];
+  const cols =
+    total > 0
+      ? [
+          ['Pendientes', pendientes],
+          ['En proceso', en_proceso],
+          ['Resueltas', resueltas],
+        ]
+      : [['Sin datos', 1]];
 
-  const colors = total > 0
-    ? { pattern: ['#ffaf01', '#5f76e8', '#22ca80'] }
-    : { pattern: ['#e9ecef'] };
+  const colors =
+    total > 0
+      ? { pattern: ['#ffaf01', '#5f76e8', '#22ca80'] }
+      : { pattern: ['#e9ecef'] };
 
   c3.generate({
     bindto: '#chart-estados',
@@ -68,18 +73,26 @@ function initDonut(pendientes, en_proceso, resueltas, total) {
     donut: {
       label: { show: false },
       title: String(total),
-      width: 22
+      width: 22,
     },
     legend: { hide: true },
-    color: colors
+    color: colors,
   });
 }
 
 // ─────────────────────────────────────────────
 // Activity feed — incidencias recientes
 // ─────────────────────────────────────────────
-const PRIORIDAD_BTN = { alta: 'btn-danger', media: 'btn-warning', baja: 'btn-info' };
-const PRIORIDAD_ICON = { alta: 'alert-triangle', media: 'alert-circle', baja: 'info' };
+const PRIORIDAD_BTN = {
+  alta: 'btn-danger',
+  media: 'btn-warning',
+  baja: 'btn-info',
+};
+const PRIORIDAD_ICON = {
+  alta: 'alert-triangle',
+  media: 'alert-circle',
+  baja: 'info',
+};
 
 function buildActivityFeed(items) {
   const feed = document.getElementById('activity-feed');
@@ -92,10 +105,16 @@ function buildActivityFeed(items) {
     const btnClass = PRIORIDAD_BTN[inc.prioridad] || 'btn-primary';
     const iconName = PRIORIDAD_ICON[inc.prioridad] || 'map-pin';
     const fecha = inc.created_at
-      ? new Date(inc.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
+      ? new Date(inc.created_at).toLocaleDateString('es-EC', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
       : '';
     const desc = inc.descripcion
-      ? (inc.descripcion.length > 70 ? inc.descripcion.slice(0, 70) + '…' : inc.descripcion)
+      ? inc.descripcion.length > 70
+        ? inc.descripcion.slice(0, 70) + '…'
+        : inc.descripcion
       : '';
 
     const item = document.createElement('div');
@@ -122,55 +141,61 @@ function buildActivityFeed(items) {
 // ─────────────────────────────────────────────
 export default defineComponent({
   templateUrl: 'app/dashboard/pages/dashboard/dashboard.component.html',
-  styleUrl:    'app/dashboard/pages/dashboard/dashboard.component.css',
+  styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
 
   async onInit() {
     // C3 y stats en paralelo — si el backend no está, todo falla silenciosamente
     const [, statsResult] = await Promise.allSettled([
       loadC3(),
-      http.get('/incidencias?per_page=1')
+      http.get('/incidencias?per_page=1'),
     ]);
 
-    const data      = statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
-    const total     = data.total     ?? 0;
+    const data =
+      statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
+    const total = data.total ?? 0;
     const pendientes = data.pendientes ?? 0;
-    const resueltas  = data.resueltas  ?? 0;
+    const resueltas = data.resueltas ?? 0;
     const ubicaciones = data.ubicaciones ?? 0;
     const en_proceso = Math.max(0, total - pendientes - resueltas);
 
     // Counters animados
     animateCounter(document.getElementById('stat-incidencias'), total);
-    animateCounter(document.getElementById('stat-pendientes'),  pendientes);
-    animateCounter(document.getElementById('stat-resueltas'),   resueltas);
+    animateCounter(document.getElementById('stat-pendientes'), pendientes);
+    animateCounter(document.getElementById('stat-resueltas'), resueltas);
     animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
 
     // Badges de porcentaje (pendientes / total)
     if (total > 0) {
       const pctPend = Math.round((pendientes / total) * 100);
-      const pctRes  = Math.round((resueltas  / total) * 100);
+      const pctRes = Math.round((resueltas / total) * 100);
       const badgePend = document.getElementById('badge-pendientes');
-      const badgeRes  = document.getElementById('badge-resueltas');
+      const badgeRes = document.getElementById('badge-resueltas');
       if (badgePend && pctPend > 0) badgePend.textContent = pctPend + '%';
-      if (badgeRes  && pctRes  > 0) badgeRes.textContent  = pctRes  + '%';
+      if (badgeRes && pctRes > 0) badgeRes.textContent = pctRes + '%';
     }
 
     // Leyenda del gráfico
-    const setEl = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    const setEl = (id, v) => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = v;
+    };
     setEl('legend-pendientes', pendientes);
     setEl('legend-en-proceso', en_proceso);
-    setEl('legend-resueltas',  resueltas);
+    setEl('legend-resueltas', resueltas);
 
     // Donut C3
     initDonut(pendientes, en_proceso, resueltas, total);
 
     // Activity feed — últimas 5 incidencias
     try {
-      const resp  = await http.get('/incidencias?per_page=5');
-      const items = resp.data ?? resp.items ?? (Array.isArray(resp) ? resp : []);
+      const resp = await http.get('/incidencias?per_page=5');
+      const items =
+        resp.data ?? resp.items ?? (Array.isArray(resp) ? resp : []);
       buildActivityFeed(items);
-    } catch { /* mantener estado vacío */ }
-
+    } catch {
+      /* mantener estado vacío */
+    }
   },
 
-  onDestroy() {}
+  onDestroy() {},
 });

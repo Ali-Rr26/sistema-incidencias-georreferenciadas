@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 interface Repository
 {
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return LengthAwarePaginator<TModel>
      */
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator;
@@ -24,13 +24,13 @@ interface Repository
     public function findById(int $id): ?Model;
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return TModel
      */
     public function create(array $data): Model;
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return TModel
      */
     public function update(int $id, array $data): Model;

@@ -50,6 +50,7 @@ class IncidentCategorySeeder extends Seeder
 
         if ($organizations->isEmpty()) {
             $this->command?->warn('No organizations found — run OrganizationSeeder first.');
+
             return;
         }
 

@@ -1,7 +1,11 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
-import { initSelect, clearSelect, destroyAll } from '../../../shared/select-search.js';
+import {
+  initSelect,
+  clearSelect,
+  destroyAll,
+} from '../../../shared/select-search.js';
 
 const POR_PAGINA = 10;
 
@@ -22,9 +26,9 @@ export default defineComponent({
 
     function badgeEstado(e) {
       const map = {
-        pendiente:  { color: 'secondary', label: 'Pendiente' },
-        en_proceso: { color: 'primary',   label: 'En proceso' },
-        resuelto:   { color: 'success',   label: 'Resuelto' }
+        pendiente: { color: 'secondary', label: 'Pendiente' },
+        en_proceso: { color: 'primary', label: 'En proceso' },
+        resuelto: { color: 'success', label: 'Resuelto' },
       };
       const cfg = map[e] || { color: 'secondary', label: e || '—' };
       return `<span class="badge bg-${cfg.color}">${cfg.label}</span>`;
@@ -32,12 +36,18 @@ export default defineComponent({
 
     function formatearFecha(iso) {
       if (!iso) return '—';
-      return new Date(iso).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return new Date(iso).toLocaleDateString('es-EC', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     }
 
     function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach(s => {
-        const el = document.getElementById(s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s);
+      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
+        const el = document.getElementById(
+          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
+        );
         if (el) el.classList.toggle('d-none', s !== cual);
       });
     }
@@ -49,12 +59,16 @@ export default defineComponent({
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-
     function renderTabla(datos, total) {
-      if (!datos || datos.length === 0) { mostrarEstado('vacio'); return; }
+      if (!datos || datos.length === 0) {
+        mostrarEstado('vacio');
+        return;
+      }
 
       const tbody = document.getElementById('tabla-body');
-      tbody.innerHTML = datos.map(inc => `
+      tbody.innerHTML = datos
+        .map(
+          (inc) => `
         <tr>
           <td class="ps-3 text-muted small">${inc.id}</td>
           <td>
@@ -79,13 +93,19 @@ export default defineComponent({
               </button>
             </div>
           </td>
-        </tr>`).join('');
+        </tr>`,
+        )
+        .join('');
 
       const cards = document.getElementById('contenedor-cards');
-      cards.innerHTML = datos.map(inc => {
-        const titulo = inc.titulo || '—';
-        const desc = inc.descripcion ? inc.descripcion.substring(0, 80) + (inc.descripcion.length > 80 ? '…' : '') : '';
-        return `
+      cards.innerHTML = datos
+        .map((inc) => {
+          const titulo = inc.titulo || '—';
+          const desc = inc.descripcion
+            ? inc.descripcion.substring(0, 80) +
+              (inc.descripcion.length > 80 ? '…' : '')
+            : '';
+          return `
           <div class="card mb-2 shadow-sm">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-1">
@@ -117,13 +137,20 @@ export default defineComponent({
               </div>
             </div>
           </div>`;
-      }).join('');
+        })
+        .join('');
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
-      document.getElementById('info-resultados').textContent = `Mostrando ${desde}–${hasta} de ${total} incidencias`;
+      document.getElementById('info-resultados').textContent =
+        `Mostrando ${desde}–${hasta} de ${total} incidencias`;
 
-      renderPaginacion(document.getElementById('paginacion'), paginaActual, totalPaginas, cargarIncidencias);
+      renderPaginacion(
+        document.getElementById('paginacion'),
+        paginaActual,
+        totalPaginas,
+        cargarIncidencias,
+      );
       mostrarEstado('tabla');
     }
 
@@ -132,12 +159,12 @@ export default defineComponent({
       mostrarEstado('cargando');
 
       const params = new URLSearchParams({
-        page:      paginaActual,
-        per_page:  POR_PAGINA,
-        buscar:    document.getElementById('filtro-buscar').value.trim(),
+        page: paginaActual,
+        per_page: POR_PAGINA,
+        buscar: document.getElementById('filtro-buscar').value.trim(),
         prioridad: document.getElementById('filtro-prioridad').value,
-        tipo:      document.getElementById('filtro-tipo').value,
-        estado:    document.getElementById('filtro-estado').value
+        tipo: document.getElementById('filtro-tipo').value,
+        estado: document.getElementById('filtro-estado').value,
       });
 
       try {
@@ -156,36 +183,51 @@ export default defineComponent({
       const btn = e.target.closest('.btn-eliminar');
       if (!btn) return;
       idEliminar = btn.dataset.id;
-      document.getElementById('modal-eliminar-titulo').textContent = btn.dataset.titulo;
+      document.getElementById('modal-eliminar-titulo').textContent =
+        btn.dataset.titulo;
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
     }
 
-    document.getElementById('tabla-body').addEventListener('click', abrirModalEliminar);
-    document.getElementById('contenedor-cards').addEventListener('click', abrirModalEliminar);
+    document
+      .getElementById('tabla-body')
+      .addEventListener('click', abrirModalEliminar);
+    document
+      .getElementById('contenedor-cards')
+      .addEventListener('click', abrirModalEliminar);
 
-    document.getElementById('btn-confirmar-eliminar').addEventListener('click', async function () {
-      if (!idEliminar) return;
-      document.getElementById('eliminar-texto').classList.add('d-none');
-      document.getElementById('eliminar-loading').classList.remove('d-none');
-      this.disabled = true;
+    document
+      .getElementById('btn-confirmar-eliminar')
+      .addEventListener('click', async function () {
+        if (!idEliminar) return;
+        document.getElementById('eliminar-texto').classList.add('d-none');
+        document.getElementById('eliminar-loading').classList.remove('d-none');
+        this.disabled = true;
 
-      try {
-        await http.delete('/incidencias/' + idEliminar);
-        bootstrap.Modal.getInstance(document.getElementById('modal-eliminar')).hide();
-        mostrarToast('Incidencia eliminada correctamente.', 'success');
-        cargarIncidencias(paginaActual);
-      } catch {
-        mostrarToast('No se pudo eliminar la incidencia.', 'danger');
-      } finally {
-        document.getElementById('eliminar-texto').classList.remove('d-none');
-        document.getElementById('eliminar-loading').classList.add('d-none');
-        document.getElementById('btn-confirmar-eliminar').disabled = false;
-      }
-    });
+        try {
+          await http.delete('/incidencias/' + idEliminar);
+          bootstrap.Modal.getInstance(
+            document.getElementById('modal-eliminar'),
+          ).hide();
+          mostrarToast('Incidencia eliminada correctamente.', 'success');
+          cargarIncidencias(paginaActual);
+        } catch {
+          mostrarToast('No se pudo eliminar la incidencia.', 'danger');
+        } finally {
+          document.getElementById('eliminar-texto').classList.remove('d-none');
+          document.getElementById('eliminar-loading').classList.add('d-none');
+          document.getElementById('btn-confirmar-eliminar').disabled = false;
+        }
+      });
 
     // Filter handlers
-    document.getElementById('btn-filtrar').addEventListener('click', () => cargarIncidencias(1));
-    document.getElementById('filtro-buscar').addEventListener('keydown', e => { if (e.key === 'Enter') cargarIncidencias(1); });
+    document
+      .getElementById('btn-filtrar')
+      .addEventListener('click', () => cargarIncidencias(1));
+    document
+      .getElementById('filtro-buscar')
+      .addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') cargarIncidencias(1);
+      });
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-buscar').value = '';
       clearSelect('filtro-prioridad');
@@ -193,8 +235,9 @@ export default defineComponent({
       clearSelect('filtro-estado');
       cargarIncidencias(1);
     });
-    document.getElementById('btn-reintentar').addEventListener('click', () => cargarIncidencias(paginaActual));
-
+    document
+      .getElementById('btn-reintentar')
+      .addEventListener('click', () => cargarIncidencias(paginaActual));
 
     // ─── Tom Select en filtros ─────────────────────────────────────────
     initSelect('filtro-prioridad', { placeholder: 'Buscar prioridad...' });
@@ -204,5 +247,7 @@ export default defineComponent({
     cargarIncidencias(1);
   },
 
-  onDestroy() { destroyAll(); }
+  onDestroy() {
+    destroyAll();
+  },
 });

@@ -16,17 +16,17 @@ class MenuSeeder extends Seeder
      * @var array<int, array{name: string, route: string, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
      */
     private const MENUS = [
-        1  => ['name' => 'Dashboard',              'route' => '/dashboard',            'icon' => 'layout-dashboard', 'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
+        1 => ['name' => 'Dashboard',              'route' => '/dashboard',            'icon' => 'layout-dashboard', 'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
         // Incidencias group
-        2  => ['name' => 'Incidencias',            'route' => '/incidents',             'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
-        3  => ['name' => 'Lista de Incidencias',   'route' => '/incidents',             'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
-        4  => ['name' => 'Nueva Incidencia',       'route' => '/incidents/create',      'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
-        5  => ['name' => 'Asignaciones',           'route' => '/assignments',           'icon' => 'users',            'parent_id' => 2,    'permission' => ['resource' => 'assignments',         'action' => 'view']],
+        2 => ['name' => 'Incidencias',            'route' => '/incidents',             'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
+        3 => ['name' => 'Lista de Incidencias',   'route' => '/incidents',             'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
+        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidents/create',      'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
+        5 => ['name' => 'Asignaciones',           'route' => '/assignments',           'icon' => 'users',            'parent_id' => 2,    'permission' => ['resource' => 'assignments',         'action' => 'view']],
         // Gestión group (admin area)
-        6  => ['name' => 'Gestión',                'route' => '/management',            'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
-        7  => ['name' => 'Usuarios',               'route' => '/users',                 'icon' => 'user',             'parent_id' => 6,    'permission' => ['resource' => 'users',               'action' => 'view']],
-        8  => ['name' => 'Roles',                  'route' => '/roles',                 'icon' => 'shield',           'parent_id' => 6,    'permission' => ['resource' => 'roles',               'action' => 'view']],
-        9  => ['name' => 'Permisos',               'route' => '/permissions',           'icon' => 'key-round',        'parent_id' => 6,    'permission' => ['resource' => 'permissions',         'action' => 'view']],
+        6 => ['name' => 'Gestión',                'route' => '/management',            'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
+        7 => ['name' => 'Usuarios',               'route' => '/users',                 'icon' => 'user',             'parent_id' => 6,    'permission' => ['resource' => 'users',               'action' => 'view']],
+        8 => ['name' => 'Roles',                  'route' => '/roles',                 'icon' => 'shield',           'parent_id' => 6,    'permission' => ['resource' => 'roles',               'action' => 'view']],
+        9 => ['name' => 'Permisos',               'route' => '/permissions',           'icon' => 'key-round',        'parent_id' => 6,    'permission' => ['resource' => 'permissions',         'action' => 'view']],
         10 => ['name' => 'Menús',                  'route' => '/menus',                 'icon' => 'menu',             'parent_id' => 6,    'permission' => ['resource' => 'menus',               'action' => 'view']],
         // Catálogos group
         11 => ['name' => 'Catálogos',              'route' => '/catalogs',              'icon' => 'book-open',        'parent_id' => null, 'permission' => null],
@@ -46,11 +46,11 @@ class MenuSeeder extends Seeder
             Menu::updateOrCreate(
                 ['menu_id' => $menuId],
                 [
-                    'name'      => $data['name'],
-                    'route'     => $data['route'],
-                    'icon'      => $data['icon'],
+                    'name' => $data['name'],
+                    'route' => $data['route'],
+                    'icon' => $data['icon'],
                     'parent_id' => $data['parent_id'],
-                    'active'    => true,
+                    'active' => true,
                 ],
             );
         }
@@ -70,14 +70,15 @@ class MenuSeeder extends Seeder
 
             if ($permission === null) {
                 $this->command?->warn("Permission {$data['permission']['resource']}.{$data['permission']['action']} not found — skipping menu {$menuId}.");
+
                 continue;
             }
 
             DB::table('menu_permission')->insert([
-                'menu_id'       => $menuId,
+                'menu_id' => $menuId,
                 'permission_id' => $permission->permission_id,
-                'created_at'    => $now,
-                'updated_at'    => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 

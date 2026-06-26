@@ -28,7 +28,7 @@ return new class extends Migration
                 foreach ($categories as $cat) {
                     $inserts[] = [
                         'incident_category_id' => $cat->id,
-                        'organization_id'      => $cat->organization_id,
+                        'organization_id' => $cat->organization_id,
                     ];
                 }
                 DB::table('category_organization')->insert($inserts);
@@ -56,7 +56,9 @@ return new class extends Migration
                 ->pluck('id')
                 ->toArray();
 
-            if (empty($removeIds)) continue;
+            if (empty($removeIds)) {
+                continue;
+            }
 
             // Move pivot entries from removed IDs to kept ID
             $orgIdsToMove = DB::table('category_organization')

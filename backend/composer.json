@@ -55,8 +55,22 @@
             "Composer\\Config::disableProcessTimeout",
             "php artisan serve"
         ],
+        "lint": [
+            "./vendor/bin/pint --test"
+        ],
+        "format": [
+            "./vendor/bin/pint"
+        ],
+        "format:check": [
+            "./vendor/bin/pint --test"
+        ],
+        "test:unit": [
+            "@php artisan test --testsuite=Unit"
+        ],
+        "test:feature": [
+            "@php artisan test --testsuite=Feature"
+        ],
         "test": [
-            "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
         "post-autoload-dump": [

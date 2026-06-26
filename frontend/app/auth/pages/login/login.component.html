@@ -8,13 +8,19 @@
   </div>
 
   <!-- Auth box -->
-  <div class="auth-wrapper d-flex justify-content-center align-items-center"
-       style="background:url(assets/images/auth-bg.jpg) no-repeat center center/ 150% 150%;">
+  <div
+    class="auth-wrapper d-flex justify-content-center align-items-center"
+    style="
+      background: url(assets/images/auth-bg.jpg) no-repeat center center/ 150%
+        150%;
+    "
+  >
     <div class="auth-box row g-2">
       <!-- Left panel — imagen decorativa -->
-      <div class="col-lg-7 col-md-5 modal-bg-img d-none d-md-block"
-           style="background-image: url(assets/images/big/3.png);">
-      </div>
+      <div
+        class="col-lg-7 col-md-5 modal-bg-img d-none d-md-block"
+        style="background-image: url(assets/images/big/3.png)"
+      ></div>
       <!-- Right panel — formulario -->
       <div class="col-lg-5 col-md-7 bg-white d-flex align-items-center">
         <div class="p-4 w-100">
@@ -23,22 +29,47 @@
             <p class="text-muted small">Ingresá con tu email y contraseña</p>
           </div>
 
-          <div id="login-error" class="alert alert-danger d-none small py-2" role="alert"></div>
+          <div
+            id="login-error"
+            class="alert alert-danger d-none small py-2"
+            role="alert"
+          ></div>
 
           <form id="login-form">
             <div class="mb-3">
-              <label for="email" class="form-label text-dark small fw-semibold">Email</label>
-              <input type="email" class="form-control" id="email" placeholder="tu@email.com"
-                required autocomplete="email">
+              <label for="email" class="form-label text-dark small fw-semibold"
+                >Email</label
+              >
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                placeholder="tu@email.com"
+                required
+                autocomplete="email"
+              />
             </div>
 
             <div class="mb-4">
-              <label for="password" class="form-label text-dark small fw-semibold">Contraseña</label>
-              <input type="password" class="form-control" id="password" placeholder="••••••••"
-                required autocomplete="current-password">
+              <label
+                for="password"
+                class="form-label text-dark small fw-semibold"
+                >Contraseña</label
+              >
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                placeholder="••••••••"
+                required
+                autocomplete="current-password"
+              />
             </div>
 
-            <button type="submit" class="btn btn-gradient w-100 fw-semibold py-2">
+            <button
+              type="submit"
+              class="btn btn-gradient w-100 fw-semibold py-2"
+            >
               Iniciar Sesión
             </button>
           </form>

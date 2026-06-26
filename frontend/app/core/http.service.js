@@ -15,11 +15,22 @@ let refreshPromise = null;
 let queue = [];
 
 // Exported auth state functions (used by auth.service.js)
-export function setAccessToken(token) { access_token = token; }
-export function setSessionId(id) { session_id = id; }
-export function clearAuthState() { access_token = null; session_id = null; }
-export function getSessionId() { return session_id; }
-export function getAccessToken() { return access_token; }
+export function setAccessToken(token) {
+  access_token = token;
+}
+export function setSessionId(id) {
+  session_id = id;
+}
+export function clearAuthState() {
+  access_token = null;
+  session_id = null;
+}
+export function getSessionId() {
+  return session_id;
+}
+export function getAccessToken() {
+  return access_token;
+}
 
 class HttpService {
   constructor() {
@@ -75,22 +86,34 @@ class HttpService {
     try {
       await refreshPromise;
       // Retry original request
-      const result = await this.request(originalRequest.method, originalRequest.path, originalRequest.body);
+      const result = await this.request(
+        originalRequest.method,
+        originalRequest.path,
+        originalRequest.body,
+      );
       // Process any queued requests
       const pendingQueue = [...queue];
       queue = [];
-      pendingQueue.forEach(({ resolve, reject, originalRequest: queuedRequest }) => {
-        this.request(queuedRequest.method, queuedRequest.path, queuedRequest.body)
-          .then(resolve)
-          .catch(reject);
-      });
+      pendingQueue.forEach(
+        ({ resolve, reject, originalRequest: queuedRequest }) => {
+          this.request(
+            queuedRequest.method,
+            queuedRequest.path,
+            queuedRequest.body,
+          )
+            .then(resolve)
+            .catch(reject);
+        },
+      );
       return result;
     } catch (err) {
       // Refresh failed — clear state and redirect
       clearAuthState();
       window.location.hash = '#/login';
       // Reject all queued requests
-      queue.forEach(({ reject }) => reject(new Error('Sesión expirada. Inicia sesión nuevamente.')));
+      queue.forEach(({ reject }) =>
+        reject(new Error('Sesión expirada. Inicia sesión nuevamente.')),
+      );
       queue = [];
       throw err;
     } finally {
@@ -101,7 +124,7 @@ class HttpService {
   async doRefresh() {
     const res = await fetch(`${this.baseUrl}/auth/refresh`, {
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
     });
 
     if (!res.ok) {
@@ -114,10 +137,18 @@ class HttpService {
     return data;
   }
 
-  get(path)       { return this.request('GET', path); }
-  post(path, body) { return this.request('POST', path, body); }
-  put(path, body)  { return this.request('PUT', path, body); }
-  delete(path)     { return this.request('DELETE', path); }
+  get(path) {
+    return this.request('GET', path);
+  }
+  post(path, body) {
+    return this.request('POST', path, body);
+  }
+  put(path, body) {
+    return this.request('PUT', path, body);
+  }
+  delete(path) {
+    return this.request('DELETE', path);
+  }
 }
 
 export const http = new HttpService();

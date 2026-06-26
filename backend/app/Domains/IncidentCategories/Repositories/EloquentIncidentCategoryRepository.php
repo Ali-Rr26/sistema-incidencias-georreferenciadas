@@ -14,7 +14,7 @@ class EloquentIncidentCategoryRepository extends EloquentRepository implements I
 {
     public function __construct()
     {
-        parent::__construct(new IncidentCategory());
+        parent::__construct(new IncidentCategory);
     }
 
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator

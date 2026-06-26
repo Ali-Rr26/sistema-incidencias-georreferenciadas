@@ -1,5 +1,23 @@
 {
   "name": "sistema-incidencias-frontend",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"app/**/*.js\"",
+    "lint:fix": "eslint \"app/**/*.js\" --fix",
+    "format": "prettier --check \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
+    "format:fix": "prettier --write \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
+    "test": "vitest run",
+    "test:unit": "vitest run \"app/**/*.test.js\" --exclude \"app/**/*.integration.test.js\" --exclude \"app/**/*.snapshot.test.js\"",
+    "test:integration": "vitest run \"app/**/*.integration.test.js\"",
+    "test:snapshot": "vitest run \"app/**/*.snapshot.test.js\"",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^8.57.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.3.3",
+    "vitest": "^2.1.8"
+  }
 }

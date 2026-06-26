@@ -27,7 +27,9 @@ return new class extends Migration
                     ->pluck('id')
                     ->toArray();
 
-                if (empty($removeIds)) continue;
+                if (empty($removeIds)) {
+                    continue;
+                }
 
                 // Move pivot entries
                 $orgIdsToMove = DB::table('category_organization')

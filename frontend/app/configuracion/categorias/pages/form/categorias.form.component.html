@@ -1,12 +1,23 @@
 <div class="page-breadcrumb">
   <div class="row">
     <div class="col-7 align-self-center">
-      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1" id="form-titulo">Nueva Categoría</h4>
+      <h4
+        class="page-title text-truncate text-dark font-weight-medium mb-1"
+        id="form-titulo"
+      >
+        Nueva Categoría
+      </h4>
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb m-0 p-0">
-          <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="#/categorias" class="text-muted">Categorías</a></li>
-          <li class="breadcrumb-item text-muted active" id="breadcrumb-actual">Crear</li>
+          <li class="breadcrumb-item">
+            <a href="#/dashboard" class="text-muted">Dashboard</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a href="#/categorias" class="text-muted">Categorías</a>
+          </li>
+          <li class="breadcrumb-item text-muted active" id="breadcrumb-actual">
+            Crear
+          </li>
         </ol>
       </nav>
     </div>
@@ -20,24 +31,35 @@
         <div class="card-body">
           <h5 class="card-title" id="card-titulo">Nueva Categoría</h5>
           <h6 class="card-subtitle mb-4 text-muted">
-            Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+            Los campos marcados con <span class="text-danger">*</span> son
+            obligatorios.
           </h6>
 
           <form id="form-cat" novalidate>
-            <input type="hidden" id="cat-id">
+            <input type="hidden" id="cat-id" />
 
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="cat-nombre" class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-lg" id="cat-nombre" maxlength="100" required
-                  placeholder="Ej: Infraestructura Vial">
+                <label for="cat-nombre" class="form-label fw-bold"
+                  >Nombre <span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="cat-nombre"
+                  maxlength="100"
+                  required
+                  placeholder="Ej: Infraestructura Vial"
+                />
                 <div class="invalid-feedback">El nombre es obligatorio.</div>
               </div>
             </div>
 
             <div class="row">
               <div class="col-md-6 mb-4">
-                <label for="cat-padre" class="form-label fw-bold">Categoría padre</label>
+                <label for="cat-padre" class="form-label fw-bold"
+                  >Categoría padre</label
+                >
                 <select class="form-select form-select-lg" id="cat-padre">
                   <option value="">-- Ninguna (raíz) --</option>
                 </select>
@@ -45,13 +67,20 @@
             </div>
 
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary px-4" id="btn-guardar-cat">
+              <button
+                type="submit"
+                class="btn btn-primary px-4"
+                id="btn-guardar-cat"
+              >
                 <span id="cat-btn-texto">Guardar</span>
                 <span id="cat-btn-loading" class="d-none">
-                  <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+                  <span class="spinner-border spinner-border-sm me-1"></span
+                  >Guardando...
                 </span>
               </button>
-              <a href="#/categorias" class="btn btn-outline-secondary px-4">Cancelar</a>
+              <a href="#/categorias" class="btn btn-outline-secondary px-4"
+                >Cancelar</a
+              >
             </div>
           </form>
         </div>
@@ -60,11 +89,19 @@
   </div>
 </div>
 
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
-  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+  <div
+    id="toast-msg"
+    class="toast align-items-center text-white border-0"
+    role="alert"
+  >
     <div class="d-flex">
       <div class="toast-body" id="toast-msg-texto"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>

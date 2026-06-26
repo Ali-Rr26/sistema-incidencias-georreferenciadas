@@ -31,15 +31,15 @@ return new class extends Migration
             $$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_validate_leaf_category
             BEFORE INSERT OR UPDATE ON incidents
             FOR EACH ROW
             EXECUTE FUNCTION check_is_leaf_category();
-        ");
+        ');
 
         // 2. Automatic status history trigger
-        DB::statement("
+        DB::statement('
             CREATE OR REPLACE FUNCTION log_incident_status()
             RETURNS TRIGGER AS $$
             BEGIN
@@ -56,14 +56,14 @@ return new class extends Migration
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql;
-        ");
+        ');
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_log_incident_status
             AFTER UPDATE ON incidents
             FOR EACH ROW
             EXECUTE FUNCTION log_incident_status();
-        ");
+        ');
 
         // 3. Auto geolocation trigger
         DB::statement("
@@ -92,12 +92,12 @@ return new class extends Migration
             $$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_auto_assign_location
             BEFORE INSERT OR UPDATE OF geom ON incidents
             FOR EACH ROW
             EXECUTE FUNCTION auto_assign_location();
-        ");
+        ');
     }
 
     /**

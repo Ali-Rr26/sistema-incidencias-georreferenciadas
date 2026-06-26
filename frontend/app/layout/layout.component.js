@@ -11,7 +11,9 @@ const TEMPLATE_URL = 'app/layout/layout.component.html';
 export async function mountLayout() {
   const response = await fetch(TEMPLATE_URL, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`Failed to load layout template: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to load layout template: ${response.status} ${response.statusText}`,
+    );
   }
 
   const html = await response.text();
@@ -33,9 +35,14 @@ export async function shellInitFn() {
     const user = await auth.me();
     const nameEl = document.getElementById('user-name');
     const avatarEl = document.getElementById('user-avatar');
-    if (nameEl) nameEl.textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
-    if (avatarEl) avatarEl.textContent = (user.first_name || user.email)[0].toUpperCase();
-  } catch { /* keep defaults */ }
+    if (nameEl)
+      nameEl.textContent =
+        `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+    if (avatarEl)
+      avatarEl.textContent = (user.first_name || user.email)[0].toUpperCase();
+  } catch {
+    /* keep defaults */
+  }
 
   const logout = async () => {
     await auth.logout();
@@ -43,6 +50,9 @@ export async function shellInitFn() {
     window.location.hash = '#/login';
   };
 
-  document.getElementById('logout-btn')?.addEventListener('click', e => { e.preventDefault(); logout(); });
+  document.getElementById('logout-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    logout();
+  });
   document.getElementById('logout-sidebar')?.addEventListener('click', logout);
 }

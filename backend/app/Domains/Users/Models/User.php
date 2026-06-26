@@ -6,6 +6,7 @@ namespace App\Domains\Users\Models;
 
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Models\Session;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,13 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
+
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
 
     protected $fillable = [
         'role_id',
@@ -24,18 +31,18 @@ class User extends Authenticatable
         'first_name',
         'last_name',
         'phone',
-        'avatar'
+        'avatar',
     ];
 
     protected $hidden = [
-        'passsword'
+        'passsword',
     ];
 
     protected function casts(): array
     {
         return [
             'avatar' => 'array',
-            'password' => 'hashed'
+            'password' => 'hashed',
         ];
     }
 
@@ -63,10 +70,5 @@ class User extends Authenticatable
             ->where('resource', $resource)
             ->where('action', $action)
             ->exists() ?? false;
-        }
-
-
+    }
 }
-
-
-

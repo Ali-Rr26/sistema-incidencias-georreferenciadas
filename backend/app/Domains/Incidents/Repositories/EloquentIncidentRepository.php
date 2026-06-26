@@ -13,7 +13,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
 {
     public function __construct()
     {
-        parent::__construct(new Incident());
+        parent::__construct(new Incident);
     }
 
     protected function applyFilters(Builder $query, array $filters): void

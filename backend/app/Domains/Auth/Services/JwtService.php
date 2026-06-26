@@ -31,12 +31,12 @@ class JwtService
         }
 
         $this->accessConfig = Configuration::forSymmetricSigner(
-            new Sha256(),
+            new Sha256,
             InMemory::plainText($accessSecret),
         );
 
         $this->refreshConfig = Configuration::forSymmetricSigner(
-            new Sha256(),
+            new Sha256,
             InMemory::plainText($refreshSecret),
         );
 
@@ -46,7 +46,7 @@ class JwtService
 
     public function issueAccessToken(string $userId, string $sessionId, string $email): string
     {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         return $this->accessConfig->builder()
             ->identifiedBy((string) Str::uuid())
@@ -61,7 +61,7 @@ class JwtService
 
     public function issueRefreshToken(string $userId, string $sessionId, string $email): string
     {
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
 
         return $this->refreshConfig->builder()
             ->identifiedBy((string) Str::uuid())
@@ -89,7 +89,7 @@ class JwtService
         try {
             $token = $config->parser()->parse($tokenString);
 
-            if ($token->isExpired(new DateTimeImmutable())) {
+            if ($token->isExpired(new DateTimeImmutable)) {
                 return null;
             }
 

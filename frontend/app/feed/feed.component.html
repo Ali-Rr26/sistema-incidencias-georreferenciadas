@@ -1,7 +1,12 @@
 <!-- Feed público — sin shell autenticado -->
 <header class="feed-header">
   <span class="feed-header-logo">📍 Incidencias</span>
-  <a href="#/login" class="btn btn-sm btn-outline-secondary" style="font-size:.8rem;">Ingresar</a>
+  <a
+    href="#/login"
+    class="btn btn-sm btn-outline-secondary"
+    style="font-size: 0.8rem"
+    >Ingresar</a
+  >
 </header>
 
 <div class="feed-filters" id="feed-filters">
@@ -14,12 +19,36 @@
 <main>
   <div id="feed-cargando" class="feed-grid">
     <!-- Skeleton cards -->
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-    <div class="feed-skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="skeleton-thumb"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
   </div>
 
   <div id="feed-vacio" class="feed-empty d-none">
@@ -29,8 +58,18 @@
 
   <div id="feed-grid" class="feed-grid d-none"></div>
 
-  <div class="feed-load-more" id="feed-paginacion" style="display:none!important;"></div>
-  <div class="feed-load-more" id="feed-cargar-mas" style="display:none!important;">
-    <button class="btn btn-outline-secondary btn-sm" id="btn-cargar-mas">Cargar más</button>
+  <div
+    class="feed-load-more"
+    id="feed-paginacion"
+    style="display: none !important"
+  ></div>
+  <div
+    class="feed-load-more"
+    id="feed-cargar-mas"
+    style="display: none !important"
+  >
+    <button class="btn btn-outline-secondary btn-sm" id="btn-cargar-mas">
+      Cargar más
+    </button>
   </div>
 </main>

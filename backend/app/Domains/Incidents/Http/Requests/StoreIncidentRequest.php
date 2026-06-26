@@ -19,9 +19,9 @@ class StoreIncidentRequest extends FormRequest
     {
         return [
             'incident_category_id' => 'required|integer|exists:incident_categories,id',
-            'location_id'          => 'required|integer|exists:locations,id',
-            'priority'             => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
-            'geom'                 => 'nullable|json',
+            'location_id' => 'required|integer|exists:locations,id',
+            'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
+            'geom' => 'nullable|json',
         ];
     }
 
@@ -29,11 +29,11 @@ class StoreIncidentRequest extends FormRequest
     {
         return [
             'incident_category_id.required' => 'The incident category is required.',
-            'incident_category_id.exists'   => 'The selected category does not exist.',
-            'location_id.required'          => 'The location is required.',
-            'location_id.exists'            => 'The selected location does not exist.',
-            'priority.required'             => 'The priority is required.',
-            'priority.in'                   => 'Priority must be: low, medium or high.',
+            'incident_category_id.exists' => 'The selected category does not exist.',
+            'location_id.required' => 'The location is required.',
+            'location_id.exists' => 'The selected location does not exist.',
+            'priority.required' => 'The priority is required.',
+            'priority.in' => 'Priority must be: low, medium or high.',
         ];
     }
 }
