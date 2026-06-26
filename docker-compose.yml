@@ -8,6 +8,9 @@ services:
       dockerfile: frontend/Dockerfile
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_started
     networks:
       - dev-network
 

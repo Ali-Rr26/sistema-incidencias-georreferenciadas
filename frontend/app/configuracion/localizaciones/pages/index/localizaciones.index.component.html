@@ -47,7 +47,7 @@
   </div>
 
   <div class="card">
-    <div class="card-body p-0">
+    <div class="card-body">
       <div id="estado-cargando" class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
         <p class="text-muted mt-2 mb-0">Cargando localizaciones...</p>
@@ -63,14 +63,12 @@
       </div>
       <div id="contenedor-tabla" class="d-none">
         <div class="table-responsive d-none d-md-block">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
+          <table class="table border table-striped table-bordered mb-0">
+            <thead id="thead-locs">
               <tr>
-                <th class="ps-3">#</th>
                 <th>Nombre</th>
                 <th>Código</th>
                 <th>Nivel</th>
-                <th>Padre</th>
                 <th class="text-center">Acciones</th>
               </tr>
             </thead>

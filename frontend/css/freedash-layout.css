@@ -518,3 +518,19 @@ ul.list-style-none li a:hover {
   5%   { top: 28px; left: 28px; width: 0; height: 0; opacity: 1; }
   100% { top: -1px; left: -1px; width: 58px; height: 58px; opacity: 0; }
 }
+
+/* -----------------------------------------------
+   Sidebar active item — purple gradient (skin6)
+   ----------------------------------------------- */
+.sidebar-nav #sidebarnav .sidebar-item.selected > .sidebar-link {
+  border-radius: 0px 60px 60px 0px;
+  color: #fff !important;
+  background: linear-gradient(to right, #8971ea, #7f72ea, #7574ea, #6a75e9, #5f76e8);
+  box-shadow: 0px 7px 12px 0px rgba(95, 118, 232, 0.21);
+  opacity: 1;
+}
+.sidebar-nav #sidebarnav .sidebar-item.selected > .sidebar-link .feather-icon,
+.sidebar-nav #sidebarnav .sidebar-item.selected > .sidebar-link i {
+  color: #fff;
+}
+}
