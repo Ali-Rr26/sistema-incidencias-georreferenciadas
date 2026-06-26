@@ -15,6 +15,8 @@ use App\Domains\Roles\Repositories\EloquentRoleRepository;
 use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Sessions\Repositories\EloquentSessionRepository;
 use App\Domains\Sessions\Repositories\SessionRepository;
+use App\StatusHistory\Repositories\EloquentStatusHistoryRepository;
+use App\StatusHistory\Repositories\StatusHistoryRepository;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OrganizationRepository::class, EloquentOrganizationRepository::class);
         $this->app->bind(IncidentCategoryRepository::class, EloquentIncidentCategoryRepository::class);
         $this->app->bind(IncidentRepository::class, EloquentIncidentRepository::class);
+        $this->app->bind(StatusHistoryRepository::class, EloquentStatusHistoryRepository::class);
     }
 
     public function boot(): void
