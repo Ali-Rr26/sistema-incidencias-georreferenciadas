@@ -1,6 +1,7 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 
+      c3.src = 'assets/extra-libs/c3/c3.min.js';
 export default defineComponent({
   templateUrl: 'app/dashboard/pages/dashboard/dashboard.component.html',
   styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
