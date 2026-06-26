@@ -1,0 +1,71 @@
+/* ==============================================
+   Variables CSS — Design Tokens
+   Sistema de Incidencias Georreferenciadas
+   ==============================================
+   Centraliza colores, sombras y gradientes.
+   Para cambiar de theme, tocar solo este archivo.
+   ============================================== */
+
+:root {
+  /* =============================================
+     Brand / Primary
+     ============================================= */
+  --color-primary:         #5f76e8;
+  --color-primary-rgb:     95, 118, 232;
+  --color-primary-light:   #8971ea;
+  --color-primary-dark:    #6a75e9;
+  --color-accent:          #2962FF;
+
+  /* =============================================
+     Text
+     ============================================= */
+  --text-dark:    #212529;
+  --text-default: #7c8798;
+  --text-muted:   #8392a5;
+  --text-light:   #bcc3d3;
+  --text-white:   #ffffff;
+
+  /* =============================================
+     Backgrounds
+     ============================================= */
+  --bg-page:   #f9fbfd;
+  --bg-card:   #ffffff;
+  --bg-hover:  #e8eaec;
+
+  /* =============================================
+     Borders
+     ============================================= */
+  --border-light:  #edf2f9;
+  --border-medium: #ced4da;
+
+  /* =============================================
+     Shadows
+     ============================================= */
+  --shadow-sm:       0 3px 9px 0 rgba(169, 184, 200, 0.15);
+  --shadow-md:       0px 3px 9px 0px rgba(162, 176, 190, 0.15);
+  --shadow-dropdown: 1px 1px 15px rgba(0, 0, 0, 0.1);
+  --shadow-selected:        0px 7px 12px 0px rgba(95, 118, 232, 0.21);
+  --shadow-navbar-header:   0 -7px 9px 0 rgba(169, 184, 200, 0.15);
+  --shadow-custom:          0 2px 9px 0 rgba(169, 184, 200, 0.2);
+  --shadow-boxed:           1px 0 80px rgba(0, 0, 0, 0.2);
+
+  /* =============================================
+     Sidebar (skin6 — white bg, dark text)
+     ============================================= */
+  --sidebar-bg:            #ffffff;
+  --sidebar-link-color:    #2a3547;
+  --sidebar-link-icon:     #2a3547;
+  --sidebar-active-text:   #ffffff;
+  --sidebar-submenu-text:  #1c2d41;
+  --sidebar-nav-cap:       #bcc3d3;
+  --sidebar-nav-cap-dark:  #000000;
+  --sidebar-divider:       #2a3547;
+  --sidebar-user-border:   rgba(255, 255, 255, 0.3);
+
+  /* =============================================
+     Gradients
+     ============================================= */
+  --gradient-primary:         linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-dark:            linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  --gradient-sidebar-active:  linear-gradient(to right, #8971ea, #7f72ea, #7574ea, #6a75e9, #5f76e8);
+}

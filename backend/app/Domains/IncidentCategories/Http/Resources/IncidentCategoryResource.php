@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\IncidentCategories\Http\Resources;
 
+use App\Domains\Organizations\Http\Resources\OrganizationResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,9 +15,8 @@ class IncidentCategoryResource extends JsonResource
         return [
             'id'              => $this->id,
             'name'            => $this->name,
-            'organization_id' => $this->organization_id,
             'parent_id'       => $this->parent_id,
-            'organization'    => $this->whenLoaded('organization'),
+            'organizations'   => OrganizationResource::collection($this->whenLoaded('organizations')),
             'parent'          => new self($this->whenLoaded('parent')),
             'children'        => self::collection($this->whenLoaded('children')),
         ];

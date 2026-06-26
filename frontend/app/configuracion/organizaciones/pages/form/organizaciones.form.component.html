@@ -1,0 +1,105 @@
+<div class="page-breadcrumb">
+  <div class="row">
+    <div class="col-7 align-self-center">
+      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1" id="form-titulo">Nueva Organización</h4>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb m-0 p-0">
+          <li class="breadcrumb-item"><a href="#/dashboard" class="text-muted">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="#/organizaciones" class="text-muted">Organizaciones</a></li>
+          <li class="breadcrumb-item text-muted active" aria-current="page" id="breadcrumb-actual">Crear</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title" id="card-titulo">Nueva Organización</h5>
+          <h6 class="card-subtitle mb-4 text-muted">
+            Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+          </h6>
+
+          <form id="form-org" novalidate>
+            <input type="hidden" id="org-id">
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="org-nombre" class="form-label fw-bold">Nombre <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-lg" id="org-nombre" maxlength="100" required
+                  placeholder="Ej: GAD Municipal del Cantón Quito">
+                <div class="invalid-feedback">El nombre es obligatorio (máx. 100 caracteres).</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="org-padre" class="form-label fw-bold">Organización padre</label>
+                <select class="form-select form-select-lg" id="org-padre">
+                  <option value="">-- Ninguna (raíz) --</option>
+                </select>
+                <div class="form-text">Seleccioná una organización si esta es sucursal/suborg.</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="org-location-pais" class="form-label fw-bold">País <span class="text-danger">*</span></label>
+                <select class="form-select" id="org-location-pais" required>
+                  <option value="">-- Seleccione --</option>
+                </select>
+                <div class="invalid-feedback">Seleccione un país.</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="org-location-provincia" class="form-label fw-bold">Provincia <span class="text-danger">*</span></label>
+                <select class="form-select" id="org-location-provincia" disabled required>
+                  <option value="">-- Seleccione --</option>
+                </select>
+                <div class="invalid-feedback">Seleccione una provincia.</div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="org-location-ciudad" class="form-label fw-bold">Ciudad</label>
+                <select class="form-select" id="org-location-ciudad" disabled>
+                  <option value="">-- Opcional --</option>
+                </select>
+                <div class="form-text">Opcional: seleccioná una ciudad para mayor precisión.</div>
+              </div>
+            </div>
+            <input type="hidden" id="org-location">
+
+            <div class="row">
+              <div class="col-md-6 mb-4">
+                <label for="org-categorias" class="form-label fw-bold">Categorías de incidencias</label>
+                <select class="form-select" id="org-categorias" multiple>
+                </select>
+                <div class="form-text">Seleccioná una o más categorías que aplican a esta organización.</div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4" id="btn-guardar-org">
+                <span id="org-btn-texto">Guardar</span>
+                <span id="org-btn-loading" class="d-none">
+                  <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+                </span>
+              </button>
+              <a href="#/organizaciones" class="btn btn-outline-secondary px-4">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
+  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg-texto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>

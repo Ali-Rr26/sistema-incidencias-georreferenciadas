@@ -21,7 +21,6 @@ export default defineComponent({
       document.getElementById('stat-ubicaciones').textContent = ubicaciones;
     } catch { /* keep zeros */ }
 
-    if (window.feather) feather.replace();
   },
 
   onDestroy() {}

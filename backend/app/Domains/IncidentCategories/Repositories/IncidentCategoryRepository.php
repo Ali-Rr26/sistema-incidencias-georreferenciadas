@@ -9,5 +9,5 @@ use Illuminate\Support\Collection;
 
 interface IncidentCategoryRepository extends Repository
 {
-    public function findByOrganization(int $organizationId): Collection;
+    public function tree(): Collection;
 }

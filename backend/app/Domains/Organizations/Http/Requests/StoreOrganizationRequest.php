@@ -17,17 +17,22 @@ class StoreOrganizationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'        => 'required|string|max:100',
-            'location_id' => 'required|integer|exists:locations,id',
+            'name'          => 'required|string|max:100',
+            'location_id'   => 'required|integer|exists:locations,id',
+            'parent_id'     => 'nullable|integer|exists:organizations,id',
+            'category_ids'  => 'nullable|array',
+            'category_ids.*' => 'integer|exists:incident_categories,id',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'name.required'        => 'The name is required.',
-            'location_id.required' => 'The location is required.',
-            'location_id.exists'   => 'The selected location does not exist.',
+            'name.required'          => 'The name is required.',
+            'location_id.required'   => 'The location is required.',
+            'location_id.exists'     => 'The selected location does not exist.',
+            'parent_id.exists'       => 'The selected parent organization does not exist.',
+            'category_ids.*.exists'  => 'One or more selected categories do not exist.',
         ];
     }
 }

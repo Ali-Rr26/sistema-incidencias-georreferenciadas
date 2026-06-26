@@ -8,6 +8,7 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,6 +19,7 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'location_id',
+        'parent_id',
     ];
 
     public function location(): BelongsTo
@@ -25,8 +27,18 @@ class Organization extends Model
         return $this->belongsTo(Location::class);
     }
 
-    public function incidentCategories(): HasMany
+    public function parent(): BelongsTo
     {
-        return $this->hasMany(IncidentCategory::class);
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function incidentCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(IncidentCategory::class, 'category_organization');
     }
 }

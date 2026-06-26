@@ -3,15 +3,12 @@
    Solo estilos complementarios a Freedash.
    ============================================== */
 
+/* Design tokens — colores, sombras, gradientes centralizados */
+@import url("variables.css");
+
 /* Sidebar — shared across all authenticated views */
 @import url("../app/layout/sidebar/sidebar.component.css");
 @import url("../app/layout/navbar/navbar.component.css");
-
-:root {
-  /* Gradientes reutilizables */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-dark:    linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-}
 
 /* ==============================================
    Utility classes — gradientes
@@ -21,11 +18,11 @@
 .btn-gradient {
   background: var(--gradient-primary);
   border: none;
-  color: #fff;
+  color: var(--text-white);
 }
 .btn-gradient:hover {
   opacity: 0.9;
-  color: #fff;
+  color: var(--text-white);
 }
 
 /* ==============================================

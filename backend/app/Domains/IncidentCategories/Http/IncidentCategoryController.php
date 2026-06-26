@@ -25,10 +25,17 @@ class IncidentCategoryController extends Controller
         $this->authorizeResource(IncidentCategory::class, 'incident_category');
     }
 
+    public function tree(): JsonResponse
+    {
+        $tree = $this->categories->tree();
+
+        return response()->json(['data' => IncidentCategoryResource::collection($tree)]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $categories = $this->categories->paginate(
-            $request->only(['search', 'organization_id', 'parent_id', 'per_page']),
+            $request->only(['search', 'parent_id', 'per_page']),
         );
 
         return (new IncidentCategoryCollection($categories))->response();

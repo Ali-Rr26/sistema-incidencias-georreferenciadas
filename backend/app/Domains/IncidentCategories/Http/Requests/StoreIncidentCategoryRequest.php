@@ -17,19 +17,15 @@ class StoreIncidentCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'            => 'required|string|max:100',
-            'organization_id' => 'required|integer|exists:organizations,id',
-            'parent_id'       => 'nullable|integer|exists:incident_categories,id',
+            'name'      => 'required|string|max:100',
+            'parent_id' => 'nullable|integer|exists:incident_categories,id',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'name.required'            => 'The name is required.',
-            'organization_id.required' => 'The organization is required.',
-            'organization_id.exists'   => 'The selected organization does not exist.',
-            'parent_id.exists'         => 'The selected parent category does not exist.',
+            'name.required' => 'The name is required.',
         ];
     }
 }
