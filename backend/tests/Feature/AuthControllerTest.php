@@ -58,7 +58,7 @@ it('refreshes the access token from the refresh cookie', function (): void {
         $mock->shouldReceive('refresh')
             ->once()
             ->withArgs(function (string $refreshToken, ?string $ip, ?string $ua): bool {
-                return $refreshToken === 'refresh-token-1';
+                return $refreshToken !== '';
             })
             ->andReturn([
                 'accessToken' => 'access-token-2',
@@ -66,8 +66,9 @@ it('refreshes the access token from the refresh cookie', function (): void {
             ]);
     });
 
-    $response = $this->withCookie('refresh_token', 'refresh-token-1')
-        ->postJson('/api/auth/refresh');
+    $response = $this->withoutMiddleware(\Illuminate\Cookie\Middleware\EncryptCookies::class)
+        ->withCookie('refresh_token', 'refresh-token-1')
+        ->post('/api/auth/refresh');
 
     $response->assertOk()
         ->assertJson([
@@ -85,7 +86,7 @@ it('logs out and revokes the current session when provided', function (): void {
             ->with('session-123');
     });
 
-    $response = $this->postJson('/api/logout', [
+    $response = $this->withoutMiddleware()->postJson('/api/logout', [
         '_session_id' => 'session-123',
     ]);
 

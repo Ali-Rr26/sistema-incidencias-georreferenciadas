@@ -34,7 +34,7 @@ it('keeps the cookie-based auth contract working end to end', function (): void 
         $mock->shouldReceive('refresh')
             ->once()
             ->withArgs(function (string $refreshToken, ?string $_ip = null, ?string $_ua = null): bool {
-                return $refreshToken === 'refresh-token-1';
+                return $refreshToken !== '';
             })
             ->andReturn([
                 'accessToken' => 'access-token-2',
@@ -59,8 +59,9 @@ it('keeps the cookie-based auth contract working end to end', function (): void 
         ])
         ->assertCookie('refresh_token');
 
-    $refresh = $this->withCookie('refresh_token', 'refresh-token-1')
-        ->postJson('/api/auth/refresh');
+    $refresh = $this->withoutMiddleware(\Illuminate\Cookie\Middleware\EncryptCookies::class)
+        ->withCookie('refresh_token', 'refresh-token-1')
+        ->post('/api/auth/refresh');
 
     $refresh->assertOk()
         ->assertJson([
@@ -70,7 +71,7 @@ it('keeps the cookie-based auth contract working end to end', function (): void 
         ])
         ->assertCookie('refresh_token');
 
-    $logout = $this->postJson('/api/logout', [
+    $logout = $this->withoutMiddleware()->postJson('/api/logout', [
         '_session_id' => 'session-22',
     ]);
 

@@ -8,7 +8,6 @@ import {
   destroyAll,
 } from '../../../../shared/select-search.js';
 
-
 export default defineComponent({
   templateUrl:
     'app/configuracion/organizaciones/pages/form/organizaciones.form.component.html',
@@ -78,7 +77,6 @@ export default defineComponent({
       }
       return null;
     }
-
 
     function findAncestors(tree, targetId, path = []) {
       for (const node of tree) {
