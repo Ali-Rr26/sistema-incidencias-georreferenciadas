@@ -37,7 +37,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Dejar campo título vacío, llenar demás campos, intentar guardar.
 - **Criterio de aceptación:** Mensaje "El campo título es obligatorio" en rojo debajo del campo, botón deshabilitado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
