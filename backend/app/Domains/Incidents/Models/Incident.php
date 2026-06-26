@@ -24,6 +24,20 @@ class Incident extends Model
 
     public const STATUS_RESOLVED = 'resolved';
 
+    public const STATUS_CLOSED = 'closed';
+
+    private const STATUS_TRANSITIONS = [
+        self::STATUS_PENDING     => [self::STATUS_IN_PROGRESS],
+        self::STATUS_IN_PROGRESS => [self::STATUS_RESOLVED, self::STATUS_PENDING],
+        self::STATUS_RESOLVED    => [self::STATUS_CLOSED, self::STATUS_IN_PROGRESS],
+        self::STATUS_CLOSED      => [self::STATUS_RESOLVED],
+    ];
+
+    public static function isValidTransition(string $from, string $to): bool
+    {
+        return in_array($to, self::STATUS_TRANSITIONS[$from] ?? [], strict: true);
+    }
+
     public const PRIORITY_LOW = 'low';
 
     public const PRIORITY_MEDIUM = 'medium';
