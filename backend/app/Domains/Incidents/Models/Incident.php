@@ -35,6 +35,8 @@ class Incident extends Model
         'organization_id',
         'user_id',
         'location_id',
+        'title',
+        'description',
         'status',
         'priority',
         'resolution_date',

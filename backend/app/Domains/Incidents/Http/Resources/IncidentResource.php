@@ -17,6 +17,8 @@ class IncidentResource extends JsonResource
             'organization_id' => $this->organization_id,
             'user_id' => $this->user_id,
             'location_id' => $this->location_id,
+            'title' => $this->title,
+            'description' => $this->description,
             'status' => $this->status,
             'priority' => $this->priority,
             'resolution_date' => $this->resolution_date,
