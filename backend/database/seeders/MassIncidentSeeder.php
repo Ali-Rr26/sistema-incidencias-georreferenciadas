@@ -8,7 +8,6 @@ use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
-use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Seeder;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -93,8 +92,6 @@ class MassIncidentSeeder extends Seeder
         $bar = $this->command?->getOutput()->createProgressBar(self::TOTAL);
         $bar?->start();
 
-        $orgByCity = $this->buildOrgMap();
-
         $now = now();
         $incidents = [];
 
@@ -126,13 +123,11 @@ class MassIncidentSeeder extends Seeder
 
             $category = $categories->random();
             $user = $users->random();
-            $orgId = $orgByCity[$cityCode] ?? null;
 
             $incidents[] = [
                 'incident_category_id' => $category->id,
                 'user_id' => $user->id,
                 'location_id' => $location->id,
-                'organization_id' => $orgId,
                 'title' => 'Incident: '.$category->name,
                 'status' => $status,
                 'priority' => $priority,
@@ -199,26 +194,6 @@ class MassIncidentSeeder extends Seeder
         }
 
         $this->command?->info($commentCount.' comments inserted across '.$incidentIds->count().' incidents.');
-    }
-
-    private function buildOrgMap(): array
-    {
-        // Map city codes to organization IDs so incidents in a city
-        // are assigned to that city's municipal GAD.
-        $orgs = Organization::with('location')->get();
-
-        $map = [];
-        foreach ($orgs as $org) {
-            $cityCode = $org->location?->code;
-            if ($cityCode !== null && array_key_exists($cityCode, self::CITY_COORDS)) {
-                // Prefer parent orgs over branches for organization_id
-                if ($org->parent_id === null) {
-                    $map[$cityCode] = $org->id;
-                }
-            }
-        }
-
-        return $map;
     }
 
     /**

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Organizations\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Models\IncidentClaim;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -40,5 +42,15 @@ class Organization extends Model
     public function incidentCategories(): BelongsToMany
     {
         return $this->belongsToMany(IncidentCategory::class, 'category_organization');
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(IncidentClaim::class, 'organization_id');
     }
 }
