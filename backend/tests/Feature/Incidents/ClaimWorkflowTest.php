@@ -28,6 +28,7 @@ beforeEach(function (): void {
         'incident_category_id' => $category->id,
         'user_id' => $this->user->id,
         'location_id' => $location->id,
+        'title' => 'Test Incident',
         'status' => 'pending',
         'priority' => 'medium',
     ]);
@@ -69,6 +70,7 @@ it('unowned incident appears in unclaimed incident query', function (): void {
         'incident_category_id' => $category2->id,
         'user_id' => $this->user->id,
         'location_id' => $location2->id,
+        'title' => 'Claimed Incident',
         'status' => 'pending',
         'priority' => 'low',
     ]);
