@@ -10,6 +10,8 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -71,5 +73,15 @@ class Incident extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(IncidentClaim::class);
+    }
+
+    public function acceptedClaim(): HasOne
+    {
+        return $this->hasOne(IncidentClaim::class)->where('status', 'accepted');
     }
 }

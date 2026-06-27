@@ -38,11 +38,10 @@ class IncidentController extends Controller
     public function store(StoreIncidentRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $category = IncidentCategory::findOrFail($validated['incident_category_id']);
+        IncidentCategory::findOrFail($validated['incident_category_id']);
 
         $data = array_merge($validated, [
             'user_id' => $request->user()->id,
-            'organization_id' => $category->organization_id,
         ]);
 
         $incident = $this->incidents->create($data);
