@@ -1,7 +1,7 @@
 <?php
 
 use App\Assignments\Interfaces\AssignmentController;
-use App\Comments\Interfaces\CommentController;
+use App\Domains\Comments\Http\CommentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\FeedController;

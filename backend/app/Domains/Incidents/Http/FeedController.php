@@ -5,23 +5,43 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
+use App\Domains\Incidents\Models\FeedService;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 
 class FeedController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $perPage = min((int) $request->get('per_page', 12), 50);
+        $perPage = min((int) $request->integer('per_page', 12), 50);
+        $page = (int) $request->integer('page', 1);
 
-        $incidents = Incident::with(['category.organization', 'location'])
-            ->when($request->get('organization_id'), fn ($q, $v) => $q->where('organization_id', $v))
-            ->when($request->get('status'), fn ($q, $v) => $q->where('status', $v))
-            ->when($request->get('location_id'), function ($q, $v) {
-                $location = Location::find((int) $v);
+        try {
+            $result = app(FeedService::class)->getFeed(
+                status: $request->get('status'),
+                organizationId: $request->filled('organization_id') ? (int) $request->integer('organization_id') : null,
+                locationId: $request->filled('location_id') ? (int) $request->integer('location_id') : null,
+                page: $page,
+                perPage: $perPage,
+            );
+
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            Log::warning('Redis feed failed, falling back to PostgreSQL', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // PostgreSQL fallback path
+        $incidents = Incident::with(['category.organizations', 'location', 'user'])
+            ->when($request->filled('organization_id'), fn ($q) => $q->where('organization_id', $request->integer('organization_id')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->get('status')))
+            ->when($request->filled('location_id'), function ($q) use ($request) {
+                $location = Location::find($request->integer('location_id'));
                 if ($location) {
                     $ids = $location->descendantsAndSelf()->pluck('id');
                     $q->whereIn('location_id', $ids);
