@@ -2,77 +2,101 @@
 
 namespace Database\Seeders;
 
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    /** Usuarios por defecto del sistema */
-    private const USERS = [
-        // ─── Admin ───────────────────────────────────
-        [
-            'email' => 'admin@sistema.com',
-            'password' => 'Admin123!',
-            'role_id' => 1, // Admin
-            'first_name' => 'Admin',
-            'last_name' => 'Sistema',
-        ],
-        [
-            'email' => 'admin2@sistema.com',
-            'password' => 'Admin123!',
-            'role_id' => 1,
-            'first_name' => 'Admin',
-            'last_name' => 'Secundario',
-        ],
-
-        // ─── Operadores ──────────────────────────────
-        [
-            'email' => 'operador1@sistema.com',
-            'password' => 'Operador123!',
-            'role_id' => 2, // Operador
-            'first_name' => 'Carlos',
-            'last_name' => 'García',
-        ],
-        [
-            'email' => 'operador2@sistema.com',
-            'password' => 'Operador123!',
-            'role_id' => 2,
-            'first_name' => 'María',
-            'last_name' => 'López',
-        ],
-
-        // ─── Usuarios regulares ──────────────────────
-        [
-            'email' => 'usuario1@test.com',
-            'password' => 'Usuario123!',
-            'role_id' => 3, // Usuario
-            'first_name' => 'Juan',
-            'last_name' => 'Pérez',
-        ],
-        [
-            'email' => 'usuario2@test.com',
-            'password' => 'Usuario123!',
-            'role_id' => 3,
-            'first_name' => 'Ana',
-            'last_name' => 'Martínez',
-        ],
-    ];
-
     public function run(): void
     {
-        foreach (self::USERS as $user) {
+        $roleMap = Role::pluck('id', 'name')->toArray();
+
+        $adminSistemaRoleId = $roleMap[UserRole::AdminSistema->value] ?? 1;
+        $operadorSistemaRoleId = $roleMap[UserRole::OperadorSistema->value] ?? 2;
+        $adminOrgRoleId = $roleMap[UserRole::AdminOrganizacion->value] ?? 3;
+        $operadorOrgRoleId = $roleMap[UserRole::OperadorOrganizacion->value] ?? 4;
+        $usuarioRoleId = $roleMap[UserRole::Usuario->value] ?? 5;
+
+        // ─── 1. Usuarios Globales de Sistema ─────────────────────────────
+        $globalUsers = [
+            [
+                'email' => 'admin@sistema.com',
+                'password' => 'Admin123!',
+                'role_id' => $adminSistemaRoleId,
+                'first_name' => 'Admin Global',
+                'last_name' => 'Sistema',
+                'organization_id' => null,
+            ],
+            [
+                'email' => 'operador@sistema.com',
+                'password' => 'Operador123!',
+                'role_id' => $operadorSistemaRoleId,
+                'first_name' => 'Operador Global',
+                'last_name' => 'Sistema',
+                'organization_id' => null,
+            ],
+            [
+                'email' => 'usuario@test.com',
+                'password' => 'Usuario123!',
+                'role_id' => $usuarioRoleId,
+                'first_name' => 'Ciudadano',
+                'last_name' => 'Ejemplo',
+                'organization_id' => null,
+            ],
+        ];
+
+        foreach ($globalUsers as $u) {
             User::query()->updateOrCreate(
-                ['email' => $user['email']],
+                ['email' => $u['email']],
                 [
-                    'role_id' => $user['role_id'],
-                    'password' => Hash::make($user['password']),
-                    'first_name' => $user['first_name'],
-                    'last_name' => $user['last_name'],
+                    'role_id' => $u['role_id'],
+                    'organization_id' => $u['organization_id'],
+                    'password' => Hash::make($u['password']),
+                    'first_name' => $u['first_name'],
+                    'last_name' => $u['last_name'],
                 ],
             );
+            $this->command?->info("Usuario global [{$u['email']}] creado/actualizado.");
+        }
 
-            $this->command?->info("Usuario {$user['email']} creado/actualizado.");
+        // ─── 2. Un Admin y un Operador por cada Organización ──────────────
+        $organizations = Organization::all();
+
+        foreach ($organizations as $org) {
+            $slug = Str::slug($org->name);
+
+            // Admin de Organización (role_id: admin_organizacion)
+            $adminEmail = "admin.{$slug}@organizacion.com";
+            User::query()->updateOrCreate(
+                ['email' => $adminEmail],
+                [
+                    'role_id' => $adminOrgRoleId,
+                    'organization_id' => $org->id,
+                    'password' => Hash::make('Admin123!'),
+                    'first_name' => 'Admin',
+                    'last_name' => $org->name,
+                ],
+            );
+            $this->command?->info("  Admin Org [{$adminEmail}] -> {$org->name}");
+
+            // Operador de Organización (role_id: operador_organizacion)
+            $operadorEmail = "operador.{$slug}@organizacion.com";
+            User::query()->updateOrCreate(
+                ['email' => $operadorEmail],
+                [
+                    'role_id' => $operadorOrgRoleId,
+                    'organization_id' => $org->id,
+                    'password' => Hash::make('Operador123!'),
+                    'first_name' => 'Operador',
+                    'last_name' => $org->name,
+                ],
+            );
+            $this->command?->info("  Operador Org [{$operadorEmail}] -> {$org->name}");
         }
     }
 }
