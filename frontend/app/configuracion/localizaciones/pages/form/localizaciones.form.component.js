@@ -1,7 +1,11 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
-import { initRemoteSelect, updateSelectOptions, destroyAll } from '../../../../shared/select-search.js';
+import {
+  initRemoteSelect,
+  updateSelectOptions,
+  destroyAll,
+} from '../../../../shared/select-search.js';
 
 const NIVEL_LABELS = {
   country: 'País',
@@ -61,7 +65,11 @@ export default defineComponent({
 
       if (!expectedParentLevel) {
         sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
-        updateSelectOptions('loc-padre', [{ value: '', text: '-- Ninguna (raíz) --' }], '');
+        updateSelectOptions(
+          'loc-padre',
+          [{ value: '', text: '-- Ninguna (raíz) --' }],
+          '',
+        );
         return;
       }
 
@@ -69,7 +77,8 @@ export default defineComponent({
         urlEndpoint: '/locations',
         getParams: () => ({ level: expectedParentLevel }),
         selectedValue: currentParentId,
-        customFormat: (item) => `${item.name} (${NIVEL_LABELS[item.level] ?? item.level})`,
+        customFormat: (item) =>
+          `${item.name} (${NIVEL_LABELS[item.level] ?? item.level})`,
       });
     }
 

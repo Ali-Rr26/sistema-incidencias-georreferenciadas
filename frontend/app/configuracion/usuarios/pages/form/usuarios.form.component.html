@@ -27,7 +27,8 @@
     <div style="padding: 28px 32px">
       <h5 class="mb-1 fw-bold text-dark" id="card-titulo">Nuevo Usuario</h5>
       <p class="text-muted mb-4" style="font-size: 13px">
-        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+        Los campos marcados con <span class="text-danger">*</span> son
+        obligatorios.
       </p>
 
       <form id="form-user" novalidate>
@@ -78,7 +79,9 @@
               required
               placeholder="Ej: juan.perez@ejemplo.com"
             />
-            <div class="invalid-feedback">Ingrese un correo electrónico válido.</div>
+            <div class="invalid-feedback">
+              Ingrese un correo electrónico válido.
+            </div>
           </div>
           <div class="col-md-6">
             <label for="user-telefono" class="form-label fw-semibold">
@@ -117,7 +120,8 @@
               <option value="">-- Ninguna (Global / Sistema) --</option>
             </select>
             <div class="form-text mt-1" style="font-size: 12px">
-              Obligatorio si el rol corresponde a Administrador u Operador de Organización.
+              Obligatorio si el rol corresponde a Administrador u Operador de
+              Organización.
             </div>
           </div>
         </div>
@@ -140,7 +144,8 @@
               placeholder="Dejar vacío para activación automática"
             />
             <div class="form-text mt-1" id="pass-hint" style="font-size: 12px">
-              Si se deja vacío al crear, el sistema genera una clave temporal de invitación.
+              Si se deja vacío al crear, el sistema genera una clave temporal de
+              invitación.
             </div>
           </div>
         </div>
@@ -148,12 +153,17 @@
         <!-- Acciones -->
         <div class="d-flex gap-2 pt-2 border-top">
           <button type="submit" class="gr-btn-primary" id="btn-guardar-user">
-            <span id="user-btn-texto"><i class="fas fa-save me-1"></i>Guardar Usuario</span>
+            <span id="user-btn-texto"
+              ><i class="fas fa-save me-1"></i>Guardar Usuario</span
+            >
             <span id="user-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+              <span class="spinner-border spinner-border-sm me-1"></span
+              >Guardando...
             </span>
           </button>
-          <a href="#/usuarios" class="btn btn-outline-secondary px-4">Cancelar</a>
+          <a href="#/usuarios" class="btn btn-outline-secondary px-4"
+            >Cancelar</a
+          >
         </div>
       </form>
     </div>

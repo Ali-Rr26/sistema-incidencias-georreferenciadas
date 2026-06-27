@@ -49,7 +49,8 @@ export default defineComponent({
 
         const orgs = oResp.data ?? oResp;
         const selOrg = document.getElementById('user-org');
-        selOrg.innerHTML = '<option value="">-- Ninguna (Global / Sistema) --</option>';
+        selOrg.innerHTML =
+          '<option value="">-- Ninguna (Global / Sistema) --</option>';
         orgs.forEach((o) => {
           const opt = document.createElement('option');
           opt.value = o.id;
@@ -113,7 +114,8 @@ export default defineComponent({
           payload.password = password;
         } else if (!id) {
           // Si es nuevo y no puso password, generar una contraseña temporal de invitación
-          payload.password = 'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
+          payload.password =
+            'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
         }
 
         document.getElementById('user-btn-texto').classList.add('d-none');

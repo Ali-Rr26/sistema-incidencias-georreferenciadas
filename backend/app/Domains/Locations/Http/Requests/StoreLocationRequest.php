@@ -45,11 +45,13 @@ class StoreLocationRequest extends FormRequest
 
             if ($level === 'country' && ! empty($parentId)) {
                 $validator->errors()->add('parent_id', 'A country cannot have a parent location.');
+
                 return;
             }
 
             if ($level !== 'country' && empty($parentId)) {
                 $validator->errors()->add('parent_id', "A parent location is required for level {$level}.");
+
                 return;
             }
 

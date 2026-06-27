@@ -7,9 +7,11 @@ const POR_PAGINA = 15;
 
 const ROLE_BADGES = {
   admin_sistema: '<span class="badge bg-danger">Admin Sistema</span>',
-  operador_sistema: '<span class="badge bg-warning text-dark">Operador Sistema</span>',
+  operador_sistema:
+    '<span class="badge bg-warning text-dark">Operador Sistema</span>',
   admin_organizacion: '<span class="badge bg-primary">Admin Org</span>',
-  operador_organizacion: '<span class="badge bg-info text-dark">Operador Org</span>',
+  operador_organizacion:
+    '<span class="badge bg-info text-dark">Operador Org</span>',
   usuario: '<span class="badge bg-secondary">Ciudadano</span>',
 };
 

@@ -27,7 +27,8 @@
     <div style="padding: 28px 32px">
       <h5 class="mb-1 fw-bold text-dark" id="card-titulo">Nueva Categoría</h5>
       <p class="text-muted mb-4" style="font-size: 13px">
-        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+        Los campos marcados con <span class="text-danger">*</span> son
+        obligatorios.
       </p>
 
       <form id="form-cat" novalidate>
@@ -51,7 +52,9 @@
               required
               placeholder="Ej: Infraestructura Vial"
             />
-            <div class="invalid-feedback">El nombre de categoría es obligatorio.</div>
+            <div class="invalid-feedback">
+              El nombre de categoría es obligatorio.
+            </div>
           </div>
           <div class="col-md-6">
             <label for="cat-padre" class="form-label fw-semibold">
@@ -69,12 +72,17 @@
         <!-- Acciones -->
         <div class="d-flex gap-2 pt-2 border-top">
           <button type="submit" class="gr-btn-primary" id="btn-guardar-cat">
-            <span id="cat-btn-texto"><i class="fas fa-save me-1"></i>Guardar Categoría</span>
+            <span id="cat-btn-texto"
+              ><i class="fas fa-save me-1"></i>Guardar Categoría</span
+            >
             <span id="cat-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+              <span class="spinner-border spinner-border-sm me-1"></span
+              >Guardando...
             </span>
           </button>
-          <a href="#/categorias" class="btn btn-outline-secondary px-4">Cancelar</a>
+          <a href="#/categorias" class="btn btn-outline-secondary px-4"
+            >Cancelar</a
+          >
         </div>
       </form>
     </div>

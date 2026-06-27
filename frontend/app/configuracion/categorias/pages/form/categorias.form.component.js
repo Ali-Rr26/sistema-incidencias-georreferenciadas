@@ -34,7 +34,8 @@ export default defineComponent({
       const resp = await http.get('/incident-categories?per_page=500');
       const cats = resp.data ?? resp;
       const sel = document.getElementById('cat-padre');
-      sel.innerHTML = '<option value="">-- Ninguna (categoría principal) --</option>';
+      sel.innerHTML =
+        '<option value="">-- Ninguna (categoría principal) --</option>';
       cats
         .filter((c) => !c.parent_id && c.id !== parseInt(exceptId))
         .forEach((c) => {

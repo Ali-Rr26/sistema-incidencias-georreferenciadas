@@ -25,9 +25,12 @@
   <!-- Form Card -->
   <div class="gr-card gr-form-card">
     <div style="padding: 28px 32px">
-      <h5 class="mb-1 fw-bold text-dark" id="card-titulo">Nueva Organización</h5>
+      <h5 class="mb-1 fw-bold text-dark" id="card-titulo">
+        Nueva Organización
+      </h5>
       <p class="text-muted mb-4" style="font-size: 13px">
-        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+        Los campos marcados con <span class="text-danger">*</span> son
+        obligatorios.
       </p>
 
       <form id="form-org" novalidate>
@@ -51,7 +54,9 @@
               required
               placeholder="Ej: GAD Municipal del Cantón Quito"
             />
-            <div class="invalid-feedback">El nombre es obligatorio (máx. 100 caracteres).</div>
+            <div class="invalid-feedback">
+              El nombre es obligatorio (máx. 100 caracteres).
+            </div>
           </div>
           <div class="col-md-6">
             <label for="org-padre" class="form-label fw-semibold">
@@ -61,7 +66,8 @@
               <option value="">-- Ninguna (Organización Principal) --</option>
             </select>
             <div class="form-text mt-1" style="font-size: 12px">
-              Seleccione una entidad matriz si esta es una sucursal o departamento derivado.
+              Seleccione una entidad matriz si esta es una sucursal o
+              departamento derivado.
             </div>
           </div>
         </div>
@@ -76,7 +82,11 @@
             <label for="org-location-pais" class="form-label fw-semibold">
               País <span class="text-danger">*</span>
             </label>
-            <select class="form-select form-select-lg" id="org-location-pais" required>
+            <select
+              class="form-select form-select-lg"
+              id="org-location-pais"
+              required
+            >
               <option value="">-- Seleccione País --</option>
             </select>
             <div class="invalid-feedback">Seleccione un país.</div>
@@ -99,7 +109,11 @@
             <label for="org-location-ciudad" class="form-label fw-semibold">
               Ciudad
             </label>
-            <select class="form-select form-select-lg" id="org-location-ciudad" disabled>
+            <select
+              class="form-select form-select-lg"
+              id="org-location-ciudad"
+              disabled
+            >
               <option value="">-- Opcional (Ciudad) --</option>
             </select>
             <div class="form-text mt-1" style="font-size: 12px">
@@ -125,7 +139,8 @@
               multiple
             ></select>
             <div class="form-text mt-1" style="font-size: 12px">
-              Seleccione los tipos de incidencias que esta organización tiene competencia para gestionar.
+              Seleccione los tipos de incidencias que esta organización tiene
+              competencia para gestionar.
             </div>
           </div>
         </div>
@@ -133,12 +148,17 @@
         <!-- Acciones -->
         <div class="d-flex gap-2 pt-2 border-top">
           <button type="submit" class="gr-btn-primary" id="btn-guardar-org">
-            <span id="org-btn-texto"><i class="fas fa-save me-1"></i>Guardar Organización</span>
+            <span id="org-btn-texto"
+              ><i class="fas fa-save me-1"></i>Guardar Organización</span
+            >
             <span id="org-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+              <span class="spinner-border spinner-border-sm me-1"></span
+              >Guardando...
             </span>
           </button>
-          <a href="#/organizaciones" class="btn btn-outline-secondary px-4">Cancelar</a>
+          <a href="#/organizaciones" class="btn btn-outline-secondary px-4"
+            >Cancelar</a
+          >
         </div>
       </form>
     </div>
