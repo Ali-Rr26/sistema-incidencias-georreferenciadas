@@ -40,7 +40,7 @@ it('first claim succeeds and sets incident organization_id', function (): void {
     $claim = $this->service->claim($this->incident, $this->org, $this->user);
 
     expect($claim)->toBeInstanceOf(IncidentClaim::class);
-    expect($claim->status)->toBe('accepted');
+    expect($claim->status->value)->toBe('accepted');
     expect($claim->incident_id)->toBe($this->incident->id);
     expect($claim->organization_id)->toBe($this->org->id);
 

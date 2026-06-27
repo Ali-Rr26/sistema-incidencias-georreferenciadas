@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\IncidentPriority;
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
@@ -54,6 +56,8 @@ class Incident extends Model
         return [
             'geom' => Point::class,
             'resolution_date' => 'datetime',
+            'status' => IncidentStatus::class,
+            'priority' => IncidentPriority::class,
         ];
     }
 
