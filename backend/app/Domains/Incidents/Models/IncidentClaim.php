@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use App\Domains\Incidents\Enums\ClaimStatus;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,7 @@ class IncidentClaim extends Model
         return [
             'claimed_at' => 'datetime',
             'released_at' => 'datetime',
+            'status' => ClaimStatus::class,
         ];
     }
 

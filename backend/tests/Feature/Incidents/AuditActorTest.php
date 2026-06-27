@@ -62,5 +62,5 @@ it('completes without exception when no user is authenticated', function (): voi
     // On SQLite the trigger does not exist but the repository update must still succeed.
     $updated = $this->repository->update($this->incident->id, ['priority' => Incident::PRIORITY_HIGH]);
 
-    expect($updated->priority)->toBe(Incident::PRIORITY_HIGH);
+    expect($updated->priority->value)->toBe(Incident::PRIORITY_HIGH);
 });
