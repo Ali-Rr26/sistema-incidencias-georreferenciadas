@@ -19,6 +19,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
+            ->with(['category', 'location', 'user'])
             ->when($filters['status'] ?? null, fn (Builder $q, string $v) => $q->where('status', $v))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $v) => $q->where('priority', $v))
             ->when($filters['location_id'] ?? null, function (Builder $q, string $v) {

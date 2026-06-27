@@ -31,6 +31,13 @@ services:
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+    volumes:
+      - ./backend/app:/var/www/backend/app
+      - ./backend/routes:/var/www/backend/routes
+      - ./backend/config:/var/www/backend/config
+      - ./backend/resources:/var/www/backend/resources
+      - ./backend/database:/var/www/backend/database
+      - ./backend/tests:/var/www/backend/tests
     depends_on:
       db:
         condition: service_healthy

@@ -21,6 +21,7 @@ class IncidentResource extends JsonResource
             'priority' => $this->priority,
             'resolution_date' => $this->resolution_date,
             'geom' => $this->when($this->geom !== null, fn () => json_decode($this->geom->toJson())),
+            'created_at' => $this->created_at,
             'category' => $this->whenLoaded('category'),
             'organization' => $this->whenLoaded('organization'),
             'user' => $this->whenLoaded('user'),
