@@ -1,189 +1,119 @@
-<div class="page-breadcrumb">
-  <div class="row align-items-center">
-    <div class="col-7 align-self-center">
-      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">
-        Categorías de Incidencias
-      </h4>
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb m-0 p-0">
-          <li class="breadcrumb-item">
-            <a href="#/dashboard" class="text-muted">Dashboard</a>
-          </li>
-          <li class="breadcrumb-item text-muted active">Categorías</li>
-        </ol>
+<div class="gr-page">
+  <!-- Header -->
+  <div class="gr-page__header">
+    <div>
+      <h1 class="gr-page__title">Categorías</h1>
+      <nav class="gr-breadcrumb">
+        <span class="gr-breadcrumb__item">Sistema</span>
+        <span class="gr-breadcrumb__sep">/</span>
+        <span class="gr-breadcrumb__item">Configuración</span>
+        <span class="gr-breadcrumb__sep">/</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          >Categorías</span
+        >
       </nav>
     </div>
-    <div class="col-5 text-end">
-      <button type="button" class="btn btn-primary btn-sm" id="btn-nueva-cat">
-        <i class="fas fa-plus me-1"></i>Nueva
+    <a href="#/categorias/crear" class="gr-btn-primary gr-btn-primary--inline">
+      <i class="fa-solid fa-circle-plus"></i>Nueva categoría
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="gr-card gr-filters">
+    <div class="gr-filters__search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input
+        type="text"
+        id="filtro-buscar"
+        class="gr-filters__input"
+        placeholder="Buscar por nombre..."
+      />
+    </div>
+    <div class="gr-filters__selects">
+      <div class="gr-select-wrap">
+        <select class="gr-select" id="filtro-org">
+          <option value="">Organización</option>
+        </select>
+        <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
+      </div>
+      <button type="button" class="gr-btn-filter" id="btn-filtrar">
+        <i class="fa-solid fa-magnifying-glass"></i>Filtrar
+      </button>
+      <button
+        type="button"
+        class="gr-btn-filter gr-btn-filter--clear"
+        id="btn-limpiar"
+        title="Limpiar filtros"
+      >
+        <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
   </div>
-</div>
 
-<div class="container-fluid">
-  <div class="card mb-3">
-    <div class="card-body py-3">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-5">
-          <input
-            type="text"
-            class="form-control form-control-sm"
-            id="filtro-buscar"
-            placeholder="Buscar por nombre..."
-          />
-        </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filtro-org">
-            <option value="">Todas las organizaciones</option>
-          </select>
-        </div>
-        <div class="col-md-4 d-flex gap-2">
-          <button
-            type="button"
-            class="btn btn-primary btn-sm w-100"
-            id="btn-filtrar"
-          >
-            <i class="fas fa-search me-1"></i>Buscar
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm"
-            id="btn-limpiar"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
+  <!-- Table card -->
+  <div class="gr-card">
+    <div id="estado-cargando" class="gr-estado-center">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2 mb-0">Cargando categorías...</p>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="card-body">
-      <div id="estado-cargando" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="text-muted mt-2 mb-0">Cargando categorías...</p>
+    <div id="estado-vacio" class="gr-estado-center d-none">
+      <i class="fa-solid fa-tag text-muted" style="font-size: 2.5rem"></i>
+      <p class="text-muted mt-3 mb-1">No se encontraron categorías.</p>
+      <a
+        href="#/categorias/crear"
+        class="gr-btn-primary gr-btn-primary--sm mt-1"
+        >Registrar la primera</a
+      >
+    </div>
+
+    <div id="estado-error" class="gr-estado-center d-none">
+      <i
+        class="fa-solid fa-triangle-exclamation text-danger"
+        style="font-size: 2.5rem"
+      ></i>
+      <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
+      <button type="button" class="gr-btn-outline mt-1" id="btn-reintentar">
+        Reintentar
+      </button>
+    </div>
+
+    <div id="contenedor-tabla" class="d-none">
+      <div class="gr-table-wrap d-none d-md-block">
+        <table class="gr-table">
+          <thead>
+            <tr>
+              <th style="width: 84px">ID</th>
+              <th>NOMBRE</th>
+              <th style="width: 190px">ORGANIZACIÓN</th>
+              <th style="width: 170px">CATEGORÍA PADRE</th>
+              <th style="width: 70px"></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
       </div>
-      <div id="estado-vacio" class="text-center py-5 d-none">
-        <i class="fas fa-tag text-muted" style="font-size: 2.5rem"></i>
-        <p class="text-muted mt-3 mb-0">No se encontraron categorías.</p>
-      </div>
-      <div id="estado-error" class="text-center py-5 d-none">
-        <i
-          class="fas fa-exclamation-circle text-danger"
-          style="font-size: 2.5rem"
-        ></i>
-        <p class="text-muted mt-3 mb-1">Error al cargar los datos.</p>
-        <button class="btn btn-sm btn-outline-primary" id="btn-reintentar">
-          Reintentar
-        </button>
-      </div>
-      <div id="contenedor-tabla" class="d-none">
-        <div class="table-responsive d-none d-md-block">
-          <table
-            class="table border table-striped table-bordered text-nowrap mb-0"
-          >
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Organización</th>
-                <th>Categoría padre</th>
-                <th class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body"></tbody>
-          </table>
-        </div>
-        <div id="contenedor-cards" class="d-md-none p-3"></div>
-        <div
-          class="d-flex justify-content-between align-items-center px-3 py-2 border-top"
-        >
-          <small class="text-muted" id="info-resultados"></small>
-          <nav>
-            <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
-          </nav>
-        </div>
+
+      <div id="contenedor-cards" class="d-md-none p-3"></div>
+
+      <div class="gr-table-footer">
+        <small class="text-muted" id="info-resultados"></small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
+        </nav>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Crear / Editar -->
-<div class="modal fade" id="modal-cat-form" tabindex="-1">
-  <div class="modal-dialog">
+<!-- Delete modal -->
+<div class="modal fade" id="modal-eliminar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modal-cat-titulo">Nueva Categoría</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-        ></button>
-      </div>
-      <form id="form-cat" novalidate>
-        <div class="modal-body">
-          <input type="hidden" id="cat-id" />
-          <div class="mb-3">
-            <label class="form-label"
-              >Nombre <span class="text-danger">*</span></label
-            >
-            <input
-              type="text"
-              class="form-control"
-              id="cat-nombre"
-              maxlength="100"
-              required
-            />
-            <div class="invalid-feedback">El nombre es obligatorio.</div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label"
-              >Organización <span class="text-danger">*</span></label
-            >
-            <select class="form-select" id="cat-org" required>
-              <option value="">-- Seleccione --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una organización.</div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Categoría padre</label>
-            <select class="form-select" id="cat-padre">
-              <option value="">-- Ninguna (raíz) --</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            data-bs-dismiss="modal"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            class="btn btn-primary btn-sm"
-            id="btn-guardar-cat"
-          >
-            <span id="cat-btn-texto">Guardar</span>
-            <span id="cat-btn-loading" class="d-none"
-              ><span class="spinner-border spinner-border-sm me-1"></span
-              >Guardando...</span
-            >
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Eliminar -->
-<div class="modal fade" id="modal-eliminar" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Confirmar eliminación</h5>
+        <h5 class="modal-title text-danger">
+          <i class="fa-solid fa-trash-alt me-2"></i>Eliminar categoría
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -198,7 +128,7 @@
       <div class="modal-footer">
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="btn btn-outline-secondary btn-sm"
           data-bs-dismiss="modal"
         >
           Cancelar
@@ -218,11 +148,14 @@
   </div>
 </div>
 
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
   <div
     id="toast-msg"
     class="toast align-items-center text-white border-0"
     role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
   >
     <div class="d-flex">
       <div class="toast-body" id="toast-msg-texto"></div>
