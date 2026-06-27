@@ -1,32 +1,200 @@
-/* Dashboard component styles */
+/* === Dashboard page === */
 #page-outlet {
   animation: fadeInUp 0.25s ease;
 }
 
-/* ------------------------------------------------
-   Activity feed — border-left-line (FreeDash pattern)
-   Crea la línea vertical de timeline en el feed
-   ------------------------------------------------ */
+.gr-page {
+  padding: 24px 28px;
+  font-family: var(--font-family);
+}
+
+.gr-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gr-page__title {
+  font-size: 23px;
+  font-weight: 700;
+  color: #23283b;
+  margin: 0 0 4px;
+}
+
+.gr-breadcrumb {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gr-breadcrumb__sep { opacity: .5; }
+.gr-breadcrumb__item--active { color: #8a90a0; }
+
+.gr-page__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.gr-filter-btn {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 11px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #6b7180;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-family);
+}
+
+.gr-filter-btn i:first-child { color: #a06bf5; font-size: 12px; }
+.gr-filter-btn__arrow { font-size: 9px; color: #c3c7d2; }
+
+/* Stat cards */
+.gr-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .gr-stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+.gr-stat-card {
+  border-radius: 18px;
+  padding: 18px 20px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.gr-stat-card--blue  { background: linear-gradient(135deg,#6f7bf7,#5a6ff0); box-shadow: 0 14px 26px -14px rgba(90,111,240,.65); }
+.gr-stat-card--cyan  { background: linear-gradient(135deg,#22d3ee,#10bfe0); box-shadow: 0 14px 26px -14px rgba(16,191,224,.65); }
+.gr-stat-card--green { background: linear-gradient(135deg,#2bd17e,#1fc56e); box-shadow: 0 14px 26px -14px rgba(31,197,110,.65); }
+.gr-stat-card--red   { background: linear-gradient(135deg,#fb6a85,#fa5a7d); box-shadow: 0 14px 26px -14px rgba(250,90,125,.65); }
+
+.gr-stat-card__left {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.gr-stat-card__num {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.gr-stat-card__label {
+  font-size: 13px;
+  opacity: .92;
+  margin-top: 2px;
+}
+
+.gr-stat-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  position: absolute;
+  top: 18px;
+  right: 20px;
+}
+
+.gr-stat-card__trend {
+  font-size: 11.5px;
+  opacity: .9;
+}
+
+.gr-stat-card__badge { display: none; }
+
+/* Charts row */
+.gr-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .gr-charts-row { grid-template-columns: 1fr; }
+}
+
+.gr-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.gr-card__title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #23283b;
+  margin-bottom: 16px;
+}
+
+/* Legend */
+.gr-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.gr-legend li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: #5b6172;
+}
+
+.gr-legend li i { font-size: 10px; }
+
+.gr-legend__val {
+  margin-left: auto;
+  font-weight: 700;
+  color: #23283b;
+}
+
+/* Activity */
+.gr-activity { display: flex; flex-direction: column; }
+
+/* C3 chart tweaks */
+#chart-estados .c3-chart-arcs-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  fill: #23283b;
+}
+
+/* Timeline activity (legacy compat) */
 .border-left-line {
-  border-left: 2px solid #e9ecef;
+  border-left: 2px solid var(--border-light);
   padding-left: 20px;
   margin-left: 19px;
   position: relative;
 }
 
-/* ------------------------------------------------
-   list-style-none — leyenda del gráfico
-   ------------------------------------------------ */
 .list-style-none {
   padding-left: 0;
   list-style: none;
-}
-
-/* ------------------------------------------------
-   C3 chart — oculta tooltip default y ajusta fuente
-   ------------------------------------------------ */
-#chart-estados .c3-chart-arcs-title {
-  font-size: 1.4rem;
-  font-weight: 500;
-  fill: #343a40;
 }

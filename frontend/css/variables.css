@@ -10,62 +10,67 @@
   /* =============================================
      Brand / Primary
      ============================================= */
-  --color-primary:         #5f76e8;
-  --color-primary-rgb:     95, 118, 232;
-  --color-primary-light:   #8971ea;
-  --color-primary-dark:    #6a75e9;
-  --color-accent:          #2962FF;
+  --color-primary:        #6a5cf3;
+  --color-primary-rgb:    106, 92, 243;
+  --color-primary-light:  #a06bf5;
+  --color-primary-dark:   #5a4de0;
+  --color-accent:         #6a5cf3;
 
   /* =============================================
      Text
      ============================================= */
-  --text-dark:    #212529;
-  --text-default: #7c8798;
-  --text-muted:   #8392a5;
-  --text-light:   #bcc3d3;
+  --text-dark:    #23283b;
+  --text-default: #5b6172;
+  --text-muted:   #a3a8b8;
+  --text-light:   #b3b8c6;
   --text-white:   #ffffff;
 
   /* =============================================
      Backgrounds
      ============================================= */
-  --bg-page:   #f9fbfd;
+  --bg-page:   #f3f4f9;
   --bg-card:   #ffffff;
-  --bg-hover:  #e8eaec;
+  --bg-hover:  #f5f6fa;
 
   /* =============================================
      Borders
      ============================================= */
-  --border-light:  #edf2f9;
-  --border-medium: #ced4da;
+  --border-light:  #eef0f5;
+  --border-medium: #e2e5ef;
 
   /* =============================================
      Shadows
      ============================================= */
-  --shadow-sm:       0 3px 9px 0 rgba(169, 184, 200, 0.15);
-  --shadow-md:       0px 3px 9px 0px rgba(162, 176, 190, 0.15);
-  --shadow-dropdown: 1px 1px 15px rgba(0, 0, 0, 0.1);
-  --shadow-selected:        0px 7px 12px 0px rgba(95, 118, 232, 0.21);
-  --shadow-navbar-header:   0 -7px 9px 0 rgba(169, 184, 200, 0.15);
-  --shadow-custom:          0 2px 9px 0 rgba(169, 184, 200, 0.2);
-  --shadow-boxed:           1px 0 80px rgba(0, 0, 0, 0.2);
+  --shadow-sm:             0 1px 3px rgba(20,20,50,.06);
+  --shadow-md:             0 4px 12px rgba(20,20,50,.08);
+  --shadow-dropdown:       0 8px 24px rgba(20,20,50,.12);
+  --shadow-selected:       0 12px 22px -8px rgba(106,92,243,.55);
+  --shadow-navbar-header:  0 1px 0 var(--border-light);
+  --shadow-custom:         0 14px 26px -10px rgba(106,92,243,.55);
+  --shadow-boxed:          1px 0 80px rgba(0,0,0,.12);
 
   /* =============================================
-     Sidebar (skin6 — white bg, dark text)
+     Sidebar
      ============================================= */
-  --sidebar-bg:            #ffffff;
-  --sidebar-link-color:    #2a3547;
-  --sidebar-link-icon:     #2a3547;
-  --sidebar-active-text:   #ffffff;
-  --sidebar-submenu-text:  #1c2d41;
-  --sidebar-nav-cap:       #bcc3d3;
-  --sidebar-nav-cap-dark:  #000000;
-  --sidebar-divider:       #2a3547;
-  --sidebar-user-border:   rgba(255, 255, 255, 0.3);
+  --sidebar-bg:           #ffffff;
+  --sidebar-link-color:   #5b6172;
+  --sidebar-link-icon:    #5b6172;
+  --sidebar-active-text:  #ffffff;
+  --sidebar-submenu-text: #5b6172;
+  --sidebar-nav-cap:      #b3b8c6;
+  --sidebar-nav-cap-dark: #b3b8c6;
+  --sidebar-divider:      #eef0f5;
+  --sidebar-user-border:  rgba(255,255,255,.3);
 
   /* =============================================
      Gradients
      ============================================= */
-  --gradient-primary:         linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-dark:            linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  --gradient-sidebar-active:  linear-gradient(to right, #8971ea, #7f72ea, #7574ea, #6a75e9, #5f76e8);
+  --gradient-primary:        linear-gradient(118deg, #6a5cf3 0%, #a06bf5 100%);
+  --gradient-dark:           linear-gradient(135deg, #5a4de0 0%, #8b5cf6 100%);
+  --gradient-sidebar-active: linear-gradient(118deg, #6a5cf3 0%, #a06bf5 100%);
+
+  /* =============================================
+     Typography
+     ============================================= */
+  --font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
 }
