@@ -29,6 +29,7 @@ beforeEach(function (): void {
         'organization_id' => $org->id,
         'user_id' => $user->id,
         'location_id' => $location->id,
+        'title' => 'Test Incident',
         'status' => Incident::STATUS_PENDING,
         'priority' => Incident::PRIORITY_MEDIUM,
     ]);

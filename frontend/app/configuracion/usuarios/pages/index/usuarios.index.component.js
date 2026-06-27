@@ -1,8 +1,19 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
+import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 
 const POR_PAGINA = 15;
+
+const ROLE_BADGES = {
+  admin_sistema: '<span class="badge bg-danger">Admin Sistema</span>',
+  operador_sistema:
+    '<span class="badge bg-warning text-dark">Operador Sistema</span>',
+  admin_organizacion: '<span class="badge bg-primary">Admin Org</span>',
+  operador_organizacion:
+    '<span class="badge bg-info text-dark">Operador Org</span>',
+  usuario: '<span class="badge bg-secondary">Ciudadano</span>',
+};
 
 export default defineComponent({
   templateUrl:
@@ -13,10 +24,7 @@ export default defineComponent({
     let totalPaginas = 1;
     let idEliminar = null;
     let roles = [];
-    const modal = () =>
-      bootstrap.Modal.getOrCreateInstance(
-        document.getElementById('modal-user-form'),
-      );
+    let organizaciones = [];
 
     function mostrarToast(mensaje, tipo) {
       const el = document.getElementById('toast-msg');
@@ -32,7 +40,6 @@ export default defineComponent({
         );
         if (el) el.classList.toggle('d-none', s !== cual);
       });
-      if (window.feather) feather.replace();
     }
 
     function iniciales(user) {
@@ -51,7 +58,7 @@ export default defineComponent({
         .map(
           (u) => `
                 <tr>
-                    <td class="ps-3 text-muted small">${u.id}</td>
+                    <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${u.id}" /></td>
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <span class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center text-white"
@@ -60,18 +67,17 @@ export default defineComponent({
                         </div>
                     </td>
                     <td class="small">${u.email}</td>
-                    <td><span class="badge bg-light text-dark border">${u.role?.name ?? '—'}</span></td>
+                    <td>${ROLE_BADGES[u.role?.name] ?? `<span class="badge bg-light text-dark border">${u.role?.name ?? '—'}</span>`}</td>
+                    <td class="small text-muted">${u.organization?.name ?? '—'}</td>
                     <td class="small text-muted">${u.phone ?? '—'}</td>
                     <td class="text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <button class="btn btn-sm btn-outline-secondary btn-editar"
-                                data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
-                                data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
-                                <i class="fas fa-pencil-alt"></i>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${u.id}" title="Editar">
+                                <i class="fa-solid fa-pencil"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-eliminar"
-                                data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                <i class="fas fa-trash-alt"></i>
+                                data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}" title="Eliminar">
+                                <i class="fa-solid fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -91,13 +97,12 @@ export default defineComponent({
                                 <div>
                                     <h6 class="mb-0">${u.first_name ?? ''} ${u.last_name ?? ''}</h6>
                                     <small class="text-muted">${u.email}</small><br>
-                                    <span class="badge bg-light text-dark border" style="font-size:.7rem;">${u.role?.name ?? '—'}</span>
+                                    ${ROLE_BADGES[u.role?.name] ?? `<span class="badge bg-light text-dark border">${u.role?.name ?? '—'}</span>`}
+                                    ${u.organization ? `<br><small class="text-muted">Org: ${u.organization.name}</small>` : ''}
                                 </div>
                             </div>
                             <div class="d-flex gap-1">
-                                <button class="btn btn-sm btn-outline-secondary btn-editar"
-                                    data-id="${u.id}" data-nombre="${u.first_name ?? ''}" data-apellido="${u.last_name ?? ''}"
-                                    data-email="${u.email}" data-rol="${u.role?.id ?? ''}" data-telefono="${u.phone ?? ''}">
+                                <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${u.id}">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-danger btn-eliminar"
@@ -122,7 +127,6 @@ export default defineComponent({
         cargar,
       );
       mostrarEstado('tabla');
-      if (window.feather) feather.replace();
     }
 
     async function cargar(pagina = 1) {
@@ -133,6 +137,7 @@ export default defineComponent({
         per_page: POR_PAGINA,
         search: document.getElementById('filtro-buscar').value.trim(),
         role_id: document.getElementById('filtro-rol').value,
+        organization_id: document.getElementById('filtro-org').value,
       });
       try {
         const resp = await http.get('/users?' + params.toString());
@@ -145,138 +150,46 @@ export default defineComponent({
       }
     }
 
-    async function cargarRoles() {
-      if (roles.length) return;
-      const resp = await http.get('/roles?per_page=100');
-      roles = resp.data ?? resp;
-      [
-        document.getElementById('user-rol'),
-        document.getElementById('filtro-rol'),
-      ].forEach((sel) => {
-        const esFiltro = sel.id === 'filtro-rol';
-        if (esFiltro)
-          sel.innerHTML = '<option value="">Todos los roles</option>';
-        else sel.innerHTML = '<option value="">-- Seleccione --</option>';
+    async function cargarFiltros() {
+      if (!roles.length) {
+        const rResp = await http.get('/roles?per_page=100');
+        roles = rResp.data ?? rResp;
+        const selRol = document.getElementById('filtro-rol');
+        selRol.innerHTML = '<option value="">Todos los roles</option>';
         roles.forEach((r) => {
           const opt = document.createElement('option');
           opt.value = r.id;
           opt.textContent = r.name;
-          sel.appendChild(opt);
+          selRol.appendChild(opt);
         });
-      });
-    }
+      }
 
-    function configurarPassword(edicion) {
-      const passEl = document.getElementById('user-password');
-      const hint = document.getElementById('pass-hint');
-      const req = document.getElementById('pass-requerido');
-      if (edicion) {
-        passEl.removeAttribute('required');
-        passEl.placeholder = 'Dejar vacío para no cambiar';
-        hint.textContent = 'Solo completar si desea cambiar la contraseña.';
-        req.classList.add('d-none');
-      } else {
-        passEl.setAttribute('required', '');
-        passEl.placeholder = '';
-        hint.textContent = 'Mínimo 8 caracteres.';
-        req.classList.remove('d-none');
+      if (!organizaciones.length) {
+        const oResp = await http.get('/organizations?per_page=200');
+        organizaciones = oResp.data ?? oResp;
+        const selOrg = document.getElementById('filtro-org');
+        selOrg.innerHTML = '<option value="">Todas las organizaciones</option>';
+        organizaciones.forEach((o) => {
+          const opt = document.createElement('option');
+          opt.value = o.id;
+          opt.textContent = o.name;
+          selOrg.appendChild(opt);
+        });
       }
     }
-
-    document
-      .getElementById('btn-nuevo-usuario')
-      .addEventListener('click', async () => {
-        document.getElementById('modal-user-titulo').textContent =
-          'Nuevo Usuario';
-        document.getElementById('user-id').value = '';
-        document.getElementById('user-nombre').value = '';
-        document.getElementById('user-apellido').value = '';
-        document.getElementById('user-email').value = '';
-        document.getElementById('user-password').value = '';
-        document.getElementById('user-telefono').value = '';
-        document.getElementById('user-rol').value = '';
-        document.getElementById('form-user').classList.remove('was-validated');
-        configurarPassword(false);
-        await cargarRoles();
-        modal().show();
-        if (window.feather) feather.replace();
-      });
-
-    document
-      .getElementById('form-user')
-      .addEventListener('submit', async function (e) {
-        e.preventDefault();
-        if (!this.checkValidity()) {
-          this.classList.add('was-validated');
-          return;
-        }
-
-        const id = document.getElementById('user-id').value;
-        const password = document.getElementById('user-password').value;
-        const payload = {
-          first_name: document.getElementById('user-nombre').value.trim(),
-          last_name: document.getElementById('user-apellido').value.trim(),
-          email: document.getElementById('user-email').value.trim(),
-          role_id: parseInt(document.getElementById('user-rol').value),
-          phone: document.getElementById('user-telefono').value.trim() || null,
-        };
-        if (!id || password) payload.password = password;
-
-        document.getElementById('user-btn-texto').classList.add('d-none');
-        document.getElementById('user-btn-loading').classList.remove('d-none');
-        document.getElementById('btn-guardar-user').disabled = true;
-
-        try {
-          if (id) {
-            await http.put('/users/' + id, payload);
-          } else {
-            await http.post('/users', payload);
-          }
-          modal().hide();
-          mostrarToast(
-            id ? 'Usuario actualizado.' : 'Usuario creado.',
-            'success',
-          );
-          cargar(paginaActual);
-        } catch (err) {
-          mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
-        } finally {
-          document.getElementById('user-btn-texto').classList.remove('d-none');
-          document.getElementById('user-btn-loading').classList.add('d-none');
-          document.getElementById('btn-guardar-user').disabled = false;
-        }
-      });
 
     function delegarClicks(contenedor) {
       contenedor.addEventListener('click', async (e) => {
         const editar = e.target.closest('.btn-editar');
         const eliminar = e.target.closest('.btn-eliminar');
         if (editar) {
-          document.getElementById('modal-user-titulo').textContent =
-            'Editar Usuario';
-          document.getElementById('user-id').value = editar.dataset.id;
-          document.getElementById('user-nombre').value = editar.dataset.nombre;
-          document.getElementById('user-apellido').value =
-            editar.dataset.apellido;
-          document.getElementById('user-email').value = editar.dataset.email;
-          document.getElementById('user-telefono').value =
-            editar.dataset.telefono;
-          document.getElementById('user-password').value = '';
-          document
-            .getElementById('form-user')
-            .classList.remove('was-validated');
-          configurarPassword(true);
-          await cargarRoles();
-          document.getElementById('user-rol').value = editar.dataset.rol;
-          modal().show();
-          if (window.feather) feather.replace();
+          router.navigate('/usuarios/crear?id=' + editar.dataset.id);
         }
         if (eliminar) {
           idEliminar = eliminar.dataset.id;
           document.getElementById('modal-eliminar-nombre').textContent =
             eliminar.dataset.nombre;
           new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-          if (window.feather) feather.replace();
         }
       });
     }
@@ -318,14 +231,14 @@ export default defineComponent({
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-buscar').value = '';
       document.getElementById('filtro-rol').value = '';
+      document.getElementById('filtro-org').value = '';
       cargar(1);
     });
     document
       .getElementById('btn-reintentar')
       .addEventListener('click', () => cargar(paginaActual));
 
-    cargarRoles().catch(() => {});
-    if (window.feather) feather.replace();
+    cargarFiltros().catch(() => {});
     cargar(1);
   },
 
