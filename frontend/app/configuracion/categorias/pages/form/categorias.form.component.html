@@ -6,9 +6,18 @@
       <nav class="gr-breadcrumb">
         <span class="gr-breadcrumb__item">Configuración</span>
         <span class="gr-breadcrumb__sep">/</span>
-        <a href="#/categorias" class="gr-breadcrumb__item" style="text-decoration:none;color:inherit">Categorías</a>
+        <a
+          href="#/categorias"
+          class="gr-breadcrumb__item"
+          style="text-decoration: none; color: inherit"
+          >Categorías</a
+        >
         <span class="gr-breadcrumb__sep">/</span>
-        <span class="gr-breadcrumb__item gr-breadcrumb__item--active" id="breadcrumb-actual">Crear</span>
+        <span
+          class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          id="breadcrumb-actual"
+          >Crear</span
+        >
       </nav>
     </div>
   </div>
@@ -17,8 +26,9 @@
   <div class="gr-card gr-form-card">
     <div style="padding: 24px 28px">
       <h5 class="mb-1 fw-bold" id="card-titulo">Nueva Categoría</h5>
-      <p class="text-muted mb-4" style="font-size:13px">
-        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+      <p class="text-muted mb-4" style="font-size: 13px">
+        Los campos marcados con <span class="text-danger">*</span> son
+        obligatorios.
       </p>
 
       <form id="form-cat" novalidate>
@@ -40,7 +50,9 @@
         </div>
 
         <div class="mb-5">
-          <label for="cat-padre" class="form-label fw-semibold">Categoría padre</label>
+          <label for="cat-padre" class="form-label fw-semibold"
+            >Categoría padre</label
+          >
           <select class="form-select form-select-lg" id="cat-padre">
             <option value="">-- Ninguna (raíz) --</option>
           </select>
@@ -50,10 +62,13 @@
           <button type="submit" class="gr-btn-primary" id="btn-guardar-cat">
             <span id="cat-btn-texto">Guardar</span>
             <span id="cat-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+              <span class="spinner-border spinner-border-sm me-1"></span
+              >Guardando...
             </span>
           </button>
-          <a href="#/categorias" class="btn btn-outline-secondary px-4">Cancelar</a>
+          <a href="#/categorias" class="btn btn-outline-secondary px-4"
+            >Cancelar</a
+          >
         </div>
       </form>
     </div>
@@ -61,11 +76,21 @@
 </div>
 
 <!-- Toast -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
-  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div
+    id="toast-msg"
+    class="toast align-items-center text-white border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
     <div class="d-flex">
       <div class="toast-body" id="toast-msg-texto"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>

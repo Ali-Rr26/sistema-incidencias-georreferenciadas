@@ -6,12 +6,20 @@
       <nav class="gr-breadcrumb">
         <span class="gr-breadcrumb__item">Inicio</span>
         <span class="gr-breadcrumb__sep">/</span>
-        <span class="gr-breadcrumb__item gr-breadcrumb__item--active">Resumen general</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          >Resumen general</span
+        >
       </nav>
     </div>
     <div class="gr-page__actions">
-      <div class="gr-filter-btn"><i class="fa-solid fa-filter"></i>Todos los tipos <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i></div>
-      <div class="gr-filter-btn"><i class="fa-regular fa-calendar"></i>Últimos 30 días <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i></div>
+      <div class="gr-filter-btn">
+        <i class="fa-solid fa-filter"></i>Todos los tipos
+        <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i>
+      </div>
+      <div class="gr-filter-btn">
+        <i class="fa-regular fa-calendar"></i>Últimos 30 días
+        <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i>
+      </div>
     </div>
   </div>
 
@@ -24,8 +32,12 @@
           <div class="gr-stat-card__label">Total incidencias</div>
         </div>
       </div>
-      <div class="gr-stat-card__icon"><i class="fa-solid fa-layer-group"></i></div>
-      <div class="gr-stat-card__trend"><i class="fa-solid fa-arrow-up"></i> 8% vs. mes anterior</div>
+      <div class="gr-stat-card__icon">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div class="gr-stat-card__trend">
+        <i class="fa-solid fa-arrow-up"></i> 8% vs. mes anterior
+      </div>
     </div>
     <div class="gr-stat-card gr-stat-card--cyan">
       <div class="gr-stat-card__left">
@@ -34,8 +46,12 @@
           <div class="gr-stat-card__label">En proceso</div>
         </div>
       </div>
-      <div class="gr-stat-card__icon"><i class="fa-solid fa-person-digging"></i></div>
-      <div class="gr-stat-card__trend"><i class="fa-solid fa-arrow-up"></i> 3% esta semana</div>
+      <div class="gr-stat-card__icon">
+        <i class="fa-solid fa-person-digging"></i>
+      </div>
+      <div class="gr-stat-card__trend">
+        <i class="fa-solid fa-arrow-up"></i> 3% esta semana
+      </div>
     </div>
     <div class="gr-stat-card gr-stat-card--green">
       <div class="gr-stat-card__left">
@@ -44,8 +60,12 @@
           <div class="gr-stat-card__label">Resueltas</div>
         </div>
       </div>
-      <div class="gr-stat-card__icon"><i class="fa-solid fa-circle-check"></i></div>
-      <div class="gr-stat-card__trend"><i class="fa-solid fa-arrow-up"></i> 67% tasa de resolución</div>
+      <div class="gr-stat-card__icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="gr-stat-card__trend">
+        <i class="fa-solid fa-arrow-up"></i> 67% tasa de resolución
+      </div>
       <span class="gr-stat-card__badge d-none" id="badge-resueltas"></span>
     </div>
     <div class="gr-stat-card gr-stat-card--red">
@@ -56,7 +76,9 @@
         </div>
       </div>
       <div class="gr-stat-card__icon"><i class="fa-regular fa-clock"></i></div>
-      <div class="gr-stat-card__trend"><i class="fa-solid fa-arrow-down"></i> 5% vs. mes anterior</div>
+      <div class="gr-stat-card__trend">
+        <i class="fa-solid fa-arrow-down"></i> 5% vs. mes anterior
+      </div>
       <span class="gr-stat-card__badge d-none" id="badge-pendientes"></span>
     </div>
   </div>
@@ -66,11 +88,23 @@
     <!-- Donut chart (Por estado) -->
     <div class="gr-card gr-card--donut">
       <div class="gr-card__title">Por estado</div>
-      <div id="chart-estados" style="height:220px;width:100%"></div>
+      <div id="chart-estados" style="height: 220px; width: 100%"></div>
       <ul class="gr-legend">
-        <li><i class="fa-solid fa-circle" style="color:#f0a020"></i><span class="text-muted">Pendientes</span><span class="gr-legend__val" id="legend-pendientes">—</span></li>
-        <li><i class="fa-solid fa-circle" style="color:#5a6ff0"></i><span class="text-muted">En proceso</span><span class="gr-legend__val" id="legend-en-proceso">—</span></li>
-        <li><i class="fa-solid fa-circle" style="color:#16a96b"></i><span class="text-muted">Resueltas</span><span class="gr-legend__val" id="legend-resueltas">—</span></li>
+        <li>
+          <i class="fa-solid fa-circle" style="color: #f0a020"></i
+          ><span class="text-muted">Pendientes</span
+          ><span class="gr-legend__val" id="legend-pendientes">—</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-circle" style="color: #5a6ff0"></i
+          ><span class="text-muted">En proceso</span
+          ><span class="gr-legend__val" id="legend-en-proceso">—</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-circle" style="color: #16a96b"></i
+          ><span class="text-muted">Resueltas</span
+          ><span class="gr-legend__val" id="legend-resueltas">—</span>
+        </li>
       </ul>
     </div>
 
@@ -79,7 +113,10 @@
       <div class="gr-card__title">Actividad reciente</div>
       <div id="activity-feed" class="gr-activity">
         <div class="text-center text-muted py-4" id="activity-empty">
-          <i class="fa-solid fa-inbox mb-3 d-block mx-auto" style="font-size:2rem"></i>
+          <i
+            class="fa-solid fa-inbox mb-3 d-block mx-auto"
+            style="font-size: 2rem"
+          ></i>
           <p class="mb-0">Sin actividad reciente</p>
         </div>
       </div>
@@ -87,5 +124,5 @@
   </div>
 
   <!-- Hidden stat for JS compat -->
-  <span id="stat-ubicaciones" style="display:none">0</span>
+  <span id="stat-ubicaciones" style="display: none">0</span>
 </div>

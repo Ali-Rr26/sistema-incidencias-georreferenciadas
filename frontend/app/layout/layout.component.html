@@ -7,7 +7,7 @@
   data-sidebar-position="fixed"
   data-header-position="fixed"
   data-boxed-layout="full"
-  style="display:none"
+  style="display: none"
 >
   <!-- SIDEBAR -->
   <aside class="gr-sidebar left-sidebar" data-sidebarbg="skin6">
@@ -79,7 +79,9 @@
           </a>
         </li>
 
-        <li class="nav-small-cap"><span class="hide-menu">CONFIGURACIÓN</span></li>
+        <li class="nav-small-cap">
+          <span class="hide-menu">CONFIGURACIÓN</span>
+        </li>
         <li class="sidebar-item">
           <a class="sidebar-link" href="#/categorias">
             <i class="fa-solid fa-tag"></i>
@@ -110,7 +112,11 @@
       <!-- Left: search -->
       <div class="gr-topbar__search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" placeholder="Buscar incidencia..." class="gr-topbar__search-input">
+        <input
+          type="text"
+          placeholder="Buscar incidencia..."
+          class="gr-topbar__search-input"
+        />
       </div>
 
       <!-- Right: actions + user -->
@@ -123,10 +129,17 @@
           <i class="fa-solid fa-gear"></i>
         </button>
         <div class="gr-topbar__user dropdown">
-          <a href="javascript:void(0)" data-bs-toggle="dropdown" aria-expanded="false" class="gr-topbar__user-trigger">
+          <a
+            href="javascript:void(0)"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            class="gr-topbar__user-trigger"
+          >
             <span class="gr-topbar__avatar" id="user-avatar">U</span>
             <div class="gr-topbar__user-info">
-              <span class="gr-topbar__user-name">Hola, <strong id="user-name">Usuario</strong></span>
+              <span class="gr-topbar__user-name"
+                >Hola, <strong id="user-name">Usuario</strong></span
+              >
               <span class="gr-topbar__user-role">Administrador</span>
             </div>
             <i class="fa-solid fa-chevron-down gr-topbar__user-arrow"></i>

@@ -6,7 +6,9 @@
       <nav class="gr-breadcrumb">
         <span class="gr-breadcrumb__item">Gestión</span>
         <span class="gr-breadcrumb__sep">/</span>
-        <span class="gr-breadcrumb__item gr-breadcrumb__item--active">Listado</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          >Listado</span
+        >
       </nav>
     </div>
     <a href="#/incidencias/crear" class="gr-btn-primary gr-btn-primary--inline">
@@ -18,7 +20,12 @@
   <div class="gr-card gr-filters">
     <div class="gr-filters__search">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="filtro-buscar" class="gr-filters__input" placeholder="Buscar por título o descripción...">
+      <input
+        type="text"
+        id="filtro-buscar"
+        class="gr-filters__input"
+        placeholder="Buscar por título o descripción..."
+      />
     </div>
     <div class="gr-filters__selects">
       <div class="gr-select-wrap">
@@ -49,8 +56,17 @@
         </select>
         <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
       </div>
-      <button type="button" class="gr-btn-filter" id="btn-filtrar"><i class="fa-solid fa-magnifying-glass"></i>Filtrar</button>
-      <button type="button" class="gr-btn-filter gr-btn-filter--clear" id="btn-limpiar" title="Limpiar filtros"><i class="fa-solid fa-xmark"></i></button>
+      <button type="button" class="gr-btn-filter" id="btn-filtrar">
+        <i class="fa-solid fa-magnifying-glass"></i>Filtrar
+      </button>
+      <button
+        type="button"
+        class="gr-btn-filter gr-btn-filter--clear"
+        id="btn-limpiar"
+        title="Limpiar filtros"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
 
@@ -64,16 +80,25 @@
 
     <!-- Empty -->
     <div id="estado-vacio" class="gr-estado-center d-none">
-      <i class="fa-solid fa-inbox text-muted" style="font-size:2.5rem"></i>
+      <i class="fa-solid fa-inbox text-muted" style="font-size: 2.5rem"></i>
       <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
-      <a href="#/incidencias/crear" class="gr-btn-primary gr-btn-primary--sm mt-1">Registrar la primera</a>
+      <a
+        href="#/incidencias/crear"
+        class="gr-btn-primary gr-btn-primary--sm mt-1"
+        >Registrar la primera</a
+      >
     </div>
 
     <!-- Error -->
     <div id="estado-error" class="gr-estado-center d-none">
-      <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size:2.5rem"></i>
+      <i
+        class="fa-solid fa-triangle-exclamation text-danger"
+        style="font-size: 2.5rem"
+      ></i>
       <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
-      <button type="button" class="gr-btn-outline mt-1" id="btn-reintentar">Reintentar</button>
+      <button type="button" class="gr-btn-outline mt-1" id="btn-reintentar">
+        Reintentar
+      </button>
     </div>
 
     <!-- Table content -->
@@ -83,13 +108,13 @@
         <table class="gr-table">
           <thead>
             <tr>
-              <th style="width:84px">ID</th>
+              <th style="width: 84px">ID</th>
               <th>TÍTULO</th>
-              <th style="width:130px">ESTADO</th>
-              <th style="width:100px">PRIORIDAD</th>
-              <th style="width:140px">TIPO</th>
-              <th style="width:140px">UBICACIÓN</th>
-              <th style="width:70px"></th>
+              <th style="width: 130px">ESTADO</th>
+              <th style="width: 100px">PRIORIDAD</th>
+              <th style="width: 140px">TIPO</th>
+              <th style="width: 140px">UBICACIÓN</th>
+              <th style="width: 70px"></th>
             </tr>
           </thead>
           <tbody id="tabla-body"></tbody>
@@ -102,7 +127,9 @@
       <!-- Pagination bar -->
       <div class="gr-table-footer">
         <small class="text-muted" id="info-resultados"></small>
-        <nav><ul class="pagination pagination-sm mb-0" id="paginacion"></ul></nav>
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
+        </nav>
       </div>
     </div>
   </div>
@@ -113,18 +140,39 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title text-danger"><i class="fa-solid fa-trash-alt me-2"></i>Eliminar incidencia</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title text-danger">
+          <i class="fa-solid fa-trash-alt me-2"></i>Eliminar incidencia
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
       </div>
       <div class="modal-body">
-        <p class="mb-1">¿Está seguro que desea eliminar la siguiente incidencia?</p>
+        <p class="mb-1">
+          ¿Está seguro que desea eliminar la siguiente incidencia?
+        </p>
         <p class="fw-bold mb-0" id="modal-eliminar-titulo"></p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger" id="btn-confirmar-eliminar">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="btn-confirmar-eliminar"
+        >
           <span id="eliminar-texto">Eliminar</span>
-          <span id="eliminar-loading" class="d-none"><span class="spinner-border spinner-border-sm me-1"></span>Eliminando...</span>
+          <span id="eliminar-loading" class="d-none"
+            ><span class="spinner-border spinner-border-sm me-1"></span
+            >Eliminando...</span
+          >
         </button>
       </div>
     </div>
@@ -132,11 +180,21 @@
 </div>
 
 <!-- Toast -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
-  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div
+    id="toast-msg"
+    class="toast align-items-center text-white border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
     <div class="d-flex">
       <div class="toast-body" id="toast-msg-texto"></div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>

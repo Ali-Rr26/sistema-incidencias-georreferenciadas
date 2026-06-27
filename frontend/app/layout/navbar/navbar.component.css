@@ -45,7 +45,7 @@
   outline: none;
   color: #444;
   box-sizing: border-box;
-  transition: border-color .15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .gr-topbar__search-input:focus {
@@ -72,7 +72,9 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  transition: background .15s ease, border-color .15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .gr-topbar__icon-btn:hover {
@@ -105,10 +107,12 @@
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 12px;
-  transition: background .15s ease;
+  transition: background 0.15s ease;
 }
 
-.gr-topbar__user-trigger:hover { background: #f7f8fc; }
+.gr-topbar__user-trigger:hover {
+  background: #f7f8fc;
+}
 
 .gr-topbar__avatar {
   width: 40px;
@@ -130,7 +134,9 @@
 }
 
 @media (min-width: 992px) {
-  .gr-topbar__user-info { display: block; }
+  .gr-topbar__user-info {
+    display: block;
+  }
 }
 
 .gr-topbar__user-name {

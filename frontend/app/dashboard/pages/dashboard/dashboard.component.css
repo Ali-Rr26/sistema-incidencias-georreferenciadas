@@ -32,8 +32,12 @@
   gap: 6px;
 }
 
-.gr-breadcrumb__sep { opacity: .5; }
-.gr-breadcrumb__item--active { color: #8a90a0; }
+.gr-breadcrumb__sep {
+  opacity: 0.5;
+}
+.gr-breadcrumb__item--active {
+  color: #8a90a0;
+}
 
 .gr-page__actions {
   display: flex;
@@ -56,8 +60,14 @@
   font-family: var(--font-family);
 }
 
-.gr-filter-btn i:first-child { color: #a06bf5; font-size: 12px; }
-.gr-filter-btn__arrow { font-size: 9px; color: #c3c7d2; }
+.gr-filter-btn i:first-child {
+  color: #a06bf5;
+  font-size: 12px;
+}
+.gr-filter-btn__arrow {
+  font-size: 9px;
+  color: #c3c7d2;
+}
 
 /* Stat cards */
 .gr-stats-row {
@@ -68,7 +78,9 @@
 }
 
 @media (max-width: 900px) {
-  .gr-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .gr-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .gr-stat-card {
@@ -81,10 +93,22 @@
   position: relative;
 }
 
-.gr-stat-card--blue  { background: linear-gradient(135deg,#6f7bf7,#5a6ff0); box-shadow: 0 14px 26px -14px rgba(90,111,240,.65); }
-.gr-stat-card--cyan  { background: linear-gradient(135deg,#22d3ee,#10bfe0); box-shadow: 0 14px 26px -14px rgba(16,191,224,.65); }
-.gr-stat-card--green { background: linear-gradient(135deg,#2bd17e,#1fc56e); box-shadow: 0 14px 26px -14px rgba(31,197,110,.65); }
-.gr-stat-card--red   { background: linear-gradient(135deg,#fb6a85,#fa5a7d); box-shadow: 0 14px 26px -14px rgba(250,90,125,.65); }
+.gr-stat-card--blue {
+  background: linear-gradient(135deg, #6f7bf7, #5a6ff0);
+  box-shadow: 0 14px 26px -14px rgba(90, 111, 240, 0.65);
+}
+.gr-stat-card--cyan {
+  background: linear-gradient(135deg, #22d3ee, #10bfe0);
+  box-shadow: 0 14px 26px -14px rgba(16, 191, 224, 0.65);
+}
+.gr-stat-card--green {
+  background: linear-gradient(135deg, #2bd17e, #1fc56e);
+  box-shadow: 0 14px 26px -14px rgba(31, 197, 110, 0.65);
+}
+.gr-stat-card--red {
+  background: linear-gradient(135deg, #fb6a85, #fa5a7d);
+  box-shadow: 0 14px 26px -14px rgba(250, 90, 125, 0.65);
+}
 
 .gr-stat-card__left {
   display: flex;
@@ -95,12 +119,12 @@
 .gr-stat-card__num {
   font-size: 28px;
   font-weight: 800;
-  letter-spacing: -.02em;
+  letter-spacing: -0.02em;
 }
 
 .gr-stat-card__label {
   font-size: 13px;
-  opacity: .92;
+  opacity: 0.92;
   margin-top: 2px;
 }
 
@@ -108,7 +132,7 @@
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: rgba(255,255,255,.2);
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,10 +144,12 @@
 
 .gr-stat-card__trend {
   font-size: 11.5px;
-  opacity: .9;
+  opacity: 0.9;
 }
 
-.gr-stat-card__badge { display: none; }
+.gr-stat-card__badge {
+  display: none;
+}
 
 /* Charts row */
 .gr-charts-row {
@@ -133,7 +159,9 @@
 }
 
 @media (max-width: 900px) {
-  .gr-charts-row { grid-template-columns: 1fr; }
+  .gr-charts-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .gr-card {
@@ -168,7 +196,9 @@
   color: #5b6172;
 }
 
-.gr-legend li i { font-size: 10px; }
+.gr-legend li i {
+  font-size: 10px;
+}
 
 .gr-legend__val {
   margin-left: auto;
@@ -177,7 +207,10 @@
 }
 
 /* Activity */
-.gr-activity { display: flex; flex-direction: column; }
+.gr-activity {
+  display: flex;
+  flex-direction: column;
+}
 
 /* C3 chart tweaks */
 #chart-estados .c3-chart-arcs-title {
