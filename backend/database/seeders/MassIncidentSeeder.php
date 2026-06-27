@@ -133,6 +133,7 @@ class MassIncidentSeeder extends Seeder
                 'user_id' => $user->id,
                 'location_id' => $location->id,
                 'organization_id' => $orgId,
+                'title' => 'Incident: '.$category->name,
                 'status' => $status,
                 'priority' => $priority,
                 'resolution_date' => $resolutionDate,
