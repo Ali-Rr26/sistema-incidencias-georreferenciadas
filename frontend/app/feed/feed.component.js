@@ -62,7 +62,8 @@ function resolveAvatar(avatar) {
   // Objeto {url: '...'} o {urls: [...]}
   if (typeof avatar === 'object') {
     if (avatar.url) return avatar.url;
-    if (Array.isArray(avatar.urls) && avatar.urls.length > 0) return avatar.urls[0];
+    if (Array.isArray(avatar.urls) && avatar.urls.length > 0)
+      return avatar.urls[0];
     if (Array.isArray(avatar) && avatar.length > 0) {
       const first = avatar[0];
       return typeof first === 'string' ? first : first?.url || null;
@@ -94,9 +95,13 @@ function renderCard(inc) {
     );
   }
   const orgs = inc.category?.organizations;
-  const orgName = Array.isArray(orgs) && orgs.length > 0
-    ? orgs.map(o => o.name).filter(Boolean).join(', ')
-    : null;
+  const orgName =
+    Array.isArray(orgs) && orgs.length > 0
+      ? orgs
+          .map((o) => o.name)
+          .filter(Boolean)
+          .join(', ')
+      : null;
   if (orgName) {
     descParts.push(`Organización: ${orgName}`);
   }
@@ -173,9 +178,7 @@ async function fetchIncidencias(pagina, append = false) {
   if (filtroStatus) params.set('status', filtroStatus);
 
   try {
-    const resp = await fetch(
-      `${API_URL}/incidents/feed?${params.toString()}`,
-    );
+    const resp = await fetch(`${API_URL}/incidents/feed?${params.toString()}`);
     const json = await resp.json();
 
     const datos = json.data ?? [];
@@ -208,8 +211,7 @@ async function fetchIncidencias(pagina, append = false) {
   } catch {
     skeleton.classList.add('d-none');
     vacio.classList.remove('d-none');
-    vacio.querySelector('p').textContent =
-      'Error al cargar. Intente de nuevo.';
+    vacio.querySelector('p').textContent = 'Error al cargar. Intente de nuevo.';
     document.getElementById('feed-sentinel').classList.add('done');
   } finally {
     cargando = false;
@@ -263,7 +265,11 @@ function setupInfiniteScroll() {
 
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0].isIntersecting && !cargando && paginaActual < totalPaginas) {
+      if (
+        entries[0].isIntersecting &&
+        !cargando &&
+        paginaActual < totalPaginas
+      ) {
         sentinel.classList.add('loading');
         fetchIncidencias(paginaActual + 1, true);
       }

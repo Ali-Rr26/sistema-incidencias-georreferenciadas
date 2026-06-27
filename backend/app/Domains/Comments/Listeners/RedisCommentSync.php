@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Redis;
 class RedisCommentSync
 {
     private const INCIDENT_HASH_PREFIX = 'incident:';
+
     private const COMMENT_HASH_PREFIX = 'comment:';
 
     public function created(Comment $comment): void
@@ -38,15 +39,15 @@ class RedisCommentSync
         try {
             $comment->loadMissing('user');
 
-            $commentSetKey = self::INCIDENT_HASH_PREFIX . $comment->incident_id . ':comments';
-            $commentHashKey = self::COMMENT_HASH_PREFIX . $comment->id;
-            $incidentHashKey = self::INCIDENT_HASH_PREFIX . $comment->incident_id;
+            $commentSetKey = self::INCIDENT_HASH_PREFIX.$comment->incident_id.':comments';
+            $commentHashKey = self::COMMENT_HASH_PREFIX.$comment->id;
+            $incidentHashKey = self::INCIDENT_HASH_PREFIX.$comment->incident_id;
 
             $data = [
                 'id' => (string) $comment->id,
                 'incident_id' => (string) $comment->incident_id,
                 'user_id' => (string) $comment->user_id,
-                'user_name' => ($comment->user?->first_name ?? '') . ' ' . ($comment->user?->last_name ?? ''),
+                'user_name' => ($comment->user?->first_name ?? '').' '.($comment->user?->last_name ?? ''),
                 'message' => $comment->message,
                 'created_at' => $comment->created_at?->toIso8601String(),
                 'updated_at' => $comment->updated_at?->toIso8601String(),
@@ -68,9 +69,9 @@ class RedisCommentSync
     private function removeComment(Comment $comment): void
     {
         try {
-            $commentSetKey = self::INCIDENT_HASH_PREFIX . $comment->incident_id . ':comments';
-            $commentHashKey = self::COMMENT_HASH_PREFIX . $comment->id;
-            $incidentHashKey = self::INCIDENT_HASH_PREFIX . $comment->incident_id;
+            $commentSetKey = self::INCIDENT_HASH_PREFIX.$comment->incident_id.':comments';
+            $commentHashKey = self::COMMENT_HASH_PREFIX.$comment->id;
+            $incidentHashKey = self::INCIDENT_HASH_PREFIX.$comment->incident_id;
 
             $pipe = Redis::pipeline();
             $pipe->zrem($commentSetKey, (string) $comment->id);

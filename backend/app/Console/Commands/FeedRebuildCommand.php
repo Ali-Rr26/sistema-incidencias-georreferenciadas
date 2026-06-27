@@ -20,7 +20,7 @@ class FeedRebuildCommand extends Command
         $this->info('Rebuilding Redis feed from PostgreSQL...');
 
         $prefix = config('database.redis.options.prefix', '');
-        Redis::del($prefix . 'feed:incidents');
+        Redis::del($prefix.'feed:incidents');
 
         $incidentCount = 0;
 
@@ -35,30 +35,30 @@ class FeedRebuildCommand extends Command
                         ->toArray() ?? [];
 
                     $data = [
-                        'id'                     => (string) $incident->id,
-                        'incident_category_id'   => (string) $incident->incident_category_id,
-                        'organization_id'        => (string) $incident->organization_id,
-                        'user_id'                => (string) $incident->user_id,
-                        'location_id'            => (string) $incident->location_id,
-                        'status'                 => $incident->status,
-                        'priority'               => $incident->priority,
-                        'resolution_date'        => $incident->resolution_date?->toIso8601String(),
-                        'created_at'             => $incident->created_at?->toIso8601String(),
-                        'updated_at'             => $incident->updated_at?->toIso8601String(),
-                        'geom'                   => $incident->geom ? $incident->geom->toJson() : null,
-                        'category_name'          => $incident->category?->name ?? '',
+                        'id' => (string) $incident->id,
+                        'incident_category_id' => (string) $incident->incident_category_id,
+                        'organization_id' => (string) $incident->organization_id,
+                        'user_id' => (string) $incident->user_id,
+                        'location_id' => (string) $incident->location_id,
+                        'status' => $incident->status,
+                        'priority' => $incident->priority,
+                        'resolution_date' => $incident->resolution_date?->toIso8601String(),
+                        'created_at' => $incident->created_at?->toIso8601String(),
+                        'updated_at' => $incident->updated_at?->toIso8601String(),
+                        'geom' => $incident->geom ? $incident->geom->toJson() : null,
+                        'category_name' => $incident->category?->name ?? '',
                         'category_organizations' => json_encode(
                             $incident->category?->organizations?->map(fn ($o) => ['id' => $o->id, 'name' => $o->name]) ?? [],
                         ),
-                        'organization_name'      => $incident->organization?->name ?? '',
-                        'location_name'          => $incident->location?->name ?? '',
-                        'location_path_ids'      => json_encode($locationPathIds),
-                        'user_first_name'        => $incident->user?->first_name,
-                        'user_last_name'         => $incident->user?->last_name,
-                        'user_avatar'            => $incident->user?->avatar,
+                        'organization_name' => $incident->organization?->name ?? '',
+                        'location_name' => $incident->location?->name ?? '',
+                        'location_path_ids' => json_encode($locationPathIds),
+                        'user_first_name' => $incident->user?->first_name,
+                        'user_last_name' => $incident->user?->last_name,
+                        'user_avatar' => $incident->user?->avatar,
                     ];
 
-                    $pipe->hmset('incident:' . $incident->id, $data);
+                    $pipe->hmset('incident:'.$incident->id, $data);
                     $pipe->zadd('feed:incidents', (float) $incident->created_at->timestamp, (string) $incident->id);
 
                     $incidentCount++;
@@ -77,15 +77,15 @@ class FeedRebuildCommand extends Command
                 $pipe = Redis::pipeline();
 
                 foreach ($comments as $comment) {
-                    $commentSetKey = 'incident:' . $comment->incident_id . ':comments';
-                    $commentHashKey = 'comment:' . $comment->id;
-                    $incidentHashKey = 'incident:' . $comment->incident_id;
+                    $commentSetKey = 'incident:'.$comment->incident_id.':comments';
+                    $commentHashKey = 'comment:'.$comment->id;
+                    $incidentHashKey = 'incident:'.$comment->incident_id;
 
                     $data = [
                         'id' => (string) $comment->id,
                         'incident_id' => (string) $comment->incident_id,
                         'user_id' => (string) $comment->user_id,
-                        'user_name' => ($comment->user?->first_name ?? '') . ' ' . ($comment->user?->last_name ?? ''),
+                        'user_name' => ($comment->user?->first_name ?? '').' '.($comment->user?->last_name ?? ''),
                         'message' => $comment->message,
                         'created_at' => $comment->created_at?->toIso8601String(),
                         'updated_at' => $comment->updated_at?->toIso8601String(),
@@ -104,7 +104,7 @@ class FeedRebuildCommand extends Command
         $incidentIds = Comment::distinct()->pluck('incident_id');
         foreach ($incidentIds as $incidentId) {
             $count = Comment::where('incident_id', $incidentId)->count();
-            Redis::hincrby('incident:' . $incidentId, 'comment_count', $count);
+            Redis::hincrby('incident:'.$incidentId, 'comment_count', $count);
         }
 
         $this->info("Synced {$commentCount} comments to Redis.");

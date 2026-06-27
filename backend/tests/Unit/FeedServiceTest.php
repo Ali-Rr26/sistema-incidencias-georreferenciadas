@@ -6,7 +6,7 @@ use App\Domains\Incidents\Models\FeedService;
 use Illuminate\Support\Facades\Redis;
 
 it('returns empty feed when Redis has no incidents', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn([]);
@@ -20,7 +20,7 @@ it('returns empty feed when Redis has no incidents', function (): void {
 });
 
 it('fetches and parses incidents from Redis', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
@@ -91,7 +91,7 @@ it('fetches and parses incidents from Redis', function (): void {
 });
 
 it('filters incidents by status', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2', '3']);
@@ -136,7 +136,7 @@ it('filters incidents by status', function (): void {
 });
 
 it('filters incidents by organization_id', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
@@ -176,7 +176,7 @@ it('filters incidents by organization_id', function (): void {
 });
 
 it('filters incidents by location_id via location_path_ids', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
@@ -217,7 +217,7 @@ it('filters incidents by location_id via location_path_ids', function (): void {
 });
 
 it('paginates results correctly', function (): void {
-    $mock = Mockery::mock('alias:' . Redis::class);
+    $mock = Mockery::mock('alias:'.Redis::class);
     $mock->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2', '3', '4', '5']);

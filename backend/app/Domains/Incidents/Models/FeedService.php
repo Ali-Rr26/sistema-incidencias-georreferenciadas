@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Redis;
 class FeedService
 {
     private const CANDIDATE_LIMIT = 500;
+
     private const SORTED_SET_KEY = 'feed:incidents';
+
     private const HASH_PREFIX = 'incident:';
 
     /**
@@ -30,7 +32,7 @@ class FeedService
 
         $incidents = [];
         foreach ($candidateIds as $id) {
-            $data = Redis::hgetall(self::HASH_PREFIX . $id);
+            $data = Redis::hgetall(self::HASH_PREFIX.$id);
 
             if (empty($data)) {
                 continue;
@@ -51,7 +53,7 @@ class FeedService
                 $pathIds = isset($data['location_path_ids'])
                     ? (array) json_decode($data['location_path_ids'], true)
                     : [];
-                if (!in_array($locationId, $pathIds, true)) {
+                if (! in_array($locationId, $pathIds, true)) {
                     continue;
                 }
             }

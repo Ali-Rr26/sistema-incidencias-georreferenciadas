@@ -22,7 +22,6 @@ class MassIncidentSeeder extends Seeder
      * Usage:
      *   php artisan db:seed --class=MassIncidentSeeder
      */
-
     private const int TOTAL = 1000;
 
     private const CITY_COORDS = [
@@ -35,16 +34,18 @@ class MassIncidentSeeder extends Seeder
         'EC-06-01' => [-1.6706,  -78.6470], // Riobamba
         'EC-13-01' => [-1.0546,  -80.4525], // Portoviejo
         'EC-07-01' => [-3.2672,  -79.9608], // Machala
-        'EC-08-01' => [ 0.9683,  -79.6539], // Esmeraldas
-        'EC-10-01' => [ 0.3515,  -78.1292], // Ibarra
+        'EC-08-01' => [0.9683,  -79.6539], // Esmeraldas
+        'EC-10-01' => [0.3515,  -78.1292], // Ibarra
         'EC-24-01' => [-2.2662,  -80.8581], // Santa Elena
     ];
 
     private const STATUSES = ['pending', 'in_progress', 'resolved'];
+
     private const PRIORITIES = ['low', 'medium', 'high'];
 
     /** Weighted distribution: index => weight */
     private const STATUS_WEIGHTS = [40, 30, 30];   // pending, in_progress, resolved
+
     private const PRIORITY_WEIGHTS = [20, 50, 30];  // low, medium, high
 
     /** Sample messages for comments */
@@ -88,7 +89,7 @@ class MassIncidentSeeder extends Seeder
             return;
         }
 
-        $this->command?->info('Seeding ' . self::TOTAL . ' incidents...');
+        $this->command?->info('Seeding '.self::TOTAL.' incidents...');
         $bar = $this->command?->getOutput()->createProgressBar(self::TOTAL);
         $bar?->start();
 
@@ -102,6 +103,7 @@ class MassIncidentSeeder extends Seeder
             $location = $locations->get($cityCode);
             if ($location === null) {
                 $bar?->advance();
+
                 continue;
             }
 
@@ -149,7 +151,7 @@ class MassIncidentSeeder extends Seeder
 
         $bar?->finish();
         $this->command?->newLine();
-        $this->command?->info(self::TOTAL . ' incidents inserted.');
+        $this->command?->info(self::TOTAL.' incidents inserted.');
 
         // ─── Seed comments for ~30% of incidents ────────────────────
         $this->seedComments($users);
@@ -195,7 +197,7 @@ class MassIncidentSeeder extends Seeder
             Comment::insert($chunk);
         }
 
-        $this->command?->info($commentCount . ' comments inserted across ' . $incidentIds->count() . ' incidents.');
+        $this->command?->info($commentCount.' comments inserted across '.$incidentIds->count().' incidents.');
     }
 
     private function buildOrgMap(): array

@@ -8,6 +8,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -37,7 +38,7 @@ beforeEach(function (): void {
 });
 
 it('creates a comment and returns 201', function (): void {
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->postJson("/api/incidents/{$this->incident->id}/comments", [
             'message' => '¡Se necesita atención urgente!',
@@ -51,7 +52,7 @@ it('creates a comment and returns 201', function (): void {
 });
 
 it('validates required message', function (): void {
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->postJson("/api/incidents/{$this->incident->id}/comments", []);
 
@@ -60,7 +61,7 @@ it('validates required message', function (): void {
 });
 
 it('validates message max length', function (): void {
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->postJson("/api/incidents/{$this->incident->id}/comments", [
             'message' => str_repeat('a', 5001),
@@ -87,7 +88,7 @@ it('lists comments for an incident', function (): void {
         'message' => 'Third comment',
     ]);
 
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->getJson("/api/incidents/{$this->incident->id}/comments");
 
@@ -102,7 +103,7 @@ it('shows a single comment', function (): void {
         'message' => 'Test message',
     ]);
 
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->getJson("/api/comments/{$comment->id}");
 
@@ -117,7 +118,7 @@ it('updates a comment', function (): void {
         'message' => 'Original message',
     ]);
 
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->putJson("/api/comments/{$comment->id}", [
             'message' => 'Updated message',
@@ -134,7 +135,7 @@ it('deletes a comment (soft)', function (): void {
         'message' => 'To be deleted',
     ]);
 
-    $response = $this->withoutMiddleware([\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class])
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->deleteJson("/api/comments/{$comment->id}");
 

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->redis = Mockery::mock('alias:' . Redis::class);
+    $this->redis = Mockery::mock('alias:'.Redis::class);
 
     // Seed role for UserFactory (role_id=1)
     Role::create(['id' => 1, 'name' => 'Admin']);

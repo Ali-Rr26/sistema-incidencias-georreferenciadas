@@ -7,7 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use Illuminate\Support\Facades\Redis;
 
 it('calls HMSET and ZADD when incident is created', function (): void {
-    $redis = Mockery::mock('alias:' . Redis::class);
+    $redis = Mockery::mock('alias:'.Redis::class);
 
     $incident = Mockery::mock(Incident::class)->shouldIgnoreMissing();
     $incident->id = 42;
@@ -60,7 +60,7 @@ it('calls HMSET and ZADD when incident is created', function (): void {
 });
 
 it('calls DEL and ZREM when incident is deleted', function (): void {
-    $redis = Mockery::mock('alias:' . Redis::class);
+    $redis = Mockery::mock('alias:'.Redis::class);
 
     $incident = Mockery::mock(Incident::class)->shouldIgnoreMissing();
     $incident->shouldReceive('getAttribute')->with('id')->andReturn(99);
@@ -78,7 +78,7 @@ it('calls DEL and ZREM when incident is deleted', function (): void {
 });
 
 it('calls HMSET and ZADD when incident is updated', function (): void {
-    $redis = Mockery::mock('alias:' . Redis::class);
+    $redis = Mockery::mock('alias:'.Redis::class);
 
     $incident = Mockery::mock(Incident::class)->shouldIgnoreMissing();
     $incident->id = 7;
@@ -130,14 +130,14 @@ it('calls HMSET and ZADD when incident is updated', function (): void {
 });
 
 it('does not throw when Redis is unreachable', function (): void {
-    $redis = Mockery::mock('alias:' . Redis::class);
+    $redis = Mockery::mock('alias:'.Redis::class);
 
     $incident = Mockery::mock(Incident::class)->shouldIgnoreMissing();
     $incident->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
     $redis->shouldReceive('del')
         ->once()
-        ->andThrow(new \RuntimeException('Connection refused'));
+        ->andThrow(new RuntimeException('Connection refused'));
 
     $sync = new RedisIncidentSync;
 
@@ -146,7 +146,7 @@ it('does not throw when Redis is unreachable', function (): void {
     // We verify the observer doesn't re-throw by asserting we reach here.
     try {
         $sync->deleted($incident);
-    } catch (\Throwable) {
+    } catch (Throwable) {
         // The observer's catch block catches the Redis exception but
         // Log::warning() may also fail in a unit test context.
         // We accept either path — the key behavior is no re-throw from Redis itself.

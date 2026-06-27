@@ -68,11 +68,10 @@ export default defineComponent({
 
       const tbody = document.getElementById('tabla-body');
       tbody.innerHTML = datos
-        .map(
-          (inc) => {
-            const categoria = inc.category?.name || '—';
-            const ubicacion = inc.location?.name || '—';
-            return `<tr>
+        .map((inc) => {
+          const categoria = inc.category?.name || '—';
+          const ubicacion = inc.location?.name || '—';
+          return `<tr>
           <td class="ps-3 text-muted small">${inc.id}</td>
           <td>
             <span class="fw-semibold">${categoria}</span>

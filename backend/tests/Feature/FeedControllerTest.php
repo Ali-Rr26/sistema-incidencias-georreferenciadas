@@ -2,15 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Domains\Incidents\Models\Incident;
-use App\Domains\Incidents\Models\FeedService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->redis = Mockery::mock('alias:' . Redis::class);
+    $this->redis = Mockery::mock('alias:'.Redis::class);
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {
@@ -69,7 +67,7 @@ it('returns feed from Redis with correct JSON structure', function (): void {
 it('falls back to PostgreSQL when Redis throws an exception', function (): void {
     $this->redis->shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
-        ->andThrow(new \RuntimeException('Redis connection refused'));
+        ->andThrow(new RuntimeException('Redis connection refused'));
 
     // No incidents in DB → empty response from PG fallback
     $response = $this->getJson('/api/incidents/feed');
