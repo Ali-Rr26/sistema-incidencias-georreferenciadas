@@ -22,37 +22,40 @@
     </div>
   </div>
 
-  <!-- Form card -->
+  <!-- Form Card -->
   <div class="gr-card gr-form-card">
-    <div style="padding: 24px 28px">
-      <h5 class="mb-1 fw-bold" id="card-titulo">Nueva Localización</h5>
+    <div style="padding: 28px 32px">
+      <h5 class="mb-1 fw-bold text-dark" id="card-titulo">Nueva Localización</h5>
       <p class="text-muted mb-4" style="font-size: 13px">
-        Los campos marcados con <span class="text-danger">*</span> son
-        obligatorios.
+        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
       </p>
 
       <form id="form-loc" novalidate>
         <input type="hidden" id="loc-id" />
 
-        <div class="mb-4">
-          <label for="loc-nombre" class="form-label fw-semibold">
-            Nombre <span class="text-danger">*</span>
-          </label>
-          <input
-            type="text"
-            class="form-control form-control-lg"
-            id="loc-nombre"
-            maxlength="50"
-            required
-            placeholder="Ej: Quito"
-          />
-          <div class="invalid-feedback">El nombre es obligatorio.</div>
-        </div>
+        <!-- Sección: Identificación Territorial -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-map-marker-alt me-2"></i>Identificación Territorial
+        </h6>
 
-        <div class="row mb-4">
-          <div class="col-md-5">
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label for="loc-nombre" class="form-label fw-semibold">
+              Nombre de la Entidad Geográfica <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control form-control-lg"
+              id="loc-nombre"
+              maxlength="50"
+              required
+              placeholder="Ej: Quito"
+            />
+            <div class="invalid-feedback">El nombre es obligatorio.</div>
+          </div>
+          <div class="col-md-6">
             <label for="loc-codigo" class="form-label fw-semibold">
-              Código <span class="text-danger">*</span>
+              Código Cartográfico / ISO <span class="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -64,12 +67,20 @@
             />
             <div class="invalid-feedback">El código es obligatorio.</div>
           </div>
-          <div class="col-md-5">
+        </div>
+
+        <!-- Sección: Jerarquía Geográfica -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-sitemap me-2"></i>Nivel y Jerarquía
+        </h6>
+
+        <div class="row g-3 mb-5">
+          <div class="col-md-6">
             <label for="loc-nivel" class="form-label fw-semibold">
-              Nivel <span class="text-danger">*</span>
+              Nivel de la Entidad <span class="text-danger">*</span>
             </label>
             <select class="form-select form-select-lg" id="loc-nivel" required>
-              <option value="">-- Seleccione --</option>
+              <option value="">-- Seleccione Nivel --</option>
               <option value="country">País</option>
               <option value="province">Provincia</option>
               <option value="city">Ciudad</option>
@@ -77,35 +88,35 @@
             </select>
             <div class="invalid-feedback">Seleccione un nivel.</div>
           </div>
+          <div class="col-md-6">
+            <label for="loc-padre" class="form-label fw-semibold">
+              Localización Padre
+            </label>
+            <select class="form-select form-select-lg" id="loc-padre">
+              <option value="">-- Ninguna (Nivel Raíz / País) --</option>
+            </select>
+            <div class="form-text mt-1" style="font-size: 12px">
+              Filtrado dinámicamente según el nivel seleccionado (Ej: Provincias para Ciudades).
+            </div>
+          </div>
         </div>
 
-        <div class="mb-5">
-          <label for="loc-padre" class="form-label fw-semibold"
-            >Localización padre</label
-          >
-          <select class="form-select form-select-lg" id="loc-padre">
-            <option value="">-- Ninguna (raíz) --</option>
-          </select>
-        </div>
-
-        <div class="d-flex gap-2">
+        <!-- Acciones -->
+        <div class="d-flex gap-2 pt-2 border-top">
           <button type="submit" class="gr-btn-primary" id="btn-guardar-loc">
-            <span id="loc-btn-texto">Guardar</span>
+            <span id="loc-btn-texto"><i class="fas fa-save me-1"></i>Guardar Localización</span>
             <span id="loc-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span
-              >Guardando...
+              <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
             </span>
           </button>
-          <a href="#/localizaciones" class="btn btn-outline-secondary px-4"
-            >Cancelar</a
-          >
+          <a href="#/localizaciones" class="btn btn-outline-secondary px-4">Cancelar</a>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Toast -->
+<!-- Toast Notifications -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
   <div
     id="toast-msg"

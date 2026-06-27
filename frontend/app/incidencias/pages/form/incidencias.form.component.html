@@ -1,256 +1,231 @@
-<div class="page-breadcrumb">
-  <div class="row">
-    <div class="col-7 align-self-center">
-      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">
-        Crear Incidencia
-      </h4>
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb m-0 p-0">
-          <li class="breadcrumb-item">
-            <a href="#/dashboard" class="text-muted">Dashboard</a>
-          </li>
-          <li class="breadcrumb-item">
-            <a href="#/incidencias" class="text-muted">Incidencias</a>
-          </li>
-          <li class="breadcrumb-item text-muted active" aria-current="page">
-            Crear
-          </li>
-        </ol>
+<div class="gr-page">
+  <!-- Header -->
+  <div class="gr-page__header">
+    <div>
+      <h1 class="gr-page__title">Nueva Incidencia</h1>
+      <nav class="gr-breadcrumb">
+        <span class="gr-breadcrumb__item">Gestión</span>
+        <span class="gr-breadcrumb__sep">/</span>
+        <a
+          href="#/incidencias"
+          class="gr-breadcrumb__item"
+          style="text-decoration: none; color: inherit"
+          >Incidencias</a
+        >
+        <span class="gr-breadcrumb__sep">/</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active">Crear</span>
       </nav>
     </div>
   </div>
-</div>
 
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Nueva Incidencia</h5>
-          <h6 class="card-subtitle mb-4 text-muted">
-            Los campos marcados con <span class="text-danger">*</span> son
-            obligatorios.
-          </h6>
+  <!-- Form Card -->
+  <div class="gr-card gr-form-card">
+    <div style="padding: 28px 32px">
+      <h5 class="mb-1 fw-bold text-dark">Registrar Nueva Incidencia</h5>
+      <p class="text-muted mb-4" style="font-size: 13px">
+        Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+      </p>
 
-          <form id="form-incidencia" novalidate>
-            <div class="row">
-              <div class="col-md-8 mb-3">
-                <label for="titulo" class="form-label fw-bold"
-                  >Título <span class="text-danger">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-control"
-                  id="titulo"
-                  name="titulo"
-                  maxlength="100"
-                  placeholder="Ingrese un título descriptivo"
-                  required
-                />
-                <div class="invalid-feedback">
-                  El campo título es obligatorio
-                </div>
-                <div class="d-flex justify-content-end mt-1">
-                  <small class="text-muted" id="contador-titulo">0/100</small>
-                </div>
-              </div>
+      <form id="form-incidencia" novalidate>
+        <!-- Sección: Detalles Principales -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-exclamation-triangle me-2"></i>Detalles Principales
+        </h6>
 
-              <div class="col-md-4 mb-3">
-                <label for="prioridad" class="form-label fw-bold"
-                  >Prioridad <span class="text-danger">*</span></label
-                >
-                <select
-                  class="form-select"
-                  id="prioridad"
-                  name="prioridad"
-                  required
-                >
-                  <option value="">-- Seleccione --</option>
-                  <option value="alta">Alta</option>
-                  <option value="media">Media</option>
-                  <option value="baja">Baja</option>
-                </select>
-                <div class="invalid-feedback">Seleccione una prioridad.</div>
-              </div>
-
-              <div class="col-12 mb-3">
-                <label for="descripcion" class="form-label fw-bold"
-                  >Descripción <span class="text-danger">*</span></label
-                >
-                <textarea
-                  class="form-control"
-                  id="descripcion"
-                  name="descripcion"
-                  rows="4"
-                  maxlength="500"
-                  placeholder="Describa la incidencia en detalle"
-                  required
-                ></textarea>
-                <div class="d-flex justify-content-between mt-1">
-                  <div class="invalid-feedback">
-                    El campo descripción es obligatorio.
-                  </div>
-                  <small class="text-muted ms-auto" id="contador-descripcion"
-                    >0/500</small
-                  >
-                </div>
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="telefono" class="form-label fw-bold"
-                  >Teléfono de contacto</label
-                >
-                <input
-                  type="tel"
-                  class="form-control"
-                  id="telefono"
-                  name="telefono"
-                  maxlength="15"
-                  placeholder="Ej: 04121234567"
-                  inputmode="numeric"
-                />
-                <div class="invalid-feedback">
-                  Ingrese solo números (máximo 15 dígitos).
-                </div>
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="tipo" class="form-label fw-bold"
-                  >Tipo <span class="text-danger">*</span></label
-                >
-                <select class="form-select" id="tipo" name="tipo" required>
-                  <option value="">-- Seleccione tipo --</option>
-                  <option value="infraestructura">Infraestructura</option>
-                  <option value="seguridad">Seguridad</option>
-                  <option value="ambiental">Ambiental</option>
-                  <option value="servicios">Servicios Públicos</option>
-                </select>
-                <div class="invalid-feedback">Seleccione un tipo.</div>
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="subtipo" class="form-label fw-bold"
-                  >Subtipo <span class="text-danger">*</span></label
-                >
-                <select
-                  class="form-select"
-                  id="subtipo"
-                  name="subtipo"
-                  required
-                  disabled
-                >
-                  <option value="">-- Seleccione tipo primero --</option>
-                </select>
-                <div class="invalid-feedback">Seleccione un subtipo.</div>
-              </div>
-
-              <div class="col-12 mb-2">
-                <h6 class="text-muted border-bottom pb-2">
-                  Ubicación <span class="text-danger">*</span>
-                </h6>
-                <small class="text-muted"
-                  >Haga clic en el mapa para marcar la ubicación, o use el botón
-                  para detectar su posición actual.</small
-                >
-              </div>
-
-              <div class="col-12 mb-3">
-                <div
-                  id="mapa-incidencia"
-                  style="
-                    height: 320px;
-                    border-radius: 8px;
-                    border: 1px solid #dee2e6;
-                  "
-                ></div>
-                <div
-                  id="error-mapa"
-                  class="text-danger mt-1 d-none"
-                  style="font-size: 0.875em"
-                >
-                  Debe marcar una ubicación en el mapa.
-                </div>
-              </div>
-
-              <div class="col-md-4 mb-3 d-flex align-items-end">
-                <button
-                  type="button"
-                  class="btn btn-outline-primary w-100"
-                  id="btn-geolocalizacion"
-                >
-                  <i class="fas fa-location-arrow me-1"></i>Usar mi ubicación
-                  actual
-                </button>
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="latitud" class="form-label fw-bold">Latitud</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="latitud"
-                  name="latitud"
-                  readonly
-                  placeholder="—"
-                  tabindex="-1"
-                />
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="longitud" class="form-label fw-bold"
-                  >Longitud</label
-                >
-                <input
-                  type="text"
-                  class="form-control"
-                  id="longitud"
-                  name="longitud"
-                  readonly
-                  placeholder="—"
-                  tabindex="-1"
-                />
-              </div>
-
-              <div class="col-12 mb-3">
-                <label for="direccion" class="form-label fw-bold"
-                  >Dirección de referencia</label
-                >
-                <input
-                  type="text"
-                  class="form-control"
-                  id="direccion"
-                  name="direccion"
-                  maxlength="200"
-                  placeholder="Ej: Av. Principal frente al parque central"
-                />
-              </div>
-
-              <div class="col-12 mt-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary" id="btn-guardar">
-                  <span id="btn-texto"
-                    ><i class="fas fa-save me-1"></i>Guardar Incidencia</span
-                  >
-                  <span id="btn-loading" class="d-none">
-                    <span
-                      class="spinner-border spinner-border-sm me-1"
-                      role="status"
-                      aria-hidden="true"
-                    ></span
-                    >Guardando...
-                  </span>
-                </button>
-                <a href="#/incidencias" class="btn btn-outline-secondary"
-                  >Cancelar</a
-                >
-              </div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-8">
+            <label for="titulo" class="form-label fw-semibold">
+              Título de la Incidencia <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              class="form-control form-control-lg"
+              id="titulo"
+              name="titulo"
+              maxlength="100"
+              placeholder="Ej: Fuga de agua en calzada principal"
+              required
+            />
+            <div class="d-flex justify-content-between mt-1">
+              <div class="invalid-feedback">El título es obligatorio.</div>
+              <small class="text-muted ms-auto" id="contador-titulo">0/100</small>
             </div>
-          </form>
+          </div>
+          <div class="col-md-4">
+            <label for="prioridad" class="form-label fw-semibold">
+              Nivel de Prioridad <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select form-select-lg"
+              id="prioridad"
+              name="prioridad"
+              required
+            >
+              <option value="">-- Seleccione --</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una prioridad.</div>
+          </div>
+          <div class="col-12">
+            <label for="descripcion" class="form-label fw-semibold">
+              Descripción Detallada <span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-control form-control-lg"
+              id="descripcion"
+              name="descripcion"
+              rows="4"
+              maxlength="500"
+              placeholder="Explique lo ocurrido con la mayor cantidad de detalles posible..."
+              required
+            ></textarea>
+            <div class="d-flex justify-content-between mt-1">
+              <div class="invalid-feedback">La descripción es obligatoria.</div>
+              <small class="text-muted ms-auto" id="contador-descripcion">0/500</small>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <!-- Sección: Categorización y Contacto -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-tags me-2"></i>Categorización y Contacto
+        </h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label for="tipo" class="form-label fw-semibold">
+              Categoría Principal <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="tipo" name="tipo" required>
+              <option value="">-- Seleccione Categoría --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una categoría.</div>
+          </div>
+          <div class="col-md-4">
+            <label for="subtipo" class="form-label fw-semibold">
+              Subcategoría <span class="text-danger">*</span>
+            </label>
+            <select
+              class="form-select form-select-lg"
+              id="subtipo"
+              name="subtipo"
+              required
+              disabled
+            >
+              <option value="">-- Seleccione Categoría Primero --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una subcategoría.</div>
+          </div>
+          <div class="col-md-4">
+            <label for="telefono" class="form-label fw-semibold">
+              Teléfono de Contacto
+            </label>
+            <input
+              type="tel"
+              class="form-control form-control-lg"
+              id="telefono"
+              name="telefono"
+              maxlength="15"
+              placeholder="Ej: 0991234567"
+              inputmode="numeric"
+            />
+            <div class="invalid-feedback">Ingrese un teléfono válido.</div>
+          </div>
+        </div>
+
+        <!-- Sección: Geolocalización Cartográfica -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-map-marked-alt me-2"></i>Ubicación Georreferenciada <span class="text-danger">*</span>
+        </h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <p class="text-muted mb-2" style="font-size: 13px">
+              Haga clic en el mapa interacivo para marcar las coordenadas exactas de la incidencia, o presione el botón de geolocalización.
+            </p>
+            <div
+              id="mapa-incidencia"
+              style="
+                height: 360px;
+                border-radius: 12px;
+                border: 2px dashed #cbd5e1;
+              "
+            ></div>
+            <div
+              id="error-mapa"
+              class="text-danger mt-2 d-none fw-semibold"
+              style="font-size: 13px"
+            >
+              <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una ubicación en el mapa.
+            </div>
+          </div>
+
+          <div class="col-md-4 d-flex align-items-end">
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-lg w-100"
+              id="btn-geolocalizacion"
+            >
+              <i class="fas fa-crosshairs me-2"></i>Usar mi ubicación actual
+            </button>
+          </div>
+          <div class="col-md-4">
+            <label for="latitud" class="form-label fw-semibold">Latitud</label>
+            <input
+              type="text"
+              class="form-control form-control-lg bg-light"
+              id="latitud"
+              name="latitud"
+              readonly
+              placeholder="—"
+              tabindex="-1"
+            />
+          </div>
+          <div class="col-md-4">
+            <label for="longitud" class="form-label fw-semibold">Longitud</label>
+            <input
+              type="text"
+              class="form-control form-control-lg bg-light"
+              id="longitud"
+              name="longitud"
+              readonly
+              placeholder="—"
+              tabindex="-1"
+            />
+          </div>
+          <div class="col-12">
+            <label for="direccion" class="form-label fw-semibold">
+              Dirección o Referencia Territorial
+            </label>
+            <input
+              type="text"
+              class="form-control form-control-lg"
+              id="direccion"
+              name="direccion"
+              maxlength="200"
+              placeholder="Ej: Av. Amazonas y República, frente al parque La Carolina"
+            />
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="d-flex gap-2 pt-3 border-top">
+          <button type="submit" class="gr-btn-primary" id="btn-guardar">
+            <span id="btn-texto"><i class="fas fa-paper-plane me-1"></i>Registrar Incidencia</span>
+            <span id="btn-loading" class="d-none">
+              <span class="spinner-border spinner-border-sm me-1" role="status"></span>Guardando...
+            </span>
+          </button>
+          <a href="#/incidencias" class="btn btn-outline-secondary px-4">Cancelar</a>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 
+<!-- Toast Notifications -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
   <div
     id="toast-exito"
@@ -261,8 +236,7 @@
   >
     <div class="d-flex">
       <div class="toast-body">
-        <i class="fas fa-check-circle me-2"></i>Incidencia registrada
-        correctamente.
+        <i class="fas fa-check-circle me-2"></i>Incidencia registrada correctamente.
       </div>
       <button
         type="button"

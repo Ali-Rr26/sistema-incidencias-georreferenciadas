@@ -13,7 +13,7 @@ export default defineComponent({
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;
-    let organizaciones = [];
+    let categoriasPadre = [];
 
     function mostrarToast(mensaje, tipo) {
       const el = document.getElementById('toast-msg');
@@ -41,9 +41,13 @@ export default defineComponent({
         .map(
           (cat) => `
             <tr>
-              <td class="text-muted" style="font-size:12px">${cat.id}</td>
+              <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${cat.id}" /></td>
               <td class="fw-semibold">${cat.name}</td>
-              <td class="text-muted">${cat.organization?.name ?? '—'}</td>
+              <td>
+                <span class="badge ${cat.parent_id ? 'bg-secondary' : 'bg-primary'}">
+                  ${cat.parent_id ? 'Subcategoría' : 'Categoría Principal'}
+                </span>
+              </td>
               <td class="text-muted">${cat.parent?.name ?? '—'}</td>
               <td>
                 <div class="d-flex gap-1">
@@ -67,7 +71,9 @@ export default defineComponent({
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
                     <h6 class="mb-0">${cat.name}</h6>
-                    <small class="text-muted">${cat.organization?.name ?? '—'}</small>
+                    <span class="badge ${cat.parent_id ? 'bg-secondary' : 'bg-primary'} mt-1">
+                      ${cat.parent_id ? 'Subcategoría' : 'Categoría Principal'}
+                    </span>
                     ${cat.parent ? `<br><small class="text-muted">Padre: ${cat.parent.name}</small>` : ''}
                   </div>
                   <div class="d-flex gap-1">
@@ -104,8 +110,11 @@ export default defineComponent({
         page: paginaActual,
         per_page: POR_PAGINA,
         search: document.getElementById('filtro-buscar').value.trim(),
-        organization_id: document.getElementById('filtro-org').value,
       });
+      const padreVal = document.getElementById('filtro-padre').value;
+      if (padreVal) {
+        params.append('parent_id', padreVal);
+      }
       try {
         const resp = await http.get(
           '/incident-categories?' + params.toString(),
@@ -119,16 +128,18 @@ export default defineComponent({
       }
     }
 
-    async function cargarOrgs() {
-      if (organizaciones.length) return;
-      const resp = await http.get('/organizations?per_page=200');
-      organizaciones = resp.data ?? resp;
-      const sel = document.getElementById('filtro-org');
-      sel.innerHTML = '<option value="">Todas las organizaciones</option>';
-      organizaciones.forEach((org) => {
+    async function cargarCategoriasPadre() {
+      if (categoriasPadre.length) return;
+      const resp = await http.get('/incident-categories?per_page=200');
+      const todas = resp.data ?? resp;
+      // Filtrar únicamente las principales (parent_id es null o vacio)
+      categoriasPadre = todas.filter((c) => !c.parent_id);
+      const sel = document.getElementById('filtro-padre');
+      sel.innerHTML = '<option value="">Todas las categorías padre</option>';
+      categoriasPadre.forEach((cat) => {
         const opt = document.createElement('option');
-        opt.value = org.id;
-        opt.textContent = org.name;
+        opt.value = cat.id;
+        opt.textContent = cat.name;
         sel.appendChild(opt);
       });
     }
@@ -187,14 +198,14 @@ export default defineComponent({
       });
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-buscar').value = '';
-      document.getElementById('filtro-org').value = '';
+      document.getElementById('filtro-padre').value = '';
       cargar(1);
     });
     document
       .getElementById('btn-reintentar')
       .addEventListener('click', () => cargar(paginaActual));
 
-    cargarOrgs().catch(() => {});
+    cargarCategoriasPadre().catch(() => {});
     cargar(1);
   },
 

@@ -7,6 +7,7 @@ namespace App\Domains\Incidents\Models;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Enums\OrganizationAssignmentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
@@ -48,7 +49,7 @@ class Incident extends Model
     ];
 
     protected $attributes = [
-        'status' => self::STATUS_PENDING,
+        'status' => IncidentStatus::Pending->value,
     ];
 
     protected function casts(): array
@@ -81,13 +82,23 @@ class Incident extends Model
         return $this->belongsTo(Organization::class);
     }
 
+    public function organizationAssignments(): HasMany
+    {
+        return $this->hasMany(IncidentOrganizationAssignment::class);
+    }
+
+    public function activeOrganizationAssignment(): HasOne
+    {
+        return $this->hasOne(IncidentOrganizationAssignment::class)->where('status', OrganizationAssignmentStatus::Accepted->value);
+    }
+
     public function claims(): HasMany
     {
-        return $this->hasMany(IncidentClaim::class);
+        return $this->organizationAssignments();
     }
 
     public function acceptedClaim(): HasOne
     {
-        return $this->hasOne(IncidentClaim::class)->where('status', 'accepted');
+        return $this->activeOrganizationAssignment();
     }
 }

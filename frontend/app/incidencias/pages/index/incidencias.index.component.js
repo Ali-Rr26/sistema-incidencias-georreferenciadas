@@ -72,7 +72,7 @@ export default defineComponent({
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
           return `<tr>
-          <td class="ps-3 text-muted small">${inc.id}</td>
+          <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
           <td>
             <span class="fw-semibold">${categoria}</span>
             <br><small class="text-muted">${inc.status.replace('_', ' ')} — ${badgePrioridad(inc.priority).replace(/^<span /, '<span style="font-size:0.7rem" ')}</small>

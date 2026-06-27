@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('incidents', function (Blueprint $table) {
-            $table->string('title', 255)->after('id');
+            $table->string('title', 255)->default('Sin título')->after('id');
             $table->text('description')->nullable()->after('title');
         });
     }

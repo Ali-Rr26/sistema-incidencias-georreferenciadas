@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Incidents\Models\IncidentClaim;
-use App\Domains\Incidents\Services\ClaimService;
+use App\Domains\Incidents\Models\IncidentOrganizationAssignment;
+use App\Domains\Incidents\Services\IncidentOrganizationAssignmentService;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
@@ -33,22 +33,22 @@ beforeEach(function (): void {
         'priority' => 'medium',
     ]);
 
-    $this->service = new ClaimService;
+    $this->service = new IncidentOrganizationAssignmentService;
 });
 
-it('first claim succeeds and sets incident organization_id', function (): void {
-    $claim = $this->service->claim($this->incident, $this->org, $this->user);
+it('first assignment succeeds and sets incident organization_id', function (): void {
+    $assignment = $this->service->assign($this->incident, $this->org, $this->user);
 
-    expect($claim)->toBeInstanceOf(IncidentClaim::class);
-    expect($claim->status->value)->toBe('accepted');
-    expect($claim->incident_id)->toBe($this->incident->id);
-    expect($claim->organization_id)->toBe($this->org->id);
+    expect($assignment)->toBeInstanceOf(IncidentOrganizationAssignment::class);
+    expect($assignment->status->value)->toBe('accepted');
+    expect($assignment->incident_id)->toBe($this->incident->id);
+    expect($assignment->organization_id)->toBe($this->org->id);
 
     $this->incident->refresh();
     expect($this->incident->organization_id)->toBe($this->org->id);
 });
 
-it('second accepted claim for same incident is rejected on pgsql', function (): void {
+it('second accepted assignment for same incident is rejected on pgsql', function (): void {
     if (DB::getDriverName() !== 'pgsql') {
         $this->markTestSkipped('Partial unique index exclusivity enforcement requires PostgreSQL.');
     }
@@ -56,32 +56,32 @@ it('second accepted claim for same incident is rejected on pgsql', function (): 
     $location2 = Location::create(['name' => 'Location 2', 'level' => 'city']);
     $org2 = Organization::create(['name' => 'Org 2', 'location_id' => $location2->id]);
 
-    $this->service->claim($this->incident, $this->org, $this->user);
+    $this->service->assign($this->incident, $this->org, $this->user);
 
-    expect(fn () => $this->service->claim($this->incident, $org2, $this->user))
+    expect(fn () => $this->service->assign($this->incident, $org2, $this->user))
         ->toThrow(QueryException::class);
 });
 
-it('unowned incident appears in unclaimed incident query', function (): void {
+it('unowned incident appears in unassigned incident query', function (): void {
     $location2 = Location::create(['name' => 'Location 2', 'level' => 'city']);
     $category2 = IncidentCategory::create(['name' => 'Category 2']);
 
-    $claimedIncident = Incident::create([
+    $assignedIncident = Incident::create([
         'incident_category_id' => $category2->id,
         'user_id' => $this->user->id,
         'location_id' => $location2->id,
-        'title' => 'Claimed Incident',
+        'title' => 'Assigned Incident',
         'status' => 'pending',
         'priority' => 'low',
     ]);
 
-    $this->service->claim($claimedIncident, $this->org, $this->user);
+    $this->service->assign($assignedIncident, $this->org, $this->user);
 
-    $unclaimed = Incident::whereDoesntHave(
-        'claims',
+    $unassigned = Incident::whereDoesntHave(
+        'organizationAssignments',
         fn ($q) => $q->where('status', 'accepted')
     )->get();
 
-    expect($unclaimed->contains($this->incident))->toBeTrue();
-    expect($unclaimed->contains($claimedIncident))->toBeFalse();
+    expect($unassigned->contains($this->incident))->toBeTrue();
+    expect($unassigned->contains($assignedIncident))->toBeFalse();
 });

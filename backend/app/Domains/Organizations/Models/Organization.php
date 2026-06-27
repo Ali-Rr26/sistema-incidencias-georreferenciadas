@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Organizations\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Models\IncidentClaim;
+use App\Domains\Incidents\Models\IncidentOrganizationAssignment;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -49,8 +49,13 @@ class Organization extends Model
         return $this->hasMany(User::class);
     }
 
+    public function organizationAssignments(): HasMany
+    {
+        return $this->hasMany(IncidentOrganizationAssignment::class, 'organization_id');
+    }
+
     public function claims(): HasMany
     {
-        return $this->hasMany(IncidentClaim::class, 'organization_id');
+        return $this->organizationAssignments();
     }
 }
