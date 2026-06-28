@@ -1,34 +1,50 @@
-<!-- Layout usuario — header unificado para feed público y autenticado -->
-<header class="lu-header">
-  <div class="lu-header-left">
-    <span class="lu-logo">📍 Incidencias</span>
-  </div>
-  <div class="lu-header-right">
-    <!-- Botón Ingresar (público) -->
-    <a href="#/login" class="lu-btn-login" id="lu-btn-login">Ingresar</a>
+<!-- Layout Usuario — mobile citizen shell with header + bottom nav -->
 
-    <!-- Menú hamburguesa (autenticado) -->
-    <div class="lu-dropdown d-none" id="lu-dropdown-auth">
-      <button class="lu-hamburger" id="lu-menu-btn" aria-label="Menú">
-        <i class="fas fa-bars"></i>
-      </button>
-      <div class="lu-dropdown-menu d-none" id="lu-dropdown-menu">
-        <div class="lu-user-info">
-          <div class="lu-user-avatar" id="lu-user-avatar">?</div>
-          <span class="lu-user-name" id="lu-user-name">Usuario</span>
-        </div>
-        <hr />
-        <a href="#/dashboard" id="lu-dashboard-link">
-          <i class="fas fa-tachometer-alt"></i> Panel administrativo
-        </a>
-        <hr />
-        <a href="javascript:void(0)" id="lu-logout-btn">
-          <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-        </a>
-      </div>
+<!-- Header -->
+<header class="lu-header" id="lu-header">
+  <div class="lu-header-left">
+    <i class="fas fa-location-dot lu-logo-icon"></i>
+    <span class="lu-logo-text">GeoReporta</span>
+  </div>
+  <div class="lu-header-right" id="lu-header-right">
+    <!-- Notification bell (auth) -->
+    <div class="lu-bell-wrap d-none" id="lu-bell-wrap">
+      <i class="fas fa-bell lu-bell-icon"></i>
+      <span class="lu-bell-badge d-none" id="lu-bell-badge">3</span>
     </div>
+    <!-- Avatar (auth) -->
+    <div class="lu-avatar-wrap d-none" id="lu-avatar-wrap">
+      <div class="lu-avatar" id="lu-avatar">?</div>
+    </div>
+    <!-- Login button (public) -->
+    <a href="#/login" class="lu-login-btn" id="lu-login-btn">Ingresar</a>
   </div>
 </header>
+
+<!-- Content area -->
 <main class="lu-main">
   <div id="shell-content"></div>
 </main>
+
+<!-- Bottom navigation -->
+<nav class="lu-bottom-nav" id="lu-bottom-nav">
+  <a href="#/feed" class="lu-nav-item active" data-route="/feed">
+    <i class="fas fa-house"></i>
+    <span class="lu-nav-label">Feed</span>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/mapa">
+    <i class="fas fa-map"></i>
+    <span class="lu-nav-label">Mapa</span>
+  </a>
+  <a href="javascript:void(0)" class="lu-nav-item lu-nav-plus" id="lu-nav-plus" data-route="">
+    <i class="fas fa-circle-plus"></i>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/alertas">
+    <i class="fas fa-bell"></i>
+    <span class="lu-nav-label">Alertas</span>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/perfil">
+    <i class="fas fa-user"></i>
+    <span class="lu-nav-label">Perfil</span>
+  </a>
+</nav>

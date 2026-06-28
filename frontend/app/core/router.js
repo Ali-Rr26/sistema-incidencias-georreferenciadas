@@ -17,6 +17,8 @@ class Router {
     this._boundResolve = () => this.resolve();
     this._shellInitialized = false;
     this._shellInitFn = null;
+    /** @type {Object<string, string>} Parsed route params from :id patterns */
+    this.params = {};
     /** @type {Object<string, object>} Registered custom layouts (name → component) */
     this._layouts = {};
     /** @type {Object<string, boolean>} Whether each custom layout has been initialized */
@@ -80,7 +82,21 @@ class Router {
         ? new URLSearchParams(fullPath.substring(qsIndex + 1))
         : new URLSearchParams();
 
-    const route = this.routes.find((r) => r.pattern === path);
+    // Try exact match first, then param-based matching
+    let route = this.routes.find((r) => r.pattern === path);
+    this.params = {};
+
+    if (!route) {
+      for (const r of this.routes) {
+        const matched = this._matchRoute(r.pattern, path);
+        if (matched) {
+          route = r;
+          this.params = matched;
+          break;
+        }
+      }
+    }
+
     if (!route) {
       this.navigate('/not-found');
       return;
@@ -226,6 +242,28 @@ class Router {
       document.getElementById(component._styleId)?.remove();
       delete component._styleId;
     }
+  }
+
+  /**
+   * Match a route pattern against a path, extracting named params.
+   * Supports :param segments. Returns params object or null.
+   */
+  _matchRoute(pattern, path) {
+    const patternParts = pattern.split('/');
+    const pathParts = path.split('/');
+
+    if (patternParts.length !== pathParts.length) return null;
+
+    const params = {};
+    for (let i = 0; i < patternParts.length; i++) {
+      if (patternParts[i].startsWith(':')) {
+        params[patternParts[i].slice(1)] = decodeURIComponent(pathParts[i]);
+      } else if (patternParts[i] !== pathParts[i]) {
+        return null;
+      }
+    }
+
+    return params;
   }
 
   _updateSidebarActive(path) {

@@ -20,10 +20,20 @@ import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.ind
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
 import feedComponent from './feed/feed.component.js';
 import feedCreateComponent from './feed-create/feed-create.component.js';
+import feedDetailComponent from './incidencias/pages/detail/feed-detail.component.js';
 import layoutUsuario from './layout-usuario/layout-usuario.component.js';
 
 // ── Register custom layouts ──
 router.registerLayout('usuario', layoutUsuario);
+
+// ── Admin roles (hoisted before any route that uses roleGuard) ──
+const adminRoles = [
+  'admin_sistema',
+  'Admin',
+  'admin_organizacion',
+  'operador_sistema',
+  'operador_organizacion',
+];
 
 // ── Public routes (full-page, no shell) ──
 router.addRoute('/login', loginComponent);
@@ -39,14 +49,31 @@ router.addRoute(
   'usuario',
 );
 
+// ── Feed detail: citizen view (usuario layout, no roleGuard) ──
+router.addRoute(
+  '/feed/:id',
+  feedDetailComponent,
+  [],
+  'usuario',
+);
+
+// ── Feed admin: protected, admin shell (desktop mode) ──
+router.addRoute(
+  '/incidencias/feed',
+  feedComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+
+// ── Feed detail: admin view (admin shell, roleGuard) ──
+router.addRoute(
+  '/incidencias/:id',
+  feedDetailComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+
 // ── Admin routes (protected with roleGuard, admin shell) ──
-const adminRoles = [
-  'admin_sistema',
-  'Admin',
-  'admin_organizacion',
-  'operador_sistema',
-  'operador_organizacion',
-];
 
 router.addRoute(
   '/dashboard',

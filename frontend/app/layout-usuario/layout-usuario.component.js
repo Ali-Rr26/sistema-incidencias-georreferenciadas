@@ -1,9 +1,9 @@
 /**
- * Layout Usuario — shell minimalista sin sidebar administrativo.
+ * Layout Usuario — mobile citizen shell with header + bottom nav.
  *
- * Header unificado: muestra "Ingresar" si no hay sesión, o menú hamburguesa
- * con datos del usuario si está autenticado.
- * El contenido del router se monta en #shell-content.
+ * Header: shows logo + bell + avatar (auth) or login button (public).
+ * Bottom nav: 5 items with active state and auth-guarded "+" button.
+ * Content mounted in #shell-content by the router.
  */
 import { defineComponent } from '../utils/component.js';
 import { auth } from '../auth/auth.service.js';
@@ -11,103 +11,85 @@ import { auth } from '../auth/auth.service.js';
 let _unsubAuth = null;
 
 function setupHeader() {
-  const loginBtn = document.getElementById('lu-btn-login');
-  const authDropdown = document.getElementById('lu-dropdown-auth');
-  const nameEl = document.getElementById('lu-user-name');
-  const avatarEl = document.getElementById('lu-user-avatar');
-  const dashboardLink = document.getElementById('lu-dashboard-link');
+  const loginBtn = document.getElementById('lu-login-btn');
+  const bellWrap = document.getElementById('lu-bell-wrap');
+  const avatarWrap = document.getElementById('lu-avatar-wrap');
+  const avatarEl = document.getElementById('lu-avatar');
 
   if (auth.isAuthenticated()) {
-    // Mostrar menú de usuario
+    const user = auth.getUser();
     if (loginBtn) loginBtn.style.display = 'none';
-    if (authDropdown) authDropdown.classList.remove('d-none');
+    if (bellWrap) bellWrap.classList.remove('d-none');
+    if (avatarWrap) avatarWrap.classList.remove('d-none');
 
-    // Cargar datos del usuario
-    let user = auth.getUser();
-    if (user) {
-      updateUserInfo(user, nameEl, avatarEl, dashboardLink);
-    } else {
-      auth.me().then((u) => {
-        updateUserInfo(u, nameEl, avatarEl, dashboardLink);
-      }).catch(() => {});
+    if (avatarEl && user) {
+      const initial = (user.first_name || user.email || '?')[0].toUpperCase();
+      avatarEl.textContent = initial;
     }
   } else {
-    // Mostrar botón Ingresar
     if (loginBtn) loginBtn.style.display = '';
-    if (authDropdown) authDropdown.classList.add('d-none');
+    if (bellWrap) bellWrap.classList.add('d-none');
+    if (avatarWrap) avatarWrap.classList.add('d-none');
   }
 }
 
-function updateUserInfo(user, nameEl, avatarEl, dashboardLink) {
-  if (!user) return;
+function setupBottomNav() {
+  const items = document.querySelectorAll('#lu-bottom-nav .lu-nav-item');
 
-  if (nameEl) {
-    nameEl.textContent =
-      `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
-      user.email ||
-      'Usuario';
-  }
-  if (avatarEl) {
-    avatarEl.textContent = (
-      user.first_name ||
-      user.email ||
-      '?'
-    )[0].toUpperCase();
-  }
-  // Ocultar link a panel admin si es rol Usuario
-  if (dashboardLink && user?.role?.name === 'usuario') {
-    dashboardLink.style.display = 'none';
-  }
+  items.forEach((item) => {
+    // Skip the "+" button — no nav route
+    if (item.classList.contains('lu-nav-plus')) {
+      item.addEventListener('click', (e) => {
+        if (auth.isAuthenticated()) {
+          window.location.hash = '#/feed/crear';
+        } else {
+          window.location.hash = '#/login';
+        }
+      });
+      return;
+    }
+
+    // Regular nav items — update active state on click
+    item.addEventListener('click', () => {
+      items.forEach((i) => {
+        if (!i.classList.contains('lu-nav-plus')) {
+          i.classList.remove('active');
+        }
+      });
+      item.classList.add('active');
+    });
+  });
+
+  // Set initial active state based on current route
+  const currentPath = window.location.hash.slice(1) || '/';
+  items.forEach((item) => {
+    const route = item.dataset.route;
+    if (route && currentPath.startsWith(route)) {
+      items.forEach((i) => {
+        if (!i.classList.contains('lu-nav-plus')) {
+          i.classList.remove('active');
+        }
+      });
+      item.classList.add('active');
+    }
+  });
 }
 
 export default defineComponent({
   templateUrl: 'app/layout-usuario/layout-usuario.component.html',
 
   async onInit() {
-    // ── Configurar según estado de auth ──
+    // Setup header based on auth
     setupHeader();
 
-    // ── Escuchar cambios de auth (login/logout) ──
+    // Listen for auth changes (login/logout)
     _unsubAuth = auth.onAuthChange(() => setupHeader());
 
-    // ── Menú hamburguesa toggle ──
-    const menuBtn = document.getElementById('lu-menu-btn');
-    const dropdown = document.getElementById('lu-dropdown-menu');
-
-    if (menuBtn && dropdown) {
-      const toggleMenu = (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('d-none');
-      };
-      menuBtn.addEventListener('click', toggleMenu);
-      this._cleanupMenu = () =>
-        menuBtn.removeEventListener('click', toggleMenu);
-
-      // Cerrar al hacer clic fuera
-      const closeMenu = () => dropdown.classList.add('d-none');
-      document.addEventListener('click', closeMenu);
-      this._cleanupDocClick = () =>
-        document.removeEventListener('click', closeMenu);
-    }
-
-    // ── Cerrar sesión ──
-    const logoutBtn = document.getElementById('lu-logout-btn');
-    if (logoutBtn) {
-      const doLogout = async (e) => {
-        e.preventDefault();
-        await auth.logout();
-        window.location.hash = '#/login';
-      };
-      logoutBtn.addEventListener('click', doLogout);
-      this._cleanupLogout = () =>
-        logoutBtn.removeEventListener('click', doLogout);
-    }
+    // Setup bottom nav
+    setupBottomNav();
   },
 
   onDestroy() {
-    if (this._cleanupMenu) this._cleanupMenu();
-    if (this._cleanupDocClick) this._cleanupDocClick();
-    if (this._cleanupLogout) this._cleanupLogout();
     if (_unsubAuth) _unsubAuth();
   },
 });
