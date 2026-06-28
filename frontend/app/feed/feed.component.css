@@ -12,42 +12,6 @@ body.feed-view {
   -webkit-font-smoothing: antialiased;
 }
 
-/* --- Header --- */
-.ig-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: #fff;
-  border-bottom: 1px solid #dbdbdb;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-}
-
-.ig-logo {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1a1a2e;
-  letter-spacing: -0.5px;
-}
-
-.ig-btn-login {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #fff;
-  background: #0095f6;
-  border-radius: 8px;
-  padding: 6px 16px;
-  text-decoration: none;
-  transition: background 0.15s;
-}
-.ig-btn-login:hover {
-  background: #1877f2;
-  color: #fff;
-}
-
 /* --- Filters --- */
 .ig-filters {
   background: #fff;

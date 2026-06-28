@@ -1,12 +1,4 @@
-<!-- Feed público estilo Instagram/Facebook -->
-<header class="ig-header">
-  <div class="ig-header-left">
-    <span class="ig-logo">📍 Incidencias</span>
-  </div>
-  <div class="ig-header-right">
-    <a href="#/login" class="ig-btn-login">Ingresar</a>
-  </div>
-</header>
+<!-- Feed estilo Instagram — contenido sin header (lo maneja layout-usuario) -->
 
 <div class="ig-filters" id="feed-filters">
   <button class="ig-chip active" data-status="">Todos</button>
@@ -66,7 +58,12 @@
   </div>
 </main>
 
-<!-- Floating action button -->
-<a href="#/login" class="ig-fab" id="fab-reportar" title="Reportar incidencia">
+<!-- Floating action button — público (login) -->
+<a href="#/login" class="ig-fab" id="fab-public" title="Ingresar">
+  <i class="fas fa-sign-in-alt"></i>
+</a>
+
+<!-- Floating action button — autenticado (reportar) -->
+<a href="#/feed/crear" class="ig-fab" id="fab-auth" title="Reportar incidencia" style="display: none">
   <i class="fas fa-plus"></i>
 </a>

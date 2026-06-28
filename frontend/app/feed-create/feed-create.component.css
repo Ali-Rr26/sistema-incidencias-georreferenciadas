@@ -1,0 +1,150 @@
+/* ============================================================
+   FEED CREATE — formulario de nueva incidencia
+   ============================================================ */
+
+.fc-create {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 80px;
+}
+
+.fc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #efefef;
+  margin-bottom: 20px;
+}
+
+.fc-back-btn {
+  color: #262626;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+
+.fc-back-btn:hover {
+  color: #0095f6;
+}
+
+.fc-header-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #262626;
+}
+
+.fc-error {
+  background: #fce4ec;
+  color: #c62828;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.fc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fc-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 2px;
+}
+
+.fc-input,
+.fc-select,
+.fc-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.fc-input:focus,
+.fc-select:focus,
+.fc-textarea:focus {
+  outline: none;
+  border-color: #0095f6;
+  box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.15);
+}
+
+.fc-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.fc-field-error {
+  font-size: 0.78rem;
+  color: #e53935;
+  margin-top: -6px;
+}
+
+.fc-map {
+  width: 100%;
+  height: 280px;
+  border-radius: 8px;
+  border: 1px solid #dbdbdb;
+  z-index: 1;
+}
+
+.fc-map-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fc-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.fc-btn-primary {
+  background: #0095f6;
+  color: #fff;
+}
+.fc-btn-primary:hover {
+  background: #1877f2;
+}
+.fc-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fc-btn-outline {
+  background: #fff;
+  color: #262626;
+  border: 1px solid #dbdbdb;
+}
+.fc-btn-outline:hover {
+  background: #f5f5f5;
+}
+
+@media (max-width: 640px) {
+  .fc-create {
+    padding: 0 12px 80px;
+  }
+  .fc-map {
+    height: 220px;
+  }
+}

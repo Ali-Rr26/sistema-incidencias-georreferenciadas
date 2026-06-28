@@ -1,5 +1,6 @@
 import { defineComponent } from '../utils/component.js';
 import { API_URL } from '../core/config.js';
+import { auth } from '../auth/auth.service.js';
 
 const POR_PAGINA = 10;
 const CAT_EMOJIS = ['🔧', '🔒', '🌿', '💧', '🚨', '🏗️', '⚡', '📍'];
@@ -16,6 +17,23 @@ let filtroStatus = '';
 let cargando = false;
 let todasLasIncidencias = [];
 let observer = null;
+let _unsubAuthChange = null;
+
+// ── FAB toggle ─────────────────────────────────────────────
+
+function setupFAB() {
+  const fabPublic = document.getElementById('fab-public');
+  const fabAuth = document.getElementById('fab-auth');
+  if (!fabPublic || !fabAuth) return;
+
+  if (auth.isAuthenticated()) {
+    fabPublic.style.display = 'none';
+    fabAuth.style.display = 'flex';
+  } else {
+    fabPublic.style.display = 'flex';
+    fabAuth.style.display = 'none';
+  }
+}
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -227,6 +245,12 @@ export default defineComponent({
   async onInit() {
     document.body.classList.add('feed-view');
 
+    // ── FAB toggle según auth ──
+    setupFAB();
+
+    // ── Reaccionar a cambios de auth ──
+    _unsubAuthChange = auth.onAuthChange(() => setupFAB());
+
     // ── Filter chips ──
     document.getElementById('feed-filters').addEventListener('click', (e) => {
       const chip = e.target.closest('.ig-chip');
@@ -252,6 +276,7 @@ export default defineComponent({
   onDestroy() {
     document.body.classList.remove('feed-view');
     if (observer) observer.disconnect();
+    if (_unsubAuthChange) _unsubAuthChange();
   },
 });
 

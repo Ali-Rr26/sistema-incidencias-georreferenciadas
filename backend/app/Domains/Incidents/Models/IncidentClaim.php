@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class IncidentClaim extends Model
 {
+    protected $table = 'incident_organization_assignments';
+
     protected $fillable = [
         'incident_id',
         'organization_id',

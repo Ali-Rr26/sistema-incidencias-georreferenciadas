@@ -1,0 +1,34 @@
+<!-- Layout usuario — header unificado para feed público y autenticado -->
+<header class="lu-header">
+  <div class="lu-header-left">
+    <span class="lu-logo">📍 Incidencias</span>
+  </div>
+  <div class="lu-header-right">
+    <!-- Botón Ingresar (público) -->
+    <a href="#/login" class="lu-btn-login" id="lu-btn-login">Ingresar</a>
+
+    <!-- Menú hamburguesa (autenticado) -->
+    <div class="lu-dropdown d-none" id="lu-dropdown-auth">
+      <button class="lu-hamburger" id="lu-menu-btn" aria-label="Menú">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="lu-dropdown-menu d-none" id="lu-dropdown-menu">
+        <div class="lu-user-info">
+          <div class="lu-user-avatar" id="lu-user-avatar">?</div>
+          <span class="lu-user-name" id="lu-user-name">Usuario</span>
+        </div>
+        <hr />
+        <a href="#/dashboard" id="lu-dashboard-link">
+          <i class="fas fa-tachometer-alt"></i> Panel administrativo
+        </a>
+        <hr />
+        <a href="javascript:void(0)" id="lu-logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="lu-main">
+  <div id="shell-content"></div>
+</main>

@@ -1,0 +1,78 @@
+<!-- Feed Create — formulario de creación de incidencias desde el feed -->
+
+<div class="fc-create">
+  <!-- Header -->
+  <header class="fc-header">
+    <a href="#/feed" class="fc-back-btn">
+      <i class="fas fa-arrow-left"></i> Volver al feed
+    </a>
+    <span class="fc-header-title">Nueva incidencia</span>
+  </header>
+
+  <!-- Error banner -->
+  <div id="fc-error" class="fc-error d-none" role="alert"></div>
+
+  <!-- Form -->
+  <form id="fc-form" class="fc-form" novalidate>
+    <!-- Título -->
+    <label class="fc-label" for="fc-title">Título *</label>
+    <input
+      type="text"
+      id="fc-title"
+      class="fc-input"
+      placeholder="¿Qué está pasando?"
+      required
+      maxlength="100"
+    />
+    <div class="fc-field-error" id="fc-error-title"></div>
+
+    <!-- Categoría -->
+    <label class="fc-label" for="fc-category">Categoría *</label>
+    <select id="fc-category" class="fc-select" required>
+      <option value="">-- Seleccione categoría --</option>
+    </select>
+    <div class="fc-field-error" id="fc-error-category"></div>
+
+    <!-- Prioridad -->
+    <label class="fc-label" for="fc-priority">Prioridad</label>
+    <select id="fc-priority" class="fc-select">
+      <option value="low">Baja</option>
+      <option value="medium" selected>Media</option>
+      <option value="high">Alta</option>
+    </select>
+
+    <!-- Descripción -->
+    <label class="fc-label" for="fc-description">Descripción</label>
+    <textarea
+      id="fc-description"
+      class="fc-textarea"
+      placeholder="Contanos más detalles..."
+      rows="4"
+      maxlength="500"
+    ></textarea>
+
+    <!-- Ubicación (lugares predefinidos) -->
+    <label class="fc-label" for="fc-location">Ubicación</label>
+    <select id="fc-location" class="fc-select">
+      <option value="">-- Sin ubicación fija --</option>
+    </select>
+
+    <!-- Mapa Leaflet -->
+    <label class="fc-label">Ubicación en el mapa</label>
+    <div id="fc-map" class="fc-map"></div>
+    <div class="fc-map-actions">
+      <button type="button" class="fc-btn fc-btn-outline" id="fc-btn-geo">
+        <i class="fas fa-location-arrow"></i> Usar mi ubicación
+      </button>
+    </div>
+    <div class="fc-field-error" id="fc-error-geom"></div>
+
+    <!-- Submit -->
+    <button type="submit" class="fc-btn fc-btn-primary" id="fc-submit">
+      <span id="fc-submit-text">Publicar</span>
+      <span id="fc-submit-loading" class="d-none">
+        <span class="spinner-border spinner-border-sm me-1"></span> Publicando...
+      </span>
+    </button>
+  </form>
+</div>

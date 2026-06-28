@@ -17,16 +17,35 @@ class Router {
     this._boundResolve = () => this.resolve();
     this._shellInitialized = false;
     this._shellInitFn = null;
+    /** @type {Object<string, object>} Registered custom layouts (name → component) */
+    this._layouts = {};
+    /** @type {Object<string, boolean>} Whether each custom layout has been initialized */
+    this._layoutInitialized = {};
+    /** @type {string|null} Currently active custom layout name */
+    this._currentLayout = null;
   }
 
   /**
    * @param {string}   pattern  - hash path, e.g. '/login'
    * @param {object}   component
    * @param {Array}    guards   - optional canActivate guards
-   * @param {boolean}  shell    - true → mount inside persistent app shell
+   * @param {boolean|string}  shell
+   *   - true       → mount inside persistent admin shell (sidebar + topbar)
+   *   - 'usuario'  → mount inside a registered custom layout
+   *   - false|null → full-page (no shell)
    */
   addRoute(pattern, component, guards = [], shell = false) {
     this.routes.push({ pattern, component, guards, shell });
+  }
+
+  /**
+   * Register a custom layout component by name.
+   * @param {string} name
+   * @param {object} layoutObj  — must have { templateUrl, onInit?, onDestroy? }
+   */
+  registerLayout(name, layoutObj) {
+    this._layouts[name] = layoutObj;
+    this._layoutInitialized[name] = false;
   }
 
   /** Callback invoked once when the shell is first shown (user data, logout). */
@@ -37,6 +56,8 @@ class Router {
   /** Reset shell init state — call on logout so next login re-runs shell init. */
   resetShell() {
     this._shellInitialized = false;
+    this._layoutInitialized = {};
+    this._currentLayout = null;
   }
 
   navigate(path) {
@@ -79,7 +100,9 @@ class Router {
 
     this.currentComponent = component;
 
-    if (shell) {
+    if (typeof shell === 'string') {
+      await this._mountInCustomShell(shell, component);
+    } else if (shell) {
       await this._mountInShell(component);
       this._updateSidebarActive(path);
     } else {
@@ -92,11 +115,14 @@ class Router {
   async _mountInShell(component) {
     const shell = document.getElementById('main-wrapper');
     const authOutlet = document.getElementById('auth-outlet');
+    const userWrapper = document.getElementById('user-wrapper');
     if (shell) shell.style.display = 'block';
     if (authOutlet) {
       authOutlet.innerHTML = '';
       authOutlet.style.display = 'none';
     }
+    if (userWrapper) userWrapper.style.display = 'none';
+    this._currentLayout = null;
 
     if (!this._shellInitialized) {
       initShell();
@@ -117,12 +143,70 @@ class Router {
   async _mountFull(component) {
     const shell = document.getElementById('main-wrapper');
     const authOutlet = document.getElementById('auth-outlet');
+    const userWrapper = document.getElementById('user-wrapper');
     if (shell) shell.style.display = 'none';
+    if (userWrapper) userWrapper.style.display = 'none';
     if (authOutlet) authOutlet.style.display = 'block';
 
     const html = await this._fetchTemplate(component.templateUrl);
     authOutlet.innerHTML = html;
 
+    await this._injectStyles(component);
+  }
+
+  /**
+   * Mount a component inside a registered custom layout.
+   * The layout's template is fetched once and cached. The component's template
+   * is loaded into the layout's #shell-content element.
+   * @param {string} layoutName
+   * @param {object} component
+   */
+  async _mountInCustomShell(layoutName, component) {
+    const layout = this._layouts[layoutName];
+    if (!layout) throw new Error(`Layout "${layoutName}" no registrado`);
+
+    // Hide the admin shell and auth outlet
+    const mainWrapper = document.getElementById('main-wrapper');
+    const authOutlet = document.getElementById('auth-outlet');
+    const userWrapper = document.getElementById('user-wrapper');
+    if (mainWrapper) mainWrapper.style.display = 'none';
+    if (authOutlet) {
+      authOutlet.innerHTML = '';
+      authOutlet.style.display = 'none';
+    }
+
+    // If switching from a different custom layout, destroy the old one
+    if (this._currentLayout && this._currentLayout !== layoutName && userWrapper) {
+      const oldLayout = this._layouts[this._currentLayout];
+      if (oldLayout && oldLayout.onDestroy) oldLayout.onDestroy();
+      userWrapper.innerHTML = '';
+      this._layoutInitialized[this._currentLayout] = false;
+    }
+
+    // Init this layout if first time
+    if (!this._layoutInitialized[layoutName]) {
+      const html = await this._fetchTemplate(layout.templateUrl);
+      let wrapper = document.getElementById('user-wrapper');
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.id = 'user-wrapper';
+        document.getElementById('shell-outlet').appendChild(wrapper);
+      }
+      wrapper.innerHTML = html;
+      if (layout.onInit) await layout.onInit();
+      this._layoutInitialized[layoutName] = true;
+    }
+
+    // Ensure user-wrapper is visible
+    const wrapper = document.getElementById('user-wrapper');
+    if (wrapper) wrapper.style.display = 'block';
+    this._currentLayout = layoutName;
+
+    // Mount the component template into the layout's shell-content
+    const outlet = document.getElementById('shell-content');
+    if (!outlet) throw new Error('No se encontró #shell-content en el layout');
+    const componentHtml = await this._fetchTemplate(component.templateUrl);
+    outlet.innerHTML = componentHtml;
     await this._injectStyles(component);
   }
 

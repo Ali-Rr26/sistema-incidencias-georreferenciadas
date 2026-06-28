@@ -1,0 +1,125 @@
+/* ============================================================
+   LAYOUT USUARIO — header minimalista sin sidebar
+   ============================================================ */
+
+.lu-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid #dbdbdb;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+}
+
+.lu-logo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.5px;
+}
+
+.lu-dropdown {
+  position: relative;
+}
+
+.lu-hamburger {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #262626;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.lu-hamburger:hover {
+  background: #efefef;
+}
+
+.lu-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  background: #fff;
+  border: 1px solid #dbdbdb;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  z-index: 200;
+  padding: 8px 0;
+}
+
+.lu-dropdown-menu hr {
+  margin: 6px 0;
+  border-color: #efefef;
+}
+
+.lu-dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #262626;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.lu-dropdown-menu a:hover {
+  background: #f5f5f5;
+}
+
+.lu-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #262626;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lu-user-icon {
+  font-size: 1.3rem;
+  color: #8e8e8e;
+}
+
+/* Botón Ingresar (público) */
+.lu-btn-login {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: #0095f6;
+  border-radius: 8px;
+  padding: 6px 16px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.lu-btn-login:hover {
+  background: #1877f2;
+  color: #fff;
+}
+
+/* Avatar del usuario */
+.lu-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0095f6, #00d2ff);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.lu-main {
+  min-height: calc(100vh - 52px);
+}

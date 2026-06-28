@@ -7,6 +7,7 @@ import incidenciasIndexComponent from './incidencias/pages/index/incidencias.ind
 import incidenciasFormComponent from './incidencias/pages/form/incidencias.form.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
+import { roleGuard } from './auth/role.guard.js';
 import { auth } from './auth/auth.service.js';
 
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
@@ -18,41 +19,107 @@ import categoriasFormComponent from './configuracion/categorias/pages/form/categ
 import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.index.component.js';
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
 import feedComponent from './feed/feed.component.js';
+import feedCreateComponent from './feed-create/feed-create.component.js';
+import layoutUsuario from './layout-usuario/layout-usuario.component.js';
 
+// ── Register custom layouts ──
+router.registerLayout('usuario', layoutUsuario);
+
+// ── Public routes (full-page, no shell) ──
 router.addRoute('/login', loginComponent);
-router.addRoute('/feed', feedComponent);
-router.addRoute('/dashboard', dashboardComponent, [authGuard], true);
-router.addRoute('/incidencias', incidenciasIndexComponent, [authGuard], true);
+
+// ── Feed: dual-mode (public header or auth header) ──
+router.addRoute('/feed', feedComponent, [], 'usuario');
+
+// ── Feed create: protected, usuario layout ──
+router.addRoute(
+  '/feed/crear',
+  feedCreateComponent,
+  [authGuard],
+  'usuario',
+);
+
+// ── Admin routes (protected with roleGuard, admin shell) ──
+const adminRoles = [
+  'admin_sistema',
+  'Admin',
+  'admin_organizacion',
+  'operador_sistema',
+  'operador_organizacion',
+];
+
+router.addRoute(
+  '/dashboard',
+  dashboardComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+router.addRoute(
+  '/incidencias',
+  incidenciasIndexComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
 router.addRoute(
   '/incidencias/crear',
   incidenciasFormComponent,
-  [authGuard],
+  [authGuard, roleGuard(adminRoles)],
   true,
 );
-router.addRoute('/usuarios', usuariosComponent, [authGuard], true);
-router.addRoute('/usuarios/crear', usuariosFormComponent, [authGuard], true);
-router.addRoute('/organizaciones', organizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/usuarios',
+  usuariosComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+router.addRoute(
+  '/usuarios/crear',
+  usuariosFormComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+router.addRoute(
+  '/organizaciones',
+  organizacionesComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
 router.addRoute(
   '/organizaciones/crear',
   organizacionesFormComponent,
-  [authGuard],
+  [authGuard, roleGuard(adminRoles)],
   true,
 );
-router.addRoute('/localizaciones', localizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/localizaciones',
+  localizacionesComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
 router.addRoute(
   '/localizaciones/crear',
   localizacionesFormComponent,
-  [authGuard],
+  [authGuard, roleGuard(adminRoles)],
   true,
 );
-router.addRoute('/categorias', categoriasComponent, [authGuard], true);
+router.addRoute(
+  '/categorias',
+  categoriasComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
 router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
+  [authGuard, roleGuard(adminRoles)],
+  true,
+);
+router.addRoute(
+  '/not-found',
+  notFoundComponent,
   [authGuard],
   true,
 );
-router.addRoute('/not-found', notFoundComponent, [authGuard], true);
 
 router.setShellInitFn(shellInitFn);
 
