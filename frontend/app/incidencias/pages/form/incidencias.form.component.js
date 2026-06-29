@@ -165,16 +165,34 @@ export default defineComponent({
 
     // Phone: digits only — keydown blocks before char enters, input cleans paste/autofill
     let telefonoAvisoTimer = null;
-    document.getElementById('telefono').addEventListener('keydown', function (e) {
-      const permitidas = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-      if (!permitidas.includes(e.key) && !/^[0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        const aviso = document.getElementById('telefono-aviso');
-        aviso.classList.remove('d-none');
-        clearTimeout(telefonoAvisoTimer);
-        telefonoAvisoTimer = setTimeout(() => aviso.classList.add('d-none'), 2000);
-      }
-    });
+    document
+      .getElementById('telefono')
+      .addEventListener('keydown', function (e) {
+        const permitidas = [
+          'Backspace',
+          'Delete',
+          'Tab',
+          'ArrowLeft',
+          'ArrowRight',
+          'Home',
+          'End',
+        ];
+        if (
+          !permitidas.includes(e.key) &&
+          !/^[0-9]$/.test(e.key) &&
+          !e.ctrlKey &&
+          !e.metaKey
+        ) {
+          e.preventDefault();
+          const aviso = document.getElementById('telefono-aviso');
+          aviso.classList.remove('d-none');
+          clearTimeout(telefonoAvisoTimer);
+          telefonoAvisoTimer = setTimeout(
+            () => aviso.classList.add('d-none'),
+            2000,
+          );
+        }
+      });
     document.getElementById('telefono').addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 15);
     });
