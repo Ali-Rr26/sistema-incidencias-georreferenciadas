@@ -1,13 +1,23 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
-import { initSelect, destroyAll } from '../../../../shared/select-search.js';
+import {
+  initRemoteSelect,
+  updateSelectOptions,
+  destroyAll,
+} from '../../../../shared/select-search.js';
 
 const NIVEL_LABELS = {
   country: 'País',
   province: 'Provincia',
   city: 'Ciudad',
   neighborhood: 'Barrio',
+};
+
+const PARENT_LEVEL_MAP = {
+  province: 'country',
+  city: 'province',
+  neighborhood: 'city',
 };
 
 export default defineComponent({
@@ -35,39 +45,49 @@ export default defineComponent({
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-    async function cargarPadres(exceptId = null) {
-      const resp = await http.get('/locations?per_page=500');
-      const locs = resp.data ?? resp;
-      const sel = document.getElementById('loc-padre');
-      sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
-      locs
-        .filter((l) => l.id !== parseInt(exceptId))
-        .forEach((l) => {
-          const opt = document.createElement('option');
-          opt.value = l.id;
-          opt.textContent = `${l.name} (${NIVEL_LABELS[l.level] ?? l.level})`;
-          sel.appendChild(opt);
-        });
-    }
-
-    await cargarPadres(locId);
-
+    let locActual = null;
     if (esEdicion) {
       try {
         const resp = await http.get('/locations/' + locId);
-        const loc = resp.data ?? resp;
-        document.getElementById('loc-id').value = loc.id;
-        document.getElementById('loc-nombre').value = loc.name;
-        document.getElementById('loc-codigo').value = loc.code ?? '';
-        document.getElementById('loc-nivel').value = loc.level;
-        document.getElementById('loc-padre').value = loc.parent_id ?? '';
+        locActual = resp.data ?? resp;
+        document.getElementById('loc-id').value = locActual.id;
+        document.getElementById('loc-nombre').value = locActual.name;
+        document.getElementById('loc-codigo').value = locActual.code ?? '';
+        document.getElementById('loc-nivel').value = locActual.level;
       } catch {
         mostrarToast('Error al cargar la localización.', 'danger');
       }
     }
 
-    // ─── Tom Select ───────────────────────────────────────────────────
-    initSelect('loc-padre', { placeholder: 'Buscar ubicación padre...' });
+    function inicializarSelectorPadre(selectedLevel, currentParentId = null) {
+      const expectedParentLevel = PARENT_LEVEL_MAP[selectedLevel];
+      const sel = document.getElementById('loc-padre');
+
+      if (!expectedParentLevel) {
+        sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
+        updateSelectOptions(
+          'loc-padre',
+          [{ value: '', text: '-- Ninguna (raíz) --' }],
+          '',
+        );
+        return;
+      }
+
+      initRemoteSelect('loc-padre', {
+        urlEndpoint: '/locations',
+        getParams: () => ({ level: expectedParentLevel }),
+        selectedValue: currentParentId,
+        customFormat: (item) =>
+          `${item.name} (${NIVEL_LABELS[item.level] ?? item.level})`,
+      });
+    }
+
+    const nivelSelect = document.getElementById('loc-nivel');
+    inicializarSelectorPadre(nivelSelect.value, locActual?.parent_id ?? null);
+
+    nivelSelect.addEventListener('change', (e) => {
+      inicializarSelectorPadre(e.target.value, null);
+    });
 
     document
       .getElementById('form-loc')

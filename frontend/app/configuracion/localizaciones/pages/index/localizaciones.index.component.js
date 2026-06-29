@@ -97,6 +97,7 @@ export default defineComponent({
     function renderArbol() {
       thead().innerHTML = `
         <tr>
+          <th style="width: 40px;" class="text-center"><input type="checkbox" class="form-check-input check-select-all" /></th>
           <th>NOMBRE</th>
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
@@ -112,6 +113,7 @@ export default defineComponent({
           const indent = loc._depth * 24;
           return `
             <tr>
+              <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td style="padding-left:${10 + indent}px">
                 ${
                   hasChildren
@@ -202,7 +204,7 @@ export default defineComponent({
 
       thead().innerHTML = `
         <tr>
-          <th style="width:84px">ID</th>
+          <th style="width: 40px;" class="text-center"><input type="checkbox" class="form-check-input check-select-all" /></th>
           <th>NOMBRE</th>
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
@@ -214,7 +216,7 @@ export default defineComponent({
         .map(
           (loc) => `
             <tr>
-              <td class="text-muted" style="font-size:12px">${loc.id}</td>
+              <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td class="fw-semibold">${loc.name}</td>
               <td><code style="font-size:12px">${loc.code ?? '—'}</code></td>
               <td>${nivelBadge(loc.level)}</td>

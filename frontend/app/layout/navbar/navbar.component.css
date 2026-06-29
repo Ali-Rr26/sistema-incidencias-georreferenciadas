@@ -1,9 +1,10 @@
-/* ===== GeoReporta Topbar ===== */
 .gr-topbar {
   position: fixed;
   top: 0;
   left: 256px;
   right: 0;
+  width: calc(100% - 256px);
+  box-sizing: border-box;
   height: 72px;
   background: #fff;
   border-bottom: 1px solid var(--border-light);

@@ -22,5 +22,8 @@ class DatabaseSeeder extends Seeder
             IncidentCategorySeeder::class,
             IncidentSeeder::class,
         ]);
+
+        // Uncomment for performance / demo testing (creates 1000 incidents + comments):
+        // $this->call(MassIncidentSeeder::class);
     }
 }

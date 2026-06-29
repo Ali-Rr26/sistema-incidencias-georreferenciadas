@@ -28,40 +28,41 @@ export default defineComponent({
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-    // ─── Configurar password según modo ──────────────────────────────
+    // ─── Cargar roles y organizaciones ──────────────────────────────
 
-    function configurarPassword(edicion) {
-      const passEl = document.getElementById('user-password');
-      const req = document.getElementById('pass-requerido');
-      if (edicion) {
-        passEl.removeAttribute('required');
-        passEl.placeholder = 'Dejar vacío para no cambiar';
-        req.classList.add('d-none');
-      } else {
-        passEl.setAttribute('required', '');
-        passEl.placeholder = 'Mínimo 8 caracteres';
-        req.classList.remove('d-none');
+    async function cargarCombos() {
+      try {
+        const [rResp, oResp] = await Promise.all([
+          http.get('/roles?per_page=100'),
+          http.get('/organizations?per_page=200'),
+        ]);
+
+        const roles = rResp.data ?? rResp;
+        const selRol = document.getElementById('user-rol');
+        selRol.innerHTML = '<option value="">-- Seleccione Rol --</option>';
+        roles.forEach((r) => {
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.name;
+          selRol.appendChild(opt);
+        });
+
+        const orgs = oResp.data ?? oResp;
+        const selOrg = document.getElementById('user-org');
+        selOrg.innerHTML =
+          '<option value="">-- Ninguna (Global / Sistema) --</option>';
+        orgs.forEach((o) => {
+          const opt = document.createElement('option');
+          opt.value = o.id;
+          opt.textContent = o.name;
+          selOrg.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Error cargando roles y organizaciones:', err);
       }
     }
 
-    configurarPassword(esEdicion);
-
-    // ─── Cargar roles ────────────────────────────────────────────────
-
-    async function cargarRoles() {
-      const resp = await http.get('/roles?per_page=100');
-      const roles = resp.data ?? resp;
-      const sel = document.getElementById('user-rol');
-      sel.innerHTML = '<option value="">-- Seleccione --</option>';
-      roles.forEach((r) => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        sel.appendChild(opt);
-      });
-    }
-
-    await cargarRoles();
+    await cargarCombos();
 
     // ─── Si edición, cargar datos ────────────────────────────────────
 
@@ -75,6 +76,7 @@ export default defineComponent({
         document.getElementById('user-email').value = u.email;
         document.getElementById('user-telefono').value = u.phone ?? '';
         document.getElementById('user-rol').value = u.role?.id ?? '';
+        document.getElementById('user-org').value = u.organization?.id ?? '';
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
@@ -82,6 +84,7 @@ export default defineComponent({
 
     // ─── Tom Select ───────────────────────────────────────────────────
     initSelect('user-rol', { placeholder: 'Buscar rol...' });
+    initSelect('user-org', { placeholder: 'Buscar organización...' });
 
     // ─── Submit ──────────────────────────────────────────────────────
 
@@ -96,14 +99,24 @@ export default defineComponent({
 
         const id = document.getElementById('user-id').value;
         const password = document.getElementById('user-password').value;
+        const orgVal = document.getElementById('user-org').value;
+
         const payload = {
           first_name: document.getElementById('user-nombre').value.trim(),
           last_name: document.getElementById('user-apellido').value.trim(),
           email: document.getElementById('user-email').value.trim(),
           role_id: parseInt(document.getElementById('user-rol').value),
+          organization_id: orgVal ? parseInt(orgVal) : null,
           phone: document.getElementById('user-telefono').value.trim() || null,
         };
-        if (!id || password) payload.password = password;
+
+        if (password) {
+          payload.password = password;
+        } else if (!id) {
+          // Si es nuevo y no puso password, generar una contraseña temporal de invitación
+          payload.password =
+            'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
+        }
 
         document.getElementById('user-btn-texto').classList.add('d-none');
         document.getElementById('user-btn-loading').classList.remove('d-none');
