@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Models;
 
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Models\Session;
 use Database\Factories\UserFactory;
@@ -26,6 +28,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role_id',
+        'organization_id',
         'email',
         'password',
         'first_name',
@@ -51,6 +54,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
@@ -58,7 +66,17 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role_id === 1;
+        return in_array($this->role?->name, [UserRole::AdminSistema->value, UserRole::AdminLegacy->value], true);
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->role?->name === UserRole::AdminSistema->value;
+    }
+
+    public function isOrganizationAdmin(): bool
+    {
+        return $this->role?->name === UserRole::AdminOrganizacion->value;
     }
 
     public function hasPermission(string $permission): bool

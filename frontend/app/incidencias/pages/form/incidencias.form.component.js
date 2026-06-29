@@ -223,7 +223,7 @@ export default defineComponent({
         };
 
         try {
-          await http.post('/incidencias', payload);
+          await http.post('/incidents', payload);
           const toastEl = document.getElementById('toast-exito');
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
           setTimeout(() => {

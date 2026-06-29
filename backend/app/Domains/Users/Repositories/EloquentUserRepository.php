@@ -20,10 +20,16 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
         return $this->newQuery()->where('email', $email)->first();
     }
 
+    protected function newQuery(): Builder
+    {
+        return parent::newQuery()->with(['role', 'organization']);
+    }
+
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
             ->when($filters['role_id'] ?? null, fn (Builder $query, string $value) => $query->where('role_id', $value))
+            ->when($filters['organization_id'] ?? null, fn (Builder $query, string $value) => $query->where('organization_id', $value))
             ->when($filters['search'] ?? null, fn (Builder $query, string $value) => $query->where(function (Builder $query) use ($value) {
                 $query->where('first_name', 'LIKE', "%{$value}%")
                     ->orWhere('last_name', 'LIKE', "%{$value}%")

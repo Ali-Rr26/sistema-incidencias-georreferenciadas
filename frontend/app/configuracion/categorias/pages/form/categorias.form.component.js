@@ -28,15 +28,16 @@ export default defineComponent({
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-    // ─── Cargar categorías padre ─────────────────────────────────────
+    // ─── Cargar categorías padre (únicamente las principales) ───────
 
     async function cargarPadres(exceptId = null) {
-      const resp = await http.get('/incident-categories?per_page=200');
+      const resp = await http.get('/incident-categories?per_page=500');
       const cats = resp.data ?? resp;
       const sel = document.getElementById('cat-padre');
-      sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
+      sel.innerHTML =
+        '<option value="">-- Ninguna (categoría principal) --</option>';
       cats
-        .filter((c) => c.id !== parseInt(exceptId))
+        .filter((c) => !c.parent_id && c.id !== parseInt(exceptId))
         .forEach((c) => {
           const opt = document.createElement('option');
           opt.value = c.id;

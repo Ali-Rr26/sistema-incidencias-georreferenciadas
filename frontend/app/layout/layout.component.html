@@ -1,4 +1,3 @@
-<!-- App shell — persistent navbar + sidebar, visible only for authenticated routes -->
 <div
   id="main-wrapper"
   data-theme="light"
@@ -10,197 +9,160 @@
   data-boxed-layout="full"
   style="display: none"
 >
-  <header class="topbar" data-navbarbg="skin6">
-    <nav class="navbar top-navbar navbar-expand-lg">
-      <div class="navbar-header" data-logobg="skin6">
-        <a
-          class="nav-toggler waves-effect waves-light d-block d-lg-none"
-          href="javascript:void(0)"
-        >
-          <i class="ti-menu ti-close"></i>
-        </a>
-        <div class="navbar-brand">
-          <a href="#/dashboard">
-            <b class="d-none d-md-block text-dark fw-bold fs-5"
-              >Sistema de Incidencias</b
-            >
-            <b class="d-block d-md-none text-dark fw-bold fs-5">SIG</b>
+  <!-- SIDEBAR -->
+  <aside class="gr-sidebar left-sidebar" data-sidebarbg="skin6">
+    <!-- Logo -->
+    <div class="gr-sidebar__logo">
+      <div class="gr-sidebar__logo-icon">
+        <i class="fa-solid fa-location-dot"></i>
+      </div>
+      <div>
+        <div class="gr-sidebar__logo-name">GeoReporta</div>
+        <div class="gr-sidebar__logo-sub">Gestión municipal</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul id="sidebarnav">
+        <li class="nav-small-cap"><span class="hide-menu">PRINCIPAL</span></li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/dashboard">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span class="hide-menu">Dashboard</span>
           </a>
-        </div>
-        <a
-          class="topbartoggler d-block d-lg-none waves-effect waves-light"
-          href="javascript:void(0)"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-        >
-          <i class="ti-more"></i>
-        </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/mapa">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span class="hide-menu">Mapa de incidencias</span>
+          </a>
+        </li>
+
+        <li class="nav-small-cap"><span class="hide-menu">GESTIÓN</span></li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/incidencias">
+            <i class="fa-solid fa-clipboard-list"></i>
+            <span class="hide-menu">Incidencias</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/incidencias/crear">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span class="hide-menu">Nueva incidencia</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/notificaciones">
+            <i class="fa-solid fa-bell"></i>
+            <span class="hide-menu">Notificaciones</span>
+            <span class="gr-sidebar__badge" id="notif-count">0</span>
+          </a>
+        </li>
+
+        <li class="nav-small-cap"><span class="hide-menu">SISTEMA</span></li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/usuarios">
+            <i class="fa-solid fa-users"></i>
+            <span class="hide-menu">Usuarios</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/organizaciones">
+            <i class="fa-solid fa-building"></i>
+            <span class="hide-menu">Organizaciones</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/reportes">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span class="hide-menu">Reportes</span>
+          </a>
+        </li>
+
+        <li class="nav-small-cap">
+          <span class="hide-menu">CONFIGURACIÓN</span>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/categorias">
+            <i class="fa-solid fa-tag"></i>
+            <span class="hide-menu">Categorías</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="#/localizaciones">
+            <i class="fa-solid fa-map"></i>
+            <span class="hide-menu">Localizaciones</span>
+          </a>
+        </li>
+
+        <li class="nav-small-cap"><span class="hide-menu">CUENTA</span></li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" href="javascript:void(0)" id="logout-sidebar">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span class="hide-menu">Cerrar sesión</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar gr-topbar" data-navbarbg="skin6">
+    <nav class="navbar top-navbar navbar-expand-lg gr-topbar__nav">
+      <!-- Left: search -->
+      <div class="gr-topbar__search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          placeholder="Buscar incidencia..."
+          class="gr-topbar__search-input"
+        />
       </div>
 
-      <div class="navbar-collapse collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav float-left me-auto ms-3 ps-1">
-          <li class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle pl-md-3 position-relative"
-              href="javascript:void(0)"
-              id="bell"
-              role="button"
-              data-bs-toggle="dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-            >
-              <span><i class="fas fa-bell"></i></span>
-              <span
-                class="badge text-bg-primary notify-no rounded-circle"
-                id="notif-count"
-                >0</span
+      <!-- Right: actions + user -->
+      <div class="gr-topbar__right">
+        <button class="gr-topbar__icon-btn" aria-label="Notificaciones">
+          <i class="fa-regular fa-bell"></i>
+          <span class="gr-topbar__notif-dot" id="notif-dot">5</span>
+        </button>
+        <button class="gr-topbar__icon-btn" aria-label="Configuración">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+        <div class="gr-topbar__user dropdown">
+          <a
+            href="javascript:void(0)"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            class="gr-topbar__user-trigger"
+          >
+            <span class="gr-topbar__avatar" id="user-avatar">U</span>
+            <div class="gr-topbar__user-info">
+              <span class="gr-topbar__user-name"
+                >Hola, <strong id="user-name">Usuario</strong></span
               >
-            </a>
-            <div
-              class="dropdown-menu dropdown-menu-left mailbox animated bounceInDown"
-            >
-              <ul class="list-style-none">
-                <li>
-                  <div class="message-center notifications position-relative">
-                    <a
-                      href="javascript:void(0)"
-                      class="message-item d-flex align-items-center border-bottom px-3 py-2"
-                    >
-                      <div class="btn btn-danger rounded-circle btn-circle">
-                        <i class="fas fa-info-circle text-white"></i>
-                      </div>
-                      <div class="w-75 d-inline-block v-middle ps-2">
-                        <h6 class="message-title mb-0 mt-1">
-                          Sin notificaciones
-                        </h6>
-                        <span class="font-12 text-nowrap d-block text-muted"
-                          >No hay novedades</span
-                        >
-                      </div>
-                    </a>
-                  </div>
-                </li>
-              </ul>
+              <span class="gr-topbar__user-role">Administrador</span>
             </div>
-          </li>
-        </ul>
-
-        <ul class="navbar-nav float-end">
-          <li class="nav-item dropdown">
-            <a
-              class="nav-link dropdown-toggle"
-              href="javascript:void(0)"
-              data-bs-toggle="dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-            >
-              <span
-                class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center text-white"
-                style="width: 40px; height: 40px; font-size: 16px"
-                id="user-avatar"
-                >U</span
-              >
-              <span class="ms-2 d-none d-lg-inline-block">
-                <span>Hola,</span>
-                <span class="text-dark" id="user-name">Usuario</span>
-                <i class="fas fa-chevron-down"></i>
-              </span>
+            <i class="fa-solid fa-chevron-down gr-topbar__user-arrow"></i>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end user-dd animated flipInY">
+            <a class="dropdown-item" href="javascript:void(0)">
+              <i class="fa-solid fa-user me-2"></i>Mi Perfil
             </a>
-            <div
-              class="dropdown-menu dropdown-menu-end user-dd animated flipInY"
-            >
-              <a class="dropdown-item" href="javascript:void(0)">
-                <i class="fas fa-user me-2 ms-1"></i> Mi Perfil
-              </a>
-              <div class="dropdown-divider"></div>
-              <a
-                class="dropdown-item"
-                href="javascript:void(0)"
-                id="logout-btn"
-              >
-                <i class="fas fa-power-off me-2 ms-1"></i> Cerrar sesión
-              </a>
-            </div>
-          </li>
-        </ul>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="javascript:void(0)" id="logout-btn">
+              <i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar sesión
+            </a>
+          </div>
+        </div>
       </div>
     </nav>
   </header>
 
-  <aside class="left-sidebar" data-sidebarbg="skin6">
-    <div class="scroll-sidebar" data-sidebarbg="skin6">
-      <nav class="sidebar-nav">
-        <ul id="sidebarnav">
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/dashboard">
-              <i class="fas fa-home"></i>
-              <span class="hide-menu">Dashboard</span>
-            </a>
-          </li>
-          <li class="list-divider"></li>
-          <li class="nav-small-cap"><span class="hide-menu">Gestión</span></li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/incidencias">
-              <i class="fas fa-map-marker-alt"></i>
-              <span class="hide-menu">Incidencias</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/reportes">
-              <i class="fas fa-chart-bar"></i>
-              <span class="hide-menu">Reportes</span>
-            </a>
-          </li>
-          <li class="list-divider"></li>
-          <li class="nav-small-cap">
-            <span class="hide-menu">Configuración</span>
-          </li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/usuarios">
-              <i class="fas fa-users"></i>
-              <span class="hide-menu">Usuarios</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/organizaciones">
-              <i class="fas fa-briefcase"></i>
-              <span class="hide-menu">Organizaciones</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/localizaciones">
-              <i class="fas fa-map"></i>
-              <span class="hide-menu">Localizaciones</span>
-            </a>
-          </li>
-          <li class="sidebar-item">
-            <a class="sidebar-link" href="#/categorias">
-              <i class="fas fa-tag"></i>
-              <span class="hide-menu">Categorías</span>
-            </a>
-          </li>
-          <li class="list-divider"></li>
-          <li class="sidebar-item">
-            <a
-              class="sidebar-link"
-              href="javascript:void(0)"
-              id="logout-sidebar"
-            >
-              <i class="fas fa-sign-out-alt"></i>
-              <span class="hide-menu">Salir</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    </div>
-  </aside>
-
+  <!-- PAGE CONTENT -->
   <div class="page-wrapper">
     <div id="page-outlet"></div>
     <footer class="footer text-center text-muted">
-      Sistema de Incidencias Georreferenciadas &copy; 2026
+      GeoReporta — Sistema de Incidencias Georreferenciadas &copy; 2026
     </footer>
   </div>
 </div>

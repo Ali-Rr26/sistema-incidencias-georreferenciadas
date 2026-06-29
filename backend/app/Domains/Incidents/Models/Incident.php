@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\IncidentPriority;
+use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Enums\OrganizationAssignmentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -37,6 +42,8 @@ class Incident extends Model
         'organization_id',
         'user_id',
         'location_id',
+        'title',
+        'description',
         'status',
         'priority',
         'resolution_date',
@@ -44,7 +51,7 @@ class Incident extends Model
     ];
 
     protected $attributes = [
-        'status' => self::STATUS_PENDING,
+        'status' => IncidentStatus::Pending->value,
     ];
 
     protected function casts(): array
@@ -52,6 +59,8 @@ class Incident extends Model
         return [
             'geom' => Point::class,
             'resolution_date' => 'datetime',
+            'status' => IncidentStatus::class,
+            'priority' => IncidentPriority::class,
         ];
     }
 
@@ -73,5 +82,25 @@ class Incident extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function organizationAssignments(): HasMany
+    {
+        return $this->hasMany(IncidentOrganizationAssignment::class);
+    }
+
+    public function activeOrganizationAssignment(): HasOne
+    {
+        return $this->hasOne(IncidentOrganizationAssignment::class)->where('status', OrganizationAssignmentStatus::Accepted->value);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->organizationAssignments();
+    }
+
+    public function acceptedClaim(): HasOne
+    {
+        return $this->activeOrganizationAssignment();
     }
 }

@@ -1,14 +1,16 @@
+import { http } from '../core/http.service.js';
+
 /**
  * Tom Select wrapper — searchable dropdowns for all selects.
  *
  * Uso:
- *   import { initSelect, updateSelectOptions, destroySelect, destroyAll } from './select-search.js';
+ *   import { initSelect, initRemoteSelect, updateSelectOptions, destroySelect, destroyAll } from './select-search.js';
  *
- *   // Inicializar
+ *   // Inicializar síncrono
  *   const sel = initSelect('mi-select', { placeholder: 'Buscar...' });
  *
- *   // Actualizar opciones dinámicamente (cascading)
- *   updateSelectOptions('mi-select', [{ value: 1, text: 'Opción 1' }, ...], valorSeleccionado);
+ *   // Inicializar con paginación progresiva (infinite scroll) y búsqueda remota
+ *   initRemoteSelect('mi-select', { urlEndpoint: '/locations', getParams: () => ({ level: 'province' }) });
  *
  *   // Limpiar en onDestroy
  *   destroyAll();
@@ -52,6 +54,105 @@ export function initSelect(elementId, customConfig = {}) {
     // Si falla (ej: elemento inválido), continuar sin TS
     return null;
   }
+}
+
+/**
+ * Inicializa un Tom Select con paginación progresiva (infinite scroll) y búsqueda remota.
+ * @param {string} elementId - ID del <select>
+ * @param {object} config - { urlEndpoint, getParams, valueField, textField, customFormat, selectedValue }
+ */
+export function initRemoteSelect(
+  elementId,
+  {
+    urlEndpoint,
+    getParams = () => ({}),
+    valueField = 'id',
+    textField = 'name',
+    customFormat = null,
+    selectedValue = null,
+  },
+) {
+  destroySelect(elementId);
+  const el = document.getElementById(elementId);
+  if (!el) return null;
+
+  let currentPage = 1;
+  let lastPage = 1;
+  let currentSearch = '';
+  let isLoading = false;
+
+  async function loadPage(page, search = '', append = false) {
+    if (isLoading) return;
+    isLoading = true;
+
+    try {
+      const extraParams = getParams() || {};
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        per_page: '20',
+        search: search,
+        ...extraParams,
+      });
+
+      const resp = await http.get(`${urlEndpoint}?${queryParams.toString()}`);
+      const data = resp.data ?? [];
+      const meta = resp.meta ?? {};
+      lastPage = meta.last_page ?? 1;
+      currentPage = page;
+
+      const formattedOpts = data.map((item) => ({
+        value: String(item[valueField] ?? item.id),
+        text: customFormat
+          ? customFormat(item)
+          : String(item[textField] ?? item.name),
+      }));
+
+      const instance = instances.get(elementId);
+      if (instance) {
+        if (!append) {
+          instance.clearOptions();
+        }
+        instance.addOptions(formattedOpts);
+        if (selectedValue !== null && selectedValue !== '') {
+          instance.setValue(String(selectedValue), true);
+        }
+        instance.refreshOptions(false);
+      }
+    } catch (err) {
+      console.error('Error cargando opciones remotas:', err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  const instance = initSelect(elementId, {
+    loadFilter: function () {
+      return true;
+    },
+    load: function (query, callback) {
+      currentSearch = query;
+      loadPage(1, query, false).then(() => callback());
+    },
+  });
+
+  if (instance) {
+    const dropdownContent = instance.dropdown_content;
+    if (dropdownContent) {
+      dropdownContent.addEventListener('scroll', () => {
+        if (isLoading || currentPage >= lastPage) return;
+        if (
+          dropdownContent.scrollTop + dropdownContent.clientHeight >=
+          dropdownContent.scrollHeight - 30
+        ) {
+          loadPage(currentPage + 1, currentSearch, true);
+        }
+      });
+    }
+    // Carga inicial página 1 (20 elementos)
+    loadPage(1, '', false);
+  }
+
+  return instance;
 }
 
 /**
