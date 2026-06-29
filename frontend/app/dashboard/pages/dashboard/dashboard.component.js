@@ -84,14 +84,14 @@ function initDonut(pendientes, en_proceso, resueltas, total) {
 // Activity feed — incidencias recientes
 // ─────────────────────────────────────────────
 const PRIORIDAD_BTN = {
-  alta: 'btn-danger',
-  media: 'btn-warning',
-  baja: 'btn-info',
+  high: 'btn-danger',
+  medium: 'btn-warning',
+  low: 'btn-info',
 };
 const PRIORIDAD_ICON = {
-  alta: 'alert-triangle',
-  media: 'alert-circle',
-  baja: 'info',
+  high: 'alert-triangle',
+  medium: 'alert-circle',
+  low: 'info',
 };
 
 function buildActivityFeed(items) {
@@ -102,8 +102,8 @@ function buildActivityFeed(items) {
 
   items.slice(0, 5).forEach((inc, idx) => {
     const isLast = idx === Math.min(items.length, 5) - 1;
-    const btnClass = PRIORIDAD_BTN[inc.prioridad] || 'btn-primary';
-    const iconName = PRIORIDAD_ICON[inc.prioridad] || 'map-pin';
+    const btnClass = PRIORIDAD_BTN[inc.priority] || 'btn-primary';
+    const iconName = PRIORIDAD_ICON[inc.priority] || 'map-pin';
     const fecha = inc.created_at
       ? new Date(inc.created_at).toLocaleDateString('es-EC', {
           day: '2-digit',
@@ -111,11 +111,7 @@ function buildActivityFeed(items) {
           year: 'numeric',
         })
       : '';
-    const desc = inc.descripcion
-      ? inc.descripcion.length > 70
-        ? inc.descripcion.slice(0, 70) + '…'
-        : inc.descripcion
-      : '';
+    const categoria = inc.category?.name || '';
 
     const item = document.createElement('div');
     item.className = `d-flex align-items-start${isLast ? '' : ' border-left-line pb-3'}`;
@@ -126,8 +122,8 @@ function buildActivityFeed(items) {
         </a>
       </div>
       <div class="ms-3 mt-2">
-        <h5 class="text-dark font-weight-medium mb-1">${inc.titulo ?? 'Sin título'}</h5>
-        ${desc ? `<p class="font-12 mb-1 text-muted">${desc}</p>` : ''}
+        <h5 class="text-dark font-weight-medium mb-1">${categoria || 'Sin título'}</h5>
+        <p class="font-12 mb-1 text-muted">${inc.status?.replace('_', ' ') || ''} — ${inc.priority}</p>
         <span class="font-12 text-muted">${fecha}</span>
       </div>`;
     feed.appendChild(item);
@@ -147,15 +143,19 @@ export default defineComponent({
     // C3 y stats en paralelo — si el backend no está, todo falla silenciosamente
     const [, statsResult] = await Promise.allSettled([
       loadC3(),
-      http.get('/incidencias?per_page=1'),
+      http.get('/incidents?per_page=1'),
     ]);
 
     const data =
       statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
-    const total = data.total ?? 0;
-    const pendientes = data.pendientes ?? 0;
-    const resueltas = data.resueltas ?? 0;
-    const ubicaciones = data.ubicaciones ?? 0;
+    const meta = data.meta ?? {};
+    const total = meta.total ?? 0;
+    const datos = data.data ?? [];
+    const pendientes = datos.filter((d) => d.status === 'pending').length;
+    const resueltas = datos.filter((d) => d.status === 'resolved').length;
+    const ubicaciones = [
+      ...new Set(datos.map((d) => d.location?.name).filter(Boolean)),
+    ].length;
     const en_proceso = Math.max(0, total - pendientes - resueltas);
 
     // Counters animados
@@ -188,7 +188,7 @@ export default defineComponent({
 
     // Activity feed — últimas 5 incidencias
     try {
-      const resp = await http.get('/incidencias?per_page=5');
+      const resp = await http.get('/incidents?per_page=5');
       const items =
         resp.data ?? resp.items ?? (Array.isArray(resp) ? resp : []);
       buildActivityFeed(items);

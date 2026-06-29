@@ -19,16 +19,17 @@ export default defineComponent({
 
     // Helpers
     function badgePrioridad(p) {
-      const map = { alta: 'danger', media: 'warning', baja: 'success' };
-      const label = p ? p.charAt(0).toUpperCase() + p.slice(1) : '—';
+      const map = { high: 'danger', medium: 'warning', low: 'success' };
+      const labels = { high: 'Alta', medium: 'Media', low: 'Baja' };
+      const label = labels[p] || '—';
       return `<span class="badge bg-${map[p] || 'secondary'}">${label}</span>`;
     }
 
     function badgeEstado(e) {
       const map = {
-        pendiente: { color: 'secondary', label: 'Pendiente' },
-        en_proceso: { color: 'primary', label: 'En proceso' },
-        resuelto: { color: 'success', label: 'Resuelto' },
+        pending: { color: 'secondary', label: 'Pendiente' },
+        in_progress: { color: 'primary', label: 'En proceso' },
+        resolved: { color: 'success', label: 'Resuelto' },
       };
       const cfg = map[e] || { color: 'secondary', label: e || '—' };
       return `<span class="badge bg-${cfg.color}">${cfg.label}</span>`;
@@ -67,20 +68,21 @@ export default defineComponent({
 
       const tbody = document.getElementById('tabla-body');
       tbody.innerHTML = datos
-        .map(
-          (inc) => `
-        <tr>
-          <td class="ps-3 text-muted small">${inc.id}</td>
+        .map((inc) => {
+          const categoria = inc.category?.name || '—';
+          const ubicacion = inc.location?.name || '—';
+          return `<tr>
+          <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
           <td>
-            <span class="fw-semibold">${inc.titulo || '—'}</span>
-            ${inc.descripcion ? `<br><small class="text-muted">${inc.descripcion.substring(0, 60)}${inc.descripcion.length > 60 ? '…' : ''}</small>` : ''}
+            <span class="fw-semibold">${categoria}</span>
+            <br><small class="text-muted">${inc.status.replace('_', ' ')} — ${badgePrioridad(inc.priority).replace(/^<span /, '<span style="font-size:0.7rem" ')}</small>
           </td>
-          <td>${badgePrioridad(inc.prioridad)}</td>
+          <td>${badgePrioridad(inc.priority)}</td>
           <td>
-            <span class="small">${inc.tipo || '—'}</span>
-            ${inc.subtipo ? `<br><small class="text-muted">${inc.subtipo}</small>` : ''}
+            <span class="small">${categoria}</span>
           </td>
-          <td>${badgeEstado(inc.estado)}</td>
+          <td>${badgeEstado(inc.status)}</td>
+          <td class="small text-muted">${ubicacion}</td>
           <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
           <td class="text-center">
             <div class="d-flex justify-content-center gap-1">
@@ -88,49 +90,49 @@ export default defineComponent({
                 <i class="fas fa-eye"></i>
               </a>
               <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                data-id="${inc.id}" data-titulo="${inc.titulo}" title="Eliminar">
+                data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
           </td>
-        </tr>`,
-        )
+        </tr>`;
+        })
         .join('');
 
       const cards = document.getElementById('contenedor-cards');
       cards.innerHTML = datos
         .map((inc) => {
-          const titulo = inc.titulo || '—';
-          const desc = inc.descripcion
-            ? inc.descripcion.substring(0, 80) +
-              (inc.descripcion.length > 80 ? '…' : '')
-            : '';
+          const categoria = inc.category?.name || '—';
+          const ubicacion = inc.location?.name || '—';
           return `
           <div class="card mb-2 shadow-sm">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-1">
-                <h6 class="card-title mb-0 me-2" style="font-size:.9rem;">${titulo}</h6>
-                ${badgePrioridad(inc.prioridad)}
+                <h6 class="card-title mb-0 me-2" style="font-size:.9rem;">${categoria}</h6>
+                ${badgePrioridad(inc.priority)}
               </div>
-              ${desc ? `<p class="text-muted mb-2" style="font-size:.8rem;">${desc}</p>` : ''}
               <div class="d-flex flex-wrap gap-2 mb-2">
                 <span class="badge bg-light text-dark border" style="font-size:.75rem;">
                   <i class="fas fa-tag" style="font-size:0.7rem;"></i>
-                  ${inc.tipo || '—'}${inc.subtipo ? ' / ' + inc.subtipo : ''}
+                  ${categoria}
                 </span>
-                ${badgeEstado(inc.estado)}
+                ${badgeEstado(inc.status)}
               </div>
               <div class="d-flex justify-content-between align-items-center">
                 <small class="text-muted">
                   <i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i>
                   ${formatearFecha(inc.created_at)}
                 </small>
+                <small class="text-muted">
+                  <i class="fas fa-map-marker-alt" style="font-size:0.75rem;"></i>
+                  ${ubicacion}
+                </small>
                 <div class="d-flex gap-1">
                   <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                     <i class="fas fa-eye"></i>
                   </a>
                   <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                    data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
+                    data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
                     <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
@@ -161,16 +163,14 @@ export default defineComponent({
       const params = new URLSearchParams({
         page: paginaActual,
         per_page: POR_PAGINA,
-        buscar: document.getElementById('filtro-buscar').value.trim(),
-        prioridad: document.getElementById('filtro-prioridad').value,
-        tipo: document.getElementById('filtro-tipo').value,
-        estado: document.getElementById('filtro-estado').value,
+        priority: document.getElementById('filtro-prioridad').value,
+        status: document.getElementById('filtro-estado').value,
       });
 
       try {
-        const resp = await http.get('/incidencias?' + params.toString());
+        const resp = await http.get('/incidents?' + params.toString());
         const datos = resp.data || resp;
-        const total = resp.total || datos.length;
+        const total = resp.meta?.total || datos.length;
         totalPaginas = Math.ceil(total / POR_PAGINA) || 1;
         renderTabla(datos, total);
       } catch {
@@ -204,7 +204,7 @@ export default defineComponent({
         this.disabled = true;
 
         try {
-          await http.delete('/incidencias/' + idEliminar);
+          await http.delete('/incidents/' + idEliminar);
           bootstrap.Modal.getInstance(
             document.getElementById('modal-eliminar'),
           ).hide();
@@ -231,7 +231,6 @@ export default defineComponent({
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-buscar').value = '';
       clearSelect('filtro-prioridad');
-      clearSelect('filtro-tipo');
       clearSelect('filtro-estado');
       cargarIncidencias(1);
     });
@@ -241,7 +240,6 @@ export default defineComponent({
 
     // ─── Tom Select en filtros ─────────────────────────────────────────
     initSelect('filtro-prioridad', { placeholder: 'Buscar prioridad...' });
-    initSelect('filtro-tipo', { placeholder: 'Buscar tipo...' });
     initSelect('filtro-estado', { placeholder: 'Buscar estado...' });
 
     cargarIncidencias(1);

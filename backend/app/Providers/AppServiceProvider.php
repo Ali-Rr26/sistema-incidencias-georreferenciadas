@@ -2,8 +2,14 @@
 
 namespace App\Providers;
 
+use App\Domains\Comments\Listeners\RedisCommentSync;
+use App\Domains\Comments\Models\Comment;
+use App\Domains\Comments\Repositories\CommentRepository;
+use App\Domains\Comments\Repositories\EloquentCommentRepository;
 use App\Domains\IncidentCategories\Repositories\EloquentIncidentCategoryRepository;
 use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
+use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
@@ -35,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IncidentCategoryRepository::class, EloquentIncidentCategoryRepository::class);
         $this->app->bind(IncidentRepository::class, EloquentIncidentRepository::class);
         $this->app->bind(StatusHistoryRepository::class, EloquentStatusHistoryRepository::class);
+        $this->app->bind(CommentRepository::class, EloquentCommentRepository::class);
     }
 
     public function boot(): void
@@ -56,6 +63,12 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             // Tabla aún no existe (primera migración), no hay permisos aún
         }
+
+        // Register RedisIncidentSync as observer for Incident model events
+        Incident::observe(RedisIncidentSync::class);
+
+        // Register RedisCommentSync as observer for Comment model events
+        Comment::observe(RedisCommentSync::class);
 
         // Policy discovery for modular Domains structure:
         // App\Domains\Incidents\Models\Incident

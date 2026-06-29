@@ -62,4 +62,15 @@ router.setShellInitFn(shellInitFn);
   router.init();
 })();
 
+document.addEventListener('change', (e) => {
+  if (e.target.classList.contains('check-select-all')) {
+    const table = e.target.closest('table');
+    if (table) {
+      table.querySelectorAll('.check-row').forEach((cb) => {
+        cb.checked = e.target.checked;
+      });
+    }
+  }
+});
+
 window.__router = router;
