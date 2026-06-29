@@ -18,6 +18,7 @@ class StoreIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => 'required|string|max:255',
             'incident_category_id' => 'required|integer|exists:incident_categories,id',
             'location_id' => 'required|integer|exists:locations,id',
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
@@ -28,6 +29,8 @@ class StoreIncidentRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'title.required' => 'The title is required.',
+            'title.max' => 'The title may not be greater than 255 characters.',
             'incident_category_id.required' => 'The incident category is required.',
             'incident_category_id.exists' => 'The selected category does not exist.',
             'location_id.required' => 'The location is required.',

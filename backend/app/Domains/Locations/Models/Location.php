@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Locations\Models;
 
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Enums\LocationLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +30,7 @@ class Location extends Model
     {
         return [
             'geom' => MultiPolygon::class,
+            'level' => LocationLevel::class,
         ];
     }
 

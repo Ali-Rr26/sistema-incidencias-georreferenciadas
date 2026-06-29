@@ -31,28 +31,18 @@
       <div class="gr-select-wrap">
         <select class="gr-select" id="filtro-estado">
           <option value="">Estado</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="en_proceso">En proceso</option>
-          <option value="resuelto">Resuelto</option>
-        </select>
-        <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
-      </div>
-      <div class="gr-select-wrap">
-        <select class="gr-select" id="filtro-tipo">
-          <option value="">Tipo</option>
-          <option value="infraestructura">Infraestructura</option>
-          <option value="seguridad">Seguridad</option>
-          <option value="ambiental">Medio ambiente</option>
-          <option value="servicios">Servicios públicos</option>
+          <option value="pending">Pendiente</option>
+          <option value="in_progress">En proceso</option>
+          <option value="resolved">Resuelto</option>
         </select>
         <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
       </div>
       <div class="gr-select-wrap">
         <select class="gr-select" id="filtro-prioridad">
           <option value="">Prioridad</option>
-          <option value="alta">Alta</option>
-          <option value="media">Media</option>
-          <option value="baja">Baja</option>
+          <option value="high">Alta</option>
+          <option value="medium">Media</option>
+          <option value="low">Baja</option>
         </select>
         <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
       </div>
@@ -108,12 +98,18 @@
         <table class="gr-table">
           <thead>
             <tr>
-              <th style="width: 84px">ID</th>
-              <th>TÍTULO</th>
-              <th style="width: 130px">ESTADO</th>
+              <th style="width: 40px" class="text-center">
+                <input
+                  type="checkbox"
+                  class="form-check-input check-select-all"
+                />
+              </th>
+              <th>CATEGORÍA</th>
               <th style="width: 100px">PRIORIDAD</th>
-              <th style="width: 140px">TIPO</th>
+              <th style="width: 130px">TIPO</th>
+              <th style="width: 110px">ESTADO</th>
               <th style="width: 140px">UBICACIÓN</th>
+              <th style="width: 100px">FECHA</th>
               <th style="width: 70px"></th>
             </tr>
           </thead>

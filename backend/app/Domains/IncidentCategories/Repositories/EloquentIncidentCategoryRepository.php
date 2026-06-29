@@ -23,7 +23,7 @@ class EloquentIncidentCategoryRepository extends EloquentRepository implements I
         unset($filters['per_page']);
 
         return $this->newQuery()
-            ->with('organizations')
+            ->with(['parent', 'organizations'])
             ->when(count($filters) > 0, fn (Builder $query) => $this->applyFilters($query, $filters))
             ->paginate(min($perPage, 100));
     }
