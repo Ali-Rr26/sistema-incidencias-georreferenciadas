@@ -23,6 +23,8 @@ class UpdateIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|nullable|string',
             'incident_category_id' => 'sometimes|integer|exists:incident_categories,id',
             'location_id' => 'sometimes|integer|exists:locations,id',
             'status' => ['sometimes', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],

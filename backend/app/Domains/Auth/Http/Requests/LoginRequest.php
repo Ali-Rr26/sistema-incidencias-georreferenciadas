@@ -16,9 +16,4 @@ class LoginRequest extends FormRequest
             'password' => 'required|string',
         ];
     }
-
-    public function authenticate(): array
-    {
-        return $this->validated();
-    }
 }

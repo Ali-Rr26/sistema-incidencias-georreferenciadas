@@ -96,6 +96,7 @@ class IncidentSeeder extends Seeder
                 'incident_category_id' => $category->id,
                 'user_id' => $user->id,
                 'location_id' => $location->id,
+                'title' => $spec['category'].' — '.$spec['location'],
                 'status' => $spec['status'],
                 'priority' => $spec['priority'],
                 'resolution_date' => $spec['resolution_date'],

@@ -1,171 +1,143 @@
-<div class="page-breadcrumb">
-  <div class="row align-items-center">
-    <div class="col-7 align-self-center">
-      <h4 class="page-title text-truncate text-dark font-weight-medium mb-1">
-        Lista de Incidencias
-      </h4>
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb m-0 p-0">
-          <li class="breadcrumb-item">
-            <a href="#/dashboard" class="text-muted">Dashboard</a>
-          </li>
-          <li class="breadcrumb-item text-muted active" aria-current="page">
-            Incidencias
-          </li>
-        </ol>
+<div class="gr-page">
+  <!-- Header -->
+  <div class="gr-page__header">
+    <div>
+      <h1 class="gr-page__title">Incidencias</h1>
+      <nav class="gr-breadcrumb">
+        <span class="gr-breadcrumb__item">Gestión</span>
+        <span class="gr-breadcrumb__sep">/</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          >Listado</span
+        >
       </nav>
     </div>
-    <div class="col-5 text-end">
-      <a href="#/incidencias/crear" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i>Nueva Incidencia
-      </a>
-    </div>
+    <a href="#/incidencias/crear" class="gr-btn-primary gr-btn-primary--inline">
+      <i class="fa-solid fa-circle-plus"></i>Nueva incidencia
+    </a>
   </div>
-</div>
 
-<div class="container-fluid">
-  <div class="card mb-3">
-    <div class="card-body py-3">
-      <div class="row g-2 align-items-end">
-        <div class="col-md-4">
-          <label for="filtro-buscar" class="form-label mb-1 small fw-bold"
-            >Buscar</label
-          >
-          <input
-            type="text"
-            class="form-control form-control-sm"
-            id="filtro-buscar"
-            placeholder="Título o descripción..."
-          />
-        </div>
-        <div class="col-md-2">
-          <label for="filtro-prioridad" class="form-label mb-1 small fw-bold"
-            >Prioridad</label
-          >
-          <select class="form-select form-select-sm" id="filtro-prioridad">
-            <option value="">Todas</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label for="filtro-tipo" class="form-label mb-1 small fw-bold"
-            >Tipo</label
-          >
-          <select class="form-select form-select-sm" id="filtro-tipo">
-            <option value="">Todos</option>
-            <option value="infraestructura">Infraestructura</option>
-            <option value="seguridad">Seguridad</option>
-            <option value="ambiental">Ambiental</option>
-            <option value="servicios">Servicios Públicos</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label for="filtro-estado" class="form-label mb-1 small fw-bold"
-            >Estado</label
-          >
-          <select class="form-select form-select-sm" id="filtro-estado">
-            <option value="">Todos</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="en_proceso">En proceso</option>
-            <option value="resuelto">Resuelto</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-flex gap-2">
-          <button
-            type="button"
-            class="btn btn-primary btn-sm w-100"
-            id="btn-filtrar"
-          >
-            <i class="fas fa-search me-1"></i>Filtrar
-          </button>
-          <button
-            type="button"
-            class="btn btn-outline-secondary btn-sm"
-            id="btn-limpiar"
-            title="Limpiar filtros"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+  <!-- Filters -->
+  <div class="gr-card gr-filters">
+    <div class="gr-filters__search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input
+        type="text"
+        id="filtro-buscar"
+        class="gr-filters__input"
+        placeholder="Buscar por título o descripción..."
+      />
+    </div>
+    <div class="gr-filters__selects">
+      <div class="gr-select-wrap">
+        <select class="gr-select" id="filtro-estado">
+          <option value="">Estado</option>
+          <option value="pending">Pendiente</option>
+          <option value="in_progress">En proceso</option>
+          <option value="resolved">Resuelto</option>
+        </select>
+        <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
       </div>
+      <div class="gr-select-wrap">
+        <select class="gr-select" id="filtro-prioridad">
+          <option value="">Prioridad</option>
+          <option value="high">Alta</option>
+          <option value="medium">Media</option>
+          <option value="low">Baja</option>
+        </select>
+        <i class="fa-solid fa-chevron-down gr-select-arrow"></i>
+      </div>
+      <button type="button" class="gr-btn-filter" id="btn-filtrar">
+        <i class="fa-solid fa-magnifying-glass"></i>Filtrar
+      </button>
+      <button
+        type="button"
+        class="gr-btn-filter gr-btn-filter--clear"
+        id="btn-limpiar"
+        title="Limpiar filtros"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <div id="estado-cargando" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-        <p class="text-muted mt-2 mb-0">Cargando incidencias...</p>
+  <!-- Table card -->
+  <div class="gr-card">
+    <!-- Loading -->
+    <div id="estado-cargando" class="gr-estado-center">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2 mb-0">Cargando incidencias...</p>
+    </div>
+
+    <!-- Empty -->
+    <div id="estado-vacio" class="gr-estado-center d-none">
+      <i class="fa-solid fa-inbox text-muted" style="font-size: 2.5rem"></i>
+      <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
+      <a
+        href="#/incidencias/crear"
+        class="gr-btn-primary gr-btn-primary--sm mt-1"
+        >Registrar la primera</a
+      >
+    </div>
+
+    <!-- Error -->
+    <div id="estado-error" class="gr-estado-center d-none">
+      <i
+        class="fa-solid fa-triangle-exclamation text-danger"
+        style="font-size: 2.5rem"
+      ></i>
+      <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
+      <button type="button" class="gr-btn-outline mt-1" id="btn-reintentar">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Table content -->
+    <div id="contenedor-tabla" class="d-none">
+      <!-- Desktop table -->
+      <div class="gr-table-wrap d-none d-md-block">
+        <table class="gr-table">
+          <thead>
+            <tr>
+              <th style="width: 40px" class="text-center">
+                <input
+                  type="checkbox"
+                  class="form-check-input check-select-all"
+                />
+              </th>
+              <th>CATEGORÍA</th>
+              <th style="width: 100px">PRIORIDAD</th>
+              <th style="width: 130px">TIPO</th>
+              <th style="width: 110px">ESTADO</th>
+              <th style="width: 140px">UBICACIÓN</th>
+              <th style="width: 100px">FECHA</th>
+              <th style="width: 70px"></th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
       </div>
 
-      <div id="estado-vacio" class="text-center py-5 d-none">
-        <i class="fas fa-inbox text-muted" style="font-size: 2.5rem"></i>
-        <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
-        <a href="#/incidencias/crear" class="btn btn-primary btn-sm mt-1"
-          >Registrar la primera</a
-        >
-      </div>
+      <!-- Mobile cards -->
+      <div id="contenedor-cards" class="d-md-none p-3"></div>
 
-      <div id="estado-error" class="text-center py-5 d-none">
-        <i
-          class="fas fa-exclamation-triangle text-danger"
-          style="font-size: 2.5rem"
-        ></i>
-        <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
-        <button
-          type="button"
-          class="btn btn-outline-primary btn-sm mt-1"
-          id="btn-reintentar"
-        >
-          Reintentar
-        </button>
-      </div>
-
-      <div id="contenedor-tabla" class="d-none">
-        <div class="table-responsive d-none d-md-block">
-          <table
-            class="table border table-striped table-bordered text-nowrap mb-0"
-          >
-            <thead>
-              <tr>
-                <th class="ps-3" style="width: 60px">#</th>
-                <th>Título</th>
-                <th style="width: 100px">Prioridad</th>
-                <th style="width: 140px">Tipo</th>
-                <th style="width: 120px">Estado</th>
-                <th style="width: 120px">Fecha</th>
-                <th style="width: 100px" class="text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body"></tbody>
-          </table>
-        </div>
-
-        <div id="contenedor-cards" class="d-md-none p-2"></div>
-
-        <div
-          class="d-flex justify-content-between align-items-center px-3 py-2 border-top"
-        >
-          <small class="text-muted" id="info-resultados"></small>
-          <nav>
-            <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
-          </nav>
-        </div>
+      <!-- Pagination bar -->
+      <div class="gr-table-footer">
+        <small class="text-muted" id="info-resultados"></small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="paginacion"></ul>
+        </nav>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Delete modal -->
 <div class="modal fade" id="modal-eliminar" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title text-danger">
-          <i class="fas fa-trash-alt me-2"></i>Eliminar incidencia
+          <i class="fa-solid fa-trash-alt me-2"></i>Eliminar incidencia
         </h5>
         <button
           type="button"
@@ -203,6 +175,7 @@
   </div>
 </div>
 
+<!-- Toast -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
   <div
     id="toast-msg"

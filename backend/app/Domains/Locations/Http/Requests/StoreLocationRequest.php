@@ -36,4 +36,40 @@ class StoreLocationRequest extends FormRequest
             'geom.json' => 'The geometry must be valid JSON.',
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            $level = $this->input('level');
+            $parentId = $this->input('parent_id');
+
+            if ($level === 'country' && ! empty($parentId)) {
+                $validator->errors()->add('parent_id', 'A country cannot have a parent location.');
+
+                return;
+            }
+
+            if ($level !== 'country' && empty($parentId)) {
+                $validator->errors()->add('parent_id', "A parent location is required for level {$level}.");
+
+                return;
+            }
+
+            if (! empty($parentId) && ! empty($level)) {
+                $parent = Location::find($parentId);
+                if ($parent !== null) {
+                    $expectedParentLevels = [
+                        'province' => 'country',
+                        'city' => 'province',
+                        'neighborhood' => 'city',
+                    ];
+
+                    $expected = $expectedParentLevels[$level] ?? null;
+                    if ($expected !== null && $parent->level !== $expected) {
+                        $validator->errors()->add('parent_id', "Parent location for {$level} must be of level {$expected}.");
+                    }
+                }
+            }
+        });
+    }
 }
