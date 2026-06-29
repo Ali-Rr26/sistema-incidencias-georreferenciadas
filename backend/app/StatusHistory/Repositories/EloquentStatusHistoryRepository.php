@@ -26,16 +26,16 @@ class EloquentStatusHistoryRepository implements StatusHistoryRepository
         ?string $comentario,
     ): StatusHistory {
         return DB::transaction(function () use ($incident, $newStatus, $userId, $comentario) {
-            $previousStatus = $incident->status;
+            $previousStatus = $incident->status->value;
 
             $updateData = ['status' => $newStatus];
 
-            // RF-FUNC-007 rule 1: record resolution_date when resolving
+            // RF-FUNC-007 CP-02-05-B: set resolution_date when transitioning to resolved
             if ($newStatus === Incident::STATUS_RESOLVED) {
                 $updateData['resolution_date'] = now();
             }
 
-            // RF-FUNC-007 rule 1: clear resolution_date if moving away from resolved
+            // Clear resolution_date if moving away from resolved (except to closed)
             if ($previousStatus === Incident::STATUS_RESOLVED && $newStatus !== Incident::STATUS_CLOSED) {
                 $updateData['resolution_date'] = null;
             }

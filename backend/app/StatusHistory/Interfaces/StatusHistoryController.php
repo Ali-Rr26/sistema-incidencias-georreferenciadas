@@ -79,16 +79,16 @@ class StatusHistoryController extends Controller
 
         $newStatus = self::ESTADO_MAP[$request->integer('estado_id')];
 
-        if ($incident->status === $newStatus) {
+        if ($incident->status->value === $newStatus) {
             return response()->json(
                 ['message' => 'La incidencia ya tiene ese estado'],
                 Response::HTTP_UNPROCESSABLE_ENTITY,
             );
         }
 
-        if (! Incident::isValidTransition($incident->status, $newStatus)) {
+        if (! Incident::isValidTransition($incident->status->value, $newStatus)) {
             return response()->json(
-                ['message' => "Transición de estado no permitida: {$incident->status} → {$newStatus}"],
+                ['message' => "Transición de estado no permitida: {$incident->status->value} → {$newStatus}"],
                 Response::HTTP_UNPROCESSABLE_ENTITY,
             );
         }
