@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Storage;
 
+use Aws\S3\S3Client;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -48,14 +49,14 @@ class StorageService
             return true; // local disk always "exists"
         }
 
-        if (! class_exists(\Aws\S3\S3Client::class)) {
+        if (! class_exists(S3Client::class)) {
             Log::warning('[StorageService] S3 client not installed — install league/flysystem-aws-s3-v3');
 
             return false;
         }
 
         try {
-            /** @var \Aws\S3\S3Client */
+            /** @var S3Client */
             $client = Storage::disk('s3')->getClient();
 
             if ($client->doesBucketExist(self::bucketName())) {
@@ -80,9 +81,9 @@ class StorageService
     /**
      * Upload an image file to storage.
      *
-     * @param  UploadedFile  $file        The uploaded file
-     * @param  int           $incidentId  Incident ID for path grouping
-     * @return string         The storage key (e.g. "images/42/uuid.webp")
+     * @param  UploadedFile  $file  The uploaded file
+     * @param  int  $incidentId  Incident ID for path grouping
+     * @return string The storage key (e.g. "images/42/uuid.webp")
      */
     public function uploadImage(UploadedFile $file, int $incidentId): string
     {

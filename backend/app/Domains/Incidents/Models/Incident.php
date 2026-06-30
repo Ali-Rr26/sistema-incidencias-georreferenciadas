@@ -83,5 +83,4 @@ class Incident extends Model
     {
         return $this->belongsTo(Organization::class);
     }
-
 }

@@ -134,9 +134,13 @@ export default defineComponent({
 
     document.getElementById('tipo').addEventListener('change', function () {
       const subtipoEl = document.getElementById('subtipo');
-      const padre = categoriasTree.find(c => c.id == this.value);
+      const padre = categoriasTree.find((c) => c.id == this.value);
       if (this.value && padre?.children?.length) {
-        poblarSelect(subtipoEl, padre.children, '-- Seleccione subcategoría --');
+        poblarSelect(
+          subtipoEl,
+          padre.children,
+          '-- Seleccione subcategoría --',
+        );
       } else {
         resetSelect(subtipoEl, '-- Seleccione categoría primero --');
       }
@@ -189,22 +193,30 @@ export default defineComponent({
       }
     });
 
-    document.getElementById('provincia').addEventListener('change', function () {
-      const ciudadEl = document.getElementById('ciudad');
-      let pais = locationsTree.find((p) =>
-        p.children?.some((pr) => pr.id == this.value),
-      );
-      const provincia = pais?.children?.find((pr) => pr.id == this.value);
-      if (this.value && provincia?.children?.length) {
-        poblarUbicaciones(ciudadEl, provincia.children, '-- Seleccione Ciudad --');
-      } else {
-        resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
-      }
-    });
+    document
+      .getElementById('provincia')
+      .addEventListener('change', function () {
+        const ciudadEl = document.getElementById('ciudad');
+        let pais = locationsTree.find((p) =>
+          p.children?.some((pr) => pr.id == this.value),
+        );
+        const provincia = pais?.children?.find((pr) => pr.id == this.value);
+        if (this.value && provincia?.children?.length) {
+          poblarUbicaciones(
+            ciudadEl,
+            provincia.children,
+            '-- Seleccione Ciudad --',
+          );
+        } else {
+          resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
+        }
+      });
 
     // Image preview
     const inputImagenes = document.getElementById('imagenes');
-    const previsualizacion = document.getElementById('previsualizacion-imagenes');
+    const previsualizacion = document.getElementById(
+      'previsualizacion-imagenes',
+    );
     let imagenesSeleccionadas = [];
 
     inputImagenes.addEventListener('change', function () {
@@ -339,15 +351,19 @@ export default defineComponent({
         const lat = parseFloat(document.getElementById('latitud').value);
         const locationId = parseInt(
           document.getElementById('ciudad').value ||
-          document.getElementById('provincia').value ||
-          document.getElementById('pais').value,
+            document.getElementById('provincia').value ||
+            document.getElementById('pais').value,
           10,
         );
         const payload = {
           title: document.getElementById('titulo').value.trim(),
           description: document.getElementById('descripcion').value.trim(),
-          priority: priorityMap[document.getElementById('prioridad').value] || 'medium',
-          incident_category_id: parseInt(subtipoId || document.getElementById('tipo').value, 10),
+          priority:
+            priorityMap[document.getElementById('prioridad').value] || 'medium',
+          incident_category_id: parseInt(
+            subtipoId || document.getElementById('tipo').value,
+            10,
+          ),
           geom: JSON.stringify({ type: 'Point', coordinates: [lng, lat] }),
           location_id: locationId || null,
         };
@@ -363,7 +379,9 @@ export default defineComponent({
               body.append(key, val);
             }
           }
-          imagenesSeleccionadas.forEach((file) => body.append('images[]', file));
+          imagenesSeleccionadas.forEach((file) =>
+            body.append('images[]', file),
+          );
         } else {
           body = payload;
         }
@@ -374,7 +392,9 @@ export default defineComponent({
           const toastEl = document.getElementById('toast-exito');
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
           setTimeout(() => {
-            window.location.hash = newId ? `#/incidencias/${newId}` : '#/incidencias';
+            window.location.hash = newId
+              ? `#/incidencias/${newId}`
+              : '#/incidencias';
           }, 2000);
         } catch (err) {
           console.error('Error al guardar incidencia:', err);

@@ -62,8 +62,10 @@ function renderizarIncidencia(inc) {
   document.getElementById('detalle-loading').classList.add('d-none');
   document.getElementById('detalle-content').classList.remove('d-none');
 
-  document.getElementById('detalle-titulo').textContent = inc.title ?? 'Sin título';
-  document.getElementById('detalle-breadcrumb').textContent = inc.title ?? 'Detalle';
+  document.getElementById('detalle-titulo').textContent =
+    inc.title ?? 'Sin título';
+  document.getElementById('detalle-breadcrumb').textContent =
+    inc.title ?? 'Detalle';
 
   // Thumbnail del incidente (proxy URL)
   const thumbnailContainer = document.getElementById('detalle-thumbnail');
@@ -78,19 +80,28 @@ function renderizarIncidencia(inc) {
   statusEl.textContent = STATUS_LABEL[inc.status] ?? inc.status;
   statusEl.className = `ig-status-badge ig-status-${inc.status}`;
 
-  document.getElementById('detalle-priority').textContent = PRIORITY_LABEL[inc.priority] ?? inc.priority;
+  document.getElementById('detalle-priority').textContent =
+    PRIORITY_LABEL[inc.priority] ?? inc.priority;
   document.getElementById('detalle-fecha').textContent = inc.created_at
     ? new Date(inc.created_at).toLocaleDateString('es-EC', {
-        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       })
     : '';
-  document.getElementById('detalle-descripcion').textContent = inc.description ?? 'Sin descripción';
-  document.getElementById('detalle-categoria').textContent = inc.category?.name ?? '—';
-  document.getElementById('detalle-ubicacion').textContent = inc.location?.name ?? '—';
+  document.getElementById('detalle-descripcion').textContent =
+    inc.description ?? 'Sin descripción';
+  document.getElementById('detalle-categoria').textContent =
+    inc.category?.name ?? '—';
+  document.getElementById('detalle-ubicacion').textContent =
+    inc.location?.name ?? '—';
   document.getElementById('detalle-usuario').textContent = inc.user
     ? [inc.user.first_name, inc.user.last_name].filter(Boolean).join(' ')
     : '—';
-  document.getElementById('detalle-organizacion').textContent = inc.organization?.name ?? '—';
+  document.getElementById('detalle-organizacion').textContent =
+    inc.organization?.name ?? '—';
 
   renderMap(inc);
 }
@@ -103,14 +114,16 @@ function renderMap(inc) {
     link.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
     link.target = '_blank';
     link.className = 'btn btn-outline-primary btn-sm';
-    link.innerHTML = '<i class="fas fa-external-link-alt me-1"></i>Ver en OpenStreetMap';
+    link.innerHTML =
+      '<i class="fas fa-external-link-alt me-1"></i>Ver en OpenStreetMap';
     mapEl.innerHTML = `
       <div class="text-center py-4">
         <p class="mb-2"><strong>Coordenadas:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
       </div>`;
     mapEl.appendChild(link);
   } else {
-    mapEl.innerHTML = '<p class="text-muted text-center py-4 mb-0">Sin coordenadas</p>';
+    mapEl.innerHTML =
+      '<p class="text-muted text-center py-4 mb-0">Sin coordenadas</p>';
   }
 }
 
@@ -154,21 +167,30 @@ function setupUpload(incidentId) {
       formData.append('images[]', file);
 
       // Upload via PATCH to the incident endpoint
-      const resp = await http.request('PATCH', `/incidents/${incidentId}`, formData);
+      const resp = await http.request(
+        'PATCH',
+        `/incidents/${incidentId}`,
+        formData,
+      );
 
       fileInput.value = '';
       btnSubir.disabled = true;
       progress.classList.add('d-none');
 
-      const toast = new bootstrap.Toast(document.getElementById('toast-imagen'), { delay: 2000 });
+      const toast = new bootstrap.Toast(
+        document.getElementById('toast-imagen'),
+        { delay: 2000 },
+      );
       toast.show();
 
       // Refresh images from the updated incident
-      const images = (resp.data?.images ?? []);
+      const images = resp.data?.images ?? [];
       renderizarImagenes(images);
     } catch (err) {
       console.error('Error al subir imagen:', err);
-      alert('Error al subir la imagen. Verifique que sea JPEG, PNG o WEBP y que no supere 10 MB.');
+      alert(
+        'Error al subir la imagen. Verifique que sea JPEG, PNG o WEBP y que no supere 10 MB.',
+      );
     } finally {
       btnSubir.disabled = false;
       progress.classList.add('d-none');

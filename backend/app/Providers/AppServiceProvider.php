@@ -26,9 +26,9 @@ use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Storage\StorageService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

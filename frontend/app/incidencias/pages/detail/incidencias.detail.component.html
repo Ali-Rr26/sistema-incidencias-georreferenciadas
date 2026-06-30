@@ -6,9 +6,18 @@
       <nav class="gr-breadcrumb">
         <span class="gr-breadcrumb__item">Gestión</span>
         <span class="gr-breadcrumb__sep">/</span>
-        <a href="#/incidencias" class="gr-breadcrumb__item" style="text-decoration: none; color: inherit">Incidencias</a>
+        <a
+          href="#/incidencias"
+          class="gr-breadcrumb__item"
+          style="text-decoration: none; color: inherit"
+          >Incidencias</a
+        >
         <span class="gr-breadcrumb__sep">/</span>
-        <span class="gr-breadcrumb__item gr-breadcrumb__item--active" id="detalle-breadcrumb">Detalle</span>
+        <span
+          class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          id="detalle-breadcrumb"
+          >Detalle</span
+        >
       </nav>
     </div>
   </div>
@@ -28,8 +37,14 @@
           <div style="padding: 24px 28px">
             <div class="d-flex justify-content-between align-items-start mb-3">
               <div>
-                <span class="ig-status-badge ig-status-" id="detalle-status"></span>
-                <span class="badge bg-secondary ms-2" id="detalle-priority"></span>
+                <span
+                  class="ig-status-badge ig-status-"
+                  id="detalle-status"
+                ></span>
+                <span
+                  class="badge bg-secondary ms-2"
+                  id="detalle-priority"
+                ></span>
               </div>
               <small class="text-muted" id="detalle-fecha"></small>
             </div>
@@ -57,7 +72,15 @@
               </div>
             </div>
 
-            <div class="mt-3" id="detalle-coords" style="height: 250px; border-radius: 8px; border: 1px solid #dee2e6;"></div>
+            <div
+              class="mt-3"
+              id="detalle-coords"
+              style="
+                height: 250px;
+                border-radius: 8px;
+                border: 1px solid #dee2e6;
+              "
+            ></div>
           </div>
         </div>
       </div>
@@ -72,13 +95,25 @@
 
             <!-- Upload form -->
             <div id="detalle-upload-form" class="mb-3">
-              <input type="file" id="detalle-file-input" accept="image/jpeg,image/png,image/webp" class="form-control form-control-sm mb-2" />
-              <button id="btn-subir-imagen" class="gr-btn-primary btn-sm w-100" disabled>
+              <input
+                type="file"
+                id="detalle-file-input"
+                accept="image/jpeg,image/png,image/webp"
+                class="form-control form-control-sm mb-2"
+              />
+              <button
+                id="btn-subir-imagen"
+                class="gr-btn-primary btn-sm w-100"
+                disabled
+              >
                 <i class="fas fa-upload me-1"></i>Subir imagen
               </button>
               <div id="detalle-upload-progress" class="d-none mt-2">
-                <div class="progress" style="height: 6px;">
-                  <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                <div class="progress" style="height: 6px">
+                  <div
+                    class="progress-bar progress-bar-striped progress-bar-animated"
+                    style="width: 100%"
+                  ></div>
                 </div>
                 <small class="text-muted">Subiendo...</small>
               </div>
@@ -86,7 +121,9 @@
 
             <!-- Image gallery -->
             <div id="detalle-imagenes">
-              <p class="text-muted small mb-0" id="detalle-sin-imagenes">Sin imágenes</p>
+              <p class="text-muted small mb-0" id="detalle-sin-imagenes">
+                Sin imágenes
+              </p>
             </div>
           </div>
         </div>
@@ -97,10 +134,22 @@
 
 <!-- Toast -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
-  <div id="toast-imagen" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+  <div
+    id="toast-imagen"
+    class="toast align-items-center text-white bg-success border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
     <div class="d-flex">
-      <div class="toast-body"><i class="fas fa-check-circle me-2"></i>Imagen subida correctamente.</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <div class="toast-body">
+        <i class="fas fa-check-circle me-2"></i>Imagen subida correctamente.
+      </div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
   </div>
 </div>

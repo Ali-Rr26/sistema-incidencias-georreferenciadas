@@ -13,12 +13,12 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use MatanYadaev\EloquentSpatial\Objects\Point;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
+use MatanYadaev\EloquentSpatial\Objects\Point;
 
 class IncidentController extends Controller
 {
