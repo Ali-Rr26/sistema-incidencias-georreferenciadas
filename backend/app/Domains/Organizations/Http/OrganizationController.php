@@ -56,6 +56,7 @@ class OrganizationController extends Controller
     public function show(Organization $organization): JsonResponse
     {
         $organization->load(['category', 'location', 'parent']);
+
         return (new OrganizationResource($organization))->response();
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Services;
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Models\IncidentVerification;
 use App\Domains\Users\Models\User;
@@ -90,7 +91,7 @@ class IncidentVerificationService
                     break;
                 }
                 // Traverse up the parent chain
-                $currentCategory = \App\Domains\IncidentCategories\Models\IncidentCategory::find($currentCategoryId);
+                $currentCategory = IncidentCategory::find($currentCategoryId);
                 $currentCategoryId = $currentCategory?->parent_id;
             }
 

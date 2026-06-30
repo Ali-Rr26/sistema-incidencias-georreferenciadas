@@ -49,6 +49,7 @@ class UserController extends Controller
     public function show(User $user): JsonResponse
     {
         $user->load(['role', 'organization']);
+
         return new UserResource($user)->response();
     }
 

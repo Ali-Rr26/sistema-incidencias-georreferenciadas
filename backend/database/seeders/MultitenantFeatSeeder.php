@@ -107,11 +107,18 @@ class MultitenantFeatSeeder extends Seeder
             // Buscar categoría asignada
             $category = IncidentCategory::where('name', $config['category_name'])->first();
             if ($category === null) {
-                // Crear si no existe
-                $parent = IncidentCategory::firstOrCreate(['name' => 'General', 'parent_id' => null]);
                 $category = IncidentCategory::firstOrCreate([
                     'name' => $config['category_name'],
-                    'parent_id' => $parent->id,
+                    'parent_id' => null,
+                ]);
+            }
+
+            // Encontrar o crear una subcategoría (leaf) para asociar a las incidencias creadas
+            $incidentCategory = IncidentCategory::where('parent_id', $category->id)->first();
+            if ($incidentCategory === null) {
+                $incidentCategory = IncidentCategory::firstOrCreate([
+                    'name' => 'Incidencia General de '.$category->name,
+                    'parent_id' => $category->id,
                 ]);
             }
 
@@ -183,7 +190,7 @@ class MultitenantFeatSeeder extends Seeder
             // Caso 1: Incidencia nueva (Pública, sin organización, elegible para verificación)
             // Esto significa que coincide con la categoría y la ubicación de la org, pero aún no tiene organization_id ni verificación.
             Incident::create([
-                'incident_category_id' => $category->id,
+                'incident_category_id' => $incidentCategory->id,
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia pendiente de verificación: {$config['category_name']} en {$location->name}",
@@ -197,7 +204,7 @@ class MultitenantFeatSeeder extends Seeder
 
             // Caso 2: Incidencia ya confirmada pero pendiente de asignarse a un operador (PendingOperator)
             $incidentConfirmed = Incident::create([
-                'incident_category_id' => $category->id,
+                'incident_category_id' => $incidentCategory->id,
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia asignada a la Org y esperando operador: {$config['category_name']} en {$location->name}",
@@ -219,7 +226,7 @@ class MultitenantFeatSeeder extends Seeder
 
             // Caso 3: Incidencia reclamada por el Operador de la Org (In Progress)
             $incidentClaimed = Incident::create([
-                'incident_category_id' => $category->id,
+                'incident_category_id' => $incidentCategory->id,
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia en progreso: {$config['category_name']} en {$location->name}",
@@ -241,7 +248,7 @@ class MultitenantFeatSeeder extends Seeder
 
             // Caso 4: Incidencia ya resuelta por la Org (Resolved)
             $incidentResolved = Incident::create([
-                'incident_category_id' => $category->id,
+                'incident_category_id' => $incidentCategory->id,
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia resuelta: {$config['category_name']} en {$location->name}",

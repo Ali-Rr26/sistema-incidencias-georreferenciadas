@@ -1,7 +1,11 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
-import { initSelect, getSelect, destroyAll } from '../../../../shared/select-search.js';
+import {
+  initSelect,
+  getSelect,
+  destroyAll,
+} from '../../../../shared/select-search.js';
 
 export default defineComponent({
   templateUrl:
@@ -81,7 +85,9 @@ export default defineComponent({
         document.getElementById('user-telefono').value = u.phone ?? '';
 
         getSelect('user-rol')?.setValue(u.role?.id ? String(u.role.id) : '');
-        getSelect('user-org')?.setValue(u.organization?.id ? String(u.organization.id) : '');
+        getSelect('user-org')?.setValue(
+          u.organization?.id ? String(u.organization.id) : '',
+        );
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }

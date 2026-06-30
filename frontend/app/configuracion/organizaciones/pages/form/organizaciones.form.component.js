@@ -111,15 +111,18 @@ export default defineComponent({
       try {
         const resp = await http.get('/incident-categories?per_page=200');
         const allCats = resp.data ?? resp;
-        const cats = allCats.filter((c) => c.parent_id === null || c.parent_id === undefined);
+        const cats = allCats.filter(
+          (c) => c.parent_id === null || c.parent_id === undefined,
+        );
         const sel = document.getElementById('org-categorias');
-        sel.innerHTML = '<option value="">-- Seleccione Categoría --</option>' +
+        sel.innerHTML =
+          '<option value="">-- Seleccione Categoría --</option>' +
           cats
-          .map(
-            (c) =>
-              `<option value="${c.id}" ${parseInt(selectedId) === c.id ? 'selected' : ''}>${c.name}</option>`,
-          )
-          .join('');
+            .map(
+              (c) =>
+                `<option value="${c.id}" ${parseInt(selectedId) === c.id ? 'selected' : ''}>${c.name}</option>`,
+            )
+            .join('');
 
         initSelect('org-categorias', {
           placeholder: 'Buscar categoría...',
@@ -288,7 +291,10 @@ export default defineComponent({
         }
 
         const catSelect = getSelect('org-categorias');
-        const categoryId = catSelect && catSelect.getValue() ? parseInt(catSelect.getValue()) : null;
+        const categoryId =
+          catSelect && catSelect.getValue()
+            ? parseInt(catSelect.getValue())
+            : null;
 
         const payload = {
           name: document.getElementById('org-nombre').value.trim(),
