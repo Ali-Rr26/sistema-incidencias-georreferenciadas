@@ -29,279 +29,252 @@
         obligatorios.
       </p>
 
-      <form id="form-incidencia" novalidate>
-        <!-- Sección: Detalles Principales -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
-          <i class="fas fa-exclamation-triangle me-2"></i>Detalles Principales
-        </h6>
-
-        <div class="row g-3 mb-4">
-          <div class="col-md-8">
-            <label for="titulo" class="form-label fw-semibold">
-              Título de la Incidencia <span class="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              class="form-control form-control-lg"
-              id="titulo"
-              name="titulo"
-              maxlength="100"
-              placeholder="Ej: Fuga de agua en calzada principal"
-              required
-            />
-            <div class="d-flex justify-content-between mt-1">
-              <div class="invalid-feedback">El título es obligatorio.</div>
-              <small class="text-muted ms-auto" id="contador-titulo"
-                >0/100</small
-              >
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label for="prioridad" class="form-label fw-semibold">
-              Nivel de Prioridad <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select form-select-lg"
-              id="prioridad"
-              name="prioridad"
-              required
-            >
-              <option value="">-- Seleccione --</option>
-              <option value="alta">Alta</option>
-              <option value="media">Media</option>
-              <option value="baja">Baja</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una prioridad.</div>
-          </div>
-          <div class="col-12">
-            <label for="descripcion" class="form-label fw-semibold">
-              Descripción Detallada <span class="text-danger">*</span>
-            </label>
-            <textarea
-              class="form-control form-control-lg"
-              id="descripcion"
-              name="descripcion"
-              rows="4"
-              maxlength="500"
-              placeholder="Explique lo ocurrido con la mayor cantidad de detalles posible..."
-              required
-            ></textarea>
-            <div class="d-flex justify-content-between mt-1">
-              <div class="invalid-feedback">La descripción es obligatoria.</div>
-              <small class="text-muted ms-auto" id="contador-descripcion"
-                >0/500</small
-              >
-            </div>
+      <form id="form-incidencia">
+      <div class="row g-3 mb-4">
+        <div class="col-md-8">
+          <label for="titulo" class="form-label fw-semibold">
+            Título de la Incidencia <span class="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            class="form-control form-control-lg"
+            id="titulo"
+            name="titulo"
+            maxlength="100"
+            placeholder="Ej: Fuga de agua en calzada principal"
+            required
+          />
+          <div class="d-flex justify-content-between mt-1">
+            <div class="invalid-feedback">El título es obligatorio.</div>
+            <small class="text-muted ms-auto" id="contador-titulo">0/100</small>
           </div>
         </div>
-
-        <!-- Sección: Imágenes -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
-          <i class="fas fa-camera me-2"></i>Imágenes
-        </h6>
-
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <label for="imagenes" class="form-label fw-semibold">
-              Fotos de la Incidencia
-            </label>
-            <input
-              type="file"
-              class="form-control form-control-lg"
-              id="imagenes"
-              name="imagenes"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-            />
-            <div class="mt-2 d-flex gap-2 flex-wrap" id="previsualizacion-imagenes"></div>
-            <div class="form-text mt-1">
-              Opcional. Puede seleccionar hasta 10 imágenes (JPEG, PNG o WebP, máximo 10 MB cada una).
-            </div>
-          </div>
-        </div>
-
-        <!-- Sección: Categorización y Contacto -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
-          <i class="fas fa-tags me-2"></i>Categorización y Contacto
-        </h6>
-
-        <div class="row g-3 mb-4">
-          <div class="col-md-4">
-            <label for="tipo" class="form-label fw-semibold">
-              Categoría Principal <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select form-select-lg"
-              id="tipo"
-              name="tipo"
-              required
-            >
-              <option value="">-- Seleccione Categoría --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una categoría.</div>
-          </div>
-          <div class="col-md-4">
-            <label for="subtipo" class="form-label fw-semibold">
-              Subcategoría <span class="text-danger">*</span>
-            </label>
-            <select
-              class="form-select form-select-lg"
-              id="subtipo"
-              name="subtipo"
-              required
-              disabled
-            >
-              <option value="">-- Seleccione Categoría Primero --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una subcategoría.</div>
-          </div>
-          <div class="col-md-4">
-            <label for="telefono" class="form-label fw-semibold">
-              Teléfono de Contacto
-            </label>
-            <input
-              type="tel"
-              class="form-control form-control-lg"
-              id="telefono"
-              name="telefono"
-              maxlength="15"
-              placeholder="Ej: 0991234567"
-              inputmode="numeric"
-            />
-            <div class="invalid-feedback">Ingrese un teléfono válido.</div>
-          </div>
-        </div>
-
-        <!-- Sección: Geolocalización Cartográfica -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
-          <i class="fas fa-map-marked-alt me-2"></i>Ubicación Georreferenciada
-          <span class="text-danger">*</span>
-        </h6>
-
-        <div class="row g-3 mb-4">
-          <!-- Ubicación jerárquica: País → Provincia → Ciudad -->
-          <div class="col-md-4">
-            <label for="pais" class="form-label fw-semibold">
-              País <span class="text-danger">*</span>
-            </label>
-            <select class="form-select form-select-lg" id="pais" required>
-              <option value="">-- Seleccione País --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione un país.</div>
-          </div>
-          <div class="col-md-4">
-            <label for="provincia" class="form-label fw-semibold">
-              Provincia <span class="text-danger">*</span>
-            </label>
-            <select class="form-select form-select-lg" id="provincia" required disabled>
-              <option value="">-- Seleccione Provincia --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una provincia.</div>
-          </div>
-          <div class="col-md-4">
-            <label for="ciudad" class="form-label fw-semibold">
-              Ciudad <span class="text-danger">*</span>
-            </label>
-            <select class="form-select form-select-lg" id="ciudad" required disabled>
-              <option value="">-- Seleccione Ciudad --</option>
-            </select>
-            <div class="invalid-feedback">Seleccione una ciudad.</div>
-          </div>
-        </div>
-
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <p class="text-muted mb-2" style="font-size: 13px">
-              Haga clic en el mapa interacivo para marcar las coordenadas
-              exactas de la incidencia, o presione el botón de geolocalización.
-            </p>
-            <div
-              id="mapa-incidencia"
-              style="
-                height: 360px;
-                border-radius: 12px;
-                border: 2px dashed #cbd5e1;
-              "
-            ></div>
-            <div
-              id="error-mapa"
-              class="text-danger mt-2 d-none fw-semibold"
-              style="font-size: 13px"
-            >
-              <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una
-              ubicación en el mapa.
-            </div>
-          </div>
-
-          <div class="col-md-4 d-flex align-items-end">
-            <button
-              type="button"
-              class="btn btn-outline-primary btn-lg w-100"
-              id="btn-geolocalizacion"
-            >
-              <i class="fas fa-crosshairs me-2"></i>Usar mi ubicación actual
-            </button>
-          </div>
-          <div class="col-md-4">
-            <label for="latitud" class="form-label fw-semibold">Latitud</label>
-            <input
-              type="text"
-              class="form-control form-control-lg bg-light"
-              id="latitud"
-              name="latitud"
-              readonly
-              placeholder="—"
-              tabindex="-1"
-            />
-          </div>
-          <div class="col-md-4">
-            <label for="longitud" class="form-label fw-semibold"
-              >Longitud</label
-            >
-            <input
-              type="text"
-              class="form-control form-control-lg bg-light"
-              id="longitud"
-              name="longitud"
-              readonly
-              placeholder="—"
-              tabindex="-1"
-            />
-          </div>
-          <div class="col-12">
-            <label for="direccion" class="form-label fw-semibold">
-              Dirección o Referencia Territorial
-            </label>
-            <input
-              type="text"
-              class="form-control form-control-lg"
-              id="direccion"
-              name="direccion"
-              maxlength="200"
-              placeholder="Ej: Av. Amazonas y República, frente al parque La Carolina"
-            />
-          </div>
-        </div>
-
-        <!-- Acciones -->
-        <div class="d-flex gap-2 pt-3 border-top">
-          <button type="submit" class="gr-btn-primary" id="btn-guardar">
-            <span id="btn-texto"
-              ><i class="fas fa-paper-plane me-1"></i>Registrar Incidencia</span
-            >
-            <span id="btn-loading" class="d-none">
-              <span
-                class="spinner-border spinner-border-sm me-1"
-                role="status"
-              ></span
-              >Guardando...
-            </span>
-          </button>
-          <a href="#/incidencias" class="btn btn-outline-secondary px-4"
-            >Cancelar</a
+        <div class="col-md-4">
+          <label for="prioridad" class="form-label fw-semibold">
+            Nivel de Prioridad <span class="text-danger">*</span>
+          </label>
+          <select
+            class="form-select form-select-lg"
+            id="prioridad"
+            name="prioridad"
+            required
           >
+            <option value="">-- Seleccione --</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+          <div class="invalid-feedback">Seleccione una prioridad.</div>
         </div>
-      </form>
+      </div>
+
+      <!-- Descripción -->
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <label for="descripcion" class="form-label fw-semibold">
+            Descripción Detallada <span class="text-danger">*</span>
+          </label>
+          <textarea
+            class="form-control form-control-lg"
+            id="descripcion"
+            name="descripcion"
+            rows="4"
+            maxlength="500"
+            placeholder="Explique lo ocurrido con la mayor cantidad de detalles posible..."
+            required
+          ></textarea>
+          <div class="d-flex justify-content-between mt-1">
+            <div class="invalid-feedback">La descripción es obligatoria.</div>
+            <small class="text-muted ms-auto" id="contador-descripcion"
+              >0/500</small
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Imágenes -->
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+        <i class="fas fa-camera me-2"></i>Imágenes
+      </h6>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <label for="imagenes" class="form-label fw-semibold">
+            Fotos de la Incidencia
+          </label>
+          <input
+            type="file"
+            class="form-control form-control-lg"
+            id="imagenes"
+            name="imagenes"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+          />
+          <div class="mt-2 d-flex gap-2 flex-wrap" id="previsualizacion-imagenes"></div>
+          <div class="form-text mt-1">
+            Opcional. Puede seleccionar hasta 10 imágenes (JPEG, PNG o WebP, máximo 10 MB cada una).
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Categorización y Contacto -->
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+        <i class="fas fa-tags me-2"></i>Categorización y Contacto
+      </h6>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <label for="tipo" class="form-label fw-semibold">
+            Categoría Principal <span class="text-danger">*</span>
+          </label>
+          <select
+            class="form-select form-select-lg"
+            id="tipo"
+            name="tipo"
+            required
+          >
+            <option value="">-- Seleccione Categoría --</option>
+          </select>
+          <div class="invalid-feedback">Seleccione una categoría.</div>
+        </div>
+        <div class="col-md-4">
+          <label for="subtipo" class="form-label fw-semibold">
+            Subcategoría <span class="text-danger">*</span>
+          </label>
+          <select
+            class="form-select form-select-lg"
+            id="subtipo"
+            name="subtipo"
+            required
+            disabled
+          >
+            <option value="">-- Seleccione Categoría Primero --</option>
+          </select>
+          <div class="invalid-feedback">Seleccione una subcategoría.</div>
+        </div>
+        <div class="col-md-4">
+          <label for="telefono" class="form-label fw-semibold">
+            Teléfono de Contacto
+          </label>
+          <input
+            type="tel"
+            class="form-control form-control-lg"
+            id="telefono"
+            name="telefono"
+            maxlength="15"
+            placeholder="Ej: 0991234567"
+            inputmode="numeric"
+            pattern="[0-9]*"
+          />
+          <div
+            id="telefono-aviso"
+            class="d-none mt-1"
+            style="font-size: 0.8rem"
+          >
+            <i class="fas fa-exclamation-circle text-warning me-1"></i>
+            <span class="text-warning">Solo se permiten números.</span>
+          </div>
+          <div class="invalid-feedback">Ingrese un teléfono válido.</div>
+        </div>
+      </div>
+
+      <!-- Sección: Geolocalización Cartográfica -->
+      <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+        <i class="fas fa-map-marked-alt me-2"></i>Ubicación Georreferenciada
+        <span class="text-danger">*</span>
+      </h6>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <p class="text-muted mb-2" style="font-size: 13px">
+            Haga clic en el mapa interacivo para marcar las coordenadas exactas
+            de la incidencia, o presione el botón de geolocalización.
+          </p>
+          <div
+            id="mapa-incidencia"
+            style="
+              height: 360px;
+              border-radius: 12px;
+              border: 2px dashed #cbd5e1;
+            "
+          ></div>
+          <div
+            id="error-mapa"
+            class="text-danger mt-2 d-none fw-semibold"
+            style="font-size: 13px"
+          >
+            <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una
+            ubicación en el mapa.
+          </div>
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-lg w-100"
+            id="btn-geolocalizacion"
+          >
+            <i class="fas fa-crosshairs me-2"></i>Usar mi ubicación actual
+          </button>
+        </div>
+        <div class="col-md-4">
+          <label for="latitud" class="form-label fw-semibold">Latitud</label>
+          <input
+            type="text"
+            class="form-control form-control-lg bg-light"
+            id="latitud"
+            name="latitud"
+            readonly
+            placeholder="—"
+            tabindex="-1"
+          />
+        </div>
+        <div class="col-md-4">
+          <label for="longitud" class="form-label fw-semibold">Longitud</label>
+          <input
+            type="text"
+            class="form-control form-control-lg bg-light"
+            id="longitud"
+            name="longitud"
+            readonly
+            placeholder="—"
+            tabindex="-1"
+          />
+        </div>
+        <div class="col-12">
+          <label for="direccion" class="form-label fw-semibold">
+            Dirección o Referencia Territorial
+          </label>
+          <input
+            type="text"
+            class="form-control form-control-lg"
+            id="direccion"
+            name="direccion"
+            maxlength="200"
+            placeholder="Ej: Av. Amazonas y República, frente al parque La Carolina"
+          />
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="d-flex gap-2 pt-3 border-top">
+        <button type="submit" class="gr-btn-primary" id="btn-guardar">
+          <span id="btn-texto"
+            ><i class="fas fa-paper-plane me-1"></i>Registrar Incidencia</span
+          >
+          <span id="btn-loading" class="d-none">
+            <span
+              class="spinner-border spinner-border-sm me-1"
+              role="status"
+            ></span
+            >Guardando...
+          </span>
+        </button>
+        <a href="#/incidencias" class="btn btn-outline-secondary px-4"
+          >Cancelar</a
+        >
+      </div>
+    </form>
     </div>
   </div>
 </div>

@@ -61,7 +61,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Ir a campo teléfono, intentar escribir letras "abc", luego números "1234567890".
 - **Criterio de aceptación:** Solo aparecen números en el campo, letras bloqueadas inmediatamente.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
