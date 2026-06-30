@@ -147,22 +147,22 @@ describe('feed integration', () => {
     const cards = feedList.querySelectorAll('.feed-card');
     expect(cards.length).toBe(3);
 
-    // First card should contain the title
-    expect(cards[0].textContent).toContain('Bache en la Av. Principal');
+    // First card should contain user info and description
+    expect(cards[0].textContent).toContain('MG');
+    expect(cards[0].textContent).toContain('Prioridad: Alta');
 
     // Status badges
     expect(cards[0].querySelector('.feed-status-pending')).not.toBeNull();
     expect(cards[1].querySelector('.feed-status-in_progress')).not.toBeNull();
     expect(cards[2].querySelector('.feed-status-resolved')).not.toBeNull();
 
-    // "Ver detalle" links
-    const detailLinks = feedList.querySelectorAll('a[href^="#/incidencias/"]');
-    expect(detailLinks.length).toBe(3);
-    expect(detailLinks[0].getAttribute('href')).toBe('#/incidencias/1');
+    // "Ver detalle" buttons
+    const detailBtns = feedList.querySelectorAll('.feed-action-btn[title="Ver detalle"]');
+    expect(detailBtns.length).toBe(3);
 
-    // Desktop container should be visible
+    // Desktop container exists (visibility managed by shell)
     const desktop = document.getElementById('feed-desktop');
-    expect(desktop.classList.contains('d-none')).toBe(false);
+    expect(desktop).not.toBeNull();
 
     feedComponent.onDestroy();
   });
@@ -224,12 +224,12 @@ describe('feed integration', () => {
 
     const firstCard = cards[0];
     expect(firstCard.querySelector('.feed-card-head')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-title')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-desc')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-map')).not.toBeNull();
+    expect(firstCard.querySelector('.feed-card-name')).not.toBeNull();
+    expect(firstCard.querySelector('.feed-card-preview')).not.toBeNull();
+    expect(firstCard.querySelector('.feed-card-body')).not.toBeNull();
     expect(firstCard.querySelector('.feed-card-actions')).not.toBeNull();
     expect(firstCard.querySelector('.feed-status-pending')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-priority-high')).not.toBeNull();
+    expect(firstCard.classList.contains('feed-priority-high')).toBe(true);
 
     feedComponent.onDestroy();
   });

@@ -1,5 +1,5 @@
 import { defineComponent } from '../utils/component.js';
-import { API_URL } from '../core/config.js';
+import { http } from '../core/http.service.js';
 
 const POR_PAGINA = 10;
 const CAT_EMOJIS = ['🔧', '🔒', '🌿', '💧', '🚨', '🏗️', '⚡', '📍'];
@@ -9,13 +9,6 @@ const STATUS_LABEL = {
   in_progress: 'En proceso',
   resolved: 'Resuelto',
 };
-
-let paginaActual = 1;
-let totalPaginas = 1;
-let filtroStatus = '';
-let cargando = false;
-let todasLasIncidencias = [];
-let observer = null;
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -57,9 +50,7 @@ function catEmoji(id) {
 
 function resolveAvatar(avatar) {
   if (!avatar) return null;
-  // String URL directa
   if (typeof avatar === 'string') return avatar;
-  // Objeto {url: '...'} o {urls: [...]}
   if (typeof avatar === 'object') {
     if (avatar.url) return avatar.url;
     if (Array.isArray(avatar.urls) && avatar.urls.length > 0)
@@ -70,6 +61,13 @@ function resolveAvatar(avatar) {
     }
   }
   return null;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // ── Card renderer ──────────────────────────────────────────
@@ -85,9 +83,8 @@ function renderCard(inc) {
   const avatarUrl = resolveAvatar(inc.user?.avatar);
   const avatarHtml = avatarUrl
     ? `<img class="ig-avatar-img" src="${avatarUrl}" alt="${userName}" />`
-    : `<div class="ig-avatar">${initials}</div>`;
+    : `<div class="feed-avatar">${initials}</div>`;
 
-  // Build a short description from available data
   const descParts = [];
   if (inc.priority) {
     descParts.push(
@@ -108,123 +105,85 @@ function renderCard(inc) {
   const descText = descParts.join(' · ');
 
   const thumbnailHtml = inc.thumbnail_url
-    ? `<div class="ig-card-thumb">
+    ? `<div class="feed-card-thumb">
         <img src="${inc.thumbnail_url}" alt="Imagen" loading="lazy" />
        </div>`
     : '';
 
   return `
-    <div class="ig-card ${'ig-priority-' + (inc.priority ?? 'low')}" onclick="window.location.hash='#/incidencias/${inc.id}'" style="cursor:pointer">
-      <!-- User header -->
-      <div class="ig-card-head">
+    <div class="feed-card ${'feed-priority-' + (inc.priority ?? 'low')}" onclick="window.location.hash='#/incidencias/${inc.id}'" style="cursor:pointer">
+      <div class="feed-card-head">
         ${avatarHtml}
-        <div class="ig-card-user">
-          <span class="ig-card-name">${escapeHtml(userName)}</span>
-          <span class="ig-card-time">${tiempo}</span>
+        <div class="feed-card-user">
+          <span class="feed-card-name">${escapeHtml(userName)}</span>
+          <span class="feed-card-time">${tiempo}</span>
         </div>
-        <span class="ig-status-badge ig-status-${inc.status}">${statusLabel}</span>
+        <span class="feed-status-badge feed-status-${inc.status}">${statusLabel}</span>
       </div>
-
-      <!-- Preview / category area -->
-      <div class="ig-card-preview">
-        <div class="ig-card-preview-icon">${emoji}</div>
-        <span class="ig-card-category-badge">${escapeHtml(catName)}</span>
+      <div class="feed-card-preview">
+        <div class="feed-card-preview-icon">${emoji}</div>
+        <span class="feed-card-category-badge">${escapeHtml(catName)}</span>
       </div>
-
-      <!-- Thumbnail -->
       ${thumbnailHtml}
-
-      <!-- Body -->
-      <div class="ig-card-body">
-        ${locName ? `<div class="ig-card-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locName)}</div>` : ''}
-        ${descText ? `<div class="ig-card-desc">${escapeHtml(descText)}</div>` : ''}
+      <div class="feed-card-body">
+        ${locName ? `<div class="feed-card-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locName)}</div>` : ''}
+        ${descText ? `<div class="feed-card-desc">${escapeHtml(descText)}</div>` : ''}
       </div>
-
-      <!-- Action bar -->
-      <div class="ig-card-actions">
-        <button class="ig-action-btn" title="Ver detalle" onclick="event.stopPropagation();window.location.hash='#/incidencias/${inc.id}'">
+      <div class="feed-card-actions">
+        <button class="feed-action-btn" title="Ver detalle" onclick="event.stopPropagation();window.location.hash='#/incidencias/${inc.id}'">
           <i class="far fa-eye"></i>
         </button>
-        <button class="ig-action-btn" title="Compartir">
+        <button class="feed-action-btn" title="Compartir">
           <i class="far fa-share-square"></i>
         </button>
-        <span class="ig-action-spacer"></span>
-        <span class="ig-action-btn" style="cursor:default;color:#8e8e8e;font-size:0.75rem">
-          <span class="ig-priority-dot"></span>
+        <span class="feed-action-spacer"></span>
+        <span class="feed-action-btn" style="cursor:default;color:#8e8e8e;font-size:0.75rem">
+          <span class="feed-priority-dot"></span>
           ${inc.status === 'resolved' ? 'Resuelto' : inc.priority === 'high' ? 'Urgente' : inc.priority === 'medium' ? 'Normal' : 'Leve'}
         </span>
       </div>
     </div>`;
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+// ── Context detection ──────────────────────────────────────
 
-// ── Fetch ─────────────────────────────────────────────────
+const CTX = {
+  list: '',
+  filters: '',
+  skeleton: '',
+  vacio: '',
+  sentinel: '',
+  containerDesktop: 'feed-desktop',
+  containerMobile: 'feed-mobile',
+  chipSelector: '.feed-chip, .mobile-chip',
+};
 
-async function fetchIncidencias(pagina, append = false) {
-  if (cargando) return;
-  cargando = true;
+function detectContext() {
+  const wrapper = document.getElementById('main-wrapper');
+  const isDesktop = wrapper && wrapper.style.display !== 'none';
 
-  const listEl = document.getElementById('feed-list');
-  const skeleton = document.getElementById('feed-cargando');
-  const vacio = document.getElementById('feed-vacio');
-  const sentinel = document.getElementById('feed-sentinel');
+  // Toggle container visibility
+  const desktop = document.getElementById(CTX.containerDesktop);
+  const mobile = document.getElementById(CTX.containerMobile);
+  if (desktop) desktop.classList.toggle('d-none', !isDesktop);
+  if (mobile) mobile.classList.toggle('d-none', isDesktop);
 
-  if (!append) {
-    skeleton.classList.remove('d-none');
-    listEl.innerHTML = '';
-    vacio.classList.add('d-none');
-    sentinel.classList.remove('done');
-    todasLasIncidencias = [];
+  // Selectors per mode
+  if (isDesktop) {
+    CTX.list = 'feed-list';
+    CTX.filters = 'feed-filters';
+    CTX.skeleton = 'feed-cargando';
+    CTX.vacio = 'feed-vacio';
+    CTX.sentinel = 'feed-sentinel';
+  } else {
+    CTX.list = 'feed-list-mobile';
+    CTX.filters = 'mobile-filters';
+    CTX.skeleton = 'feed-cargando-mobile';
+    CTX.vacio = 'feed-vacio-mobile';
+    CTX.sentinel = 'feed-sentinel-mobile';
   }
 
-  const params = new URLSearchParams({ page: pagina, per_page: POR_PAGINA });
-  if (filtroStatus) params.set('status', filtroStatus);
-
-  try {
-    const resp = await fetch(`${API_URL}/incidents/feed?${params.toString()}`);
-    const json = await resp.json();
-
-    const datos = json.data ?? [];
-    const meta = json.meta ?? {};
-    paginaActual = meta.current_page ?? pagina;
-    totalPaginas = meta.last_page ?? 1;
-    const hasMore = paginaActual < totalPaginas;
-
-    skeleton.classList.add('d-none');
-
-    if (!append) todasLasIncidencias = datos;
-    else todasLasIncidencias = [...todasLasIncidencias, ...datos];
-
-    if (todasLasIncidencias.length === 0) {
-      listEl.innerHTML = '';
-      vacio.classList.remove('d-none');
-      sentinel.classList.add('done');
-    } else {
-      vacio.classList.add('d-none');
-      if (append) {
-        listEl.insertAdjacentHTML('beforeend', datos.map(renderCard).join(''));
-      } else {
-        listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
-      }
-
-      // Sentinel state
-      sentinel.classList.toggle('done', !hasMore);
-      sentinel.classList.toggle('loading', hasMore && !cargando);
-    }
-  } catch {
-    skeleton.classList.add('d-none');
-    vacio.classList.remove('d-none');
-    vacio.querySelector('p').textContent = 'Error al cargar. Intente de nuevo.';
-    document.getElementById('feed-sentinel').classList.add('done');
-  } finally {
-    cargando = false;
-  }
+  return isDesktop ? 'desktop' : 'mobile';
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -234,22 +193,120 @@ export default defineComponent({
   styleUrl: 'app/feed/feed.component.css',
 
   async onInit() {
+    // State — scoped to this component instance via closure
+    let paginaActual = 1;
+    let totalPaginas = 1;
+    let filtroStatus = '';
+    let cargando = false;
+    let todasLasIncidencias = [];
+    let observer = null;
+
+    // ── Context ───────────────────────────────────────────────
+    const context = detectContext();
     document.body.classList.add('feed-view');
 
+    // Guard: if DOM elements are missing (testing edge case), skip
+    const feedList = document.getElementById(CTX.list);
+    const feedFilters = document.getElementById(CTX.filters);
+    if (!feedFilters || !feedList) return;
+
+    // ── Fetch ───────────────────────────────────────────────
+
+    async function fetchIncidencias(pagina, append = false) {
+      if (cargando) return;
+      cargando = true;
+
+      const listEl = document.getElementById(CTX.list);
+      const skeleton = document.getElementById(CTX.skeleton);
+      const vacio = document.getElementById(CTX.vacio);
+      const sentinel = document.getElementById(CTX.sentinel);
+
+      if (!append) {
+        skeleton.classList.remove('d-none');
+        listEl.innerHTML = '';
+        vacio.classList.add('d-none');
+        sentinel.classList.remove('done');
+        todasLasIncidencias = [];
+      }
+
+      const params = new URLSearchParams({ page: pagina, per_page: POR_PAGINA });
+      if (filtroStatus) params.set('status', filtroStatus);
+
+      try {
+        const json = await http.get(`/incidents/feed?${params.toString()}`);
+
+        const datos = json.data ?? [];
+        const meta = json.meta ?? {};
+        paginaActual = meta.current_page ?? pagina;
+        totalPaginas = meta.last_page ?? 1;
+        const hasMore = paginaActual < totalPaginas;
+
+        skeleton.classList.add('d-none');
+
+        if (!append) todasLasIncidencias = datos;
+        else todasLasIncidencias = [...todasLasIncidencias, ...datos];
+
+        if (todasLasIncidencias.length === 0) {
+          listEl.innerHTML = '';
+          vacio.classList.remove('d-none');
+          sentinel.classList.add('done');
+        } else {
+          vacio.classList.add('d-none');
+          if (append) {
+            listEl.insertAdjacentHTML('beforeend', datos.map(renderCard).join(''));
+          } else {
+            listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
+          }
+          sentinel.classList.toggle('done', !hasMore);
+          sentinel.classList.toggle('loading', hasMore && !cargando);
+        }
+      } catch {
+        skeleton.classList.add('d-none');
+        vacio.classList.remove('d-none');
+        vacio.querySelector('p').textContent = 'Error al cargar. Intente de nuevo.';
+        document.getElementById(CTX.sentinel).classList.add('done');
+      } finally {
+        cargando = false;
+      }
+    }
+
+    // ── Infinite scroll ─────────────────────────────────────
+
+    function setupInfiniteScroll() {
+      if (observer) observer.disconnect();
+
+      const sentinel = document.getElementById(CTX.sentinel);
+      if (!sentinel || sentinel.classList.contains('done')) return;
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (
+            entries[0].isIntersecting &&
+            !cargando &&
+            paginaActual < totalPaginas
+          ) {
+            sentinel.classList.add('loading');
+            fetchIncidencias(paginaActual + 1, true);
+          }
+        },
+        { rootMargin: '200px' },
+      );
+
+      observer.observe(sentinel);
+    }
+
     // ── Filter chips ──
-    document.getElementById('feed-filters').addEventListener('click', (e) => {
-      const chip = e.target.closest('.ig-chip');
+    feedFilters.addEventListener('click', (e) => {
+      const chip = e.target.closest(CTX.chipSelector);
       if (!chip) return;
       document
-        .querySelectorAll('.ig-chip')
+        .querySelectorAll(CTX.chipSelector)
         .forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
 
-      // Disconnect previous observer
       if (observer) observer.disconnect();
-
       fetchIncidencias(1, false).then(() => setupInfiniteScroll());
     });
 
@@ -260,31 +317,5 @@ export default defineComponent({
 
   onDestroy() {
     document.body.classList.remove('feed-view');
-    if (observer) observer.disconnect();
   },
 });
-
-// ── Infinite scroll ────────────────────────────────────────
-
-function setupInfiniteScroll() {
-  if (observer) observer.disconnect();
-
-  const sentinel = document.getElementById('feed-sentinel');
-  if (!sentinel || sentinel.classList.contains('done')) return;
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (
-        entries[0].isIntersecting &&
-        !cargando &&
-        paginaActual < totalPaginas
-      ) {
-        sentinel.classList.add('loading');
-        fetchIncidencias(paginaActual + 1, true);
-      }
-    },
-    { rootMargin: '200px' },
-  );
-
-  observer.observe(sentinel);
-}

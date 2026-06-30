@@ -8,31 +8,9 @@
  * Uses router.params.id from the param-matching router.
  */
 import { defineComponent } from '../../../utils/component.js';
-import { API_URL } from '../../../core/config.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
-
-// ── Leaflet lazy loader (reused from feed-create pattern) ──
-
-function loadLeaflet() {
-  if (window.L) return Promise.resolve();
-
-  // Prevent duplicate Leaflet CSS
-  if (!document.querySelector('link[href*="leaflet.css"]')) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
+import loadLeaflet from '../../../shared/leaflet.js';
 
 // ── Detect context: admin shell vs citizen layout ──
 

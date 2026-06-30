@@ -1,5 +1,6 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
+import loadLeaflet from '../../../shared/leaflet.js';
 
 const STATUS_LABEL = {
   pending: 'Pendiente',
@@ -33,7 +34,8 @@ export default defineComponent({
 
   onDestroy() {
     const mapEl = document.getElementById('detalle-coords');
-    if (mapEl) {
+    if (mapEl && mapEl._leaflet_map) {
+      mapEl._leaflet_map.remove();
       delete mapEl._leaflet_map;
     }
   },
@@ -106,25 +108,39 @@ function renderizarIncidencia(inc) {
   renderMap(inc);
 }
 
-function renderMap(inc) {
+async function renderMap(inc) {
   const mapEl = document.getElementById('detalle-coords');
-  if (inc.geom?.coordinates) {
-    const [lng, lat] = inc.geom.coordinates;
-    const link = document.createElement('a');
-    link.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
-    link.target = '_blank';
-    link.className = 'btn btn-outline-primary btn-sm';
-    link.innerHTML =
-      '<i class="fas fa-external-link-alt me-1"></i>Ver en OpenStreetMap';
-    mapEl.innerHTML = `
-      <div class="text-center py-4">
-        <p class="mb-2"><strong>Coordenadas:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-      </div>`;
-    mapEl.appendChild(link);
-  } else {
+  if (!inc.geom?.coordinates) {
     mapEl.innerHTML =
       '<p class="text-muted text-center py-4 mb-0">Sin coordenadas</p>';
+    return;
   }
+
+  const [lng, lat] = inc.geom.coordinates;
+
+  try {
+    await loadLeaflet();
+  } catch {
+    mapEl.innerHTML = '<div class="text-center py-4 text-danger">No se pudo cargar el mapa</div>';
+    return;
+  }
+
+  mapEl.innerHTML = '<div id="detalle-mapa" style="height: 300px; width: 100%; border-radius: 8px;"></div>';
+
+  const map = L.map('detalle-mapa').setView([lat, lng], 15);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(map);
+
+  L.marker([lat, lng]).addTo(map);
+
+  // Invalidate size after render
+  setTimeout(() => map.invalidateSize(), 100);
+
+  // Store map reference for cleanup
+  mapEl._leaflet_map = map;
 }
 
 function renderizarImagenes(images) {
