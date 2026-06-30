@@ -121,7 +121,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Click en "Eliminar", confirmar en modal.
 - **Criterio de aceptación:** Incidencia desaparece de la lista, toast/mensaje de éxito.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
