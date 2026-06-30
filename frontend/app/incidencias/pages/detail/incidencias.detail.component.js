@@ -1,11 +1,13 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
+import { auth } from '../../../auth/auth.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
 
 const STATUS_LABEL = {
   pending: 'Pendiente',
   in_progress: 'En proceso',
   resolved: 'Resuelto',
+  pending_operator: 'Pendiente de operador',
 };
 
 const PRIORITY_LABEL = {
@@ -30,6 +32,7 @@ export default defineComponent({
     renderizarIncidencia(inc);
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
+    setupActionButtons(id, inc);
   },
 
   onDestroy() {
@@ -214,4 +217,120 @@ function setupUpload(incidentId) {
       progress.classList.add('d-none');
     }
   });
+}
+
+// ── Claim / Release / Confirmar ────────────────────────────
+
+function resolveRoleName(user) {
+  if (!user?.role) return null;
+  if (typeof user.role === 'string') return user.role;
+  if (typeof user.role === 'object' && user.role?.name) return user.role.name;
+  return null;
+}
+
+/**
+ * Muestra/oculta botones de acción según el rol del usuario y el estado de la incidencia.
+ */
+function setupActionButtons(incidentId, inc) {
+  const user = auth.getUser();
+  if (!user) return;
+
+  const roleName = resolveRoleName(user);
+  if (!roleName) return;
+
+  const actionsEl = document.getElementById('detalle-acciones');
+  const claimActionsEl = document.getElementById('detalle-claim-actions');
+  const confirmActionsEl = document.getElementById('detalle-confirm-actions');
+  const loadingEl = document.getElementById('detalle-acciones-loading');
+  const errorEl = document.getElementById('detalle-acciones-error');
+  const errorMsgEl = document.getElementById('detalle-acciones-msg');
+  const btnReclamar = document.getElementById('btn-reclamar');
+  const btnLiberar = document.getElementById('btn-liberar');
+  const btnConfirmar = document.getElementById('btn-confirmar');
+
+  if (!actionsEl) return;
+
+  function showError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    if (errorEl) errorEl.classList.remove('d-none');
+    setTimeout(() => errorEl?.classList.add('d-none'), 5000);
+  }
+
+  function setLoading(on) {
+    if (loadingEl) loadingEl.classList.toggle('d-none', !on);
+    if (btnReclamar) btnReclamar.disabled = on;
+    if (btnLiberar) btnLiberar.disabled = on;
+    if (btnConfirmar) btnConfirmar.disabled = on;
+  }
+
+  // ── OperadorOrganizacion: Claim / Release ──
+  if (roleName === 'operador_organizacion') {
+    const userOrgId = user.organization?.id;
+    const incOrgId = inc.organization?.id || inc.organization_id;
+
+    // Solo si la incidencia pertenece a su org
+    if (userOrgId && incOrgId && userOrgId === incOrgId) {
+      actionsEl.classList.remove('d-none');
+
+      if (!inc.claimed_by) {
+        // Sin asignar → mostrar "Reclamar"
+        claimActionsEl.classList.remove('d-none');
+        btnLiberar?.classList.add('d-none');
+
+        btnReclamar?.addEventListener('click', async () => {
+          setLoading(true);
+          try {
+            await http.post(`/incidents/${incidentId}/claim`);
+            window.location.reload();
+          } catch (err) {
+            showError(err.message || 'No se pudo reclamar la incidencia.');
+          } finally {
+            setLoading(false);
+          }
+        });
+      } else if (inc.claimed_by === user.id) {
+        // Asignada a mí → mostrar "Liberar"
+        claimActionsEl.classList.remove('d-none');
+        btnReclamar?.classList.add('d-none');
+
+        btnLiberar?.addEventListener('click', async () => {
+          setLoading(true);
+          try {
+            await http.post(`/incidents/${incidentId}/release`);
+            window.location.reload();
+          } catch (err) {
+            showError(err.message || 'No se pudo liberar la incidencia.');
+          } finally {
+            setLoading(false);
+          }
+        });
+      }
+    }
+  }
+
+  // ── Publicador: Confirmar ──
+  if (roleName === 'publicador') {
+    const incOrgId = inc.organization?.id || inc.organization_id;
+
+    // Solo si la incidencia NO tiene organización asignada
+    if (!incOrgId) {
+      actionsEl.classList.remove('d-none');
+      confirmActionsEl.classList.remove('d-none');
+
+      btnConfirmar?.addEventListener('click', async () => {
+        setLoading(true);
+        try {
+          await http.post(`/incidents/${incidentId}/confirmar`);
+          window.location.reload();
+        } catch (err) {
+          showError(
+            err.message ||
+              'No se pudo confirmar la incidencia. Puede que ya haya sido asignada.',
+          );
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+  }
 }

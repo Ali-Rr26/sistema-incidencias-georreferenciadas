@@ -1,6 +1,6 @@
 <?php
 
-use App\Assignments\Interfaces\AssignmentController;
+use App\Domains\Assignments\Http\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -8,11 +8,11 @@ use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
+use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\UserController;
-use App\Notifications\Interfaces\NotificationController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
-Route::get('/incidents/feed', FeedController::class);
+Route::get('/incidents/feed', FeedController::class)->middleware('throttle:feed');
 
 Route::middleware('jwt')->group(function () {
 
@@ -29,6 +29,10 @@ Route::middleware('jwt')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     // Core
+    Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);
+    Route::post('incidents/{incident}/claim', [IncidentController::class, 'claim'])->middleware('can:claim,incident');
+    Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
+    Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
     Route::apiResource('incidents', IncidentController::class);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
     Route::apiResource('incidents.assignments', AssignmentController::class)->shallow();

@@ -6,17 +6,17 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $this->user = User::factory()->create();
     $this->category = IncidentCategory::create(['name' => 'Test Category']);

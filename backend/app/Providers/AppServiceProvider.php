@@ -25,9 +25,12 @@ use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Storage\StorageService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
@@ -47,6 +50,24 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Rate limiting para el feed público (REQ-RTL-01/02/03)
+        RateLimiter::for('feed', function (Request $request): Limit {
+            $user = $request->user();
+
+            // SuperAdmin exento
+            if ($user !== null && method_exists($user, 'isSystemAdmin') && $user->isSystemAdmin()) {
+                return Limit::none();
+            }
+
+            // Usuarios autenticados: 120/min por defecto
+            if ($user !== null) {
+                return Limit::perMinute((int) env('FEED_RATE_LIMIT_PER_MIN', 120));
+            }
+
+            // No autenticados: 60/min por defecto (REQ-RTL-01)
+            return Limit::perMinute((int) env('FEED_RATE_LIMIT_PER_MIN', 60));
+        });
+
         // Admins bypass all gate/policy checks
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->isAdmin() ? true : null;

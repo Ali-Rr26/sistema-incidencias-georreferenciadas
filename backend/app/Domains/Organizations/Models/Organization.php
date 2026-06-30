@@ -21,6 +21,7 @@ class Organization extends Model
         'location_id',
         'parent_id',
         'incident_category_id',
+        'max_active_claims',
     ];
 
     public function location(): BelongsTo
@@ -40,7 +41,7 @@ class Organization extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(IncidentCategory::class);
+        return $this->belongsTo(IncidentCategory::class, 'incident_category_id');
     }
 
     public function users(): HasMany

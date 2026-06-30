@@ -19,4 +19,16 @@ describe('defineComponent', () => {
       onDestroy,
     });
   });
+
+  it('preserves custom properties and methods', () => {
+    const customMethod = () => {};
+    const component = defineComponent({
+      templateUrl: 'app/auth/pages/login/login.component.html',
+      customMethod,
+      myProp: 123,
+    });
+
+    expect(component.customMethod).toBe(customMethod);
+    expect(component.myProp).toBe(123);
+  });
 });
