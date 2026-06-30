@@ -71,16 +71,16 @@ export default defineComponent({
         .map((inc) => {
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
+          const titulo = inc.title || 'Sin título';
           return `<tr>
           <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
           <td>
-            <span class="fw-semibold">${categoria}</span>
-            <br><small class="text-muted">${inc.status.replace('_', ' ')} — ${badgePrioridad(inc.priority).replace(/^<span /, '<span style="font-size:0.7rem" ')}</small>
+            <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
+              <span class="fw-semibold">${titulo}</span>
+            </div>
+            <small class="text-muted">${categoria}</small>
           </td>
           <td>${badgePrioridad(inc.priority)}</td>
-          <td>
-            <span class="small">${categoria}</span>
-          </td>
           <td>${badgeEstado(inc.status)}</td>
           <td class="small text-muted">${ubicacion}</td>
           <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
@@ -94,7 +94,7 @@ export default defineComponent({
                 <i class="fas fa-edit"></i>
               </button>
               <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
+                data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
@@ -108,18 +108,18 @@ export default defineComponent({
         .map((inc) => {
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
+          const titulo = inc.title || 'Sin título';
           return `
           <div class="card mb-2 shadow-sm">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-1">
-                <h6 class="card-title mb-0 me-2" style="font-size:.9rem;">${categoria}</h6>
+                <div style="min-width:0;flex:1;margin-right:8px;">
+                  <h6 class="card-title mb-0" style="font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titulo}</h6>
+                  <small class="text-muted" style="font-size:.78rem;">${categoria}</small>
+                </div>
                 ${badgePrioridad(inc.priority)}
               </div>
               <div class="d-flex flex-wrap gap-2 mb-2">
-                <span class="badge bg-light text-dark border" style="font-size:.75rem;">
-                  <i class="fas fa-tag" style="font-size:0.7rem;"></i>
-                  ${categoria}
-                </span>
                 ${badgeEstado(inc.status)}
               </div>
               <div class="d-flex justify-content-between align-items-center">
@@ -140,7 +140,7 @@ export default defineComponent({
                     <i class="fas fa-edit"></i>
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                    data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
+                    data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                     <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
@@ -168,12 +168,14 @@ export default defineComponent({
       paginaActual = pagina || 1;
       mostrarEstado('cargando');
 
+      const buscar = document.getElementById('filtro-buscar').value.trim();
       const params = new URLSearchParams({
         page: paginaActual,
         per_page: POR_PAGINA,
         priority: document.getElementById('filtro-prioridad').value,
         status: document.getElementById('filtro-estado').value,
       });
+      if (buscar) params.set('title', buscar);
 
       try {
         const resp = await http.get('/incidents?' + params.toString());

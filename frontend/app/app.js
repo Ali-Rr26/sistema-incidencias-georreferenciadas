@@ -4,7 +4,8 @@ import { mountLayout, shellInitFn } from './layout/layout.component.js';
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
 import incidenciasIndexComponent from './incidencias/pages/index/incidencias.index.component.js';
-import incidenciasFormComponent from './incidencias/pages/form/incidencias.form.component.js';
+import incidenciaCreateComponent from './incidencias/pages/create/incidencia.create.component.js';
+import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
 import { auth } from './auth/auth.service.js';
@@ -21,11 +22,18 @@ import feedComponent from './feed/feed.component.js';
 
 router.addRoute('/login', loginComponent);
 router.addRoute('/feed', feedComponent);
+router.addRoute('/feed/crear', incidenciaCreateComponent, [authGuard], false);
 router.addRoute('/dashboard', dashboardComponent, [authGuard], true);
 router.addRoute('/incidencias', incidenciasIndexComponent, [authGuard], true);
 router.addRoute(
   '/incidencias/crear',
-  incidenciasFormComponent,
+  incidenciaCreateComponent,
+  [authGuard],
+  true,
+);
+router.addRoute(
+  '/incidencias/:id',
+  incidenciasDetailComponent,
   [authGuard],
   true,
 );

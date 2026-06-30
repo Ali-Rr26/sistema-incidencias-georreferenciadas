@@ -33,6 +33,8 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
     Route::apiResource('incidents.assignments', AssignmentController::class)->shallow();
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
+    // Images are now handled via multipart in IncidentController::store/update
+    // Legacy endpoint kept for now — remove after frontend migration
 
     // Notificaciones del usuario autenticado
     Route::get('notifications', [NotificationController::class, 'index']);
@@ -51,5 +53,4 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('permissions', PermissionController::class);
     Route::get('menus/my', [MenuController::class, 'myMenus']);
-    Route::apiResource('menus', MenuController::class);
 });

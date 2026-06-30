@@ -31,6 +31,10 @@ class UpdateIncidentRequest extends FormRequest
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
             'geom' => 'nullable|json',
+
+            // Imágenes opcionales (multipart)
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
         ];
     }
 

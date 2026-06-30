@@ -10,6 +10,6 @@ class IncidentCategoryPolicy extends PermissionPolicy
 {
     protected function resource(): string
     {
-        return 'incident_categories';
+        return 'incident-categories';
     }
 }

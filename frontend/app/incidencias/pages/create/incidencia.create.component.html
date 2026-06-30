@@ -1,0 +1,466 @@
+<!-- ============================================================
+  Unified Create Incident Component
+  Two context-aware form layouts enclosed by data-if-admin / data-if-citizen.
+  detectContext() toggles visibility via d-none class.
+  ============================================================ -->
+
+<!-- ── ADMIN CONTEXT ─────────────────────────────────────── -->
+<div data-if-admin id="ici-admin-container" class="d-none">
+  <div class="gr-page">
+    <!-- Header -->
+    <div class="gr-page__header">
+      <div>
+        <h1 class="gr-page__title">Nueva Incidencia</h1>
+        <nav class="gr-breadcrumb">
+          <span class="gr-breadcrumb__item">Gestión</span>
+          <span class="gr-breadcrumb__sep">/</span>
+          <a
+            href="#/incidencias"
+            class="gr-breadcrumb__item"
+            style="text-decoration: none; color: inherit"
+            >Incidencias</a
+          >
+          <span class="gr-breadcrumb__sep">/</span>
+          <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+            >Crear</span
+          >
+        </nav>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="gr-card gr-form-card">
+      <div style="padding: 28px 32px">
+        <h5 class="mb-1 fw-bold text-dark">Registrar Nueva Incidencia</h5>
+        <p class="text-muted mb-4" style="font-size: 13px">
+          Los campos marcados con <span class="text-danger">*</span> son
+          obligatorios.
+        </p>
+
+        <!-- Error banner -->
+        <div
+          id="ici-error"
+          class="d-none alert alert-danger py-2"
+          role="alert"
+        ></div>
+
+        <form id="ici-form" novalidate>
+          <div class="row g-3 mb-4">
+            <div class="col-md-8">
+              <label for="ici-title" class="form-label fw-semibold">
+                Título de la Incidencia <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-control form-control-lg"
+                id="ici-title"
+                maxlength="100"
+                placeholder="Ej: Fuga de agua en calzada principal"
+                required
+              />
+              <div class="d-flex justify-content-between mt-1">
+                <div
+                  id="ici-error-title"
+                  class="invalid-feedback"
+                  style="display: none"
+                ></div>
+                <small class="text-muted ms-auto" id="ici-char-counter-title"
+                  >0/100</small
+                >
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label for="ici-priority" class="form-label fw-semibold">
+                Nivel de Prioridad <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select form-select-lg"
+                id="ici-priority"
+                required
+              >
+                <option value="">-- Seleccione --</option>
+                <option value="high">Alta</option>
+                <option value="medium">Media</option>
+                <option value="low">Baja</option>
+              </select>
+              <div
+                id="ici-error-priority"
+                class="invalid-feedback"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label for="ici-description" class="form-label fw-semibold">
+                Descripción Detallada <span class="text-danger">*</span>
+              </label>
+              <textarea
+                class="form-control form-control-lg"
+                id="ici-description"
+                rows="4"
+                maxlength="500"
+                placeholder="Explique lo ocurrido con la mayor cantidad de detalles posible..."
+                required
+              ></textarea>
+              <div class="d-flex justify-content-between mt-1">
+                <div
+                  id="ici-error-description"
+                  class="invalid-feedback"
+                  style="display: none"
+                ></div>
+                <small
+                  class="text-muted ms-auto"
+                  id="ici-char-counter-description"
+                  >0/500</small
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Imágenes -->
+          <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+            <i class="fas fa-camera me-2"></i>Imágenes
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label for="ici-images" class="form-label fw-semibold"
+                >Fotos de la Incidencia</label
+              >
+              <input
+                type="file"
+                class="form-control form-control-lg"
+                id="ici-images"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+              />
+              <div
+                class="mt-2 d-flex gap-2 flex-wrap"
+                id="ici-image-preview"
+              ></div>
+              <div class="form-text mt-1">
+                Opcional. Hasta 10 imágenes (JPEG, PNG o WebP).
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin-only: Categorización y Contacto -->
+          <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+            <i class="fas fa-tags me-2"></i>Categorización y Contacto
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="ici-tipo" class="form-label fw-semibold">
+                Categoría Principal <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="ici-tipo" required>
+                <option value="">-- Seleccione Categoría --</option>
+              </select>
+              <div
+                id="ici-error-category"
+                class="invalid-feedback"
+                style="display: none"
+              ></div>
+            </div>
+            <div class="col-md-4">
+              <label for="ici-subtipo" class="form-label fw-semibold">
+                Subcategoría <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select form-select-lg"
+                id="ici-subtipo"
+                required
+                disabled
+              >
+                <option value="">-- Seleccione Categoría Primero --</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="ici-phone" class="form-label fw-semibold"
+                >Teléfono de Contacto</label
+              >
+              <input
+                type="tel"
+                class="form-control form-control-lg"
+                id="ici-phone"
+                maxlength="15"
+                placeholder="Ej: 0991234567"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <div
+                id="ici-phone-aviso"
+                class="d-none mt-1"
+                style="font-size: 0.8rem"
+              >
+                <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                <span class="text-warning">Solo se permiten números.</span>
+              </div>
+              <div
+                id="ici-error-phone"
+                class="invalid-feedback"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Admin-only: Ubicación Jerárquica -->
+          <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+            <i class="fas fa-map-marked-alt me-2"></i>Ubicación Georreferenciada
+            <span class="text-danger">*</span>
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="ici-pais" class="form-label fw-semibold">
+                País <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="ici-pais" required>
+                <option value="">-- Seleccione País --</option>
+              </select>
+              <div
+                id="ici-error-location"
+                class="invalid-feedback"
+                style="display: none"
+              ></div>
+            </div>
+            <div class="col-md-4">
+              <label for="ici-provincia" class="form-label fw-semibold">
+                Provincia <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select form-select-lg"
+                id="ici-provincia"
+                required
+                disabled
+              >
+                <option value="">-- Seleccione Provincia --</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="ici-ciudad" class="form-label fw-semibold">
+                Ciudad <span class="text-danger">*</span>
+              </label>
+              <select
+                class="form-select form-select-lg"
+                id="ici-ciudad"
+                required
+                disabled
+              >
+                <option value="">-- Seleccione Ciudad --</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Mapa (admin: 360px) -->
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <p class="text-muted mb-2" style="font-size: 13px">
+                Haga clic en el mapa interactivo para marcar las coordenadas
+                exactas de la incidencia, o presione el botón de
+                geolocalización.
+              </p>
+              <div id="ici-map" class="ici-map" style="height: 360px"></div>
+              <div
+                id="ici-error-geom"
+                class="text-danger mt-1 fw-semibold"
+                style="display: none; font-size: 13px"
+              >
+                <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una
+                ubicación en el mapa.
+              </div>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-lg w-100"
+                id="ici-btn-geo"
+              >
+                <i class="fas fa-crosshairs me-2"></i>Usar mi ubicación actual
+              </button>
+            </div>
+          </div>
+
+          <!-- Dirección (admin only) -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="ici-address" class="form-label fw-semibold"
+                >Dirección o Referencia Territorial</label
+              >
+              <input
+                type="text"
+                class="form-control form-control-lg"
+                id="ici-address"
+                maxlength="200"
+                placeholder="Ej: Av. Amazonas y República, frente al parque La Carolina"
+              />
+              <div
+                id="ici-error-address"
+                class="invalid-feedback"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Submit (admin) -->
+          <div class="d-flex gap-2 pt-3 border-top">
+            <button type="submit" class="gr-btn-primary" id="ici-submit">
+              <span id="ici-submit-text">
+                <i class="fas fa-paper-plane me-1"></i>Registrar Incidencia
+              </span>
+              <span id="ici-submit-loading" class="d-none">
+                <span
+                  class="spinner-border spinner-border-sm me-1"
+                  role="status"
+                ></span
+                >Guardando...
+              </span>
+            </button>
+            <a href="#/incidencias" class="btn btn-outline-secondary px-4"
+              >Cancelar</a
+            >
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CITIZEN CONTEXT ──────────────────────────────────── -->
+<div data-if-citizen id="ici-citizen-container" class="d-none">
+  <div class="ici-create">
+    <!-- Header -->
+    <header class="ici-header">
+      <a href="#/feed" class="ici-back-btn">
+        <i class="fas fa-arrow-left"></i> Volver al feed
+      </a>
+      <span class="ici-header-title">Nueva incidencia</span>
+    </header>
+
+    <!-- Error banner -->
+    <div id="ici-citizen-error" class="ici-error d-none" role="alert"></div>
+
+    <!-- Form -->
+    <form id="ici-citizen-form" class="ici-form" novalidate>
+      <!-- Título -->
+      <label class="ici-label" for="ici-citizen-title">Título *</label>
+      <input
+        type="text"
+        id="ici-citizen-title"
+        class="ici-input"
+        placeholder="¿Qué está pasando?"
+        required
+        maxlength="100"
+      />
+      <div class="d-flex justify-content-between">
+        <div id="ici-citizen-error-title" class="ici-field-error"></div>
+        <small class="ici-char-counter" id="ici-citizen-char-counter-title"
+          >0/100</small
+        >
+      </div>
+
+      <!-- Categoría (plana) -->
+      <label class="ici-label" for="ici-citizen-category">Categoría *</label>
+      <select id="ici-citizen-category" class="ici-select" required>
+        <option value="">-- Seleccione categoría --</option>
+      </select>
+      <div id="ici-citizen-error-category" class="ici-field-error"></div>
+
+      <!-- Prioridad -->
+      <label class="ici-label" for="ici-citizen-priority">Prioridad</label>
+      <select id="ici-citizen-priority" class="ici-select">
+        <option value="low">Baja</option>
+        <option value="medium" selected>Media</option>
+        <option value="high">Alta</option>
+      </select>
+      <div id="ici-citizen-error-priority" class="ici-field-error"></div>
+
+      <!-- Descripción -->
+      <label class="ici-label" for="ici-citizen-description">Descripción</label>
+      <textarea
+        id="ici-citizen-description"
+        class="ici-textarea"
+        placeholder="Contanos más detalles..."
+        rows="4"
+        maxlength="500"
+      ></textarea>
+      <div class="d-flex justify-content-between">
+        <div id="ici-citizen-error-description" class="ici-field-error"></div>
+        <small
+          class="ici-char-counter"
+          id="ici-citizen-char-counter-description"
+          >0/500</small
+        >
+      </div>
+
+      <!-- Imágenes -->
+      <label class="ici-label" for="ici-citizen-images">Imágenes</label>
+      <input
+        type="file"
+        id="ici-citizen-images"
+        class="ici-input"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+      />
+      <div id="ici-citizen-image-preview" class="ici-image-preview"></div>
+
+      <!-- Ubicación (árbol plano) -->
+      <label class="ici-label" for="ici-citizen-location">Ubicación</label>
+      <select id="ici-citizen-location" class="ici-select">
+        <option value="">-- Sin ubicación fija --</option>
+      </select>
+      <div id="ici-citizen-error-location" class="ici-field-error"></div>
+
+      <!-- Mapa (citizen: 280px) -->
+      <label class="ici-label">Ubicación en el mapa *</label>
+      <div id="ici-citizen-map" class="ici-map" style="height: 280px"></div>
+      <div class="ici-map-actions">
+        <button
+          type="button"
+          class="ici-btn ici-btn-outline"
+          id="ici-citizen-btn-geo"
+        >
+          <i class="fas fa-location-arrow"></i> Usar mi ubicación
+        </button>
+      </div>
+      <div id="ici-citizen-error-geom" class="ici-field-error"></div>
+
+      <!-- Submit (citizen) -->
+      <button
+        type="submit"
+        class="ici-btn ici-btn-primary"
+        id="ici-citizen-submit"
+      >
+        <span id="ici-citizen-submit-text">Publicar</span>
+        <span id="ici-citizen-submit-loading" class="d-none">
+          <span class="spinner-border spinner-border-sm me-1"></span>
+          Publicando...
+        </span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ── TOAST (shared) ───────────────────────────────────── -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div
+    id="ici-toast"
+    class="toast align-items-center text-white bg-success border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="fas fa-check-circle me-2"></i>Incidencia registrada
+        correctamente.
+      </div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+  </div>
+</div>
