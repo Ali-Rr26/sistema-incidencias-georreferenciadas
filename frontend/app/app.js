@@ -4,7 +4,7 @@ import { mountLayout, shellInitFn } from './layout/layout.component.js';
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
 import incidenciasIndexComponent from './incidencias/pages/index/incidencias.index.component.js';
-import incidenciaCreateComponent from './incidencias/pages/create/incidencia.create.component.js';
+import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.component.js';
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
@@ -20,12 +20,14 @@ import categoriasFormComponent from './configuracion/categorias/pages/form/categ
 import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.index.component.js';
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
 import feedComponent from './feed/feed.component.js';
+import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 
 // Rutas públicas
 router.addRoute('/login', loginComponent);
 router.addRoute('/feed', feedComponent);
-router.addRoute('/feed/crear', incidenciaCreateComponent, [authGuard], false);
+router.addRoute('/feed/crear', incidenciaFormComponent, [authGuard], false);
+router.addRoute('/feed/:id', feedDetailComponent, [], false);
 
 // Rutas protegidas por rol
 const adminOrgRoles = [
@@ -55,7 +57,7 @@ router.addRoute(
 );
 router.addRoute(
   '/incidencias/crear',
-  incidenciaCreateComponent,
+  incidenciaFormComponent,
   [roleGuard(adminOrgRoles)],
   true,
 );
