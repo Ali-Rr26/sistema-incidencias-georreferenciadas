@@ -25,7 +25,7 @@
     <nav class="sidebar-nav">
       <ul id="sidebarnav">
         <li class="nav-small-cap"><span class="hide-menu">PRINCIPAL</span></li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion,operador_organizacion,publicador">
           <a class="sidebar-link" href="#/dashboard">
             <i class="fa-solid fa-gauge-high"></i>
             <span class="hide-menu">Dashboard</span>
@@ -44,17 +44,23 @@
           </a>
         </li>
 
-        <li class="nav-small-cap"><span class="hide-menu">GESTIÓN</span></li>
-        <li class="sidebar-item">
+        <li class="nav-small-cap sidebar-admin-only"><span class="hide-menu">GESTIÓN</span></li>
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion,operador_organizacion">
           <a class="sidebar-link" href="#/incidencias">
             <i class="fa-solid fa-clipboard-list"></i>
             <span class="hide-menu">Incidencias</span>
           </a>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion,operador_organizacion">
           <a class="sidebar-link" href="#/incidencias/crear">
             <i class="fa-solid fa-circle-plus"></i>
             <span class="hide-menu">Nueva incidencia</span>
+          </a>
+        </li>
+        <li class="sidebar-item" data-roles="publicador">
+          <a class="sidebar-link" href="#/incidencias/pendientes">
+            <i class="fa-solid fa-clock"></i>
+            <span class="hide-menu">Pendientes</span>
           </a>
         </li>
         <li class="sidebar-item">
@@ -65,36 +71,36 @@
           </a>
         </li>
 
-        <li class="nav-small-cap"><span class="hide-menu">SISTEMA</span></li>
-        <li class="sidebar-item">
+        <li class="nav-small-cap sidebar-admin-only"><span class="hide-menu">SISTEMA</span></li>
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion">
           <a class="sidebar-link" href="#/usuarios">
             <i class="fa-solid fa-users"></i>
             <span class="hide-menu">Usuarios</span>
           </a>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion">
           <a class="sidebar-link" href="#/organizaciones">
             <i class="fa-solid fa-building"></i>
             <span class="hide-menu">Organizaciones</span>
           </a>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion">
           <a class="sidebar-link" href="#/reportes">
             <i class="fa-solid fa-chart-pie"></i>
             <span class="hide-menu">Reportes</span>
           </a>
         </li>
 
-        <li class="nav-small-cap">
+        <li class="nav-small-cap sidebar-admin-only">
           <span class="hide-menu">CONFIGURACIÓN</span>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion">
           <a class="sidebar-link" href="#/categorias">
             <i class="fa-solid fa-tag"></i>
             <span class="hide-menu">Categorías</span>
           </a>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item" data-roles="admin_sistema,admin_organizacion">
           <a class="sidebar-link" href="#/localizaciones">
             <i class="fa-solid fa-map"></i>
             <span class="hide-menu">Localizaciones</span>
@@ -146,7 +152,7 @@
               <span class="gr-topbar__user-name"
                 >Hola, <strong id="user-name">Usuario</strong></span
               >
-              <span class="gr-topbar__user-role">Administrador</span>
+              <span class="gr-topbar__user-role" id="user-role-label">Administrador</span>
             </div>
             <i class="fa-solid fa-chevron-down gr-topbar__user-arrow"></i>
           </a>

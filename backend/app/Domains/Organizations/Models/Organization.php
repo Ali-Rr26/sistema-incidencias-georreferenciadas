@@ -21,6 +21,7 @@ class Organization extends Model
         'location_id',
         'parent_id',
         'incident_category_id',
+        'max_active_claims',
     ];
 
     public function location(): BelongsTo

@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Seed role for UserFactory (role_id=1)
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    \Illuminate\Support\Facades\DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $this->user = User::factory()->create();
 

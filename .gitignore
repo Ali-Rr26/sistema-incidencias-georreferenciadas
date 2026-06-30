@@ -12,3 +12,4 @@ backend/frankenphp
 /frontend/node_modules
 /.playwright-mcp
 sdd/arregla-inconsistencias/design.md
+sdd/ok-arranquemos-entonces/verify-report.md

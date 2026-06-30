@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Repositories;
 
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Shared\Repositories\EloquentRepository;
+use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +44,18 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
 
     protected function applyFilters(Builder $query, array $filters): void
     {
+        // Scoping por organización (REQ-RBAC-03)
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            if ($user->isOrganizationAdmin() || $user->isOperator()) {
+                $query->where('organization_id', $user->organization_id);
+            }
+            if ($user->isPublicador() || $user->isRegularUser()) {
+                $query->whereRaw('1 = 0'); // no ven nada en index()
+            }
+        }
+
         $query
             ->with(['category', 'location', 'user'])
             ->when($filters['title'] ?? null, fn (Builder $q, string $v) => $q->where(function (Builder $q) use ($v): void {
@@ -59,6 +73,52 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             })
             ->when($filters['incident_category_id'] ?? null, fn (Builder $q, string $v) => $q->where('incident_category_id', $v))
             ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v));
+    }
+
+    public function claim(int $id, int $userId): Incident
+    {
+        return DB::transaction(function () use ($id, $userId): Incident {
+            /** @var Incident $incident */
+            $incident = $this->model->newQuery()
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($incident->claimed_by !== null) {
+                throw new \RuntimeException('Esta incidencia ya está asignada a otro operador.', 409);
+            }
+
+            $incident->update([
+                'claimed_by' => $userId,
+                'claimed_at' => now(),
+                'status' => IncidentStatus::InProgress,
+            ]);
+
+            return $incident->fresh();
+        });
+    }
+
+    public function release(int $id): Incident
+    {
+        return DB::transaction(function () use ($id): Incident {
+            /** @var Incident $incident */
+            $incident = $this->model->newQuery()
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($incident->claimed_by === null) {
+                throw new \RuntimeException('Esta incidencia no está asignada a ningún operador.', 409);
+            }
+
+            $incident->update([
+                'claimed_by' => null,
+                'claimed_at' => null,
+                'status' => IncidentStatus::PendingOperator,
+            ]);
+
+            return $incident->fresh();
+        });
     }
 
     /**

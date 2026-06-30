@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    \Illuminate\Support\Facades\DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

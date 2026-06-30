@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    \Illuminate\Support\Facades\DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $this->org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

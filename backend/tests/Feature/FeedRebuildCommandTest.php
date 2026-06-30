@@ -14,10 +14,8 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->redis = Mockery::mock('alias:'.Redis::class);
-
     // Seed role for UserFactory (role_id=1)
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    \Illuminate\Support\Facades\DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test']);
@@ -36,24 +34,24 @@ beforeEach(function (): void {
 });
 
 it('rebuilds the Redis feed from PostgreSQL', function (): void {
-    $this->redis->shouldReceive('del')
+    Redis::shouldReceive('del')
         ->once()
         ->with(Mockery::pattern('/.*feed:incidents$/'));
 
     // Pipeline: hmset + zadd per incident
-    $this->redis->shouldReceive('pipeline')
+    Redis::shouldReceive('pipeline')
         ->once()
         ->andReturnSelf();
 
-    $this->redis->shouldReceive('hmset')
+    Redis::shouldReceive('hmset')
         ->once()
         ->with(Mockery::pattern('/^incident:\d+$/'), Mockery::type('array'));
 
-    $this->redis->shouldReceive('zadd')
+    Redis::shouldReceive('zadd')
         ->once()
         ->with('feed:incidents', Mockery::type('float'), Mockery::type('string'));
 
-    $this->redis->shouldReceive('exec')
+    Redis::shouldReceive('exec')
         ->once();
 
     $this->artisan('feed:rebuild')

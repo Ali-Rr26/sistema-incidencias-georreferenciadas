@@ -35,11 +35,19 @@ export async function shellInitFn() {
     const user = await auth.me();
     const nameEl = document.getElementById('user-name');
     const avatarEl = document.getElementById('user-avatar');
+    const roleEl = document.getElementById('user-role-label');
     if (nameEl)
       nameEl.textContent =
         `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
     if (avatarEl)
       avatarEl.textContent = (user.first_name || user.email)[0].toUpperCase();
+    if (roleEl) {
+      const roleName = resolveRoleName(user);
+      roleEl.textContent = roleName ? getRoleDisplayName(roleName) : 'Usuario';
+    }
+
+    // Aplicar visibilidad del sidebar según el rol
+    applySidebarByRole(user);
   } catch {
     /* keep defaults */
   }
@@ -55,4 +63,53 @@ export async function shellInitFn() {
     logout();
   });
   document.getElementById('logout-sidebar')?.addEventListener('click', logout);
+}
+
+/**
+ * Extrae el nombre del rol desde user, manejando
+ * { id, name } y string plano.
+ */
+function resolveRoleName(user) {
+  if (!user?.role) return null;
+  if (typeof user.role === 'string') return user.role;
+  if (typeof user.role === 'object' && user.role?.name) return user.role.name;
+  return null;
+}
+
+/**
+ * Mapa de nombre de rol → etiqueta legible en español.
+ */
+const ROLE_LABELS = {
+  admin_sistema: 'Super Administrador',
+  admin_organizacion: 'Administrador de Organización',
+  operador_organizacion: 'Operador de Organización',
+  publicador: 'Publicador',
+  usuario: 'Usuario',
+  operador_sistema: 'Operador de Sistema',
+};
+
+function getRoleDisplayName(roleName) {
+  return ROLE_LABELS[roleName] || roleName;
+}
+
+/**
+ * Aplica visibilidad condicional en el sidebar según el rol del usuario.
+ * Los elementos con data-roles="..." se muestran solo si el rol está en la lista.
+ * Los elementos con clase .sidebar-admin-only se muestran solo para roles admin.
+ */
+function applySidebarByRole(user) {
+  const roleName = resolveRoleName(user);
+  if (!roleName) return;
+
+  // 1. Elementos con data-roles
+  document.querySelectorAll('#sidebarnav [data-roles]').forEach((el) => {
+    const allowed = el.dataset.roles.split(',');
+    el.style.display = allowed.includes(roleName) ? '' : 'none';
+  });
+
+  // 2. Section headers con .sidebar-admin-only
+  const isAdmin = ['admin_sistema', 'admin_organizacion'].includes(roleName);
+  document.querySelectorAll('#sidebarnav .sidebar-admin-only').forEach((el) => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
 }
