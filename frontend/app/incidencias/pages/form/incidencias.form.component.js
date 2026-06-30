@@ -423,7 +423,9 @@ export default defineComponent({
     if (isEdit) {
       if (context === 'admin') {
         const pageTitleEl = document.getElementById('ici-page-title');
-        const breadcrumbActiveEl = document.getElementById('ici-breadcrumb-active');
+        const breadcrumbActiveEl = document.getElementById(
+          'ici-breadcrumb-active',
+        );
         const cardTitleEl = document.getElementById('ici-card-title');
         const submitBtnTextEl = document.getElementById('ici-submit-btn-text');
 
@@ -433,7 +435,8 @@ export default defineComponent({
         if (submitBtnTextEl) submitBtnTextEl.textContent = 'Guardar Cambios';
 
         const toastTextEl = document.getElementById('ici-toast-text');
-        if (toastTextEl) toastTextEl.textContent = 'Incidencia actualizada correctamente.';
+        if (toastTextEl)
+          toastTextEl.textContent = 'Incidencia actualizada correctamente.';
       }
 
       try {
@@ -447,12 +450,14 @@ export default defineComponent({
         if (titleEl) {
           titleEl.value = inc.title ?? '';
           const titleCounter = $('char-counter-title');
-          if (titleCounter) titleCounter.textContent = (inc.title ?? '').length + '/100';
+          if (titleCounter)
+            titleCounter.textContent = (inc.title ?? '').length + '/100';
         }
         if (descEl) {
           descEl.value = inc.description ?? '';
           const descCounter = $('char-counter-description');
-          if (descCounter) descCounter.textContent = (inc.description ?? '').length + '/500';
+          if (descCounter)
+            descCounter.textContent = (inc.description ?? '').length + '/500';
         }
         if (priorityEl) {
           priorityEl.value = inc.priority ?? '';
@@ -493,7 +498,11 @@ export default defineComponent({
                   const padre = categoriasTree.find((c) => c.id == parentId);
                   const subtipoEl = document.getElementById('ici-subtipo');
                   if (padre && padre.children && subtipoEl) {
-                    poblarSelect(subtipoEl, padre.children, '-- Seleccione subcategoría --');
+                    poblarSelect(
+                      subtipoEl,
+                      padre.children,
+                      '-- Seleccione subcategoría --',
+                    );
                     subtipoEl.value = childId;
                   }
                 }
@@ -543,13 +552,23 @@ export default defineComponent({
                 const countryObj = locationsTree.find((p) => p.id == countryId);
                 const provEl = document.getElementById('ici-provincia');
                 if (countryObj && countryObj.children && provEl) {
-                  poblarUbicaciones(provEl, countryObj.children, '-- Seleccione Provincia --');
+                  poblarUbicaciones(
+                    provEl,
+                    countryObj.children,
+                    '-- Seleccione Provincia --',
+                  );
                   if (provId) {
                     provEl.value = provId;
-                    const provObj = countryObj.children.find((p) => p.id == provId);
+                    const provObj = countryObj.children.find(
+                      (p) => p.id == provId,
+                    );
                     const ciudadEl = document.getElementById('ici-ciudad');
                     if (provObj && provObj.children && ciudadEl) {
-                      poblarUbicaciones(ciudadEl, provObj.children, '-- Seleccione Ciudad --');
+                      poblarUbicaciones(
+                        ciudadEl,
+                        provObj.children,
+                        '-- Seleccione Ciudad --',
+                      );
                       if (cityId) {
                         ciudadEl.value = cityId;
                       }
