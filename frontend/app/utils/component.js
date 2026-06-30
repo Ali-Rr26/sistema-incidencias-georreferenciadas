@@ -9,6 +9,6 @@
  *     onDestroy()  { /* cleanup *\/ },
  *   });
  */
-export function defineComponent({ templateUrl, styleUrl, onInit, onDestroy }) {
-  return { templateUrl, styleUrl, onInit, onDestroy };
+export function defineComponent(config) {
+  return config;
 }

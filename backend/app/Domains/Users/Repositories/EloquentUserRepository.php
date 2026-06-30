@@ -7,6 +7,7 @@ namespace App\Domains\Users\Repositories;
 use App\Domains\Shared\Repositories\EloquentRepository;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class EloquentUserRepository extends EloquentRepository implements UserRepository
 {
@@ -27,6 +28,17 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
 
     protected function applyFilters(Builder $query, array $filters): void
     {
+        // Scoping por organización (Multitenancy)
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            if ($user->isOrganizationAdmin() || $user->isOperator()) {
+                $query->where('organization_id', $user->organization_id);
+            } else {
+                $query->whereRaw('1 = 0'); // Usuarios comunes o publicadores no listan usuarios
+            }
+        }
+
         $query
             ->when($filters['role_id'] ?? null, fn (Builder $query, string $value) => $query->where('role_id', $value))
             ->when($filters['organization_id'] ?? null, fn (Builder $query, string $value) => $query->where('organization_id', $value))

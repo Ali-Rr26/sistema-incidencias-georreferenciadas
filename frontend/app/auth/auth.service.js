@@ -38,7 +38,10 @@ class AuthService {
     this._notifyAuthChange();
   }
 
-  async me() {
+  async me(forceRefresh = false) {
+    if (this._cachedUser && !forceRefresh) {
+      return this._cachedUser;
+    }
     const data = await http.get('/me');
     this._cachedUser = data.data || data;
     return this._cachedUser;

@@ -8,6 +8,7 @@ import incidenciaCreateComponent from './incidencias/pages/create/incidencia.cre
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
+import { roleGuard } from './auth/role.guard.js';
 import { auth } from './auth/auth.service.js';
 
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
@@ -19,45 +20,104 @@ import categoriasFormComponent from './configuracion/categorias/pages/form/categ
 import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.index.component.js';
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
 import feedComponent from './feed/feed.component.js';
+import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 
+// Rutas públicas
 router.addRoute('/login', loginComponent);
 router.addRoute('/feed', feedComponent);
 router.addRoute('/feed/crear', incidenciaCreateComponent, [authGuard], false);
-router.addRoute('/dashboard', dashboardComponent, [authGuard], true);
-router.addRoute('/incidencias', incidenciasIndexComponent, [authGuard], true);
+
+// Rutas protegidas por rol
+const adminOrgRoles = [
+  'admin_sistema',
+  'admin_organizacion',
+  'operador_organizacion',
+];
+const adminOnlyRoles = ['admin_sistema', 'admin_organizacion'];
+const allAdminRoles = [
+  'admin_sistema',
+  'admin_organizacion',
+  'operador_organizacion',
+  'publicador',
+];
+
+router.addRoute(
+  '/dashboard',
+  dashboardComponent,
+  [roleGuard(allAdminRoles)],
+  true,
+);
+router.addRoute(
+  '/incidencias',
+  incidenciasIndexComponent,
+  [roleGuard(adminOrgRoles)],
+  true,
+);
 router.addRoute(
   '/incidencias/crear',
   incidenciaCreateComponent,
-  [authGuard],
+  [roleGuard(adminOrgRoles)],
   true,
 );
 router.addRoute(
   '/incidencias/:id',
   incidenciasDetailComponent,
-  [authGuard],
+  [roleGuard(adminOrgRoles)],
   true,
 );
-router.addRoute('/usuarios', usuariosComponent, [authGuard], true);
-router.addRoute('/usuarios/crear', usuariosFormComponent, [authGuard], true);
-router.addRoute('/organizaciones', organizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/incidencias/pendientes',
+  pendientesComponent,
+  [roleGuard(['publicador'])],
+  true,
+);
+
+router.addRoute(
+  '/usuarios',
+  usuariosComponent,
+  [roleGuard(adminOnlyRoles)],
+  true,
+);
+router.addRoute(
+  '/usuarios/crear',
+  usuariosFormComponent,
+  [roleGuard(adminOnlyRoles)],
+  true,
+);
+router.addRoute(
+  '/organizaciones',
+  organizacionesComponent,
+  [roleGuard(adminOnlyRoles)],
+  true,
+);
 router.addRoute(
   '/organizaciones/crear',
   organizacionesFormComponent,
-  [authGuard],
+  [roleGuard(adminOnlyRoles)],
   true,
 );
-router.addRoute('/localizaciones', localizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/localizaciones',
+  localizacionesComponent,
+  [roleGuard(adminOnlyRoles)],
+  true,
+);
 router.addRoute(
   '/localizaciones/crear',
   localizacionesFormComponent,
-  [authGuard],
+  [roleGuard(adminOnlyRoles)],
   true,
 );
-router.addRoute('/categorias', categoriasComponent, [authGuard], true);
+router.addRoute(
+  '/categorias',
+  categoriasComponent,
+  [roleGuard(adminOnlyRoles)],
+  true,
+);
 router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
-  [authGuard],
+  [roleGuard(adminOnlyRoles)],
   true,
 );
 router.addRoute('/not-found', notFoundComponent, [authGuard], true);

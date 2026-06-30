@@ -13,16 +13,25 @@ abstract class PaginatedCollection extends ResourceCollection
     {
         $paginated = $this->resource->toArray();
 
+        $meta = isset($paginated['current_page']) ? [
+            'current_page' => $paginated['current_page'],
+            'per_page' => $paginated['per_page'],
+            'total' => $paginated['total'],
+            'last_page' => $paginated['last_page'],
+            'from' => $paginated['from'],
+            'to' => $paginated['to'],
+        ] : [
+            'current_page' => 1,
+            'per_page' => count($this->collection),
+            'total' => count($this->collection),
+            'last_page' => 1,
+            'from' => count($this->collection) > 0 ? 1 : null,
+            'to' => count($this->collection),
+        ];
+
         return response()->json([
             'data' => $this->collection,
-            'meta' => [
-                'current_page' => $paginated['current_page'],
-                'per_page' => $paginated['per_page'],
-                'total' => $paginated['total'],
-                'last_page' => $paginated['last_page'],
-                'from' => $paginated['from'],
-                'to' => $paginated['to'],
-            ],
+            'meta' => $meta,
         ]);
     }
 }

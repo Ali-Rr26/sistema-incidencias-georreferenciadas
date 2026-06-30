@@ -11,6 +11,9 @@ use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Incidents\Services\IncidentClaimService;
+use App\Domains\Incidents\Services\IncidentVerificationService;
+use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -74,21 +77,13 @@ class IncidentController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Incident $incident): JsonResponse
     {
-        $incident = $this->incidents->findById($id);
-
-        if ($incident === null) {
-            return response()->json(['message' => 'Incident not found'], Response::HTTP_NOT_FOUND);
-        }
-
         return (new IncidentResource($incident))->response();
     }
 
-    public function update(UpdateIncidentRequest $request, int $id): JsonResponse
+    public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
     {
-        $incident = $this->incidents->findById($id);
-
         $data = $request->validated();
 
         // Convertir GeoJSON string a Point object para el cast espacial
@@ -108,16 +103,68 @@ class IncidentController extends Controller
             $data['images'] = array_merge($existing, $images);
         }
 
-        $incident = $this->incidents->update($id, $data);
+        $incident = $this->incidents->update($incident->id, $data);
 
         return (new IncidentResource($incident))->response();
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Incident $incident): JsonResponse
     {
-        $this->incidents->delete($id);
+        $this->incidents->delete($incident->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Multitenant: Claim / Release / Confirmar
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Toma (claim) una incidencia como OperadorOrg.
+     */
+    public function claim(Incident $incident, IncidentClaimService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $incident = $service->claim($incident->id, $user);
+
+        return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Libera (release) una incidencia previamente claimeada.
+     */
+    public function release(Incident $incident, IncidentClaimService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $incident = $service->release($incident->id, $user);
+
+        return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Confirma una incidencia como Publicador y la asigna a su org.
+     */
+    public function confirmar(Incident $incident, IncidentVerificationService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $incident = $service->confirm($incident->id, $user);
+
+        return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Lista incidencias pendientes de confirmación para el Publicador.
+     */
+    public function pendientes(IncidentVerificationService $service): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $incidents = $service->getPendingIncidents($user);
+
+        return (new IncidentCollection($incidents))->response();
     }
 
     /**

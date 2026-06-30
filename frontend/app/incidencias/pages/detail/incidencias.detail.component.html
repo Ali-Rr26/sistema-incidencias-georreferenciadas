@@ -87,8 +87,46 @@
         </div>
       </div>
 
-      <!-- Images sidebar -->
+      <!-- Actions sidebar -->
       <div class="col-lg-4">
+        <!-- Action buttons -->
+        <div id="detalle-acciones" class="d-none mb-3">
+          <div class="gr-card">
+            <div style="padding: 24px 28px">
+              <h5 class="fw-bold mb-3">
+                <i class="fas fa-tasks me-2"></i>Acciones
+              </h5>
+              <div id="detalle-claim-actions" class="d-none">
+                <button id="btn-reclamar" class="btn btn-primary w-100 mb-2">
+                  <i class="fas fa-hand-paper me-1"></i>Reclamar
+                </button>
+                <button id="btn-liberar" class="btn btn-warning w-100 mb-2">
+                  <i class="fas fa-undo me-1"></i>Liberar
+                </button>
+              </div>
+              <div id="detalle-confirm-actions" class="d-none">
+                <button id="btn-confirmar" class="btn btn-success w-100 mb-2">
+                  <i class="fas fa-check-circle me-1"></i>Confirmar y asignar
+                </button>
+              </div>
+              <div id="detalle-acciones-loading" class="d-none">
+                <div
+                  class="spinner-border spinner-border-sm text-primary me-2"
+                  role="status"
+                ></div>
+                <span class="text-muted small">Procesando...</span>
+              </div>
+              <div id="detalle-acciones-error" class="d-none">
+                <div
+                  class="alert alert-danger py-2 mb-0 small"
+                  id="detalle-acciones-msg"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Images -->
         <div class="gr-card">
           <div style="padding: 24px 28px">
             <h5 class="fw-bold mb-3">

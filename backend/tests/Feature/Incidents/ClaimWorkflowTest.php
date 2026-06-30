@@ -6,14 +6,14 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $this->org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

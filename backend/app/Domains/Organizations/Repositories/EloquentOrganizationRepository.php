@@ -7,9 +7,11 @@ namespace App\Domains\Organizations\Repositories;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Shared\Repositories\EloquentRepository;
+use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 
 class EloquentOrganizationRepository extends EloquentRepository implements OrganizationRepository
 {
@@ -23,10 +25,12 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
         unset($filters['per_page']);
 
-        return $this->newQuery()
-            ->with('location', 'parent', 'category')
-            ->when(count($filters) > 0, fn (Builder $q) => $this->applyFilters($q, $filters))
-            ->paginate(min($perPage, 100));
+        $query = $this->newQuery()
+            ->with('location', 'parent', 'category');
+
+        $this->applyFilters($query, $filters);
+
+        return $query->paginate(min($perPage, 100));
     }
 
     public function findById(int $id): ?Organization
@@ -36,14 +40,38 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
 
     public function tree(): Collection
     {
-        return $this->newQuery()
-            ->whereNull('parent_id')
+        $query = $this->newQuery();
+
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            if ($user->isOrganizationMember()) {
+                $query->where('id', $user->organization_id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            $query->whereNull('parent_id');
+        }
+
+        return $query
             ->with('location', 'category', 'children.children.children')
             ->get();
     }
 
     protected function applyFilters(Builder $query, array $filters): void
     {
+        // Scoping por organización (Multitenancy)
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            if ($user->isOrganizationMember()) {
+                $query->where('id', $user->organization_id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
+
         $query
             ->when($filters['search'] ?? null, fn (Builder $q, string $v) => $q->where('name', 'LIKE', "%{$v}%"))
             ->when($filters['location_id'] ?? null, function (Builder $q, string $v) {

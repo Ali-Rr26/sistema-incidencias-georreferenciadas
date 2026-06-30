@@ -23,9 +23,10 @@ abstract class EloquentRepository implements Repository
         $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
         unset($filters['per_page']);
 
-        return $this->newQuery()
-            ->when(count($filters) > 0, fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->paginate(min($perPage, 100));
+        $query = $this->newQuery();
+        $this->applyFilters($query, $filters);
+
+        return $query->paginate(min($perPage, 100));
     }
 
     public function findById(int $id): ?Model
