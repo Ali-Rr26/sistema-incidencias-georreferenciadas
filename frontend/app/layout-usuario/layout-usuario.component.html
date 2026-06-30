@@ -1,4 +1,4 @@
-<!-- Layout Usuario — mobile citizen shell with header + bottom nav -->
+<!-- Layout Usuario — responsive citizen shell with desktop header nav & mobile bottom nav -->
 
 <!-- Header -->
 <header class="lu-header" id="lu-header">
@@ -6,6 +6,40 @@
     <i class="fas fa-location-dot lu-logo-icon"></i>
     <span class="lu-logo-text">GeoReporta</span>
   </div>
+
+  <!-- Middle: Desktop Navigation (hidden on mobile) -->
+  <div class="lu-header-center d-none d-md-flex">
+    <nav class="lu-header-nav">
+      <a href="#/feed" class="lu-header-nav-item active" data-route="/feed">
+        <i class="fas fa-house"></i>
+        <span class="lu-nav-label">Feed</span>
+      </a>
+      <a href="#/feed" class="lu-header-nav-item" data-route="/mapa">
+        <i class="fas fa-map"></i>
+        <span class="lu-nav-label">Mapa</span>
+      </a>
+      <a
+        href="javascript:void(0)"
+        class="lu-header-nav-item lu-nav-plus"
+        id="lu-header-nav-plus"
+        data-route=""
+      >
+        <div class="lu-nav-plus-btn">
+          <i class="fas fa-plus"></i>
+        </div>
+        <span class="lu-nav-label">Reportar</span>
+      </a>
+      <a href="#/feed" class="lu-header-nav-item" data-route="/alertas">
+        <i class="fas fa-bell"></i>
+        <span class="lu-nav-label">Alertas</span>
+      </a>
+      <a href="#/feed" class="lu-header-nav-item" data-route="/perfil">
+        <i class="fas fa-user"></i>
+        <span class="lu-nav-label">Perfil</span>
+      </a>
+    </nav>
+  </div>
+
   <div class="lu-header-right" id="lu-header-right">
     <!-- Notification bell (auth) -->
     <div class="lu-bell-wrap d-none" id="lu-bell-wrap">
@@ -26,8 +60,8 @@
   <div id="shell-content"></div>
 </main>
 
-<!-- Bottom navigation -->
-<nav class="lu-bottom-nav" id="lu-bottom-nav">
+<!-- Bottom navigation (hidden on desktop) -->
+<nav class="lu-bottom-nav d-md-none" id="lu-bottom-nav">
   <a href="#/feed" class="lu-nav-item active" data-route="/feed">
     <i class="fas fa-house"></i>
     <span class="lu-nav-label">Feed</span>

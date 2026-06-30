@@ -208,4 +208,84 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* ─── No desktop adaptation — mobile-first only ─── */
+/* ─── Responsive Desktop Navbar Adaptation ─── */
+
+.lu-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.lu-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 0 auto;
+}
+
+.lu-header-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #b3b8c6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+.lu-header-nav-item i {
+  font-size: 1rem;
+}
+.lu-header-nav-item:hover {
+  color: #6a5cf3;
+  background: #f3f4f9;
+}
+.lu-header-nav-item.active {
+  color: #6a5cf3;
+  background: #f0edff;
+}
+
+/* Plus button inside top header nav */
+.lu-header-nav-item.lu-nav-plus {
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(106, 92, 243, 0.2);
+}
+.lu-header-nav-item.lu-nav-plus:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.lu-header-nav-item.lu-nav-plus .lu-nav-plus-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lu-header-nav-item.lu-nav-plus i {
+  font-size: 0.85rem;
+  background: none;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+  filter: none;
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .lu-bottom-nav {
+    display: none !important;
+  }
+  .lu-main {
+    padding-bottom: 0;
+  }
+  .lu-header {
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .lu-header-center {
+    display: none !important;
+  }
+}

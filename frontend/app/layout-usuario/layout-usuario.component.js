@@ -1,8 +1,9 @@
 /**
- * Layout Usuario — mobile citizen shell with header + bottom nav.
+ * Layout Usuario — mobile citizen shell with header + bottom nav,
+ * and desktop navigation menu.
  *
- * Header: shows logo + bell + avatar (auth) or login button (public).
- * Bottom nav: 5 items with active state and auth-guarded "+" button.
+ * Header: shows logo + navigation (desktop) + bell + avatar (auth) or login button (public).
+ * Bottom nav: 5 items with active state and auth-guarded "+" button (mobile).
  * Content mounted in #shell-content by the router.
  */
 import { defineComponent } from '../utils/component.js';
@@ -33,13 +34,14 @@ function setupHeader() {
   }
 }
 
-function setupBottomNav() {
-  const items = document.querySelectorAll('#lu-bottom-nav .lu-nav-item');
+function setupNav() {
+  const items = document.querySelectorAll('#lu-bottom-nav .lu-nav-item, .lu-header-nav .lu-header-nav-item');
 
   items.forEach((item) => {
-    // Skip the "+" button — no nav route
+    // Plus button — redirects to creation if authenticated
     if (item.classList.contains('lu-nav-plus')) {
-      item.addEventListener('click', (_e) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
         if (auth.isAuthenticated()) {
           window.location.hash = '#/feed/crear';
         } else {
@@ -49,14 +51,19 @@ function setupBottomNav() {
       return;
     }
 
-    // Regular nav items — update active state on click
+    // Regular nav items — update active state on click and navigate
     item.addEventListener('click', () => {
+      const targetRoute = item.dataset.route;
+      if (targetRoute) {
+        window.location.hash = `#${targetRoute}`;
+      }
+
       items.forEach((i) => {
         if (!i.classList.contains('lu-nav-plus')) {
-          i.classList.remove('active');
+          const isSame = i.dataset.route === targetRoute;
+          i.classList.toggle('active', isSame);
         }
       });
-      item.classList.add('active');
     });
   });
 
@@ -67,10 +74,9 @@ function setupBottomNav() {
     if (route && currentPath.startsWith(route)) {
       items.forEach((i) => {
         if (!i.classList.contains('lu-nav-plus')) {
-          i.classList.remove('active');
+          i.classList.toggle('active', i.dataset.route === route);
         }
       });
-      item.classList.add('active');
     }
   });
 }
@@ -85,8 +91,8 @@ export default defineComponent({
     // Listen for auth changes (login/logout)
     _unsubAuth = auth.onAuthChange(() => setupHeader());
 
-    // Setup bottom nav
-    setupBottomNav();
+    // Setup nav actions
+    setupNav();
   },
 
   onDestroy() {

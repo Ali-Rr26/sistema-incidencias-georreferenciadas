@@ -12,6 +12,7 @@
 
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
+import { router } from '../../../core/router.js';
 import loadLeaflet from '../../../shared/leaflet.js';
 
 // ── Error field mapping: backend field → error ID suffix ──
