@@ -37,7 +37,7 @@ class RedisIncidentSync
     private function syncIncident(Incident $incident): void
     {
         try {
-            $incident->loadMissing(['category.organizations', 'location', 'user']);
+            $incident->loadMissing(['category', 'location', 'user']);
 
             $locationPathIds = $incident->location?->ancestorsAndSelf()
                 ->orderBy('depth', 'desc')
@@ -57,9 +57,6 @@ class RedisIncidentSync
                 'updated_at' => $incident->updated_at?->toIso8601String(),
                 'geom' => $incident->geom ? $incident->geom->toJson() : null,
                 'category_name' => $incident->category?->name ?? '',
-                'category_organizations' => json_encode(
-                    $incident->category?->organizations?->map(fn ($o) => ['id' => $o->id, 'name' => $o->name]) ?? [],
-                ),
                 'organization_name' => $incident->organization?->name ?? '',
                 'location_name' => $incident->location?->name ?? '',
                 'location_path_ids' => json_encode($locationPathIds),

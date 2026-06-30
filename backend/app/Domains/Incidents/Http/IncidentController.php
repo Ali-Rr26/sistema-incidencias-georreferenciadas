@@ -11,18 +11,23 @@ use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use MatanYadaev\EloquentSpatial\Objects\Point;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
 
 class IncidentController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly IncidentRepository $incidents)
-    {
+    public function __construct(
+        private readonly IncidentRepository $incidents,
+        private readonly StorageService $storage,
+    ) {
         $this->authorizeResource(Incident::class, 'incident');
     }
 
@@ -44,7 +49,25 @@ class IncidentController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
+        // Convertir GeoJSON string a Point object para el cast espacial
+        if (isset($data['geom']) && is_string($data['geom'])) {
+            $geom = json_decode($data['geom'], true);
+            if (isset($geom['coordinates'])) {
+                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
+            }
+        }
+
+        // Los archivos se manejan aparte — no mezclar con el create
+        unset($data['images']);
+
         $incident = $this->incidents->create($data);
+
+        if ($request->hasFile('images')) {
+            $images = $this->uploadImages($request->file('images'), $incident->id, true);
+            if (! empty($images)) {
+                $incident->update(['images' => $images]);
+            }
+        }
 
         return (new IncidentResource($incident))
             ->response()
@@ -64,7 +87,28 @@ class IncidentController extends Controller
 
     public function update(UpdateIncidentRequest $request, int $id): JsonResponse
     {
-        $incident = $this->incidents->update($id, $request->validated());
+        $incident = $this->incidents->findById($id);
+
+        $data = $request->validated();
+
+        // Convertir GeoJSON string a Point object para el cast espacial
+        if (isset($data['geom']) && is_string($data['geom'])) {
+            $geom = json_decode($data['geom'], true);
+            if (isset($geom['coordinates'])) {
+                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
+            }
+        }
+
+        unset($data['images']);
+
+        if ($request->hasFile('images')) {
+            $hasExisting = ! empty($incident->images);
+            $images = $this->uploadImages($request->file('images'), $incident->id, ! $hasExisting);
+            $existing = $incident->images ?? [];
+            $data['images'] = array_merge($existing, $images);
+        }
+
+        $incident = $this->incidents->update($id, $data);
 
         return (new IncidentResource($incident))->response();
     }
@@ -74,5 +118,38 @@ class IncidentController extends Controller
         $this->incidents->delete($id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Sube archivos a S3 y retorna array de metadata.
+     *
+     * @param  UploadedFile[]|UploadedFile|null  $files
+     * @param  bool  $firstIsThumbnail  Si el primer archivo debe marcarse como thumbnail
+     * @return array<int, array{path: string, original_name: string, mime_type: string, size: int, is_thumbnail: bool}>
+     */
+    private function uploadImages(array|UploadedFile|null $files, int $incidentId, bool $firstIsThumbnail): array
+    {
+        $files = is_array($files) ? $files : ($files ? [$files] : []);
+        $files = array_filter($files);
+
+        if (empty($files)) {
+            return [];
+        }
+
+        $images = [];
+
+        foreach ($files as $i => $file) {
+            $key = $this->storage->uploadImage($file, $incidentId);
+
+            $images[] = [
+                'path' => $key,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'is_thumbnail' => $firstIsThumbnail && $i === 0,
+            ];
+        }
+
+        return $images;
     }
 }

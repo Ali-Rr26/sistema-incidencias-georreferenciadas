@@ -33,7 +33,57 @@ echo "Running migrations..."
 php artisan migrate --force || echo "WARNING: Migrations failed. Continuing startup."
 
 # -------------------------------------------------------
-# Start Octane (RoadRunner) — exec replaces shell process
+# Health checks — quick connectivity diagnostics
+# -------------------------------------------------------
+echo ""
+echo "═══ Health Checks ═══"
+
+echo -n "  Redis .......... "
+php -r "
+    try {
+        \$r = new Redis();
+        \$r->connect('${REDIS_HOST:-redis}', ${REDIS_PORT:-6379}, 2);
+        \$info = \$r->info('server');
+        echo 'Connected (v' . (\$info['redis_version'] ?? '?') . ')' . PHP_EOL;
+    } catch (\Throwable \$e) {
+        echo 'FAILED — ' . \$e->getMessage() . PHP_EOL;
+    }
+" 2>&1 || echo "FAILED"
+
+echo -n "  Storage ....... "
+if [ "${FILESYSTEM_STORAGE_DISK:-s3}" = "public" ]; then
+    echo "Local disk (public)"
+elif [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+    php -r "
+        require '/var/www/backend/vendor/autoload.php';
+        try {
+            \$s3 = new Aws\S3\S3Client([
+                'version'     => 'latest',
+                'region'      => '${AWS_DEFAULT_REGION:-us-east-1}',
+                'endpoint'    => '${AWS_ENDPOINT}',
+                'use_path_style_endpoint' => ${AWS_USE_PATH_STYLE_ENDPOINT:-true},
+                'credentials' => ['key' => '${AWS_ACCESS_KEY_ID}', 'secret' => '${AWS_SECRET_ACCESS_KEY}'],
+            ]);
+            \$buckets = \$s3->listBuckets();
+            \$exists = false;
+            foreach (\$buckets['Buckets'] as \$b) {
+                if (\$b['Name'] === '${AWS_BUCKET:-incidencias}') { \$exists = true; break; }
+            }
+            \$msg = \$exists ? 'Connected (bucket exists)' : 'Connected (bucket ready)';
+            echo \$msg . PHP_EOL;
+        } catch (\Throwable \$e) {
+            echo 'FAILED — ' . \$e->getMessage() . PHP_EOL;
+        }
+    " 2>&1 || echo "FAILED"
+else
+    echo "SKIPPED (no credentials)"
+fi
+
+echo "═══════════════════"
+echo ""
+
+# -------------------------------------------------------
+# Start Octane (FrankenPHP) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
 echo "Starting Octane (FrankenPHP) on 0.0.0.0:8000..."

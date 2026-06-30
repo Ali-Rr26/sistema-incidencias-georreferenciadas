@@ -59,7 +59,36 @@ class Router {
         ? new URLSearchParams(fullPath.substring(qsIndex + 1))
         : new URLSearchParams();
 
-    const route = this.routes.find((r) => r.pattern === path);
+    // Match exact or parameterized route
+    let route = this.routes.find((r) => r.pattern === path);
+    this.routeParams = {};
+
+    if (!route) {
+      // Try to match parameterized routes
+      for (const r of this.routes) {
+        const parts = r.pattern.split('/');
+        const pathParts = path.split('/');
+        if (parts.length !== pathParts.length) continue;
+
+        const params = {};
+        let match = true;
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i].startsWith(':')) {
+            params[parts[i].slice(1)] = pathParts[i];
+          } else if (parts[i] !== pathParts[i]) {
+            match = false;
+            break;
+          }
+        }
+
+        if (match) {
+          route = r;
+          this.routeParams = params;
+          break;
+        }
+      }
+    }
+
     if (!route) {
       this.navigate('/not-found');
       return;

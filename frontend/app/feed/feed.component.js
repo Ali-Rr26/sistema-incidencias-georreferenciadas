@@ -107,8 +107,14 @@ function renderCard(inc) {
   }
   const descText = descParts.join(' · ');
 
+  const thumbnailHtml = inc.thumbnail_url
+    ? `<div class="ig-card-thumb">
+        <img src="${inc.thumbnail_url}" alt="Imagen" loading="lazy" />
+       </div>`
+    : '';
+
   return `
-    <div class="ig-card ${'ig-priority-' + (inc.priority ?? 'low')}">
+    <div class="ig-card ${'ig-priority-' + (inc.priority ?? 'low')}" onclick="window.location.hash='#/incidencias/${inc.id}'" style="cursor:pointer">
       <!-- User header -->
       <div class="ig-card-head">
         ${avatarHtml}
@@ -125,6 +131,9 @@ function renderCard(inc) {
         <span class="ig-card-category-badge">${escapeHtml(catName)}</span>
       </div>
 
+      <!-- Thumbnail -->
+      ${thumbnailHtml}
+
       <!-- Body -->
       <div class="ig-card-body">
         ${locName ? `<div class="ig-card-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(locName)}</div>` : ''}
@@ -133,8 +142,8 @@ function renderCard(inc) {
 
       <!-- Action bar -->
       <div class="ig-card-actions">
-        <button class="ig-action-btn" title="Comentar">
-          <i class="far fa-comment"></i>
+        <button class="ig-action-btn" title="Ver detalle" onclick="event.stopPropagation();window.location.hash='#/incidencias/${inc.id}'">
+          <i class="far fa-eye"></i>
         </button>
         <button class="ig-action-btn" title="Compartir">
           <i class="far fa-share-square"></i>

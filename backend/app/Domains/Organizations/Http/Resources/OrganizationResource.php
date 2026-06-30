@@ -20,7 +20,7 @@ class OrganizationResource extends JsonResource
             'parent_id' => $this->parent_id,
             'parent' => $this->whenLoaded('parent'),
             'children' => OrganizationResource::collection($this->whenLoaded('children')),
-            'incident_categories' => IncidentCategoryResource::collection($this->whenLoaded('incidentCategories')),
+            'incident_category' => new IncidentCategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

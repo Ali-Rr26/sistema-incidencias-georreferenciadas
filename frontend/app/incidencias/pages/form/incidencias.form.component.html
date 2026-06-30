@@ -95,6 +95,31 @@
           </div>
         </div>
 
+        <!-- Sección: Imágenes -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-camera me-2"></i>Imágenes
+        </h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label for="imagenes" class="form-label fw-semibold">
+              Fotos de la Incidencia
+            </label>
+            <input
+              type="file"
+              class="form-control form-control-lg"
+              id="imagenes"
+              name="imagenes"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+            />
+            <div class="mt-2 d-flex gap-2 flex-wrap" id="previsualizacion-imagenes"></div>
+            <div class="form-text mt-1">
+              Opcional. Puede seleccionar hasta 10 imágenes (JPEG, PNG o WebP, máximo 10 MB cada una).
+            </div>
+          </div>
+        </div>
+
         <!-- Sección: Categorización y Contacto -->
         <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
           <i class="fas fa-tags me-2"></i>Categorización y Contacto
@@ -152,6 +177,37 @@
           <i class="fas fa-map-marked-alt me-2"></i>Ubicación Georreferenciada
           <span class="text-danger">*</span>
         </h6>
+
+        <div class="row g-3 mb-4">
+          <!-- Ubicación jerárquica: País → Provincia → Ciudad -->
+          <div class="col-md-4">
+            <label for="pais" class="form-label fw-semibold">
+              País <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="pais" required>
+              <option value="">-- Seleccione País --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione un país.</div>
+          </div>
+          <div class="col-md-4">
+            <label for="provincia" class="form-label fw-semibold">
+              Provincia <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="provincia" required disabled>
+              <option value="">-- Seleccione Provincia --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una provincia.</div>
+          </div>
+          <div class="col-md-4">
+            <label for="ciudad" class="form-label fw-semibold">
+              Ciudad <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="ciudad" required disabled>
+              <option value="">-- Seleccione Ciudad --</option>
+            </select>
+            <div class="invalid-feedback">Seleccione una ciudad.</div>
+          </div>
+        </div>
 
         <div class="row g-3 mb-4">
           <div class="col-12">

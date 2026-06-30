@@ -23,13 +23,12 @@ it('calls HMSET and ZADD when incident is created', function (): void {
     $incident->geom = null;
 
     $incident->shouldReceive('loadMissing')
-        ->with(['category.organizations', 'location', 'user'])
+        ->with(['category', 'location', 'user'])
         ->andReturn($incident);
 
     // Set up relation mocks as direct properties
     $category = Mockery::mock();
     $category->name = 'Test Category';
-    $category->organizations = collect();
     $incident->category = $category;
 
     $org = Mockery::mock();
@@ -94,12 +93,11 @@ it('calls HMSET and ZADD when incident is updated', function (): void {
     $incident->geom = null;
 
     $incident->shouldReceive('loadMissing')
-        ->with(['category.organizations', 'location', 'user'])
+        ->with(['category', 'location', 'user'])
         ->andReturn($incident);
 
     $category = Mockery::mock();
     $category->name = 'Test Category';
-    $category->organizations = collect();
     $incident->category = $category;
 
     $org = Mockery::mock();
