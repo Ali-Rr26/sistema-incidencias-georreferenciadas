@@ -197,7 +197,7 @@ export default defineComponent({
       .getElementById('provincia')
       .addEventListener('change', function () {
         const ciudadEl = document.getElementById('ciudad');
-        let pais = locationsTree.find((p) =>
+        const pais = locationsTree.find((p) =>
           p.children?.some((pr) => pr.id == this.value),
         );
         const provincia = pais?.children?.find((pr) => pr.id == this.value);
