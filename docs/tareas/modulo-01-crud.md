@@ -109,7 +109,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Ir a incidencia, click en "Eliminar", no confirmar el modal.
 - **Criterio de aceptación:** Modal con mensaje "¿Está seguro de eliminar esta incidencia?", botones "Cancelar" y "Eliminar".
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
