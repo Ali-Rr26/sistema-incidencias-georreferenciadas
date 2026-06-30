@@ -66,22 +66,8 @@ class Router {
     if (!route) {
       // Try to match parameterized routes
       for (const r of this.routes) {
-        const parts = r.pattern.split('/');
-        const pathParts = path.split('/');
-        if (parts.length !== pathParts.length) continue;
-
-        const params = {};
-        let match = true;
-        for (let i = 0; i < parts.length; i++) {
-          if (parts[i].startsWith(':')) {
-            params[parts[i].slice(1)] = pathParts[i];
-          } else if (parts[i] !== pathParts[i]) {
-            match = false;
-            break;
-          }
-        }
-
-        if (match) {
+        const params = this._matchRoute(r.pattern, path);
+        if (params !== null) {
           route = r;
           this.routeParams = params;
           break;
@@ -116,6 +102,28 @@ class Router {
     }
 
     await component.onInit();
+  }
+
+  /**
+   * Match a route pattern against a path.
+   * @param {string} pattern - e.g. '/incidencias/:id'
+   * @param {string} path - e.g. '/incidencias/42'
+   * @returns {object|null} params object or null if no match
+   */
+  _matchRoute(pattern, path) {
+    const parts = pattern.split('/');
+    const pathParts = path.split('/');
+    if (parts.length !== pathParts.length) return null;
+
+    const params = {};
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].startsWith(':')) {
+        params[parts[i].slice(1)] = pathParts[i];
+      } else if (parts[i] !== pathParts[i]) {
+        return null;
+      }
+    }
+    return params;
   }
 
   async _mountInShell(component) {
