@@ -1,5 +1,6 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
+import { router } from '../../../core/router.js';
 
 const SUBTIPOS = {
   infraestructura: [
@@ -49,6 +50,15 @@ export default defineComponent({
   templateUrl: 'app/incidencias/pages/form/incidencias.form.component.html',
 
   async onInit() {
+    const esEdicion = router.queryParams.has('id');
+    const incId = router.queryParams.get('id');
+
+    if (esEdicion) {
+      document.getElementById('form-titulo').textContent = 'Editar Incidencia';
+      document.getElementById('card-titulo').textContent = 'Editar Incidencia';
+      document.getElementById('breadcrumb-actual').textContent = 'Editar';
+    }
+
     // Load Leaflet and init map
     await loadLeaflet();
 
@@ -81,6 +91,34 @@ export default defineComponent({
     }
 
     mapa.on('click', (e) => colocarMarcador(e.latlng.lat, e.latlng.lng));
+
+    // Pre-llenar formulario si es edición
+    if (esEdicion) {
+      try {
+        const resp = await http.get('/incidents/' + incId);
+        const inc = resp.data ?? resp;
+        const mapPrioridad = { high: 'alta', medium: 'media', low: 'baja' };
+
+        document.getElementById('titulo').value = inc.title ?? '';
+        document.getElementById('contador-titulo').textContent =
+          (inc.title ?? '').length + '/100';
+        document.getElementById('descripcion').value = inc.description ?? '';
+        document.getElementById('contador-descripcion').textContent =
+          (inc.description ?? '').length + '/500';
+        document.getElementById('prioridad').value =
+          mapPrioridad[inc.priority] ?? '';
+        document.getElementById('telefono').value = inc.phone ?? '';
+        document.getElementById('direccion').value = inc.address ?? '';
+
+        if (inc.geom?.coordinates) {
+          const [lng, lat] = inc.geom.coordinates;
+          mapa.setView([lat, lng], 16);
+          colocarMarcador(lat, lng);
+        }
+      } catch (err) {
+        console.error('Error al cargar incidencia:', err);
+      }
+    }
 
     // Geolocation
     document
@@ -223,7 +261,15 @@ export default defineComponent({
         };
 
         try {
-          await http.post('/incidents', payload);
+          if (esEdicion) {
+            await http.put('/incidents/' + incId, payload);
+            document.getElementById('toast-exito-texto').textContent =
+              'Incidencia actualizada correctamente.';
+          } else {
+            await http.post('/incidents', payload);
+            document.getElementById('toast-exito-texto').textContent =
+              'Incidencia registrada correctamente.';
+          }
           const toastEl = document.getElementById('toast-exito');
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
           setTimeout(() => {
