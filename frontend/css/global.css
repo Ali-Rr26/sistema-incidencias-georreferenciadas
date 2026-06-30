@@ -557,6 +557,7 @@ body, #main-wrapper { font-family: var(--font-family); }
 .gr-form-card {
   max-width: 920px;
   width: 100%;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
