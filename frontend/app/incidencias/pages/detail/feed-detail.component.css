@@ -29,7 +29,9 @@
 }
 
 @keyframes fd-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─── Empty / Error ─── */
@@ -61,7 +63,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--primary-gradient, linear-gradient(135deg, #6a5cf3, #a06bf5));
+  background: var(
+    --primary-gradient,
+    linear-gradient(135deg, #6a5cf3, #a06bf5)
+  );
   color: #fff;
   border-radius: 22px;
   padding: 8px 18px;
@@ -164,7 +169,10 @@
   height: 42px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: var(--primary-gradient, linear-gradient(135deg, #6a5cf3, #a06bf5));
+  background: var(
+    --primary-gradient,
+    linear-gradient(135deg, #6a5cf3, #a06bf5)
+  );
   color: #fff;
   display: flex;
   align-items: center;
@@ -208,7 +216,7 @@
 .fd-section {
   background: #fff;
   border-radius: var(--card-radius, 18px);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(20,20,50,.06));
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(20, 20, 50, 0.06));
   padding: 16px;
   margin-bottom: 16px;
 }

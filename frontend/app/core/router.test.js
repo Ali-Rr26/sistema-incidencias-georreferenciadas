@@ -26,17 +26,26 @@ describe('router._matchRoute', () => {
   });
 
   it('matches :id with UUID-style value', () => {
-    const result = router._matchRoute('/incidencias/:id', '/incidencias/abc-123-def');
+    const result = router._matchRoute(
+      '/incidencias/:id',
+      '/incidencias/abc-123-def',
+    );
     expect(result).toEqual({ id: 'abc-123-def' });
   });
 
   it('returns null for different segment count', () => {
-    const result = router._matchRoute('/incidencias/:id', '/incidencias/42/comments');
+    const result = router._matchRoute(
+      '/incidencias/:id',
+      '/incidencias/42/comments',
+    );
     expect(result).toBeNull();
   });
 
   it('returns null for non-matching literal segment', () => {
-    const result = router._matchRoute('/incidencias/feed', '/incidencias/detail');
+    const result = router._matchRoute(
+      '/incidencias/feed',
+      '/incidencias/detail',
+    );
     expect(result).toBeNull();
   });
 

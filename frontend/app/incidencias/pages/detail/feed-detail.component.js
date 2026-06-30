@@ -169,9 +169,10 @@ export default defineComponent({
   _renderBody(inc) {
     const catName = inc.category?.name || inc.incident_category_name || '';
     const locName = inc.location_name || inc.location?.name || '';
-    const coords = inc.geom?.type === 'Point' && Array.isArray(inc.geom?.coordinates)
-      ? `${inc.geom.coordinates[1].toFixed(4)}, ${inc.geom.coordinates[0].toFixed(4)}`
-      : '';
+    const coords =
+      inc.geom?.type === 'Point' && Array.isArray(inc.geom?.coordinates)
+        ? `${inc.geom.coordinates[1].toFixed(4)}, ${inc.geom.coordinates[0].toFixed(4)}`
+        : '';
 
     // Description
     const descEl = document.getElementById('fd-description');
@@ -197,14 +198,15 @@ export default defineComponent({
     }
   },
 
-  async _renderMap(inc) {
+  async _renderMap(_inc) {
     const mapEl = document.getElementById('fd-map');
     if (!mapEl || !this._mapCoords) return;
 
     try {
       await loadLeaflet();
     } catch {
-      mapEl.innerHTML = '<div class="fd-map-error">No se pudo cargar el mapa</div>';
+      mapEl.innerHTML =
+        '<div class="fd-map-error">No se pudo cargar el mapa</div>';
       return;
     }
 
@@ -212,7 +214,8 @@ export default defineComponent({
     const map = L.map('fd-map').setView([lat, lng], 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
     L.marker([lat, lng]).addTo(map);

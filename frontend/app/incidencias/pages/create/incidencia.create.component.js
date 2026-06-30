@@ -86,7 +86,10 @@ export default defineComponent({
     const mapHeight = context === 'admin' ? 360 : 280;
     mapContainer.style.height = mapHeight + 'px';
 
-    map = L.map(mapId).setView([mapaInicial.lat, mapaInicial.lng], mapaInicial.zoom);
+    map = L.map(mapId).setView(
+      [mapaInicial.lat, mapaInicial.lng],
+      mapaInicial.zoom,
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -114,10 +117,14 @@ export default defineComponent({
     setTimeout(() => map.invalidateSize(), 100);
 
     // ── Geolocation ──
-    const geoBtnId = context === 'admin' ? 'ici-btn-geo' : 'ici-citizen-btn-geo';
+    const geoBtnId =
+      context === 'admin' ? 'ici-btn-geo' : 'ici-citizen-btn-geo';
     document.getElementById(geoBtnId)?.addEventListener('click', function () {
       if (!navigator.geolocation) {
-        showFieldError(P + 'error-geom', 'Geolocalización no disponible en este navegador.');
+        showFieldError(
+          P + 'error-geom',
+          'Geolocalización no disponible en este navegador.',
+        );
         return;
       }
       const btn = this;
@@ -181,15 +188,21 @@ export default defineComponent({
         selectEl.classList.remove('is-valid', 'is-invalid');
       }
 
-      document.getElementById('ici-tipo').addEventListener('change', function () {
-        const subtipoEl = document.getElementById('ici-subtipo');
-        const padre = categoriasTree.find((c) => c.id == this.value);
-        if (this.value && padre?.children?.length) {
-          poblarSelect(subtipoEl, padre.children, '-- Seleccione subcategoría --');
-        } else {
-          resetSelect(subtipoEl, '-- Seleccione categoría primero --');
-        }
-      });
+      document
+        .getElementById('ici-tipo')
+        .addEventListener('change', function () {
+          const subtipoEl = document.getElementById('ici-subtipo');
+          const padre = categoriasTree.find((c) => c.id == this.value);
+          if (this.value && padre?.children?.length) {
+            poblarSelect(
+              subtipoEl,
+              padre.children,
+              '-- Seleccione subcategoría --',
+            );
+          } else {
+            resetSelect(subtipoEl, '-- Seleccione categoría primero --');
+          }
+        });
     } else {
       // Citizen: categoría plana
       try {
@@ -242,30 +255,42 @@ export default defineComponent({
         selectEl.disabled = true;
       }
 
-      document.getElementById('ici-pais').addEventListener('change', function () {
-        const provEl = document.getElementById('ici-provincia');
-        const ciudadEl = document.getElementById('ici-ciudad');
-        resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
-        const pais = locationsTree.find((p) => p.id == this.value);
-        if (this.value && pais?.children?.length) {
-          poblarUbicaciones(provEl, pais.children, '-- Seleccione Provincia --');
-        } else {
-          resetUbicacion(provEl, '-- Seleccione Provincia --');
-        }
-      });
-
-      document.getElementById('ici-provincia').addEventListener('change', function () {
-        const ciudadEl = document.getElementById('ici-ciudad');
-        const pais = locationsTree.find((p) =>
-          p.children?.some((pr) => pr.id == this.value),
-        );
-        const provincia = pais?.children?.find((pr) => pr.id == this.value);
-        if (this.value && provincia?.children?.length) {
-          poblarUbicaciones(ciudadEl, provincia.children, '-- Seleccione Ciudad --');
-        } else {
+      document
+        .getElementById('ici-pais')
+        .addEventListener('change', function () {
+          const provEl = document.getElementById('ici-provincia');
+          const ciudadEl = document.getElementById('ici-ciudad');
           resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
-        }
-      });
+          const pais = locationsTree.find((p) => p.id == this.value);
+          if (this.value && pais?.children?.length) {
+            poblarUbicaciones(
+              provEl,
+              pais.children,
+              '-- Seleccione Provincia --',
+            );
+          } else {
+            resetUbicacion(provEl, '-- Seleccione Provincia --');
+          }
+        });
+
+      document
+        .getElementById('ici-provincia')
+        .addEventListener('change', function () {
+          const ciudadEl = document.getElementById('ici-ciudad');
+          const pais = locationsTree.find((p) =>
+            p.children?.some((pr) => pr.id == this.value),
+          );
+          const provincia = pais?.children?.find((pr) => pr.id == this.value);
+          if (this.value && provincia?.children?.length) {
+            poblarUbicaciones(
+              ciudadEl,
+              provincia.children,
+              '-- Seleccione Ciudad --',
+            );
+          } else {
+            resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
+          }
+        });
     } else {
       // Citizen: árbol plano con indentación
       const locSelect = document.getElementById('ici-citizen-location');
@@ -344,7 +369,13 @@ export default defineComponent({
       if (phoneEl) {
         phoneEl.addEventListener('keydown', function (e) {
           const permitidas = [
-            'Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End',
+            'Backspace',
+            'Delete',
+            'Tab',
+            'ArrowLeft',
+            'ArrowRight',
+            'Home',
+            'End',
           ];
           if (
             !permitidas.includes(e.key) &&
@@ -392,7 +423,10 @@ export default defineComponent({
       }
 
       if (!geomValue) {
-        showFieldError(P + 'error-geom', 'Debe marcar una ubicación en el mapa');
+        showFieldError(
+          P + 'error-geom',
+          'Debe marcar una ubicación en el mapa',
+        );
         valid = false;
       }
 
@@ -401,7 +435,9 @@ export default defineComponent({
         const subtipoEl = document.getElementById('ici-subtipo');
         const tipoEl = document.getElementById('ici-tipo');
         categoryId = parseInt(
-          (subtipoEl.value && !subtipoEl.disabled ? subtipoEl.value : tipoEl.value) || '',
+          (subtipoEl.value && !subtipoEl.disabled
+            ? subtipoEl.value
+            : tipoEl.value) || '',
           10,
         );
         if (!categoryId) {
@@ -414,18 +450,27 @@ export default defineComponent({
         const provinciaVal = document.getElementById('ici-provincia').value;
         const paisVal = document.getElementById('ici-pais').value;
         if (!ciudadVal && !provinciaVal && !paisVal) {
-          showFieldError(P + 'error-location', 'Seleccione un país, provincia o ciudad');
+          showFieldError(
+            P + 'error-location',
+            'Seleccione un país, provincia o ciudad',
+          );
           valid = false;
         }
 
         // Admin: phone min 7 digits if entered
         const phoneEl = document.getElementById('ici-phone');
         if (phoneEl.value !== '' && phoneEl.value.length < 7) {
-          showFieldError(P + 'error-phone', 'El teléfono debe tener al menos 7 dígitos');
+          showFieldError(
+            P + 'error-phone',
+            'El teléfono debe tener al menos 7 dígitos',
+          );
           valid = false;
         }
       } else {
-        categoryId = parseInt(document.getElementById('ici-citizen-category').value || '', 10);
+        categoryId = parseInt(
+          document.getElementById('ici-citizen-category').value || '',
+          10,
+        );
         if (!categoryId) {
           showFieldError(P + 'error-category', 'Seleccione una categoría');
           valid = false;
@@ -440,7 +485,8 @@ export default defineComponent({
         locationId = parseInt(
           document.getElementById('ici-ciudad').value ||
             document.getElementById('ici-provincia').value ||
-            document.getElementById('ici-pais').value || '',
+            document.getElementById('ici-pais').value ||
+            '',
           10,
         );
         if (!locationId) locationId = null;
@@ -485,7 +531,9 @@ export default defineComponent({
               body.append(key, val);
             }
           }
-          imagenesSeleccionadas.forEach((file) => body.append('images[]', file));
+          imagenesSeleccionadas.forEach((file) =>
+            body.append('images[]', file),
+          );
         } else {
           body = payloadBase;
         }
@@ -536,7 +584,8 @@ export default defineComponent({
           const errorBanner = document.getElementById(P + 'error');
           if (errorBanner) {
             errorBanner.textContent =
-              err.message || 'Error al guardar la incidencia. Intente nuevamente.';
+              err.message ||
+              'Error al guardar la incidencia. Intente nuevamente.';
             errorBanner.classList.remove('d-none');
           }
         }

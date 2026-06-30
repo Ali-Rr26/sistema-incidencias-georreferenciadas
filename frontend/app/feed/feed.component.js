@@ -202,7 +202,7 @@ export default defineComponent({
     let observer = null;
 
     // ── Context ───────────────────────────────────────────────
-    const context = detectContext();
+    detectContext();
     document.body.classList.add('feed-view');
 
     // Guard: if DOM elements are missing (testing edge case), skip
@@ -229,7 +229,10 @@ export default defineComponent({
         todasLasIncidencias = [];
       }
 
-      const params = new URLSearchParams({ page: pagina, per_page: POR_PAGINA });
+      const params = new URLSearchParams({
+        page: pagina,
+        per_page: POR_PAGINA,
+      });
       if (filtroStatus) params.set('status', filtroStatus);
 
       try {
@@ -253,7 +256,10 @@ export default defineComponent({
         } else {
           vacio.classList.add('d-none');
           if (append) {
-            listEl.insertAdjacentHTML('beforeend', datos.map(renderCard).join(''));
+            listEl.insertAdjacentHTML(
+              'beforeend',
+              datos.map(renderCard).join(''),
+            );
           } else {
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
           }
@@ -263,7 +269,8 @@ export default defineComponent({
       } catch {
         skeleton.classList.add('d-none');
         vacio.classList.remove('d-none');
-        vacio.querySelector('p').textContent = 'Error al cargar. Intente de nuevo.';
+        vacio.querySelector('p').textContent =
+          'Error al cargar. Intente de nuevo.';
         document.getElementById(CTX.sentinel).classList.add('done');
       } finally {
         cargando = false;

@@ -121,11 +121,13 @@ async function renderMap(inc) {
   try {
     await loadLeaflet();
   } catch {
-    mapEl.innerHTML = '<div class="text-center py-4 text-danger">No se pudo cargar el mapa</div>';
+    mapEl.innerHTML =
+      '<div class="text-center py-4 text-danger">No se pudo cargar el mapa</div>';
     return;
   }
 
-  mapEl.innerHTML = '<div id="detalle-mapa" style="height: 300px; width: 100%; border-radius: 8px;"></div>';
+  mapEl.innerHTML =
+    '<div id="detalle-mapa" style="height: 300px; width: 100%; border-radius: 8px;"></div>';
 
   const map = L.map('detalle-mapa').setView([lat, lng], 15);
 

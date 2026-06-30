@@ -4,8 +4,6 @@
  * detectContext() checks if #main-wrapper is visible → 'desktop', else 'mobile'.
  * We test the feed component's onInit behavior in different DOM states.
  */
-import { defineComponent } from '../utils/component.js';
-
 // Import the component module — this also executes module-level code
 // but we only test the exported component definition
 const feedModule = await import('./feed.component.js');
@@ -37,7 +35,9 @@ describe('feed detectContext (DOM simulation)', () => {
         };
       }
       if (url.includes('feed.component.html')) {
-        return htmlResponse('<div id="feed-desktop" class="d-none"></div><div id="feed-mobile"></div>');
+        return htmlResponse(
+          '<div id="feed-desktop" class="d-none"></div><div id="feed-mobile"></div>',
+        );
       }
       return htmlResponse('');
     });

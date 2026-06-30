@@ -7,7 +7,9 @@
     <div class="composer-bar d-none" id="composer-bar">
       <div class="composer-avatar" id="composer-avatar">?</div>
       <div class="composer-input-wrap">
-        <span class="composer-placeholder">¿Qué incidencia deseas reportar hoy?</span>
+        <span class="composer-placeholder"
+          >¿Qué incidencia deseas reportar hoy?</span
+        >
       </div>
       <a href="#/feed/crear" class="composer-btn">
         <i class="fas fa-location-dot"></i> Reportar
@@ -24,8 +26,28 @@
 
     <!-- Loading skeleton -->
     <div id="feed-cargando" class="feed-skeleton-wrap">
-      <div class="feed-skeleton-card"><div class="feed-skel-head"><div class="feed-skel-avatar"></div><div class="feed-skel-line w-40"></div></div><div class="feed-skel-map"></div><div class="feed-skel-body"><div class="feed-skel-line w-60"></div><div class="feed-skel-line w-30"></div></div></div>
-      <div class="feed-skeleton-card"><div class="feed-skel-head"><div class="feed-skel-avatar"></div><div class="feed-skel-line w-40"></div></div><div class="feed-skel-map"></div><div class="feed-skel-body"><div class="feed-skel-line w-60"></div><div class="feed-skel-line w-30"></div></div></div>
+      <div class="feed-skeleton-card">
+        <div class="feed-skel-head">
+          <div class="feed-skel-avatar"></div>
+          <div class="feed-skel-line w-40"></div>
+        </div>
+        <div class="feed-skel-map"></div>
+        <div class="feed-skel-body">
+          <div class="feed-skel-line w-60"></div>
+          <div class="feed-skel-line w-30"></div>
+        </div>
+      </div>
+      <div class="feed-skeleton-card">
+        <div class="feed-skel-head">
+          <div class="feed-skel-avatar"></div>
+          <div class="feed-skel-line w-40"></div>
+        </div>
+        <div class="feed-skel-map"></div>
+        <div class="feed-skel-body">
+          <div class="feed-skel-line w-60"></div>
+          <div class="feed-skel-line w-30"></div>
+        </div>
+      </div>
     </div>
 
     <div id="feed-vacio" class="feed-empty d-none">
@@ -47,16 +69,27 @@
     <div class="rp-card rp-map">
       <div class="rp-map-placeholder" id="rp-map-placeholder">
         <div class="rp-map-pins">
-          <span class="rp-pin" style="background:#fa5a7d"></span>
-          <span class="rp-pin" style="background:#5a6ff0"></span>
-          <span class="rp-pin" style="background:#d99a00"></span>
-          <span class="rp-pin" style="background:#16a96b"></span>
+          <span class="rp-pin" style="background: #fa5a7d"></span>
+          <span class="rp-pin" style="background: #5a6ff0"></span>
+          <span class="rp-pin" style="background: #d99a00"></span>
+          <span class="rp-pin" style="background: #16a96b"></span>
         </div>
         <div class="rp-map-legend">
-          <span><span class="rp-dot" style="background:#fa5a7d"></span> Alta</span>
-          <span><span class="rp-dot" style="background:#5a6ff0"></span> Proceso</span>
-          <span><span class="rp-dot" style="background:#d99a00"></span> Pendiente</span>
-          <span><span class="rp-dot" style="background:#16a96b"></span> Resuelto</span>
+          <span
+            ><span class="rp-dot" style="background: #fa5a7d"></span> Alta</span
+          >
+          <span
+            ><span class="rp-dot" style="background: #5a6ff0"></span>
+            Proceso</span
+          >
+          <span
+            ><span class="rp-dot" style="background: #d99a00"></span>
+            Pendiente</span
+          >
+          <span
+            ><span class="rp-dot" style="background: #16a96b"></span>
+            Resuelto</span
+          >
         </div>
       </div>
     </div>
@@ -65,10 +98,18 @@
     <div class="rp-card rp-trending">
       <h3 class="rp-title">Tendencias</h3>
       <div class="rp-tags" id="rp-tags">
-        <span class="rp-tag"># Baches <span class="rp-tag-count">(142)</span></span>
-        <span class="rp-tag"># Alumbrado <span class="rp-tag-count">(118)</span></span>
-        <span class="rp-tag"># Agua <span class="rp-tag-count">(96)</span></span>
-        <span class="rp-tag"># Residuos <span class="rp-tag-count">(74)</span></span>
+        <span class="rp-tag"
+          ># Baches <span class="rp-tag-count">(142)</span></span
+        >
+        <span class="rp-tag"
+          ># Alumbrado <span class="rp-tag-count">(118)</span></span
+        >
+        <span class="rp-tag"
+          ># Agua <span class="rp-tag-count">(96)</span></span
+        >
+        <span class="rp-tag"
+          ># Residuos <span class="rp-tag-count">(74)</span></span
+        >
       </div>
     </div>
 
@@ -76,10 +117,30 @@
     <div class="rp-card rp-categories">
       <h3 class="rp-title">Por categoría</h3>
       <div class="rp-cat-list" id="rp-cat-list">
-        <div class="rp-cat-item"><span class="rp-cat-name">Infraestructura</span><div class="rp-cat-bar"><div class="rp-cat-fill" style="width:80%"></div></div></div>
-        <div class="rp-cat-item"><span class="rp-cat-name">Servicios</span><div class="rp-cat-bar"><div class="rp-cat-fill" style="width:60%"></div></div></div>
-        <div class="rp-cat-item"><span class="rp-cat-name">Medio ambiente</span><div class="rp-cat-bar"><div class="rp-cat-fill" style="width:45%"></div></div></div>
-        <div class="rp-cat-item"><span class="rp-cat-name">Seguridad</span><div class="rp-cat-bar"><div class="rp-cat-fill" style="width:30%"></div></div></div>
+        <div class="rp-cat-item">
+          <span class="rp-cat-name">Infraestructura</span>
+          <div class="rp-cat-bar">
+            <div class="rp-cat-fill" style="width: 80%"></div>
+          </div>
+        </div>
+        <div class="rp-cat-item">
+          <span class="rp-cat-name">Servicios</span>
+          <div class="rp-cat-bar">
+            <div class="rp-cat-fill" style="width: 60%"></div>
+          </div>
+        </div>
+        <div class="rp-cat-item">
+          <span class="rp-cat-name">Medio ambiente</span>
+          <div class="rp-cat-bar">
+            <div class="rp-cat-fill" style="width: 45%"></div>
+          </div>
+        </div>
+        <div class="rp-cat-item">
+          <span class="rp-cat-name">Seguridad</span>
+          <div class="rp-cat-bar">
+            <div class="rp-cat-fill" style="width: 30%"></div>
+          </div>
+        </div>
       </div>
     </div>
   </aside>
@@ -97,8 +158,28 @@
 
   <!-- Loading skeleton -->
   <div id="feed-cargando-mobile" class="feed-skeleton-wrap">
-    <div class="feed-skeleton-card"><div class="feed-skel-head"><div class="feed-skel-avatar"></div><div class="feed-skel-line w-40"></div></div><div class="feed-skel-map"></div><div class="feed-skel-body"><div class="feed-skel-line w-60"></div><div class="feed-skel-line w-30"></div></div></div>
-    <div class="feed-skeleton-card"><div class="feed-skel-head"><div class="feed-skel-avatar"></div><div class="feed-skel-line w-40"></div></div><div class="feed-skel-map"></div><div class="feed-skel-body"><div class="feed-skel-line w-60"></div><div class="feed-skel-line w-30"></div></div></div>
+    <div class="feed-skeleton-card">
+      <div class="feed-skel-head">
+        <div class="feed-skel-avatar"></div>
+        <div class="feed-skel-line w-40"></div>
+      </div>
+      <div class="feed-skel-map"></div>
+      <div class="feed-skel-body">
+        <div class="feed-skel-line w-60"></div>
+        <div class="feed-skel-line w-30"></div>
+      </div>
+    </div>
+    <div class="feed-skeleton-card">
+      <div class="feed-skel-head">
+        <div class="feed-skel-avatar"></div>
+        <div class="feed-skel-line w-40"></div>
+      </div>
+      <div class="feed-skel-map"></div>
+      <div class="feed-skel-body">
+        <div class="feed-skel-line w-60"></div>
+        <div class="feed-skel-line w-30"></div>
+      </div>
+    </div>
   </div>
 
   <div id="feed-vacio-mobile" class="feed-empty d-none">

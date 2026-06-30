@@ -7,7 +7,6 @@
  * - "+" button redirects to create if auth, or login if not
  */
 import { auth } from '../auth/auth.service.js';
-import { defineComponent } from '../utils/component.js';
 
 function htmlResponse(body) {
   return {
@@ -74,7 +73,8 @@ describe('layout-usuario bottom nav', () => {
   });
 
   it('renders 5 bottom nav items', async () => {
-    const { default: layoutComponent } = await import('./layout-usuario.component.js');
+    const { default: layoutComponent } =
+      await import('./layout-usuario.component.js');
 
     // Need the layout template in DOM before onInit
     document.body.innerHTML = `
@@ -113,7 +113,8 @@ describe('layout-usuario bottom nav', () => {
   });
 
   it('updates active state on nav item click', async () => {
-    const { default: layoutComponent } = await import('./layout-usuario.component.js');
+    const { default: layoutComponent } =
+      await import('./layout-usuario.component.js');
 
     document.body.innerHTML = `
       <nav class="lu-bottom-nav" id="lu-bottom-nav">
@@ -149,7 +150,8 @@ describe('layout-usuario bottom nav', () => {
   it('redirects "+" button to create when authenticated', async () => {
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
 
-    const { default: layoutComponent } = await import('./layout-usuario.component.js');
+    const { default: layoutComponent } =
+      await import('./layout-usuario.component.js');
 
     document.body.innerHTML = `
       <nav class="lu-bottom-nav" id="lu-bottom-nav">
@@ -173,7 +175,8 @@ describe('layout-usuario bottom nav', () => {
   it('redirects "+" button to login when not authenticated', async () => {
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(false);
 
-    const { default: layoutComponent } = await import('./layout-usuario.component.js');
+    const { default: layoutComponent } =
+      await import('./layout-usuario.component.js');
 
     document.body.innerHTML = `
       <nav class="lu-bottom-nav" id="lu-bottom-nav">

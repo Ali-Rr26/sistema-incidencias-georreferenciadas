@@ -53,7 +53,8 @@ const MOCK_INCIDENTS = [
   {
     id: 1,
     title: 'Bache en la Av. Principal',
-    description: 'Se reporta un bache grande en la avenida principal que ha causado daños a vehículos.',
+    description:
+      'Se reporta un bache grande en la avenida principal que ha causado daños a vehículos.',
     status: 'pending',
     priority: 'high',
     category: { id: 1, name: 'Infraestructura' },
@@ -67,11 +68,12 @@ const MOCK_INCIDENTS = [
   {
     id: 2,
     title: 'Luminaria dañada',
-    description: 'Poste de luz en la calle 10 de Agosto no funciona hace una semana.',
+    description:
+      'Poste de luz en la calle 10 de Agosto no funciona hace una semana.',
     status: 'in_progress',
     priority: 'medium',
     category: { id: 2, name: 'Servicios' },
-    geom: { type: 'Point', coordinates: [-80.7125, -0.9480] },
+    geom: { type: 'Point', coordinates: [-80.7125, -0.948] },
     location_name: 'Calle 10 de Agosto',
     created_at: new Date().toISOString(),
     user: { first_name: 'Carlos', last_name: 'Mendoza', avatar: null },
@@ -85,7 +87,7 @@ const MOCK_INCIDENTS = [
     status: 'resolved',
     priority: 'low',
     category: { id: 3, name: 'Medio ambiente' },
-    geom: { type: 'Point', coordinates: [-80.7350, -0.9600] },
+    geom: { type: 'Point', coordinates: [-80.735, -0.96] },
     location_name: 'Parque Central',
     created_at: new Date(Date.now() - 86400000).toISOString(),
     user: { first_name: 'Ana', last_name: 'Ruiz', avatar: null },
@@ -102,7 +104,10 @@ describe('feed integration', () => {
 
     // Mock auth
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
-    vi.spyOn(auth, 'getUser').mockReturnValue({ first_name: 'Admin', last_name: 'Test' });
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      first_name: 'Admin',
+      last_name: 'Test',
+    });
 
     // Setup admin shell DOM + feed template (as router would)
     document.body.innerHTML = `
@@ -124,7 +129,10 @@ describe('feed integration', () => {
             }),
         };
       }
-      if (url.includes('feed.component.html') || url.includes('feed.component.css')) {
+      if (
+        url.includes('feed.component.html') ||
+        url.includes('feed.component.css')
+      ) {
         return { ok: true, status: 200, text: vi.fn().mockResolvedValue('') };
       }
       return { ok: true, status: 200, text: vi.fn().mockResolvedValue('') };
@@ -157,7 +165,9 @@ describe('feed integration', () => {
     expect(cards[2].querySelector('.feed-status-resolved')).not.toBeNull();
 
     // "Ver detalle" buttons
-    const detailBtns = feedList.querySelectorAll('.feed-action-btn[title="Ver detalle"]');
+    const detailBtns = feedList.querySelectorAll(
+      '.feed-action-btn[title="Ver detalle"]',
+    );
     expect(detailBtns.length).toBe(3);
 
     // Desktop container exists (visibility managed by shell)
@@ -198,7 +208,11 @@ describe('feed integration', () => {
   it('shows error state on API failure', async () => {
     fetchMock = vi.fn(async (url) => {
       if (url.includes('/incidents/feed')) {
-        return { ok: false, status: 500, json: () => Promise.reject(new Error('fail')) };
+        return {
+          ok: false,
+          status: 500,
+          json: () => Promise.reject(new Error('fail')),
+        };
       }
       return { ok: true, status: 200, text: vi.fn().mockResolvedValue('') };
     });

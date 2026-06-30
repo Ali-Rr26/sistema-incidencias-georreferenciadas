@@ -39,7 +39,7 @@ function setupBottomNav() {
   items.forEach((item) => {
     // Skip the "+" button — no nav route
     if (item.classList.contains('lu-nav-plus')) {
-      item.addEventListener('click', (e) => {
+      item.addEventListener('click', (_e) => {
         if (auth.isAuthenticated()) {
           window.location.hash = '#/feed/crear';
         } else {
