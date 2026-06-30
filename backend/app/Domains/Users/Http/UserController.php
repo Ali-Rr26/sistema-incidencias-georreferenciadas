@@ -28,7 +28,7 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $users = $this->users->paginate(
-            $request->only(['role_id', 'per_page']),
+            $request->only(['role_id', 'organization_id', 'search', 'per_page']),
         );
 
         return new UserCollection($users)->response();

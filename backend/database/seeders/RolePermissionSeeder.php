@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
@@ -8,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class RolePermissionSeeder extends Seeder
 {
-    private const OPERADOR_PERMISSIONS = [
+    private const OPERADOR_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'create'],
@@ -18,6 +20,48 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'update'],
+        ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
+    ];
+
+    private const ADMIN_ORGANIZACION_PERMISSIONS = [
+        ['resource' => 'dashboard',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'create'],
+        ['resource' => 'incidents',           'action' => 'update'],
+        ['resource' => 'incidents',           'action' => 'delete'],
+        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'delete'],
+        ['resource' => 'assignments',         'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'update'],
+        ['resource' => 'assignments',         'action' => 'delete'],
+        ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
+        ['resource' => 'users',               'action' => 'view'],
+        ['resource' => 'users',               'action' => 'create'],
+        ['resource' => 'users',               'action' => 'update'],
+        ['resource' => 'users',               'action' => 'delete'],
+    ];
+
+    private const OPERADOR_ORGANIZACION_PERMISSIONS = [
+        ['resource' => 'dashboard',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'update'],
         ['resource' => 'status-history',      'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'view'],
@@ -37,15 +81,31 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'notifications', 'action' => 'update'],
     ];
 
+    private const PUBLICADOR_PERMISSIONS = [
+        ['resource' => 'dashboard',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
+    ];
+
     public function run(): void
     {
-        // Hard-delete existing role_permission for roles 2 and 3 (idempotent)
-        DB::table('role_permission')->whereIn('role_id', [2, 3])->delete();
+        // Limpiar relaciones previas para evitar duplicados
+        DB::table('role_permission')->whereIn('role_id', [2, 3, 4, 5, 6])->delete();
 
-        $this->assignPermissions(2, self::OPERADOR_PERMISSIONS);
-        $this->assignPermissions(3, self::USUARIO_PERMISSIONS);
+        $this->assignPermissions(2, self::OPERADOR_SISTEMA_PERMISSIONS);
+        $this->assignPermissions(3, self::ADMIN_ORGANIZACION_PERMISSIONS);
+        $this->assignPermissions(4, self::OPERADOR_ORGANIZACION_PERMISSIONS);
+        $this->assignPermissions(5, self::USUARIO_PERMISSIONS);
+        $this->assignPermissions(6, self::PUBLICADOR_PERMISSIONS);
 
-        $this->command?->info('Permisos asignados a Operador y Usuario.');
+        $this->command?->info('Permisos asignados a todos los roles exitosamente.');
     }
 
     /** @param array<array{resource: string, action: string}> $definitions */
@@ -59,7 +119,7 @@ class RolePermissionSeeder extends Seeder
                 ->first();
 
             if ($permission === null) {
-                $this->command?->warn("Permission {$def['resource']}.{$def['action']} not found — skipping.");
+                $this->command?->warn("Permiso {$def['resource']}.{$def['action']} no encontrado en la base de datos.");
 
                 continue;
             }
