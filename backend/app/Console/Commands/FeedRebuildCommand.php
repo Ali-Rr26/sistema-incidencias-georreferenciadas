@@ -24,7 +24,7 @@ class FeedRebuildCommand extends Command
 
         $incidentCount = 0;
 
-        Incident::with(['category.organizations', 'location', 'user'])
+        Incident::with(['category', 'location', 'user'])
             ->chunk(100, function ($incidents) use (&$incidentCount): void {
                 $pipe = Redis::pipeline();
 
@@ -47,9 +47,6 @@ class FeedRebuildCommand extends Command
                         'updated_at' => $incident->updated_at?->toIso8601String(),
                         'geom' => $incident->geom ? $incident->geom->toJson() : null,
                         'category_name' => $incident->category?->name ?? '',
-                        'category_organizations' => json_encode(
-                            $incident->category?->organizations?->map(fn ($o) => ['id' => $o->id, 'name' => $o->name]) ?? [],
-                        ),
                         'organization_name' => $incident->organization?->name ?? '',
                         'location_name' => $incident->location?->name ?? '',
                         'location_path_ids' => json_encode($locationPathIds),

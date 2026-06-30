@@ -101,9 +101,6 @@ class FeedService
             'category' => [
                 'id' => (int) ($data['incident_category_id'] ?? 0),
                 'name' => $data['category_name'] ?? '',
-                'organizations' => isset($data['category_organizations'])
-                    ? json_decode($data['category_organizations'], true)
-                    : [],
             ],
             'organization' => [
                 'id' => (int) ($data['organization_id'] ?? 0),

@@ -19,10 +19,15 @@ class StoreIncidentRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'incident_category_id' => 'required|integer|exists:incident_categories,id',
             'location_id' => 'required|integer|exists:locations,id',
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'geom' => 'nullable|json',
+
+            // Imágenes opcionales (multipart)
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
         ];
     }
 
@@ -37,6 +42,9 @@ class StoreIncidentRequest extends FormRequest
             'location_id.exists' => 'The selected location does not exist.',
             'priority.required' => 'The priority is required.',
             'priority.in' => 'Priority must be: low, medium or high.',
+            'images.*.image' => 'Each file must be an image.',
+            'images.*.mimes' => 'Only JPEG, PNG or WEBP images are allowed.',
+            'images.*.max' => 'Each image must not exceed 10 MB.',
         ];
     }
 }

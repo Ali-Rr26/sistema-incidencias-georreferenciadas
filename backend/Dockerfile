@@ -4,6 +4,9 @@ ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/relea
 
 RUN apk add --no-cache bash
 
+# Laravel logs → stderr for docker logs visibility
+ENV LOG_CHANNEL=stderr
+
 RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
