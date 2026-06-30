@@ -26,13 +26,25 @@ const ERROR_MAP = {
   address: 'error-address',
 };
 
+function detectContext() {
+  const wrapper = document.getElementById('main-wrapper');
+  const isAdmin = wrapper && wrapper.style.display !== 'none';
+
+  const adminContainer = document.getElementById('ici-admin-container');
+  const citizenContainer = document.getElementById('ici-citizen-container');
+  if (adminContainer) adminContainer.classList.toggle('d-none', !isAdmin);
+  if (citizenContainer) citizenContainer.classList.toggle('d-none', isAdmin);
+
+  return isAdmin ? 'admin' : 'citizen';
+}
+
 export default defineComponent({
-  templateUrl: 'app/incidencias/pages/create/incidencia.create.component.html',
-  styleUrl: 'app/incidencias/pages/create/incidencia.create.component.css',
+  templateUrl: 'app/incidencias/pages/form/incidencias.form.component.html',
+  styleUrl: 'app/incidencias/pages/form/incidencias.form.component.css',
 
   async onInit() {
     // ── Detect context ──
-    const context = this.detectContext();
+    const context = detectContext();
     document.body.classList.add('ici-create-view');
 
     const P = context === 'admin' ? 'ici-' : 'ici-citizen-';
@@ -43,6 +55,8 @@ export default defineComponent({
     let marker = null;
     let geomValue = null; // GeoJSON Point
     let imagenesSeleccionadas = [];
+    let categoriasTree = [];
+    let locationsTree = [];
 
     // ── Helpers ──
 
@@ -155,7 +169,7 @@ export default defineComponent({
     // ── Load categories ──
     if (context === 'admin') {
       // Admin: cascada tipo → subtipo
-      let categoriasTree = [];
+      categoriasTree = [];
       try {
         const resp = await http.get('/incident-categories/tree');
         categoriasTree = resp.data ?? [];
@@ -221,7 +235,7 @@ export default defineComponent({
     }
 
     // ── Load locations ──
-    let locationsTree = [];
+    locationsTree = [];
     try {
       const resp = await http.get('/locations/tree');
       locationsTree = resp.data ?? [];
@@ -402,6 +416,187 @@ export default defineComponent({
       }
     }
 
+    // ── Edit mode loading ──
+    const isEdit = router.queryParams.has('id');
+    const incId = router.queryParams.get('id');
+
+    if (isEdit) {
+      if (context === 'admin') {
+        const pageTitleEl = document.getElementById('ici-page-title');
+        const breadcrumbActiveEl = document.getElementById(
+          'ici-breadcrumb-active',
+        );
+        const cardTitleEl = document.getElementById('ici-card-title');
+        const submitBtnTextEl = document.getElementById('ici-submit-btn-text');
+
+        if (pageTitleEl) pageTitleEl.textContent = 'Editar Incidencia';
+        if (breadcrumbActiveEl) breadcrumbActiveEl.textContent = 'Editar';
+        if (cardTitleEl) cardTitleEl.textContent = 'Editar Incidencia';
+        if (submitBtnTextEl) submitBtnTextEl.textContent = 'Guardar Cambios';
+
+        const toastTextEl = document.getElementById('ici-toast-text');
+        if (toastTextEl)
+          toastTextEl.textContent = 'Incidencia actualizada correctamente.';
+      }
+
+      try {
+        const resp = await http.get('/incidents/' + incId);
+        const inc = resp.data ?? resp;
+
+        const titleEl = $('title');
+        const descEl = $('description');
+        const priorityEl = $('priority');
+
+        if (titleEl) {
+          titleEl.value = inc.title ?? '';
+          const titleCounter = $('char-counter-title');
+          if (titleCounter)
+            titleCounter.textContent = (inc.title ?? '').length + '/100';
+        }
+        if (descEl) {
+          descEl.value = inc.description ?? '';
+          const descCounter = $('char-counter-description');
+          if (descCounter)
+            descCounter.textContent = (inc.description ?? '').length + '/500';
+        }
+        if (priorityEl) {
+          priorityEl.value = inc.priority ?? '';
+        }
+
+        if (context === 'admin') {
+          const phoneEl = document.getElementById('ici-phone');
+          const addressEl = document.getElementById('ici-address');
+          if (phoneEl) phoneEl.value = inc.phone ?? '';
+          if (addressEl) addressEl.value = inc.address ?? '';
+
+          // Category cascade
+          if (inc.incident_category_id) {
+            let parentId = null;
+            let childId = null;
+            for (const cat of categoriasTree) {
+              if (cat.id == inc.incident_category_id) {
+                parentId = cat.id;
+                break;
+              }
+              if (cat.children) {
+                for (const child of cat.children) {
+                  if (child.id == inc.incident_category_id) {
+                    parentId = cat.id;
+                    childId = child.id;
+                    break;
+                  }
+                }
+              }
+              if (parentId) break;
+            }
+
+            if (parentId) {
+              const tipoEl = document.getElementById('ici-tipo');
+              if (tipoEl) {
+                tipoEl.value = parentId;
+                if (childId) {
+                  const padre = categoriasTree.find((c) => c.id == parentId);
+                  const subtipoEl = document.getElementById('ici-subtipo');
+                  if (padre && padre.children && subtipoEl) {
+                    poblarSelect(
+                      subtipoEl,
+                      padre.children,
+                      '-- Seleccione subcategoría --',
+                    );
+                    subtipoEl.value = childId;
+                  }
+                }
+              }
+            }
+          }
+
+          // Location cascade
+          if (inc.location_id) {
+            let cityId = null;
+            let provId = null;
+            let countryId = null;
+
+            for (const country of locationsTree) {
+              if (country.id == inc.location_id) {
+                countryId = country.id;
+                break;
+              }
+              if (country.children) {
+                for (const prov of country.children) {
+                  if (prov.id == inc.location_id) {
+                    countryId = country.id;
+                    provId = prov.id;
+                    break;
+                  }
+                  if (prov.children) {
+                    for (const city of prov.children) {
+                      if (city.id == inc.location_id) {
+                        countryId = country.id;
+                        provId = prov.id;
+                        cityId = city.id;
+                        break;
+                      }
+                    }
+                  }
+                  if (cityId) break;
+                }
+              }
+              if (countryId && !provId && !cityId) break;
+              if (provId) break;
+            }
+
+            if (countryId) {
+              const paisEl = document.getElementById('ici-pais');
+              if (paisEl) {
+                paisEl.value = countryId;
+                const countryObj = locationsTree.find((p) => p.id == countryId);
+                const provEl = document.getElementById('ici-provincia');
+                if (countryObj && countryObj.children && provEl) {
+                  poblarUbicaciones(
+                    provEl,
+                    countryObj.children,
+                    '-- Seleccione Provincia --',
+                  );
+                  if (provId) {
+                    provEl.value = provId;
+                    const provObj = countryObj.children.find(
+                      (p) => p.id == provId,
+                    );
+                    const ciudadEl = document.getElementById('ici-ciudad');
+                    if (provObj && provObj.children && ciudadEl) {
+                      poblarUbicaciones(
+                        ciudadEl,
+                        provObj.children,
+                        '-- Seleccione Ciudad --',
+                      );
+                      if (cityId) {
+                        ciudadEl.value = cityId;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          const catSelect = document.getElementById('ici-citizen-category');
+          if (catSelect) catSelect.value = inc.incident_category_id ?? '';
+
+          const locSelect = document.getElementById('ici-citizen-location');
+          if (locSelect) locSelect.value = inc.location_id ?? '';
+        }
+
+        // Map marker
+        if (inc.geom?.coordinates) {
+          const [lng, lat] = inc.geom.coordinates;
+          setMarker(lat, lng);
+          map.setView([lat, lng], 16);
+        }
+      } catch (err) {
+        console.error('Error al precargar la incidencia para edición:', err);
+      }
+    }
+
     // ── Submit handler ──
     const formId = context === 'admin' ? 'ici-form' : 'ici-citizen-form';
     const form = document.getElementById(formId);
@@ -538,7 +733,17 @@ export default defineComponent({
           body = payloadBase;
         }
 
-        const resp = await http.post('/incidents', body);
+        let resp;
+        if (isEdit) {
+          if (hasImages) {
+            body.append('_method', 'PUT');
+            resp = await http.post('/incidents/' + incId, body);
+          } else {
+            resp = await http.put('/incidents/' + incId, body);
+          }
+        } else {
+          resp = await http.post('/incidents', body);
+        }
         const newId = resp.data?.id ?? resp.id;
 
         // Toast success
@@ -595,23 +800,6 @@ export default defineComponent({
         submitLoading.classList.add('d-none');
       }
     });
-  },
-
-  /**
-   * Detect current context based on #main-wrapper visibility.
-   * Admin shell displays #main-wrapper; citizen (feed) shell hides it.
-   * Toggles admin/citizen containers and returns context string.
-   */
-  detectContext() {
-    const wrapper = document.getElementById('main-wrapper');
-    const isAdmin = wrapper && wrapper.style.display !== 'none';
-
-    const adminContainer = document.getElementById('ici-admin-container');
-    const citizenContainer = document.getElementById('ici-citizen-container');
-    if (adminContainer) adminContainer.classList.toggle('d-none', !isAdmin);
-    if (citizenContainer) citizenContainer.classList.toggle('d-none', isAdmin);
-
-    return isAdmin ? 'admin' : 'citizen';
   },
 
   onDestroy() {

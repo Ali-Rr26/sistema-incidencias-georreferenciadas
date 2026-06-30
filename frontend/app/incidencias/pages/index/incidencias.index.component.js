@@ -89,6 +89,10 @@ export default defineComponent({
               <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                 <i class="fas fa-eye"></i>
               </a>
+              <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
+                data-id="${inc.id}" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
               <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
                 data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                 <i class="fas fa-trash-alt"></i>
@@ -131,6 +135,10 @@ export default defineComponent({
                   <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                     <i class="fas fa-eye"></i>
                   </a>
+                  <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
+                    data-id="${inc.id}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
                     data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                     <i class="fas fa-trash-alt"></i>
@@ -180,22 +188,27 @@ export default defineComponent({
       }
     }
 
-    // Eliminar handlers
-    function abrirModalEliminar(e) {
-      const btn = e.target.closest('.btn-eliminar');
-      if (!btn) return;
-      idEliminar = btn.dataset.id;
+    // Click handlers: editar y eliminar
+    function manejarClicks(e) {
+      const editar = e.target.closest('.btn-editar');
+      if (editar) {
+        window.location.hash = '#/incidencias/crear?id=' + editar.dataset.id;
+        return;
+      }
+      const eliminar = e.target.closest('.btn-eliminar');
+      if (!eliminar) return;
+      idEliminar = eliminar.dataset.id;
       document.getElementById('modal-eliminar-titulo').textContent =
-        btn.dataset.titulo;
+        eliminar.dataset.titulo;
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
     }
 
     document
       .getElementById('tabla-body')
-      .addEventListener('click', abrirModalEliminar);
+      .addEventListener('click', manejarClicks);
     document
       .getElementById('contenedor-cards')
-      .addEventListener('click', abrirModalEliminar);
+      .addEventListener('click', manejarClicks);
 
     document
       .getElementById('btn-confirmar-eliminar')

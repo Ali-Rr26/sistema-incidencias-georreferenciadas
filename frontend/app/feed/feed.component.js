@@ -111,7 +111,7 @@ function renderCard(inc) {
     : '';
 
   return `
-    <div class="feed-card ${'feed-priority-' + (inc.priority ?? 'low')}" onclick="window.location.hash='#/incidencias/${inc.id}'" style="cursor:pointer">
+    <div class="feed-card ${'feed-priority-' + (inc.priority ?? 'low')}" onclick="window.location.hash='#/feed/${inc.id}'" style="cursor:pointer">
       <div class="feed-card-head">
         ${avatarHtml}
         <div class="feed-card-user">
@@ -130,7 +130,7 @@ function renderCard(inc) {
         ${descText ? `<div class="feed-card-desc">${escapeHtml(descText)}</div>` : ''}
       </div>
       <div class="feed-card-actions">
-        <button class="feed-action-btn" title="Ver detalle" onclick="event.stopPropagation();window.location.hash='#/incidencias/${inc.id}'">
+        <button class="feed-action-btn" title="Ver detalle" onclick="event.stopPropagation();window.location.hash='#/feed/${inc.id}'">
           <i class="far fa-eye"></i>
         </button>
         <button class="feed-action-btn" title="Compartir">

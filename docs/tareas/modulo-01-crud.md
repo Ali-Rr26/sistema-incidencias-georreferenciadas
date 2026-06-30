@@ -85,7 +85,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Ir a lista, click en "Editar", modificar título, click en "Guardar".
 - **Criterio de aceptación:** Campos precargados con datos actuales, cambios reflejados en lista, mensaje de éxito.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -109,7 +109,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Ir a incidencia, click en "Eliminar", no confirmar el modal.
 - **Criterio de aceptación:** Modal con mensaje "¿Está seguro de eliminar esta incidencia?", botones "Cancelar" y "Eliminar".
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -121,7 +121,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Click en "Eliminar", confirmar en modal.
 - **Criterio de aceptación:** Incidencia desaparece de la lista, toast/mensaje de éxito.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 

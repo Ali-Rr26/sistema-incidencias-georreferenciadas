@@ -79,8 +79,8 @@ function escapeHtml(str) {
 // ── Component ───────────────────────────────────────────────
 
 export default defineComponent({
-  templateUrl: 'app/incidencias/pages/detail/feed-detail.component.html',
-  styleUrl: 'app/incidencias/pages/detail/feed-detail.component.css',
+  templateUrl: 'app/feed/pages/detail/feed-detail.component.html',
+  styleUrl: 'app/feed/pages/detail/feed-detail.component.css',
 
   async onInit() {
     const detailEl = document.getElementById('fd-detail');
