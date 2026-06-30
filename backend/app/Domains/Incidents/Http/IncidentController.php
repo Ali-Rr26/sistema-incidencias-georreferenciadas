@@ -34,7 +34,7 @@ class IncidentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $incidents = $this->incidents->paginate(
-            $request->only(['status', 'priority', 'location_id', 'incident_category_id', 'user_id', 'per_page']),
+            $request->only(['status', 'priority', 'location_id', 'incident_category_id', 'user_id', 'title', 'per_page']),
         );
 
         return (new IncidentCollection($incidents))->response();
