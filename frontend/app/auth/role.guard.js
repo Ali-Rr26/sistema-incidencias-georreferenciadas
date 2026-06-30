@@ -1,0 +1,39 @@
+/**
+ * Role Guard — factory que crea guards de rol (canActivate).
+ *
+ * Uso:
+ *   import { roleGuard } from './auth/role.guard.js';
+ *   router.addRoute('/dashboard', dashboard, [roleGuard(['AdminSistema', 'AdminOrganizacion'])], true);
+ *
+ * Redirige a #/login si no hay sesión, o a #/feed si el rol no está permitido.
+ */
+import { auth } from './auth.service.js';
+
+export function roleGuard(allowedRoles) {
+  return {
+    async canActivate() {
+      if (!auth.isAuthenticated()) {
+        window.location.hash = '#/login';
+        return false;
+      }
+
+      let user = auth.getUser();
+      if (!user) {
+        try {
+          user = await auth.me();
+        } catch {
+          window.location.hash = '#/login';
+          return false;
+        }
+      }
+
+      const roleName = user?.role?.name;
+      if (!roleName || !allowedRoles.includes(roleName)) {
+        window.location.hash = '#/feed';
+        return false;
+      }
+
+      return true;
+    },
+  };
+}

@@ -38,7 +38,7 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
-        'passsword',
+        'password',
     ];
 
     protected function casts(): array

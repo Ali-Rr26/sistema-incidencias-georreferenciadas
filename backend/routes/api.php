@@ -53,5 +53,4 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('permissions', PermissionController::class);
     Route::get('menus/my', [MenuController::class, 'myMenus']);
-    Route::apiResource('menus', MenuController::class);
 });

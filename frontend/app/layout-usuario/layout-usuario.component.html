@@ -1,0 +1,55 @@
+<!-- Layout Usuario — mobile citizen shell with header + bottom nav -->
+
+<!-- Header -->
+<header class="lu-header" id="lu-header">
+  <div class="lu-header-left">
+    <i class="fas fa-location-dot lu-logo-icon"></i>
+    <span class="lu-logo-text">GeoReporta</span>
+  </div>
+  <div class="lu-header-right" id="lu-header-right">
+    <!-- Notification bell (auth) -->
+    <div class="lu-bell-wrap d-none" id="lu-bell-wrap">
+      <i class="fas fa-bell lu-bell-icon"></i>
+      <span class="lu-bell-badge d-none" id="lu-bell-badge">3</span>
+    </div>
+    <!-- Avatar (auth) -->
+    <div class="lu-avatar-wrap d-none" id="lu-avatar-wrap">
+      <div class="lu-avatar" id="lu-avatar">?</div>
+    </div>
+    <!-- Login button (public) -->
+    <a href="#/login" class="lu-login-btn" id="lu-login-btn">Ingresar</a>
+  </div>
+</header>
+
+<!-- Content area -->
+<main class="lu-main">
+  <div id="shell-content"></div>
+</main>
+
+<!-- Bottom navigation -->
+<nav class="lu-bottom-nav" id="lu-bottom-nav">
+  <a href="#/feed" class="lu-nav-item active" data-route="/feed">
+    <i class="fas fa-house"></i>
+    <span class="lu-nav-label">Feed</span>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/mapa">
+    <i class="fas fa-map"></i>
+    <span class="lu-nav-label">Mapa</span>
+  </a>
+  <a
+    href="javascript:void(0)"
+    class="lu-nav-item lu-nav-plus"
+    id="lu-nav-plus"
+    data-route=""
+  >
+    <i class="fas fa-circle-plus"></i>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/alertas">
+    <i class="fas fa-bell"></i>
+    <span class="lu-nav-label">Alertas</span>
+  </a>
+  <a href="#/feed" class="lu-nav-item" data-route="/perfil">
+    <i class="fas fa-user"></i>
+    <span class="lu-nav-label">Perfil</span>
+  </a>
+</nav>
