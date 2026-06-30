@@ -81,7 +81,20 @@ class IncidentVerificationService
                 throw new \RuntimeException('No tenés una organización asignada.', 403);
             }
 
-            if ($incident->incident_category_id !== $org->incident_category_id) {
+            // Check if category matches or is a descendant of the organization's category
+            $matches = false;
+            $currentCategoryId = $incident->incident_category_id;
+            while ($currentCategoryId !== null) {
+                if ($currentCategoryId === $org->incident_category_id) {
+                    $matches = true;
+                    break;
+                }
+                // Traverse up the parent chain
+                $currentCategory = \App\Domains\IncidentCategories\Models\IncidentCategory::find($currentCategoryId);
+                $currentCategoryId = $currentCategory?->parent_id;
+            }
+
+            if (! $matches) {
                 throw new \RuntimeException(
                     'La categoría de esta incidencia no coincide con tu organización.',
                     403,

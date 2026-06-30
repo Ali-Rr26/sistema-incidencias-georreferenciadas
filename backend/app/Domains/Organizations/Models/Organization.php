@@ -41,7 +41,7 @@ class Organization extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(IncidentCategory::class);
+        return $this->belongsTo(IncidentCategory::class, 'incident_category_id');
     }
 
     public function users(): HasMany

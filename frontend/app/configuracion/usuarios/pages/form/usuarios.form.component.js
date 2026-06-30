@@ -1,7 +1,7 @@
 import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
-import { initSelect, destroyAll } from '../../../../shared/select-search.js';
+import { initSelect, getSelect, destroyAll } from '../../../../shared/select-search.js';
 
 export default defineComponent({
   templateUrl:
@@ -64,6 +64,10 @@ export default defineComponent({
 
     await cargarCombos();
 
+    // ─── Tom Select ───────────────────────────────────────────────────
+    initSelect('user-rol', { placeholder: 'Buscar rol...' });
+    initSelect('user-org', { placeholder: 'Buscar organización...' });
+
     // ─── Si edición, cargar datos ────────────────────────────────────
 
     if (esEdicion) {
@@ -75,16 +79,13 @@ export default defineComponent({
         document.getElementById('user-apellido').value = u.last_name ?? '';
         document.getElementById('user-email').value = u.email;
         document.getElementById('user-telefono').value = u.phone ?? '';
-        document.getElementById('user-rol').value = u.role?.id ?? '';
-        document.getElementById('user-org').value = u.organization?.id ?? '';
+
+        getSelect('user-rol')?.setValue(u.role?.id ? String(u.role.id) : '');
+        getSelect('user-org')?.setValue(u.organization?.id ? String(u.organization.id) : '');
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
     }
-
-    // ─── Tom Select ───────────────────────────────────────────────────
-    initSelect('user-rol', { placeholder: 'Buscar rol...' });
-    initSelect('user-org', { placeholder: 'Buscar organización...' });
 
     // ─── Submit ──────────────────────────────────────────────────────
 
@@ -98,7 +99,6 @@ export default defineComponent({
         }
 
         const id = document.getElementById('user-id').value;
-        const password = document.getElementById('user-password').value;
         const orgVal = document.getElementById('user-org').value;
 
         const payload = {
@@ -110,10 +110,8 @@ export default defineComponent({
           phone: document.getElementById('user-telefono').value.trim() || null,
         };
 
-        if (password) {
-          payload.password = password;
-        } else if (!id) {
-          // Si es nuevo y no puso password, generar una contraseña temporal de invitación
+        if (!id) {
+          // Generar una contraseña temporal de invitación
           payload.password =
             'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
         }

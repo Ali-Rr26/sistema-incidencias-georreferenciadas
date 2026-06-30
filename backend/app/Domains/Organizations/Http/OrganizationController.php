@@ -46,33 +46,30 @@ class OrganizationController extends Controller
         $organization = $this->organizations->create(
             $request->validated(),
         );
+        $organization->load(['category', 'location', 'parent']);
 
         return (new OrganizationResource($organization))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Organization $organization): JsonResponse
     {
-        $organization = $this->organizations->findById($id);
+        $organization->load(['category', 'location', 'parent']);
+        return (new OrganizationResource($organization))->response();
+    }
 
-        if ($organization === null) {
-            return response()->json(['message' => 'Organization not found'], Response::HTTP_NOT_FOUND);
-        }
+    public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
+    {
+        $organization = $this->organizations->update($organization->id, $request->validated());
+        $organization->load(['category', 'location', 'parent']);
 
         return (new OrganizationResource($organization))->response();
     }
 
-    public function update(UpdateOrganizationRequest $request, int $id): JsonResponse
+    public function destroy(Organization $organization): JsonResponse
     {
-        $organization = $this->organizations->update($id, $request->validated());
-
-        return (new OrganizationResource($organization))->response();
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        $this->organizations->delete($id);
+        $this->organizations->delete($organization->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

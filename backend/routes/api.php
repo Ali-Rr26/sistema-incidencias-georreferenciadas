@@ -1,6 +1,6 @@
 <?php
 
-use App\Assignments\Interfaces\AssignmentController;
+use App\Domains\Assignments\Http\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -12,7 +12,7 @@ use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\UserController;
-use App\Notifications\Interfaces\NotificationController;
+use App\Domains\Notifications\Http\NotificationController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 

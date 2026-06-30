@@ -57,7 +57,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
         }
 
         $query
-            ->with(['category', 'location', 'user'])
+            ->with(['category', 'location', 'user', 'organization'])
             ->when($filters['title'] ?? null, fn (Builder $q, string $v) => $q->where(function (Builder $q) use ($v): void {
                 $q->where('title', 'ilike', '%'.$v.'%')
                     ->orWhere('description', 'ilike', '%'.$v.'%');

@@ -48,6 +48,8 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'locations',           'action' => 'view'],
         ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'update'],
+        ['resource' => 'roles',               'action' => 'view'],
         ['resource' => 'incident-categories', 'action' => 'view'],
         ['resource' => 'users',               'action' => 'view'],
         ['resource' => 'users',               'action' => 'create'],

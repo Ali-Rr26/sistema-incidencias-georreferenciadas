@@ -39,35 +39,30 @@ class UserController extends Controller
         $user = $this->users->create(
             $request->validated(),
         );
+        $user->load(['role', 'organization']);
 
         return (new UserResource($user))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(User $user): JsonResponse
     {
-        $user = $this->users->findById($id);
+        $user->load(['role', 'organization']);
+        return new UserResource($user)->response();
+    }
 
-        if ($user === null) {
-            return response()->json([
-                'message' => 'Usuario no encontrado.',
-            ], Response::HTTP_NOT_FOUND);
-        }
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    {
+        $user = $this->users->update($user->id, $request->validated());
+        $user->load(['role', 'organization']);
 
         return new UserResource($user)->response();
     }
 
-    public function update(UpdateUserRequest $request, int $id): JsonResponse
+    public function destroy(User $user): JsonResponse
     {
-        $user = $this->users->update($id, $request->validated());
-
-        return new UserResource($user)->response();
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        $this->users->delete($id);
+        $this->users->delete($user->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

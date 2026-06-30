@@ -105,24 +105,25 @@ export default defineComponent({
       }
     }
 
-    // ─── Cargar categorías (multi-select) ────────────────────────────
+    // ─── Cargar categoría (single-select) ────────────────────────────
 
-    async function cargarCategorias(valoresSeleccionados = []) {
+    async function cargarCategorias(selectedId = null) {
       try {
         const resp = await http.get('/incident-categories?per_page=200');
-        const cats = resp.data ?? resp;
+        const allCats = resp.data ?? resp;
+        const cats = allCats.filter((c) => c.parent_id === null || c.parent_id === undefined);
         const sel = document.getElementById('org-categorias');
-        sel.innerHTML = cats
+        sel.innerHTML = '<option value="">-- Seleccione Categoría --</option>' +
+          cats
           .map(
             (c) =>
-              `<option value="${c.id}" ${valoresSeleccionados.includes(c.id) ? 'selected' : ''}>${c.name}</option>`,
+              `<option value="${c.id}" ${parseInt(selectedId) === c.id ? 'selected' : ''}>${c.name}</option>`,
           )
           .join('');
 
         initSelect('org-categorias', {
-          placeholder: 'Buscar categorías...',
-          maxItems: null,
-          plugins: ['remove_button'],
+          placeholder: 'Buscar categoría...',
+          maxItems: 1,
         });
       } catch {
         mostrarToast('No se pudieron cargar las categorías.', 'warning');
@@ -244,12 +245,12 @@ export default defineComponent({
         document.getElementById('org-id').value = org.id;
         document.getElementById('org-nombre').value = org.name;
 
-        const categoriasIds = (org.incident_categories ?? []).map((c) => c.id);
+        const categoriaId = org.incident_category?.id ?? null;
 
         await Promise.all([
           cargarPadres(editId),
           initCascadingLocation(org.location_id),
-          cargarCategorias(categoriasIds),
+          cargarCategorias(categoriaId),
         ]);
         document.getElementById('org-padre').value = org.parent_id ?? '';
       } catch {
@@ -287,13 +288,13 @@ export default defineComponent({
         }
 
         const catSelect = getSelect('org-categorias');
-        const categoryIds = catSelect ? catSelect.getValue().map(Number) : [];
+        const categoryId = catSelect && catSelect.getValue() ? parseInt(catSelect.getValue()) : null;
 
         const payload = {
           name: document.getElementById('org-nombre').value.trim(),
           location_id: parseInt(locationId),
           parent_id: padreVal ? parseInt(padreVal) : null,
-          category_ids: categoryIds,
+          incident_category_id: categoryId,
         };
 
         document.getElementById('org-btn-texto').classList.add('d-none');

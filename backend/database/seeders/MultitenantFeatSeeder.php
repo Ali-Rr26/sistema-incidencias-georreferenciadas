@@ -67,31 +67,31 @@ class MultitenantFeatSeeder extends Seeder
             [
                 'name' => 'GAD Municipal de Quito — Obras Viales',
                 'location_code' => 'EC-17-01', // Quito
-                'category_name' => 'Baches y Hundimientos',
+                'category_name' => 'Infraestructura Vial',
                 'max_active_claims' => 5,
             ],
             [
                 'name' => 'GAD Municipal de Guayaquil — Agua y Saneamiento',
                 'location_code' => 'EC-09-01', // Guayaquil
-                'category_name' => 'Agua Potable',
+                'category_name' => 'Servicios Básicos',
                 'max_active_claims' => 3,
             ],
             [
                 'name' => 'GAD Municipal de Cuenca — Seguridad Ciudadana',
                 'location_code' => 'EC-01-01', // Cuenca
-                'category_name' => 'Robos y Hurtos',
+                'category_name' => 'Seguridad Ciudadana',
                 'max_active_claims' => 8,
             ],
             [
                 'name' => 'GAD Municipal de Ambato — Medio Ambiente',
                 'location_code' => 'EC-18-01', // Ambato
-                'category_name' => 'Basureros Clandestinos',
+                'category_name' => 'Medio Ambiente',
                 'max_active_claims' => 4,
             ],
             [
                 'name' => 'GAD Municipal de Loja — Control Urbano',
                 'location_code' => 'EC-11-01', // Loja
-                'category_name' => 'Construcciones Ilegales',
+                'category_name' => 'Obras e Infraestructura',
                 'max_active_claims' => 5,
             ],
         ];

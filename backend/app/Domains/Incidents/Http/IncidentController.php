@@ -77,21 +77,13 @@ class IncidentController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Incident $incident): JsonResponse
     {
-        $incident = $this->incidents->findById($id);
-
-        if ($incident === null) {
-            return response()->json(['message' => 'Incident not found'], Response::HTTP_NOT_FOUND);
-        }
-
         return (new IncidentResource($incident))->response();
     }
 
-    public function update(UpdateIncidentRequest $request, int $id): JsonResponse
+    public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
     {
-        $incident = $this->incidents->findById($id);
-
         $data = $request->validated();
 
         // Convertir GeoJSON string a Point object para el cast espacial
@@ -111,14 +103,14 @@ class IncidentController extends Controller
             $data['images'] = array_merge($existing, $images);
         }
 
-        $incident = $this->incidents->update($id, $data);
+        $incident = $this->incidents->update($incident->id, $data);
 
         return (new IncidentResource($incident))->response();
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Incident $incident): JsonResponse
     {
-        $this->incidents->delete($id);
+        $this->incidents->delete($incident->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
