@@ -6,16 +6,16 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // ── Setup ─────────────────────────────────────────────────
-    \Illuminate\Support\Facades\DB::table('roles')->insert([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 4, 'name' => 'operador_organizacion'],
     ]);

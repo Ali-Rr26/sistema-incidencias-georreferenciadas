@@ -44,7 +44,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
 
         /** @var User|null $user */
         $user = Auth::user();
-        if ($user !== null && !$user->isSystemAdmin()) {
+        if ($user !== null && ! $user->isSystemAdmin()) {
             if ($user->isOrganizationMember()) {
                 $query->where('id', $user->organization_id);
             } else {
@@ -64,7 +64,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         // Scoping por organización (Multitenancy)
         /** @var User|null $user */
         $user = Auth::user();
-        if ($user !== null && !$user->isSystemAdmin()) {
+        if ($user !== null && ! $user->isSystemAdmin()) {
             if ($user->isOrganizationMember()) {
                 $query->where('id', $user->organization_id);
             } else {

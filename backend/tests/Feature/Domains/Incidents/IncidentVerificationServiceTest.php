@@ -8,15 +8,15 @@ use App\Domains\Incidents\Models\IncidentVerification;
 use App\Domains\Incidents\Services\IncidentVerificationService;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // 1. Roles — use DB::insert since id is guarded in the model
-    \Illuminate\Support\Facades\DB::table('roles')->insert([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 3, 'name' => 'publicador'],
     ]);
@@ -155,7 +155,7 @@ it('throws 409 when confirming an already assigned incident', function (): void 
     $this->service->confirm($this->eligibleIncident->id, $this->publicador);
 
     expect(fn () => $this->service->confirm($this->eligibleIncident->id, $this->publicador))
-        ->toThrow(\RuntimeException::class, 'ya fue asignada');
+        ->toThrow(RuntimeException::class, 'ya fue asignada');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -188,5 +188,5 @@ it('handles competing publishers: first succeeds, second gets 409', function ():
     expect($firstResult->organization_id)->toBe($this->org->id);
 
     expect(fn () => $this->service->confirm($competingIncident->id, $pubB))
-        ->toThrow(\RuntimeException::class, 'ya fue asignada');
+        ->toThrow(RuntimeException::class, 'ya fue asignada');
 });

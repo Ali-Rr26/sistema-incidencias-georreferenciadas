@@ -100,6 +100,7 @@ class MultitenantFeatSeeder extends Seeder
             $location = Location::where('code', $config['location_code'])->first();
             if ($location === null) {
                 $this->command?->warn("Ubicación [{$config['location_code']}] no encontrada. Saltando [{$config['name']}].");
+
                 continue;
             }
 
@@ -168,7 +169,7 @@ class MultitenantFeatSeeder extends Seeder
                 ]
             );
 
-            $this->command?->info("  Usuarios de la org creados (Admin, Operador, Publicador).");
+            $this->command?->info('  Usuarios de la org creados (Admin, Operador, Publicador).');
 
             // 4. Crear casos de incidencias para esta Organización
             $coords = self::CITY_COORDS[$config['location_code']];
@@ -176,8 +177,8 @@ class MultitenantFeatSeeder extends Seeder
             $lng = $coords[1];
 
             // Pequeños offsets para no apilar las coordenadas
-            $latOffset = fn() => (random_int(-100, 100) / 10000);
-            $lngOffset = fn() => (random_int(-100, 100) / 10000);
+            $latOffset = fn () => (random_int(-100, 100) / 10000);
+            $lngOffset = fn () => (random_int(-100, 100) / 10000);
 
             // Caso 1: Incidencia nueva (Pública, sin organización, elegible para verificación)
             // Esto significa que coincide con la categoría y la ubicación de la org, pero aún no tiene organization_id ni verificación.
@@ -200,7 +201,7 @@ class MultitenantFeatSeeder extends Seeder
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia asignada a la Org y esperando operador: {$config['category_name']} en {$location->name}",
-                'description' => "Confirmada por el publicador. Lista para ser reclamada por un operador.",
+                'description' => 'Confirmada por el publicador. Lista para ser reclamada por un operador.',
                 'status' => IncidentStatus::PendingOperator,
                 'priority' => IncidentPriority::High,
                 'geom' => new Point($lat + $latOffset(), $lng + $lngOffset(), 4326),
@@ -222,7 +223,7 @@ class MultitenantFeatSeeder extends Seeder
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia en progreso: {$config['category_name']} en {$location->name}",
-                'description' => "El operador ya la reclamó y está trabajando en la resolución.",
+                'description' => 'El operador ya la reclamó y está trabajando en la resolución.',
                 'status' => IncidentStatus::InProgress,
                 'priority' => IncidentPriority::Medium,
                 'geom' => new Point($lat + $latOffset(), $lng + $lngOffset(), 4326),
@@ -244,7 +245,7 @@ class MultitenantFeatSeeder extends Seeder
                 'user_id' => $ciudadano->id,
                 'location_id' => $location->id,
                 'title' => "Incidencia resuelta: {$config['category_name']} en {$location->name}",
-                'description' => "Se solucionó el problema reportado de manera exitosa.",
+                'description' => 'Se solucionó el problema reportado de manera exitosa.',
                 'status' => IncidentStatus::Resolved,
                 'priority' => IncidentPriority::Low,
                 'geom' => new Point($lat + $latOffset(), $lng + $lngOffset(), 4326),
@@ -261,7 +262,7 @@ class MultitenantFeatSeeder extends Seeder
                 'verified_at' => now()->subDays(2),
             ]);
 
-            $this->command?->info("  Incidencias creadas (Pendiente, Esperando Operador, En Progreso, Resuelta).");
+            $this->command?->info('  Incidencias creadas (Pendiente, Esperando Operador, En Progreso, Resuelta).');
         }
 
         $this->command?->info('Seeder completado exitosamente.');

@@ -31,7 +31,7 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
         // Scoping por organización (Multitenancy)
         /** @var User|null $user */
         $user = Auth::user();
-        if ($user !== null && !$user->isSystemAdmin()) {
+        if ($user !== null && ! $user->isSystemAdmin()) {
             if ($user->isOrganizationAdmin() || $user->isOperator()) {
                 $query->where('organization_id', $user->organization_id);
             } else {

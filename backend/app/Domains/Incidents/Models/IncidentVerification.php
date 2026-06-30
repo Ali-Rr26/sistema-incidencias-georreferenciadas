@@ -8,12 +8,13 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property-read int $id
  * @property-read int $incident_id
  * @property-read int $verified_by
- * @property-read \Illuminate\Support\Carbon $verified_at
+ * @property-read Carbon $verified_at
  * @property-read int $organization_id
  */
 class IncidentVerification extends Model

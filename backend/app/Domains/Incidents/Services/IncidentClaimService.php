@@ -51,7 +51,7 @@ class IncidentClaimService
 
         if ($activeClaims >= $org->max_active_claims) {
             throw new \RuntimeException(
-                'Alcanzaste el límite máximo de claims activos (' . $org->max_active_claims . ').',
+                'Alcanzaste el límite máximo de claims activos ('.$org->max_active_claims.').',
                 429,
             );
         }

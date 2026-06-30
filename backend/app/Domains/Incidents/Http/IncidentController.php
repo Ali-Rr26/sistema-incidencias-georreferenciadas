@@ -13,6 +13,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Incidents\Services\IncidentClaimService;
 use App\Domains\Incidents\Services\IncidentVerificationService;
+use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -131,7 +132,7 @@ class IncidentController extends Controller
      */
     public function claim(Incident $incident, IncidentClaimService $service): JsonResponse
     {
-        /** @var \App\Domains\Users\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $incident = $service->claim($incident->id, $user);
 
@@ -143,7 +144,7 @@ class IncidentController extends Controller
      */
     public function release(Incident $incident, IncidentClaimService $service): JsonResponse
     {
-        /** @var \App\Domains\Users\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $incident = $service->release($incident->id, $user);
 
@@ -155,7 +156,7 @@ class IncidentController extends Controller
      */
     public function confirmar(Incident $incident, IncidentVerificationService $service): JsonResponse
     {
-        /** @var \App\Domains\Users\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $incident = $service->confirm($incident->id, $user);
 
@@ -167,7 +168,7 @@ class IncidentController extends Controller
      */
     public function pendientes(IncidentVerificationService $service): JsonResponse
     {
-        /** @var \App\Domains\Users\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $incidents = $service->getPendingIncidents($user);
 

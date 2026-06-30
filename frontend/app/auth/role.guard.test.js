@@ -37,7 +37,9 @@ describe('roleGuard', () => {
 
   it('allows navigation when user has an allowed role', async () => {
     mockAuth.isAuthenticated.mockReturnValue(true);
-    mockAuth.getUser.mockReturnValue({ role: { id: 2, name: 'admin_sistema' } });
+    mockAuth.getUser.mockReturnValue({
+      role: { id: 2, name: 'admin_sistema' },
+    });
 
     const guard = roleGuard(['admin_sistema', 'admin_organizacion']);
     const result = await guard.canActivate();
@@ -82,7 +84,9 @@ describe('roleGuard', () => {
   it('fetches user via me() when user is not yet cached', async () => {
     mockAuth.isAuthenticated.mockReturnValue(true);
     mockAuth.getUser.mockReturnValue(null);
-    mockAuth.me.mockResolvedValue({ role: { id: 4, name: 'operador_organizacion' } });
+    mockAuth.me.mockResolvedValue({
+      role: { id: 4, name: 'operador_organizacion' },
+    });
 
     const guard = roleGuard(['operador_organizacion']);
     const result = await guard.canActivate();

@@ -8,15 +8,15 @@ use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Services\IncidentClaimService;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // 1. Roles
-    \Illuminate\Support\Facades\DB::table('roles')->insert([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'operador_organizacion'],
     ]);
@@ -113,7 +113,7 @@ it('throws 409 when claiming an already assigned incident', function (): void {
     $this->service->claim($this->incident->id, $this->operatorA);
 
     expect(fn () => $this->service->claim($this->incident->id, $this->operatorA))
-        ->toThrow(\RuntimeException::class, 'ya está asignada');
+        ->toThrow(RuntimeException::class, 'ya está asignada');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ it('throws 409 when claiming an already assigned incident', function (): void {
 
 it('throws 403 when claiming an incident from another organization', function (): void {
     expect(fn () => $this->service->claim($this->incident->id, $this->operatorB))
-        ->toThrow(\RuntimeException::class, 'No pertenece a tu organización');
+        ->toThrow(RuntimeException::class, 'No pertenece a tu organización');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ it('throws 403 when releasing an incident claimed by another operator', function
     $this->service->claim($this->incident->id, $this->operatorA);
 
     expect(fn () => $this->service->release($this->incident->id, $this->operatorB))
-        ->toThrow(\RuntimeException::class, 'No sos el dueño de este claim');
+        ->toThrow(RuntimeException::class, 'No sos el dueño de este claim');
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -157,5 +157,5 @@ it('throws 403 when releasing an incident claimed by another operator', function
 it('throws 429 when operator exceeds max_active_claims limit', function (): void {
     // orgLimited has max_active_claims = 0
     expect(fn () => $this->service->claim($this->incidentLimited->id, $this->operatorLimited))
-        ->toThrow(\RuntimeException::class, 'límite máximo de claims activos');
+        ->toThrow(RuntimeException::class, 'límite máximo de claims activos');
 });

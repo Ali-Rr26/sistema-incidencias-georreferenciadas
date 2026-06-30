@@ -9,13 +9,14 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Seed role for UserFactory (role_id=1)
-    \Illuminate\Support\Facades\DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test']);

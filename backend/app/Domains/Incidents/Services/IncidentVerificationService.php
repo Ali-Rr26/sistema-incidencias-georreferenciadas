@@ -34,7 +34,7 @@ class IncidentVerificationService
         $org = $publicador->organization;
 
         if ($org === null || $org->location_id === null || $org->incident_category_id === null) {
-            return new Collection();
+            return new Collection;
         }
 
         // Obtener IDs del subárbol de ubicación de la organización

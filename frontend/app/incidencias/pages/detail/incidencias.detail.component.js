@@ -324,7 +324,8 @@ function setupActionButtons(incidentId, inc) {
           window.location.reload();
         } catch (err) {
           showError(
-            err.message || 'No se pudo confirmar la incidencia. Puede que ya haya sido asignada.',
+            err.message ||
+              'No se pudo confirmar la incidencia. Puede que ya haya sido asignada.',
           );
         } finally {
           setLoading(false);

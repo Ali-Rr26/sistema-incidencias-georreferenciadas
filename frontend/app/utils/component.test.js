@@ -25,7 +25,7 @@ describe('defineComponent', () => {
     const component = defineComponent({
       templateUrl: 'app/auth/pages/login/login.component.html',
       customMethod,
-      myProp: 123
+      myProp: 123,
     });
 
     expect(component.customMethod).toBe(customMethod);

@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Domains\Roles\Models\Role;
-use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    \Illuminate\Support\Facades\DB::table('roles')->insert([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'admin_sistema'],
         ['id' => 6, 'name' => 'usuario'],
@@ -52,7 +51,7 @@ it('returns 429 when unauthenticated requests exceed the feed rate limit', funct
     // at least verify the rate limiter configuration is correct
     if ($response->status() !== 429) {
         test()->markTestSkipped(
-            'Rate limiting via HTTP requests may not work with the array cache driver ' .
+            'Rate limiting via HTTP requests may not work with the array cache driver '.
             'in this test environment. Verify manually with FEED_RATE_LIMIT_PER_MIN env.'
         );
     }
@@ -66,7 +65,7 @@ it('rate limiter is configured with different limits for auth vs unauth', functi
     putenv('FEED_RATE_LIMIT_PER_MIN=5');
 
     // Test the rate limiter directly using attempt()
-    $key = 'test-feed:' . request()->ip();
+    $key = 'test-feed:'.request()->ip();
 
     // Make 5 attempts — all should succeed
     for ($i = 0; $i < 5; $i++) {

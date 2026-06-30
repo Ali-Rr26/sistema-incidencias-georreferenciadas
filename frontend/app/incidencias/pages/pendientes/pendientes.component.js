@@ -140,8 +140,7 @@ function renderizarLista(incidencias) {
           err.message || 'Error al confirmar. Puede que ya haya sido asignada.',
         );
         btn.disabled = false;
-        btn.innerHTML =
-          '<i class="fas fa-check-circle me-1"></i>Confirmar';
+        btn.innerHTML = '<i class="fas fa-check-circle me-1"></i>Confirmar';
       }
     });
   });
