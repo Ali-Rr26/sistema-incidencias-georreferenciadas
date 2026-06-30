@@ -26,13 +26,25 @@ const ERROR_MAP = {
   address: 'error-address',
 };
 
+function detectContext() {
+  const wrapper = document.getElementById('main-wrapper');
+  const isAdmin = wrapper && wrapper.style.display !== 'none';
+
+  const adminContainer = document.getElementById('ici-admin-container');
+  const citizenContainer = document.getElementById('ici-citizen-container');
+  if (adminContainer) adminContainer.classList.toggle('d-none', !isAdmin);
+  if (citizenContainer) citizenContainer.classList.toggle('d-none', isAdmin);
+
+  return isAdmin ? 'admin' : 'citizen';
+}
+
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/create/incidencia.create.component.html',
   styleUrl: 'app/incidencias/pages/create/incidencia.create.component.css',
 
   async onInit() {
     // ── Detect context ──
-    const context = this.detectContext();
+    const context = detectContext();
     document.body.classList.add('ici-create-view');
 
     const P = context === 'admin' ? 'ici-' : 'ici-citizen-';
@@ -595,23 +607,6 @@ export default defineComponent({
         submitLoading.classList.add('d-none');
       }
     });
-  },
-
-  /**
-   * Detect current context based on #main-wrapper visibility.
-   * Admin shell displays #main-wrapper; citizen (feed) shell hides it.
-   * Toggles admin/citizen containers and returns context string.
-   */
-  detectContext() {
-    const wrapper = document.getElementById('main-wrapper');
-    const isAdmin = wrapper && wrapper.style.display !== 'none';
-
-    const adminContainer = document.getElementById('ici-admin-container');
-    const citizenContainer = document.getElementById('ici-citizen-container');
-    if (adminContainer) adminContainer.classList.toggle('d-none', !isAdmin);
-    if (citizenContainer) citizenContainer.classList.toggle('d-none', isAdmin);
-
-    return isAdmin ? 'admin' : 'citizen';
   },
 
   onDestroy() {
