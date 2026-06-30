@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Resources;
 
+use App\Storage\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,10 @@ class IncidentResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $storage = app(StorageService::class);
+        $images = $this->images ?? [];
+        $thumbnail = ! empty($images) ? $images[0] : null;
+
         return [
             'id' => $this->id,
             'incident_category_id' => $this->incident_category_id,
@@ -28,6 +33,15 @@ class IncidentResource extends JsonResource
             'organization' => $this->whenLoaded('organization'),
             'user' => $this->whenLoaded('user'),
             'location' => $this->whenLoaded('location'),
+            'thumbnail_url' => $thumbnail
+                ? $storage->proxyUrl($thumbnail['path'])
+                : null,
+            'images' => array_map(fn (array $img) => [
+                'id' => $this->id.'-'.md5($img['path']),
+                'url' => $storage->proxyUrl($img['path']),
+                'original_name' => $img['original_name'],
+                'is_thumbnail' => $img['is_thumbnail'] ?? false,
+            ], $images),
         ];
     }
 }

@@ -24,7 +24,11 @@ use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
+use App\Storage\StorageService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -67,6 +71,14 @@ class AppServiceProvider extends ServiceProvider
         // Register RedisCommentSync as observer for Comment model events
         Comment::observe(RedisCommentSync::class);
 
+        // =====================================================================
+        // Connection health checks — logged on every boot
+        // =====================================================================
+
+        $this->healthCheckPostgres();
+        $this->healthCheckRedis();
+        $this->healthCheckStorage();
+
         // Policy discovery for modular Domains structure:
         // App\Domains\Incidents\Models\Incident
         // → App\Domains\Incidents\Http\Policies\IncidentPolicy
@@ -85,5 +97,85 @@ class AppServiceProvider extends ServiceProvider
 
             return null;
         });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Connection health checks
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Verifies PostgreSQL connection and logs the database name.
+     */
+    private function healthCheckPostgres(): void
+    {
+        try {
+            $pdo = DB::connection()->getPdo();
+            $dbName = $pdo->query('SELECT current_database()')->fetchColumn();
+            $dbVersion = $pdo->query('SELECT version()')->fetchColumn();
+
+            Log::info('[HEALTH] PostgreSQL connected', [
+                'database' => $dbName,
+                'version' => preg_replace('/\s+.*/', '', $dbVersion),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[HEALTH] PostgreSQL connection FAILED', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Verifies Redis connection and logs server info.
+     */
+    private function healthCheckRedis(): void
+    {
+        try {
+            Redis::connection()->ping();
+            $info = Redis::connection()->info('server');
+            $redisVersion = $info['server']['redis_version'] ?? 'unknown';
+
+            Log::info('[HEALTH] Redis connected', [
+                'version' => $redisVersion,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[HEALTH] Redis connection FAILED', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Verifies S3-compatible storage (RustFS / MinIO / AWS S3).
+     */
+    private function healthCheckStorage(): void
+    {
+        $disk = env('FILESYSTEM_STORAGE_DISK', 's3');
+
+        if ($disk !== 's3') {
+            Log::info('[HEALTH] Storage disk is local', ['disk' => $disk]);
+
+            return;
+        }
+
+        try {
+            $service = app(StorageService::class);
+            $ok = $service->ensureBucketExists();
+
+            if ($ok) {
+                $bucket = StorageService::bucketName();
+                Log::info('[HEALTH] S3 storage connected', [
+                    'bucket' => $bucket,
+                    'endpoint' => env('AWS_ENDPOINT'),
+                ]);
+            } else {
+                Log::warning('[HEALTH] S3 storage — bucket not available', [
+                    'bucket' => StorageService::bucketName(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[HEALTH] S3 storage FAILED', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

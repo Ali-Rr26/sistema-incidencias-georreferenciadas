@@ -1,32 +1,11 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 
-const SUBTIPOS = {
-  infraestructura: [
-    'Bache / Pavimento',
-    'Alumbrado público',
-    'Puentes / Vías',
-    'Edificios públicos',
-  ],
-  seguridad: [
-    'Robo / Asalto',
-    'Vandalismo',
-    'Zona de riesgo',
-    'Violencia doméstica',
-  ],
-  ambiental: [
-    'Basura / Desechos',
-    'Contaminación del agua',
-    'Deforestación',
-    'Ruido excesivo',
-  ],
-  servicios: [
-    'Falla de agua',
-    'Falla eléctrica',
-    'Falla de gas',
-    'Internet / Telefonía',
-  ],
-};
+/** @type {Array<{id: number, name: string, children: Array}>} */
+let categoriasTree = [];
+
+/** @type {Array<{id: number, name: string, children: Array}>} */
+let locationsTree = [];
 
 function loadLeaflet() {
   if (window.L) return Promise.resolve();
@@ -116,13 +95,32 @@ export default defineComponent({
         );
       });
 
-    // Cascada Tipo → Subtipo
-    function poblarSelect(selectEl, opciones, placeholder) {
-      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-      opciones.forEach((op) => {
+    // Fetch categorías desde la API
+    async function cargarCategorias() {
+      try {
+        const resp = await http.get('/incident-categories/tree');
+        categoriasTree = resp.data ?? [];
+      } catch {
+        categoriasTree = [];
+      }
+
+      const tipoEl = document.getElementById('tipo');
+      categoriasTree.forEach((cat) => {
         const opt = document.createElement('option');
-        opt.value = op;
-        opt.textContent = op;
+        opt.value = cat.id;
+        opt.textContent = cat.name;
+        tipoEl.appendChild(opt);
+      });
+    }
+    cargarCategorias();
+
+    // Cascada Tipo → Subtipo
+    function poblarSelect(selectEl, hijos, placeholder) {
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+      hijos.forEach((hijo) => {
+        const opt = document.createElement('option');
+        opt.value = hijo.id;
+        opt.textContent = hijo.name;
         selectEl.appendChild(opt);
       });
       selectEl.disabled = false;
@@ -136,15 +134,112 @@ export default defineComponent({
 
     document.getElementById('tipo').addEventListener('change', function () {
       const subtipoEl = document.getElementById('subtipo');
-      if (this.value && SUBTIPOS[this.value]) {
+      const padre = categoriasTree.find((c) => c.id == this.value);
+      if (this.value && padre?.children?.length) {
         poblarSelect(
           subtipoEl,
-          SUBTIPOS[this.value],
-          '-- Seleccione subtipo --',
+          padre.children,
+          '-- Seleccione subcategoría --',
         );
       } else {
-        resetSelect(subtipoEl, '-- Seleccione tipo primero --');
+        resetSelect(subtipoEl, '-- Seleccione categoría primero --');
       }
+    });
+
+    // --- Ubicación jerárquica: País → Provincia → Ciudad ---
+    async function cargarUbicaciones() {
+      try {
+        const resp = await http.get('/locations/tree');
+        locationsTree = resp.data ?? [];
+      } catch {
+        locationsTree = [];
+      }
+
+      const paisEl = document.getElementById('pais');
+      locationsTree.forEach((pais) => {
+        const opt = document.createElement('option');
+        opt.value = pais.id;
+        opt.textContent = pais.name;
+        paisEl.appendChild(opt);
+      });
+    }
+    cargarUbicaciones();
+
+    function poblarUbicaciones(selectEl, hijos, placeholder) {
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+      hijos.forEach((h) => {
+        const opt = document.createElement('option');
+        opt.value = h.id;
+        opt.textContent = h.name;
+        selectEl.appendChild(opt);
+      });
+      selectEl.disabled = false;
+    }
+
+    function resetUbicacion(selectEl, placeholder) {
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+      selectEl.disabled = true;
+    }
+
+    document.getElementById('pais').addEventListener('change', function () {
+      const provEl = document.getElementById('provincia');
+      const ciudadEl = document.getElementById('ciudad');
+      resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
+      const pais = locationsTree.find((p) => p.id == this.value);
+      if (this.value && pais?.children?.length) {
+        poblarUbicaciones(provEl, pais.children, '-- Seleccione Provincia --');
+      } else {
+        resetUbicacion(provEl, '-- Seleccione Provincia --');
+      }
+    });
+
+    document
+      .getElementById('provincia')
+      .addEventListener('change', function () {
+        const ciudadEl = document.getElementById('ciudad');
+        const pais = locationsTree.find((p) =>
+          p.children?.some((pr) => pr.id == this.value),
+        );
+        const provincia = pais?.children?.find((pr) => pr.id == this.value);
+        if (this.value && provincia?.children?.length) {
+          poblarUbicaciones(
+            ciudadEl,
+            provincia.children,
+            '-- Seleccione Ciudad --',
+          );
+        } else {
+          resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
+        }
+      });
+
+    // Image preview
+    const inputImagenes = document.getElementById('imagenes');
+    const previsualizacion = document.getElementById(
+      'previsualizacion-imagenes',
+    );
+    let imagenesSeleccionadas = [];
+
+    inputImagenes.addEventListener('change', function () {
+      const files = Array.from(this.files).slice(0, 10);
+      imagenesSeleccionadas = files;
+      previsualizacion.innerHTML = '';
+
+      files.forEach((file) => {
+        const reader = new FileReader();
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText =
+          'width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;';
+
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+          wrapper.appendChild(img);
+        };
+
+        reader.readAsDataURL(file);
+        previsualizacion.appendChild(wrapper);
+      });
     });
 
     // Character counters + rehabilitar botón al corregir título
@@ -163,7 +258,36 @@ export default defineComponent({
           this.value.length + '/500';
       });
 
-    // Phone: digits only
+    // Phone: digits only — keydown blocks before char enters, input cleans paste/autofill
+    let telefonoAvisoTimer = null;
+    document
+      .getElementById('telefono')
+      .addEventListener('keydown', function (e) {
+        const permitidas = [
+          'Backspace',
+          'Delete',
+          'Tab',
+          'ArrowLeft',
+          'ArrowRight',
+          'Home',
+          'End',
+        ];
+        if (
+          !permitidas.includes(e.key) &&
+          !/^[0-9]$/.test(e.key) &&
+          !e.ctrlKey &&
+          !e.metaKey
+        ) {
+          e.preventDefault();
+          const aviso = document.getElementById('telefono-aviso');
+          aviso.classList.remove('d-none');
+          clearTimeout(telefonoAvisoTimer);
+          telefonoAvisoTimer = setTimeout(
+            () => aviso.classList.add('d-none'),
+            2000,
+          );
+        }
+      });
     document.getElementById('telefono').addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '').slice(0, 15);
     });
@@ -192,6 +316,17 @@ export default defineComponent({
           valido = false;
         }
 
+        // Validar ubicación jerárquica
+        const ciudadVal = document.getElementById('ciudad').value;
+        const provinciaVal = document.getElementById('provincia').value;
+        const paisVal = document.getElementById('pais').value;
+        if (!ciudadVal && !provinciaVal && !paisVal) {
+          document.getElementById('pais').classList.add('is-invalid');
+          valido = false;
+        } else {
+          document.getElementById('pais').classList.remove('is-invalid');
+        }
+
         const telEl = document.getElementById('telefono');
         if (telEl.value !== '' && telEl.value.length < 7) {
           telEl.classList.add('is-invalid');
@@ -210,24 +345,56 @@ export default defineComponent({
         document.getElementById('btn-loading').classList.remove('d-none');
         document.getElementById('btn-guardar').disabled = true;
 
+        const subtipoId = document.getElementById('subtipo').value;
+        const priorityMap = { alta: 'high', media: 'medium', baja: 'low' };
+        const lng = parseFloat(document.getElementById('longitud').value);
+        const lat = parseFloat(document.getElementById('latitud').value);
+        const locationId = parseInt(
+          document.getElementById('ciudad').value ||
+            document.getElementById('provincia').value ||
+            document.getElementById('pais').value,
+          10,
+        );
         const payload = {
-          titulo: document.getElementById('titulo').value.trim(),
-          descripcion: document.getElementById('descripcion').value.trim(),
-          prioridad: document.getElementById('prioridad').value,
-          telefono: document.getElementById('telefono').value || null,
-          tipo: document.getElementById('tipo').value,
-          subtipo: document.getElementById('subtipo').value,
-          latitud: parseFloat(document.getElementById('latitud').value),
-          longitud: parseFloat(document.getElementById('longitud').value),
-          direccion: document.getElementById('direccion').value.trim() || null,
+          title: document.getElementById('titulo').value.trim(),
+          description: document.getElementById('descripcion').value.trim(),
+          priority:
+            priorityMap[document.getElementById('prioridad').value] || 'medium',
+          incident_category_id: parseInt(
+            subtipoId || document.getElementById('tipo').value,
+            10,
+          ),
+          geom: JSON.stringify({ type: 'Point', coordinates: [lng, lat] }),
+          location_id: locationId || null,
         };
 
+        // Si hay imágenes, usar FormData (multipart)
+        const hasImages = imagenesSeleccionadas.length > 0;
+        let body;
+
+        if (hasImages) {
+          body = new FormData();
+          for (const [key, val] of Object.entries(payload)) {
+            if (val !== null && val !== '') {
+              body.append(key, val);
+            }
+          }
+          imagenesSeleccionadas.forEach((file) =>
+            body.append('images[]', file),
+          );
+        } else {
+          body = payload;
+        }
+
         try {
-          await http.post('/incidents', payload);
+          const resp = await http.post('/incidents', body);
+          const newId = resp.data?.id ?? resp.id;
           const toastEl = document.getElementById('toast-exito');
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
           setTimeout(() => {
-            window.location.hash = '#/incidencias';
+            window.location.hash = newId
+              ? `#/incidencias/${newId}`
+              : '#/incidencias';
           }, 2000);
         } catch (err) {
           console.error('Error al guardar incidencia:', err);

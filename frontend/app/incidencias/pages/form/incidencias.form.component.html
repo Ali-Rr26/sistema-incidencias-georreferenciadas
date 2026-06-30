@@ -29,12 +29,7 @@
         obligatorios.
       </p>
 
-      <form id="form-incidencia" novalidate>
-        <!-- Sección: Detalles Principales -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
-          <i class="fas fa-exclamation-triangle me-2"></i>Detalles Principales
-        </h6>
-
+      <form id="form-incidencia">
         <div class="row g-3 mb-4">
           <div class="col-md-8">
             <label for="titulo" class="form-label fw-semibold">
@@ -73,6 +68,10 @@
             </select>
             <div class="invalid-feedback">Seleccione una prioridad.</div>
           </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="row g-3 mb-4">
           <div class="col-12">
             <label for="descripcion" class="form-label fw-semibold">
               Descripción Detallada <span class="text-danger">*</span>
@@ -91,6 +90,35 @@
               <small class="text-muted ms-auto" id="contador-descripcion"
                 >0/500</small
               >
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Imágenes -->
+        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+          <i class="fas fa-camera me-2"></i>Imágenes
+        </h6>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <label for="imagenes" class="form-label fw-semibold">
+              Fotos de la Incidencia
+            </label>
+            <input
+              type="file"
+              class="form-control form-control-lg"
+              id="imagenes"
+              name="imagenes"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+            />
+            <div
+              class="mt-2 d-flex gap-2 flex-wrap"
+              id="previsualizacion-imagenes"
+            ></div>
+            <div class="form-text mt-1">
+              Opcional. Puede seleccionar hasta 10 imágenes (JPEG, PNG o WebP,
+              máximo 10 MB cada una).
             </div>
           </div>
         </div>
@@ -142,7 +170,16 @@
               maxlength="15"
               placeholder="Ej: 0991234567"
               inputmode="numeric"
+              pattern="[0-9]*"
             />
+            <div
+              id="telefono-aviso"
+              class="d-none mt-1"
+              style="font-size: 0.8rem"
+            >
+              <i class="fas fa-exclamation-circle text-warning me-1"></i>
+              <span class="text-warning">Solo se permiten números.</span>
+            </div>
             <div class="invalid-feedback">Ingrese un teléfono válido.</div>
           </div>
         </div>

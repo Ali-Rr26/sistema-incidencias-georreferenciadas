@@ -24,21 +24,21 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         unset($filters['per_page']);
 
         return $this->newQuery()
-            ->with('location', 'parent', 'incidentCategories')
+            ->with('location', 'parent', 'category')
             ->when(count($filters) > 0, fn (Builder $q) => $this->applyFilters($q, $filters))
             ->paginate(min($perPage, 100));
     }
 
     public function findById(int $id): ?Organization
     {
-        return $this->newQuery()->with('incidentCategories')->find($id);
+        return $this->newQuery()->with('category')->find($id);
     }
 
     public function tree(): Collection
     {
         return $this->newQuery()
             ->whereNull('parent_id')
-            ->with('location', 'incidentCategories', 'children.children.children')
+            ->with('location', 'category', 'children.children.children')
             ->get();
     }
 

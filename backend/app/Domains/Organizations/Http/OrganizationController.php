@@ -44,14 +44,8 @@ class OrganizationController extends Controller
     public function store(StoreOrganizationRequest $request): JsonResponse
     {
         $organization = $this->organizations->create(
-            $request->safe()->except(['category_ids']),
+            $request->validated(),
         );
-
-        if ($request->filled('category_ids')) {
-            $organization->incidentCategories()->sync($request->input('category_ids'));
-        }
-
-        $organization->load('incidentCategories');
 
         return (new OrganizationResource($organization))
             ->response()
@@ -71,13 +65,7 @@ class OrganizationController extends Controller
 
     public function update(UpdateOrganizationRequest $request, int $id): JsonResponse
     {
-        $organization = $this->organizations->update($id, $request->safe()->except(['category_ids']));
-
-        if ($request->filled('category_ids')) {
-            $organization->incidentCategories()->sync($request->input('category_ids'));
-        }
-
-        $organization->load('incidentCategories');
+        $organization = $this->organizations->update($id, $request->validated());
 
         return (new OrganizationResource($organization))->response();
     }
