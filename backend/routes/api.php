@@ -12,6 +12,7 @@ use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
+use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,11 @@ Route::middleware('jwt')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Operator tracking
+    Route::post('/operator/location', [OperatorLocationController::class, 'update']);
+    Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
 
     // Core
     Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);

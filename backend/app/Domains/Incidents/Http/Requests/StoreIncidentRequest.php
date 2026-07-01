@@ -12,7 +12,20 @@ class StoreIncidentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('create', Incident::class) ?? false;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        if (! $user->can('create', Incident::class)) {
+            return false;
+        }
+
+        if ($user->isRegularUser() && $this->has('organization_id')) {
+            return false;
+        }
+
+        return true;
     }
 
     public function rules(): array
@@ -24,6 +37,7 @@ class StoreIncidentRequest extends FormRequest
             'location_id' => 'required|integer|exists:locations,id',
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'geom' => 'nullable|json',
+            'organization_id' => 'nullable|integer|exists:organizations,id',
 
             // Imágenes opcionales (multipart)
             'images' => 'nullable|array',

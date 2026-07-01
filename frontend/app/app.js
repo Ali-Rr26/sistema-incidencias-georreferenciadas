@@ -19,6 +19,7 @@ import categoriasComponent from './configuracion/categorias/pages/index/categori
 import categoriasFormComponent from './configuracion/categorias/pages/form/categorias.form.component.js';
 import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.index.component.js';
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
+import perfilComponent from './configuracion/perfil/perfil.component.js';
 import feedComponent from './feed/feed.component.js';
 import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
@@ -120,6 +121,12 @@ router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
   [roleGuard(adminOnlyRoles)],
+  true,
+);
+router.addRoute(
+  '/configuracion/perfil',
+  perfilComponent,
+  [roleGuard(allAdminRoles)],
   true,
 );
 router.addRoute('/not-found', notFoundComponent, [authGuard], true);

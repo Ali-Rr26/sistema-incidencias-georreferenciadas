@@ -58,42 +58,22 @@ class RolePermissionSeeder extends Seeder
     ];
 
     private const OPERADOR_ORGANIZACION_PERMISSIONS = [
-        ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
-        ['resource' => 'assignments',         'action' => 'view'],
-        ['resource' => 'assignments',         'action' => 'update'],
-        ['resource' => 'status-history',      'action' => 'view'],
-        ['resource' => 'notifications',       'action' => 'view'],
-        ['resource' => 'notifications',       'action' => 'update'],
-        ['resource' => 'locations',           'action' => 'view'],
-        ['resource' => 'organizations',       'action' => 'view'],
-        ['resource' => 'incident-categories', 'action' => 'view'],
     ];
 
     private const USUARIO_PERMISSIONS = [
-        ['resource' => 'dashboard',     'action' => 'view'],
-        ['resource' => 'incidents',     'action' => 'view'],
         ['resource' => 'incidents',     'action' => 'create'],
-        ['resource' => 'comments',      'action' => 'view'],
         ['resource' => 'comments',      'action' => 'create'],
-        ['resource' => 'notifications', 'action' => 'view'],
-        ['resource' => 'notifications', 'action' => 'update'],
     ];
 
     private const PUBLICADOR_PERMISSIONS = [
-        ['resource' => 'dashboard',           'action' => 'view'],
-        ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'comments',            'action' => 'view'],
-        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'update'],
         ['resource' => 'status-history',      'action' => 'view'],
-        ['resource' => 'notifications',       'action' => 'view'],
-        ['resource' => 'notifications',       'action' => 'update'],
-        ['resource' => 'locations',           'action' => 'view'],
-        ['resource' => 'organizations',       'action' => 'view'],
-        ['resource' => 'incident-categories', 'action' => 'view'],
     ];
 
     public function run(): void

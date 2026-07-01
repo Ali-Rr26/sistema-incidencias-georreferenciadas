@@ -11,13 +11,43 @@ class UpdateUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $targetUser = User::find($this->route('user'));
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        $targetUser = $this->route('user');
+        if (! $targetUser instanceof User) {
+            $targetUser = User::find($targetUser);
+        }
 
         if ($targetUser === null) {
             return false;
         }
 
-        return $this->user()?->can('update', $targetUser) ?? false;
+        if (! $user->can('update', $targetUser)) {
+            return false;
+        }
+
+        if ($user->isOrganizationAdmin()) {
+            // Cannot assign administrative roles (admin_sistema=1, operador_sistema=2)
+            if ($this->has('role_id')) {
+                $roleId = $this->input('role_id');
+                if (in_array((int) $roleId, [1, 2], true)) {
+                    return false;
+                }
+            }
+
+            // Must match their own organization
+            if ($this->has('organization_id')) {
+                $orgId = $this->input('organization_id');
+                if ((int) $orgId !== $user->organization_id) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public function rules(): array
