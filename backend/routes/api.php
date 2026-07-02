@@ -6,6 +6,7 @@ use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
+use App\Domains\Incidents\Http\IncidentStatsController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -36,6 +37,7 @@ Route::middleware('jwt')->group(function () {
 
     // Core
     Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);
+    Route::get('incidents/stats', IncidentStatsController::class);
     Route::post('incidents/{incident}/claim', [IncidentController::class, 'claim'])->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
     Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
