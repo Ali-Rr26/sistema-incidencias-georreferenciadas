@@ -10,7 +10,6 @@ use App\Domains\Incidents\Enums\IncidentStatus;
  * `incidents:generate-frontend-constants` to emit the generated JS map,
  * so the assertions here double as the contract.
  */
-
 it('exposes frontendKey() equal to its backed value', function (IncidentStatus $status): void {
     expect($status->frontendKey())->toBe($status->value);
 })->with(
@@ -23,10 +22,10 @@ it('exposes frontendKey() equal to its backed value', function (IncidentStatus $
 it('returns the canonical Spanish label for every case', function (IncidentStatus $status, string $expected): void {
     expect($status->label())->toBe($expected);
 })->with([
-    'pending'         => [IncidentStatus::Pending, 'Pendiente'],
+    'pending' => [IncidentStatus::Pending, 'Pendiente'],
     'pending_operator' => [IncidentStatus::PendingOperator, 'Pendiente de operador'],
-    'in_progress'     => [IncidentStatus::InProgress, 'En proceso'],
-    'resolved'        => [IncidentStatus::Resolved, 'Resuelto'],
+    'in_progress' => [IncidentStatus::InProgress, 'En proceso'],
+    'resolved' => [IncidentStatus::Resolved, 'Resuelto'],
 ]);
 
 it('keeps every case represented exactly once', function (): void {
@@ -41,9 +40,9 @@ it('uses every case in the label map roundtrip', function (): void {
         $labels[$case->frontendKey()] = $case->label();
     }
     expect($labels)->toEqualCanonicalizing([
-        'pending'          => 'Pendiente',
+        'pending' => 'Pendiente',
         'pending_operator' => 'Pendiente de operador',
-        'in_progress'      => 'En proceso',
-        'resolved'         => 'Resuelto',
+        'in_progress' => 'En proceso',
+        'resolved' => 'Resuelto',
     ]);
 });

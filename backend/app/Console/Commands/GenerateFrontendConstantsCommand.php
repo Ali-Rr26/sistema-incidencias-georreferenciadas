@@ -46,7 +46,7 @@ final class GenerateFrontendConstantsCommand extends Command
                 return self::SUCCESS;
             }
 
-            $this->error("status.constants.js drift detected. Regenerate with: php artisan incidents:generate-frontend-constants");
+            $this->error('status.constants.js drift detected. Regenerate with: php artisan incidents:generate-frontend-constants');
 
             return self::FAILURE;
         }
@@ -80,7 +80,7 @@ final class GenerateFrontendConstantsCommand extends Command
         $lines = [];
         foreach ($cases as $case) {
             $lines[] = sprintf(
-                "  %s: %s,",
+                '  %s: %s,',
                 $this->jsString($case->frontendKey()),
                 $this->jsString($case->label()),
             );
@@ -115,7 +115,7 @@ final class GenerateFrontendConstantsCommand extends Command
             $value,
         );
 
-        return '"' . $escaped . '"';
+        return '"'.$escaped.'"';
     }
 
     /**
@@ -135,7 +135,7 @@ final class GenerateFrontendConstantsCommand extends Command
         // `base_path()` is the `backend/` directory; the frontend lives
         // next to it under the project root.
         $projectRoot = dirname(base_path());
-        $target = $projectRoot . DIRECTORY_SEPARATOR . ltrim($configured, DIRECTORY_SEPARATOR);
+        $target = $projectRoot.DIRECTORY_SEPARATOR.ltrim($configured, DIRECTORY_SEPARATOR);
 
         // Refuse absolute paths or paths that escape the project root.
         $real = realpath($target) ?: $target;

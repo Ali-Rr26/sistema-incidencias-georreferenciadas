@@ -3,9 +3,9 @@ import { resolveRoleName, ROLE_LABELS } from '../role.js';
 
 describe('resolveRoleName', () => {
   it('returns the name when role is an object', () => {
-    expect(
-      resolveRoleName({ role: { id: 1, name: 'admin_sistema' } }),
-    ).toBe('admin_sistema');
+    expect(resolveRoleName({ role: { id: 1, name: 'admin_sistema' } })).toBe(
+      'admin_sistema',
+    );
   });
 
   it('returns the string when role is a plain string', () => {
@@ -51,9 +51,7 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
     expect(ROLE_LABELS.admin_organizacion).toBe(
       'Administrador de Organización',
     );
-    expect(ROLE_LABELS.operador_organizacion).toBe(
-      'Operador de Organización',
-    );
+    expect(ROLE_LABELS.operador_organizacion).toBe('Operador de Organización');
     expect(ROLE_LABELS.operador_sistema).toBe('Operador de Sistema');
     expect(ROLE_LABELS.publicador).toBe('Publicador');
     expect(ROLE_LABELS.usuario).toBe('Usuario');

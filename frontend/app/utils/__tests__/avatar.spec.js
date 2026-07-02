@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getInitials,
-  getUserDisplayName,
-  resolveAvatar,
-} from '../avatar.js';
+import { getInitials, getUserDisplayName, resolveAvatar } from '../avatar.js';
 
 describe('getInitials (SCEN-1.2 regression)', () => {
   it('builds uppercase initials from first and last name', () => {
@@ -39,9 +35,9 @@ describe('getInitials (SCEN-1.2 regression)', () => {
   it('matches the legacy single-object fixture (regression-safe)', () => {
     // Locks the output for the exact fixture used by feed.component.js
     // and feed-detail.component.js prior to the migration.
-    expect(
-      getInitials({ first_name: 'Maria', last_name: 'Gonzalez' }),
-    ).toBe('MG');
+    expect(getInitials({ first_name: 'Maria', last_name: 'Gonzalez' })).toBe(
+      'MG',
+    );
   });
 });
 

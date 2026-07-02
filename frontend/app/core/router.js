@@ -216,7 +216,9 @@ class Router {
     // Mount page content into the shell's outlet
     const outlet = document.querySelector(shell.outlet);
     if (!outlet) {
-      throw new Error(`Outlet not found for shell '${shellName}': ${shell.outlet}`);
+      throw new Error(
+        `Outlet not found for shell '${shellName}': ${shell.outlet}`,
+      );
     }
 
     const html = await this._fetchTemplate(component.templateUrl);

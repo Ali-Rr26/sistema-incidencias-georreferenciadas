@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Artisan;
  * (we trust the command's own assertions) so future enum additions
  * don't require this suite to update.
  */
-
 it('produces the generated file when run with no flags', function (): void {
     // Re-run is intentionally allowed; the file should already exist
     // from the artisan run that produced it, but we re-assert that
@@ -22,7 +21,7 @@ it('produces the generated file when run with no flags', function (): void {
 
     // `__DIR__` is backend/tests/Feature; the generated file lives in
     // sibling frontend/ four levels up (one above `backend/`).
-    $path = dirname(__DIR__, 3) . '/frontend/app/utils/status.constants.js';
+    $path = dirname(__DIR__, 3).'/frontend/app/utils/status.constants.js';
     expect(file_exists($path))->toBeTrue();
 
     $contents = file_get_contents($path);
@@ -42,10 +41,10 @@ it('exits 0 in --check mode when the file is in sync', function (): void {
 });
 
 it('exits non-zero in --check mode on drift', function (): void {
-    $path = dirname(__DIR__, 3) . '/frontend/app/utils/status.constants.js';
+    $path = dirname(__DIR__, 3).'/frontend/app/utils/status.constants.js';
     $original = file_get_contents($path);
 
-    file_put_contents($path, $original . "\n// tampered\n");
+    file_put_contents($path, $original."\n// tampered\n");
     try {
         $exitCode = Artisan::call('incidents:generate-frontend-constants', ['--check' => true]);
         expect($exitCode)->toBe(1);
@@ -56,7 +55,7 @@ it('exits non-zero in --check mode on drift', function (): void {
 });
 
 it('writes the same content on repeated runs (idempotent)', function (): void {
-    $path = dirname(__DIR__, 3) . '/frontend/app/utils/status.constants.js';
+    $path = dirname(__DIR__, 3).'/frontend/app/utils/status.constants.js';
 
     Artisan::call('incidents:generate-frontend-constants');
     $first = file_get_contents($path);

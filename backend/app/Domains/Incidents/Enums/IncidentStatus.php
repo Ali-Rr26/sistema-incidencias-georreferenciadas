@@ -34,10 +34,10 @@ enum IncidentStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Pending        => 'Pendiente',
+            self::Pending => 'Pendiente',
             self::PendingOperator => 'Pendiente de operador',
-            self::InProgress     => 'En proceso',
-            self::Resolved       => 'Resuelto',
+            self::InProgress => 'En proceso',
+            self::Resolved => 'Resuelto',
         };
     }
 }

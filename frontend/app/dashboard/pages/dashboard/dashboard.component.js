@@ -147,7 +147,8 @@ export default defineComponent({
       http.get('/incidents?per_page=5'),
     ]);
 
-    const stats = statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
+    const stats =
+      statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
     const byStatus = stats.by_status ?? {};
     const total = stats.total ?? 0;
     const pendientes = byStatus.pending ?? 0;

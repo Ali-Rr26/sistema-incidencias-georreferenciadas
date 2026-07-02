@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Redis;
 class FeedRebuildCommand extends Command
 {
     private const V2_ITEMS_KEY = 'feed:v2:items';
+
     private const V2_INDEX_KEY = 'feed:v2:index';
 
     private const FEED_TTL = 604800; // 7 days

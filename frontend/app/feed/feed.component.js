@@ -310,7 +310,10 @@ export default defineComponent({
       document
         .querySelectorAll(`${CHIP_SELECTOR}, .rp-filter-chip`)
         .forEach((c) => {
-          c.classList.toggle('active', c.dataset.status === chip.dataset.status);
+          c.classList.toggle(
+            'active',
+            c.dataset.status === chip.dataset.status,
+          );
         });
       filtroStatus = chip.dataset.status;
       paginaActual = 1;

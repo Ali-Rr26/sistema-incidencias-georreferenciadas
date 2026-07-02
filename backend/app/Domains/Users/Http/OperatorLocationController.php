@@ -33,7 +33,6 @@ class OperatorLocationController extends Controller
      * Acceptance (SCEN-3.2): grep -rn '\[2, *3, *4\]' app/Domains/Users/Http/
      * must return zero matches in this file.
      */
-
     private const ACTIVE_KEY = 'operators:active';
 
     private const LOCATIONS_KEY = 'operators:locations';

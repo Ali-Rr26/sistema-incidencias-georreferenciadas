@@ -21,7 +21,11 @@ export default defineComponent({
     // Helpers — labels come from the shared utils so the dictionary lives
     // in exactly one place. The badge wrappers themselves stay local because
     // they also encode the colour scheme.
-    const PRIORITY_COLOR = { high: 'danger', medium: 'warning', low: 'success' };
+    const PRIORITY_COLOR = {
+      high: 'danger',
+      medium: 'warning',
+      low: 'success',
+    };
     const STATUS_COLOR = {
       pending: 'secondary',
       in_progress: 'primary',
