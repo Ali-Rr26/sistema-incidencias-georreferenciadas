@@ -34,10 +34,22 @@ class IncidentController extends Controller
         $this->authorizeResource(Incident::class, 'incident');
     }
 
+    /**
+     * Relations eagerly loaded for the list endpoint.
+     *
+     * Mirrors the fields exposed via `IncidentResource::toArray()` for the
+     * list shape (`category`, `organization`, `user`, `location`). `comments`
+     * is intentionally NOT a relation here — only the count is exposed via
+     * `withCount('comments')` (kept in the repository).
+     */
+    private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location'];
+
     public function index(Request $request): JsonResponse
     {
         $incidents = $this->incidents->paginate(
-            $request->only(['status', 'priority', 'location_id', 'incident_category_id', 'user_id', 'title', 'per_page']),
+            $request->only([
+                'status', 'priority', 'location_id', 'incident_category_id', 'user_id', 'title', 'per_page',
+            ]) + ['relations' => self::INDEX_RELATIONS],
         );
 
         return (new IncidentCollection($incidents))->response();
@@ -77,8 +89,16 @@ class IncidentController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(Incident $incident): JsonResponse
+    /**
+     * Relations eagerly loaded for the show endpoint. Same shape as index —
+     * IncidentResource is the single shape for both.
+     */
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location'];
+
+    public function show(Request $request, Incident $incident): JsonResponse
     {
+        $incident->load(self::SHOW_RELATIONS);
+
         return (new IncidentResource($incident))->response();
     }
 
