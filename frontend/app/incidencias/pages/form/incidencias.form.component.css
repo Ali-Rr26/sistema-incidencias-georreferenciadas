@@ -234,3 +234,27 @@
   display: none;
   font-size: 13px;
 }
+
+/* === Lifted from inline (PR #3 H10) ─────────────────────── */
+
+/* Breadcrumb link that should look like the surrounding text but
+   still be navigable (no underline, inherit colour). */
+.incid-form__breadcrumb-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Padding inside the outer form-card body. */
+.incid-form__form-card-body {
+  padding: 28px 32px;
+}
+
+/* Required-fields hint paragraph. */
+.incid-form__required-hint {
+  font-size: 13px;
+}
+
+/* Toast wrapper stacking context. */
+.incid-form__toast-wrapper {
+  z-index: 9999;
+}
