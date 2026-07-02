@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http;
 
+use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,14 +13,60 @@ use Illuminate\Support\Facades\Redis;
 
 class OperatorLocationController extends Controller
 {
+    /**
+     * Role-id → UserRole enum-case mapping (verified against RoleSeeder).
+     *
+     * The roles table stores int role_id and a string `name` column. The
+     * `name` column holds the UserRole enum string value. This controller
+     * is now driven entirely by the enum value (`role->name`), NEVER by
+     * the integer role_id.
+     *
+     * | role_id (DB) | UserRole enum case      | enum ->value        |
+     * |-------------:|-------------------------|---------------------|
+     * |            1 | AdminSistema            | admin_sistema       |
+     * |            2 | OperadorSistema         | operador_sistema    |
+     * |            3 | AdminOrganizacion       | admin_organizacion  |
+     * |            4 | OperadorOrganizacion    | operador_organizacion|
+     * |            5 | Usuario                 | usuario             |
+     * |            6 | Publicador              | publicador          |
+     *
+     * Acceptance (SCEN-3.2): grep -rn '\[2, *3, *4\]' app/Domains/Users/Http/
+     * must return zero matches in this file.
+     */
+
     private const ACTIVE_KEY = 'operators:active';
 
     private const LOCATIONS_KEY = 'operators:locations';
 
     private const TTL_SECONDS = 300;
 
-    /** ID del rol operador_organizacion en la BD. */
-    private const OPERADOR_ORG_ROLE_ID = 4;
+    /**
+     * Roles allowed to PING their own location (update endpoint).
+     *
+     * Composed of:
+     *  - UserRole::OperadorSistema
+     *  - UserRole::OperadorOrganizacion
+     *
+     * SystemAdmin is allowed via the $user->isSystemAdmin() short-circuit,
+     * and is intentionally NOT listed here so the same role-id set is
+     * the single source of truth for non-admin tiers.
+     */
+    private const PING_ROLES = [
+        UserRole::OperadorSistema->value,
+        UserRole::OperadorOrganizacion->value,
+    ];
+
+    /**
+     * Roles allowed to QUERY the operator-locations map (index endpoint).
+     *
+     * Includes the union of operator + admin-of-org tiers; SystemAdmin
+     * is again handled by $user->isSystemAdmin() and not enumerated.
+     */
+    private const QUERY_ROLES = [
+        UserRole::OperadorSistema->value,
+        UserRole::AdminOrganizacion->value,
+        UserRole::OperadorOrganizacion->value,
+    ];
 
     /**
      * Update the logged-in operator's location in Redis.
@@ -29,7 +76,7 @@ class OperatorLocationController extends Controller
         $user = $request->user();
 
         // Solo admins de sistema, operadores de sistema u operadores de org pueden reportar ubicación
-        if (! $user->isSystemAdmin() && ! in_array($user->role_id, [2, self::OPERADOR_ORG_ROLE_ID], true)) {
+        if (! $user->isSystemAdmin() && ! in_array($user->role?->name, self::PING_ROLES, true)) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
@@ -57,7 +104,7 @@ class OperatorLocationController extends Controller
         $currentUser = $request->user();
 
         // Admins de sistema, operadores de sistema, admins de org u operadores de org
-        if (! $currentUser->isSystemAdmin() && ! in_array($currentUser->role_id, [2, 3, self::OPERADOR_ORG_ROLE_ID], true)) {
+        if (! $currentUser->isSystemAdmin() && ! in_array($currentUser->role?->name, self::QUERY_ROLES, true)) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
@@ -81,7 +128,7 @@ class OperatorLocationController extends Controller
         // Query active users with role "operador_organizacion"
         $query = User::query()
             ->whereIn('id', $activeIds)
-            ->where('role_id', self::OPERADOR_ORG_ROLE_ID);
+            ->whereHas('role', fn ($q) => $q->where('name', UserRole::OperadorOrganizacion->value));
 
         // If organization-scoped, filter by current user's organization
         if ($currentUser->organization_id !== null) {
