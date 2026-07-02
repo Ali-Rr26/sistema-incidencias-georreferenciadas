@@ -9,17 +9,7 @@
  * El rol se obtiene del UserResource como { id, name } — accede a name.
  */
 import { auth } from './auth.service.js';
-
-/**
- * Extrae el nombre del rol desde user, manejando tanto
- * `{ id, name }` como string plano por si el formato cambia.
- */
-function resolveRoleName(user) {
-  if (!user?.role) return null;
-  if (typeof user.role === 'string') return user.role;
-  if (typeof user.role === 'object' && user.role?.name) return user.role.name;
-  return null;
-}
+import { resolveRoleName } from '../utils/role.js';
 
 export function roleGuard(allowedRoles) {
   return {
