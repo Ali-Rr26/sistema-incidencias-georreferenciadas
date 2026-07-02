@@ -1,3 +1,8 @@
+/**
+ * Router integration test — shell route mounting with registerShell.
+ *
+ * Verifies that the router correctly mounts a route inside a registered shell.
+ */
 const layout = vi.hoisted(() => ({
   initPage: vi.fn(),
   initShell: vi.fn(),
@@ -17,7 +22,6 @@ function htmlResponse(body) {
 
 describe('router integration', () => {
   let fetchMock;
-  let shellInit;
 
   beforeEach(() => {
     router.routes = [];
@@ -25,12 +29,12 @@ describe('router integration', () => {
     router.resetShell();
     layout.initShell.mockClear();
     layout.initPage.mockClear();
-    shellInit = vi.fn();
-    router.setShellInitFn(shellInit);
 
     document.body.innerHTML = `
       <div id="main-wrapper">
-        <div id="page-outlet"></div>
+        <div id="shell-outlet">
+          <div id="page-outlet"></div>
+        </div>
       </div>
       <div id="auth-outlet"></div>
       <ul id="sidebarnav">
@@ -39,6 +43,22 @@ describe('router integration', () => {
         </li>
       </ul>
     `;
+
+    // Register admin shell mock (matches the real adminShell interface)
+    router.registerShell('admin', {
+      mount: vi.fn().mockResolvedValue(undefined),
+      init: vi.fn().mockImplementation(() => layout.initShell()),
+      outlet: '#page-outlet',
+      updateActive(path) {
+        document.querySelectorAll('#sidebarnav .sidebar-item').forEach((li) => {
+          const a = li.querySelector(':scope > a.sidebar-link');
+          if (!a) return;
+          const active = a.getAttribute('href') === `#${path}`;
+          li.classList.toggle('selected', active);
+          a.classList.toggle('active', active);
+        });
+      },
+    });
 
     window.location.hash = '#/dashboard';
     fetchMock = vi.fn(async (url) => {
@@ -72,13 +92,12 @@ describe('router integration', () => {
         onDestroy,
       },
       [],
-      true,
+      'admin',
     );
 
     await router.resolve();
 
     expect(layout.initShell).toHaveBeenCalledTimes(1);
-    expect(shellInit).toHaveBeenCalledTimes(1);
     expect(layout.initPage).toHaveBeenCalledTimes(1);
     expect(onInit).toHaveBeenCalledTimes(1);
     expect(document.getElementById('page-outlet').innerHTML).toContain(
