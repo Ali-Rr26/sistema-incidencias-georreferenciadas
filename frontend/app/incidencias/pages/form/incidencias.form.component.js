@@ -107,6 +107,16 @@ export default defineComponent({
     map.on('click', (e) => setMarker(e.latlng.lat, e.latlng.lng));
     setTimeout(() => map.invalidateSize(), 100);
 
+    // Re-invalidate when the map container is resized (e.g. viewport change
+    // reflows the grid). Without this, tiles can render with grey/empty bands
+    // after crossing a CSS breakpoint.
+    if (typeof ResizeObserver !== 'undefined') {
+      const resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(mapContainer);
+    }
+
     // ── Geolocation ──
     document.getElementById(P + 'btn-geo')?.addEventListener('click', function () {
       if (!navigator.geolocation) {
