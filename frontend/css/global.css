@@ -10,6 +10,9 @@
 @import url("../app/layout/sidebar/sidebar.component.css");
 @import url("../app/layout/navbar/navbar.component.css");
 
+/* Layout-usuario — user shell (Lu-* styles) */
+@import url("../app/layout-usuario/layout-usuario.component.css");
+
 /* ==============================================
    Utility classes — gradientes
    ============================================== */
