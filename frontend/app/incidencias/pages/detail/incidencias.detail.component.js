@@ -1,20 +1,8 @@
 import { defineComponent } from '../../../utils/component.js';
+import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { auth } from '../../../auth/auth.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-  pending_operator: 'Pendiente de operador',
-};
-
-const PRIORITY_LABEL = {
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
-};
 
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',

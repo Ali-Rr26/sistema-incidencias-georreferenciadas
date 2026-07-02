@@ -1,4 +1,5 @@
 import { defineComponent } from '../../../utils/component.js';
+import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 import {
@@ -17,22 +18,24 @@ export default defineComponent({
     let totalPaginas = 1;
     let idEliminar = null;
 
-    // Helpers
+    // Helpers — labels come from the shared utils so the dictionary lives
+    // in exactly one place. The badge wrappers themselves stay local because
+    // they also encode the colour scheme.
+    const PRIORITY_COLOR = { high: 'danger', medium: 'warning', low: 'success' };
+    const STATUS_COLOR = {
+      pending: 'secondary',
+      in_progress: 'primary',
+      resolved: 'success',
+      pending_operator: 'warning',
+    };
+
     function badgePrioridad(p) {
-      const map = { high: 'danger', medium: 'warning', low: 'success' };
-      const labels = { high: 'Alta', medium: 'Media', low: 'Baja' };
-      const label = labels[p] || '—';
-      return `<span class="badge bg-${map[p] || 'secondary'}">${label}</span>`;
+      const label = PRIORITY_LABEL[p] || '—';
+      return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
     }
 
     function badgeEstado(e) {
-      const map = {
-        pending: { color: 'secondary', label: 'Pendiente' },
-        in_progress: { color: 'primary', label: 'En proceso' },
-        resolved: { color: 'success', label: 'Resuelto' },
-      };
-      const cfg = map[e] || { color: 'secondary', label: e || '—' };
-      return `<span class="badge bg-${cfg.color}">${cfg.label}</span>`;
+      return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
     }
 
     function formatearFecha(iso) {
