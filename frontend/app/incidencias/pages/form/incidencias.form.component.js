@@ -1,13 +1,8 @@
 /**
- * Unified Create Incident Component
+ * Unified Create Incident Form
  *
- * Single component that adapts to admin (shell) and citizen (feed) contexts.
- * detectContext() evaluates #main-wrapper visibility to determine the context.
- *
- * Admin fields:  tipo→subtipo cascade, país→prov→ciudad cascade, phone, address
- * Citizen fields: flat category, flat location (indented tree)
- *
- * Shared: title, priority, description, images, map, submit
+ * Single responsive template — CSS grid reflows fields 1-col → 2-col ≥ 992px.
+ * No shell-based context detection; all elements use the `ici-` prefix.
  */
 
 import { defineComponent } from '../../../utils/component.js';
@@ -23,40 +18,24 @@ const ERROR_MAP = {
   incident_category_id: 'error-category',
   geom: 'error-geom',
   location_id: 'error-location',
-  phone: 'error-phone',
-  address: 'error-address',
 };
 
-function detectContext() {
-  const wrapper = document.getElementById('main-wrapper');
-  const isAdmin = wrapper && wrapper.style.display !== 'none';
-
-  const adminContainer = document.getElementById('ici-admin-container');
-  const citizenContainer = document.getElementById('ici-citizen-container');
-  if (adminContainer) adminContainer.classList.toggle('d-none', !isAdmin);
-  if (citizenContainer) citizenContainer.classList.toggle('d-none', isAdmin);
-
-  return isAdmin ? 'admin' : 'citizen';
-}
+const P = 'ici-';
+const $ = (suffix) => document.getElementById(P + suffix);
 
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/form/incidencias.form.component.html',
   styleUrl: 'app/incidencias/pages/form/incidencias.form.component.css',
 
   async onInit() {
-    // ── Detect context ──
-    const context = detectContext();
     document.body.classList.add('ici-create-view');
-
-    const P = context === 'admin' ? 'ici-' : 'ici-citizen-';
-    const $ = (suffix) => document.getElementById(P + suffix);
 
     // ── State ──
     let map = null;
     let marker = null;
     let geomValue = null; // GeoJSON Point
     let imagenesSeleccionadas = [];
-    let categoriasTree = [];
+    let categories = [];
     let locationsTree = [];
 
     // ── Helpers ──
@@ -77,13 +56,14 @@ export default defineComponent({
       }
     }
 
-    function resetAllErrors(contextType) {
-      const prefix = contextType === 'admin' ? 'ici-' : 'ici-citizen-';
-      document.querySelectorAll(`[id^="${prefix}error"]`).forEach((el) => {
-        el.textContent = '';
-        el.style.display = 'none';
-      });
-      const banner = document.getElementById(prefix + 'error');
+    function resetAllErrors() {
+      document
+        .querySelectorAll(`[id^="${P}error-"]`)
+        .forEach((el) => {
+          el.textContent = '';
+          el.style.display = 'none';
+        });
+      const banner = document.getElementById(P + 'error');
       if (banner) {
         banner.textContent = '';
         banner.classList.add('d-none');
@@ -93,15 +73,11 @@ export default defineComponent({
     // ── Leaflet map ──
     await loadLeaflet();
 
-    const mapId = context === 'admin' ? 'ici-map' : 'ici-citizen-map';
-    const mapContainer = document.getElementById(mapId);
+    const mapContainer = document.getElementById(P + 'map');
     if (!mapContainer) return;
 
     const mapaInicial = { lat: -0.9537, lng: -80.7286, zoom: 13 };
-    const mapHeight = context === 'admin' ? 360 : 280;
-    mapContainer.style.height = mapHeight + 'px';
-
-    map = L.map(mapId).setView(
+    map = L.map(P + 'map').setView(
       [mapaInicial.lat, mapaInicial.lng],
       mapaInicial.zoom,
     );
@@ -131,10 +107,18 @@ export default defineComponent({
     map.on('click', (e) => setMarker(e.latlng.lat, e.latlng.lng));
     setTimeout(() => map.invalidateSize(), 100);
 
+    // Re-invalidate when the map container is resized (e.g. viewport change
+    // reflows the grid). Without this, tiles can render with grey/empty bands
+    // after crossing a CSS breakpoint.
+    if (typeof ResizeObserver !== 'undefined') {
+      const resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(mapContainer);
+    }
+
     // ── Geolocation ──
-    const geoBtnId =
-      context === 'admin' ? 'ici-btn-geo' : 'ici-citizen-btn-geo';
-    document.getElementById(geoBtnId)?.addEventListener('click', function () {
+    document.getElementById(P + 'btn-geo')?.addEventListener('click', function () {
       if (!navigator.geolocation) {
         showFieldError(
           P + 'error-geom',
@@ -153,7 +137,7 @@ export default defineComponent({
           map.setZoom(16);
           btn.disabled = false;
           btn.innerHTML =
-            '<i class="fas fa-location-arrow me-1"></i> Usar mi ubicación actual';
+            '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
         },
         () => {
           showFieldError(
@@ -162,171 +146,51 @@ export default defineComponent({
           );
           btn.disabled = false;
           btn.innerHTML =
-            '<i class="fas fa-location-arrow me-1"></i> Usar mi ubicación actual';
+            '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
         },
       );
     });
 
-    // ── Load categories ──
-    if (context === 'admin') {
-      // Admin: cascada tipo → subtipo
-      categoriasTree = [];
-      try {
-        const resp = await http.get('/incident-categories/tree');
-        categoriasTree = resp.data ?? [];
-      } catch {
-        categoriasTree = [];
-      }
-
-      const tipoEl = document.getElementById('ici-tipo');
-      categoriasTree.forEach((cat) => {
+    // ── Load categories (flat) ──
+    try {
+      const resp = await http.get('/incident-categories?per_page=500');
+      categories = resp.data || resp;
+      const catSelect = document.getElementById('ici-category');
+      categories.forEach((cat) => {
         const opt = document.createElement('option');
         opt.value = cat.id;
         opt.textContent = cat.name;
-        tipoEl.appendChild(opt);
+        catSelect.appendChild(opt);
       });
-
-      function poblarSelect(selectEl, hijos, placeholder) {
-        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-        hijos.forEach((hijo) => {
-          const opt = document.createElement('option');
-          opt.value = hijo.id;
-          opt.textContent = hijo.name;
-          selectEl.appendChild(opt);
-        });
-        selectEl.disabled = false;
-      }
-
-      function resetSelect(selectEl, placeholder) {
-        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-        selectEl.disabled = true;
-        selectEl.classList.remove('is-valid', 'is-invalid');
-      }
-
-      document
-        .getElementById('ici-tipo')
-        .addEventListener('change', function () {
-          const subtipoEl = document.getElementById('ici-subtipo');
-          const padre = categoriasTree.find((c) => c.id == this.value);
-          if (this.value && padre?.children?.length) {
-            poblarSelect(
-              subtipoEl,
-              padre.children,
-              '-- Seleccione subcategoría --',
-            );
-          } else {
-            resetSelect(subtipoEl, '-- Seleccione categoría primero --');
-          }
-        });
-    } else {
-      // Citizen: categoría plana
-      try {
-        const resp = await http.get('/incident-categories?per_page=500');
-        const categories = resp.data || resp;
-        const catSelect = document.getElementById('ici-citizen-category');
-        categories.forEach((cat) => {
-          const opt = document.createElement('option');
-          opt.value = cat.id;
-          opt.textContent = cat.name;
-          catSelect.appendChild(opt);
-        });
-      } catch {
-        // No categories — form shows empty select
-      }
+    } catch {
+      categories = [];
     }
 
-    // ── Load locations ──
-    locationsTree = [];
+    // ── Load locations (flat, with indentation preserved) ──
     try {
       const resp = await http.get('/locations/tree');
       locationsTree = resp.data ?? [];
     } catch {
       locationsTree = [];
     }
-
-    if (context === 'admin') {
-      // Admin: cascada país → provincia → ciudad
-      const paisEl = document.getElementById('ici-pais');
-      locationsTree.forEach((pais) => {
+    const locSelect = document.getElementById('ici-location');
+    function flattenTree(items, depth) {
+      items.forEach((item) => {
         const opt = document.createElement('option');
-        opt.value = pais.id;
-        opt.textContent = pais.name;
-        paisEl.appendChild(opt);
-      });
-
-      function poblarUbicaciones(selectEl, hijos, placeholder) {
-        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-        hijos.forEach((h) => {
-          const opt = document.createElement('option');
-          opt.value = h.id;
-          opt.textContent = h.name;
-          selectEl.appendChild(opt);
-        });
-        selectEl.disabled = false;
-      }
-
-      function resetUbicacion(selectEl, placeholder) {
-        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
-        selectEl.disabled = true;
-      }
-
-      document
-        .getElementById('ici-pais')
-        .addEventListener('change', function () {
-          const provEl = document.getElementById('ici-provincia');
-          const ciudadEl = document.getElementById('ici-ciudad');
-          resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
-          const pais = locationsTree.find((p) => p.id == this.value);
-          if (this.value && pais?.children?.length) {
-            poblarUbicaciones(
-              provEl,
-              pais.children,
-              '-- Seleccione Provincia --',
-            );
-          } else {
-            resetUbicacion(provEl, '-- Seleccione Provincia --');
-          }
-        });
-
-      document
-        .getElementById('ici-provincia')
-        .addEventListener('change', function () {
-          const ciudadEl = document.getElementById('ici-ciudad');
-          const pais = locationsTree.find((p) =>
-            p.children?.some((pr) => pr.id == this.value),
-          );
-          const provincia = pais?.children?.find((pr) => pr.id == this.value);
-          if (this.value && provincia?.children?.length) {
-            poblarUbicaciones(
-              ciudadEl,
-              provincia.children,
-              '-- Seleccione Ciudad --',
-            );
-          } else {
-            resetUbicacion(ciudadEl, '-- Seleccione Ciudad --');
-          }
-        });
-    } else {
-      // Citizen: árbol plano con indentación
-      const locSelect = document.getElementById('ici-citizen-location');
-      function flattenTree(items, depth) {
-        items.forEach((item) => {
-          const opt = document.createElement('option');
-          opt.value = item.id;
-          opt.textContent = '  '.repeat(depth) + item.name;
-          locSelect.appendChild(opt);
-          if (item.children && item.children.length > 0) {
-            flattenTree(item.children, depth + 1);
-          }
-        });
-      }
-      flattenTree(locationsTree, 0);
-      if (locationsTree.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '-- No hay ubicaciones disponibles --';
+        opt.value = item.id;
+        opt.textContent = '  '.repeat(depth) + item.name;
         locSelect.appendChild(opt);
-      }
+        if (item.children && item.children.length > 0) {
+          flattenTree(item.children, depth + 1);
+        }
+      });
+    }
+    flattenTree(locationsTree, 0);
+    if (locationsTree.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '-- No hay ubicaciones disponibles --';
+      locSelect.appendChild(opt);
     }
 
     // ── Image preview ──
@@ -376,69 +240,26 @@ export default defineComponent({
       });
     }
 
-    // ── Phone filter (admin only) ──
-    if (context === 'admin') {
-      let phoneAvisoTimer = null;
-      const phoneEl = document.getElementById('ici-phone');
-
-      if (phoneEl) {
-        phoneEl.addEventListener('keydown', function (e) {
-          const permitidas = [
-            'Backspace',
-            'Delete',
-            'Tab',
-            'ArrowLeft',
-            'ArrowRight',
-            'Home',
-            'End',
-          ];
-          if (
-            !permitidas.includes(e.key) &&
-            !/^[0-9]$/.test(e.key) &&
-            !e.ctrlKey &&
-            !e.metaKey
-          ) {
-            e.preventDefault();
-            const aviso = document.getElementById('ici-phone-aviso');
-            if (aviso) {
-              aviso.classList.remove('d-none');
-              clearTimeout(phoneAvisoTimer);
-              phoneAvisoTimer = setTimeout(
-                () => aviso.classList.add('d-none'),
-                2000,
-              );
-            }
-          }
-        });
-
-        phoneEl.addEventListener('input', function () {
-          this.value = this.value.replace(/\D/g, '').slice(0, 15);
-        });
-      }
-    }
-
     // ── Edit mode loading ──
     const isEdit = router.queryParams.has('id');
     const incId = router.queryParams.get('id');
 
     if (isEdit) {
-      if (context === 'admin') {
-        const pageTitleEl = document.getElementById('ici-page-title');
-        const breadcrumbActiveEl = document.getElementById(
-          'ici-breadcrumb-active',
-        );
-        const cardTitleEl = document.getElementById('ici-card-title');
-        const submitBtnTextEl = document.getElementById('ici-submit-btn-text');
+      const pageTitleEl = document.getElementById('ici-page-title');
+      const breadcrumbActiveEl = document.getElementById(
+        'ici-breadcrumb-active',
+      );
+      const cardTitleEl = document.getElementById('ici-card-title');
+      const submitBtnTextEl = document.getElementById('ici-submit-btn-text');
 
-        if (pageTitleEl) pageTitleEl.textContent = 'Editar Incidencia';
-        if (breadcrumbActiveEl) breadcrumbActiveEl.textContent = 'Editar';
-        if (cardTitleEl) cardTitleEl.textContent = 'Editar Incidencia';
-        if (submitBtnTextEl) submitBtnTextEl.textContent = 'Guardar Cambios';
+      if (pageTitleEl) pageTitleEl.textContent = 'Editar Incidencia';
+      if (breadcrumbActiveEl) breadcrumbActiveEl.textContent = 'Editar';
+      if (cardTitleEl) cardTitleEl.textContent = 'Editar Incidencia';
+      if (submitBtnTextEl) submitBtnTextEl.textContent = 'Guardar Cambios';
 
-        const toastTextEl = document.getElementById('ici-toast-text');
-        if (toastTextEl)
-          toastTextEl.textContent = 'Incidencia actualizada correctamente.';
-      }
+      const toastTextEl = document.getElementById('ici-toast-text');
+      if (toastTextEl)
+        toastTextEl.textContent = 'Incidencia actualizada correctamente.';
 
       try {
         const resp = await http.get('/incidents/' + incId);
@@ -464,128 +285,11 @@ export default defineComponent({
           priorityEl.value = inc.priority ?? '';
         }
 
-        if (context === 'admin') {
-          const phoneEl = document.getElementById('ici-phone');
-          const addressEl = document.getElementById('ici-address');
-          if (phoneEl) phoneEl.value = inc.phone ?? '';
-          if (addressEl) addressEl.value = inc.address ?? '';
+        const catSelect = document.getElementById('ici-category');
+        if (catSelect) catSelect.value = inc.incident_category_id ?? '';
 
-          // Category cascade
-          if (inc.incident_category_id) {
-            let parentId = null;
-            let childId = null;
-            for (const cat of categoriasTree) {
-              if (cat.id == inc.incident_category_id) {
-                parentId = cat.id;
-                break;
-              }
-              if (cat.children) {
-                for (const child of cat.children) {
-                  if (child.id == inc.incident_category_id) {
-                    parentId = cat.id;
-                    childId = child.id;
-                    break;
-                  }
-                }
-              }
-              if (parentId) break;
-            }
-
-            if (parentId) {
-              const tipoEl = document.getElementById('ici-tipo');
-              if (tipoEl) {
-                tipoEl.value = parentId;
-                if (childId) {
-                  const padre = categoriasTree.find((c) => c.id == parentId);
-                  const subtipoEl = document.getElementById('ici-subtipo');
-                  if (padre && padre.children && subtipoEl) {
-                    poblarSelect(
-                      subtipoEl,
-                      padre.children,
-                      '-- Seleccione subcategoría --',
-                    );
-                    subtipoEl.value = childId;
-                  }
-                }
-              }
-            }
-          }
-
-          // Location cascade
-          if (inc.location_id) {
-            let cityId = null;
-            let provId = null;
-            let countryId = null;
-
-            for (const country of locationsTree) {
-              if (country.id == inc.location_id) {
-                countryId = country.id;
-                break;
-              }
-              if (country.children) {
-                for (const prov of country.children) {
-                  if (prov.id == inc.location_id) {
-                    countryId = country.id;
-                    provId = prov.id;
-                    break;
-                  }
-                  if (prov.children) {
-                    for (const city of prov.children) {
-                      if (city.id == inc.location_id) {
-                        countryId = country.id;
-                        provId = prov.id;
-                        cityId = city.id;
-                        break;
-                      }
-                    }
-                  }
-                  if (cityId) break;
-                }
-              }
-              if (countryId && !provId && !cityId) break;
-              if (provId) break;
-            }
-
-            if (countryId) {
-              const paisEl = document.getElementById('ici-pais');
-              if (paisEl) {
-                paisEl.value = countryId;
-                const countryObj = locationsTree.find((p) => p.id == countryId);
-                const provEl = document.getElementById('ici-provincia');
-                if (countryObj && countryObj.children && provEl) {
-                  poblarUbicaciones(
-                    provEl,
-                    countryObj.children,
-                    '-- Seleccione Provincia --',
-                  );
-                  if (provId) {
-                    provEl.value = provId;
-                    const provObj = countryObj.children.find(
-                      (p) => p.id == provId,
-                    );
-                    const ciudadEl = document.getElementById('ici-ciudad');
-                    if (provObj && provObj.children && ciudadEl) {
-                      poblarUbicaciones(
-                        ciudadEl,
-                        provObj.children,
-                        '-- Seleccione Ciudad --',
-                      );
-                      if (cityId) {
-                        ciudadEl.value = cityId;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else {
-          const catSelect = document.getElementById('ici-citizen-category');
-          if (catSelect) catSelect.value = inc.incident_category_id ?? '';
-
-          const locSelect = document.getElementById('ici-citizen-location');
-          if (locSelect) locSelect.value = inc.location_id ?? '';
-        }
+        const locSelect = document.getElementById('ici-location');
+        if (locSelect) locSelect.value = inc.location_id ?? '';
 
         // Map marker
         if (inc.geom?.coordinates) {
@@ -599,13 +303,12 @@ export default defineComponent({
     }
 
     // ── Submit handler ──
-    const formId = context === 'admin' ? 'ici-form' : 'ici-citizen-form';
-    const form = document.getElementById(formId);
+    const form = document.getElementById('ici-form');
     if (!form) return;
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
-      resetAllErrors(context);
+      resetAllErrors();
 
       // ── Validate shared fields ──
       let valid = true;
@@ -626,70 +329,19 @@ export default defineComponent({
         valid = false;
       }
 
-      let categoryId;
-      if (context === 'admin') {
-        const subtipoEl = document.getElementById('ici-subtipo');
-        const tipoEl = document.getElementById('ici-tipo');
-        categoryId = parseInt(
-          (subtipoEl.value && !subtipoEl.disabled
-            ? subtipoEl.value
-            : tipoEl.value) || '',
-          10,
-        );
-        if (!categoryId) {
-          showFieldError(P + 'error-category', 'Seleccione una categoría');
-          valid = false;
-        }
-
-        // Admin: validate cascade location
-        const ciudadVal = document.getElementById('ici-ciudad').value;
-        const provinciaVal = document.getElementById('ici-provincia').value;
-        const paisVal = document.getElementById('ici-pais').value;
-        if (!ciudadVal && !provinciaVal && !paisVal) {
-          showFieldError(
-            P + 'error-location',
-            'Seleccione un país, provincia o ciudad',
-          );
-          valid = false;
-        }
-
-        // Admin: phone min 7 digits if entered
-        const phoneEl = document.getElementById('ici-phone');
-        if (phoneEl.value !== '' && phoneEl.value.length < 7) {
-          showFieldError(
-            P + 'error-phone',
-            'El teléfono debe tener al menos 7 dígitos',
-          );
-          valid = false;
-        }
-      } else {
-        categoryId = parseInt(
-          document.getElementById('ici-citizen-category').value || '',
-          10,
-        );
-        if (!categoryId) {
-          showFieldError(P + 'error-category', 'Seleccione una categoría');
-          valid = false;
-        }
+      const categoryId = parseInt(
+        document.getElementById('ici-category').value || '',
+        10,
+      );
+      if (!categoryId) {
+        showFieldError(P + 'error-category', 'Seleccione una categoría');
+        valid = false;
       }
 
       if (!valid) return;
 
-      // ── Build payload ──
-      let locationId = null;
-      if (context === 'admin') {
-        locationId = parseInt(
-          document.getElementById('ici-ciudad').value ||
-            document.getElementById('ici-provincia').value ||
-            document.getElementById('ici-pais').value ||
-            '',
-          10,
-        );
-        if (!locationId) locationId = null;
-      } else {
-        const locVal = document.getElementById('ici-citizen-location').value;
-        locationId = locVal ? parseInt(locVal, 10) : null;
-      }
+      const locVal = document.getElementById('ici-location').value;
+      const locationId = locVal ? parseInt(locVal, 10) : null;
 
       const payloadBase = {
         title,
@@ -699,14 +351,6 @@ export default defineComponent({
         location_id: locationId,
         geom: geomValue,
       };
-
-      // Admin-only fields
-      if (context === 'admin') {
-        const phone = document.getElementById('ici-phone').value;
-        const address = document.getElementById('ici-address').value.trim();
-        if (phone) payloadBase.phone = phone;
-        if (address) payloadBase.address = address;
-      }
 
       // ── Loading state ──
       const submitBtn = $('submit');
@@ -754,13 +398,9 @@ export default defineComponent({
         }
 
         setTimeout(() => {
-          if (context === 'admin') {
-            window.location.hash = newId
-              ? `#/incidencias/${newId}`
-              : '#/incidencias';
-          } else {
-            window.location.hash = '#/feed';
-          }
+          window.location.hash = newId
+            ? `#/incidencias/${newId}`
+            : '#/incidencias';
         }, 2000);
       } catch (err) {
         // 422 — validation errors
@@ -804,17 +444,13 @@ export default defineComponent({
   },
 
   onDestroy() {
-    // Remove body class
     document.body.classList.remove('ici-create-view');
 
     // Clean up Leaflet map
-    const mapIds = ['ici-map', 'ici-citizen-map'];
-    mapIds.forEach((id) => {
-      const mapEl = document.getElementById(id);
-      if (mapEl && mapEl._leaflet_id) {
-        const map = window.L?.DomUtil?.get(mapEl);
-        if (map) map.remove();
-      }
-    });
+    const mapEl = document.getElementById('ici-map');
+    if (mapEl && mapEl._leaflet_id) {
+      const map = window.L?.DomUtil?.get(mapEl);
+      if (map) map.remove();
+    }
   },
 });

@@ -222,46 +222,14 @@ function renderCard(inc) {
   `;
 }
 
-// ── Context detection ──────────────────────────────────────
+// ── DOM ids (single responsive template) ───────────────────
 
-const CTX = {
-  list: '',
-  filters: '',
-  skeleton: '',
-  vacio: '',
-  sentinel: '',
-  containerDesktop: 'feed-desktop',
-  containerMobile: 'feed-mobile',
-  chipSelector: '.feed-chip, .mobile-chip',
-};
-
-function detectContext() {
-  const wrapper = document.getElementById('main-wrapper');
-  const isDesktop = wrapper && wrapper.style.display !== 'none';
-
-  // Toggle container visibility
-  const desktop = document.getElementById(CTX.containerDesktop);
-  const mobile = document.getElementById(CTX.containerMobile);
-  if (desktop) desktop.classList.toggle('d-none', !isDesktop);
-  if (mobile) mobile.classList.toggle('d-none', isDesktop);
-
-  // Selectors per mode
-  if (isDesktop) {
-    CTX.list = 'feed-list';
-    CTX.filters = 'feed-filters';
-    CTX.skeleton = 'feed-cargando';
-    CTX.vacio = 'feed-vacio';
-    CTX.sentinel = 'feed-sentinel';
-  } else {
-    CTX.list = 'feed-list-mobile';
-    CTX.filters = 'mobile-filters';
-    CTX.skeleton = 'feed-cargando-mobile';
-    CTX.vacio = 'feed-vacio-mobile';
-    CTX.sentinel = 'feed-sentinel-mobile';
-  }
-
-  return isDesktop ? 'desktop' : 'mobile';
-}
+const LIST = 'feed-list';
+const FILTERS = 'feed-filters';
+const SKELETON = 'feed-cargando';
+const VACIO = 'feed-vacio';
+const SENTINEL = 'feed-sentinel';
+const CHIP_SELECTOR = '.feed-chip';
 
 // ── Component ──────────────────────────────────────────────
 
@@ -277,8 +245,6 @@ export default defineComponent({
     let todasLasIncidencias = [];
     let observer = null;
 
-    // ── Context ───────────────────────────────────────────────
-    detectContext();
     document.body.classList.add('feed-view');
 
     // Composer setup
@@ -299,8 +265,8 @@ export default defineComponent({
       });
     }
 
-    const feedList = document.getElementById(CTX.list);
-    const feedFilters = document.getElementById(CTX.filters);
+    const feedList = document.getElementById(LIST);
+    const feedFilters = document.getElementById(FILTERS);
     if (!feedFilters || !feedList) return;
 
     // ── Fetch ───────────────────────────────────────────────
@@ -309,10 +275,10 @@ export default defineComponent({
       if (cargando) return;
       cargando = true;
 
-      const listEl = document.getElementById(CTX.list);
-      const skeleton = document.getElementById(CTX.skeleton);
-      const vacio = document.getElementById(CTX.vacio);
-      const sentinel = document.getElementById(CTX.sentinel);
+      const listEl = document.getElementById(LIST);
+      const skeleton = document.getElementById(SKELETON);
+      const vacio = document.getElementById(VACIO);
+      const sentinel = document.getElementById(SENTINEL);
 
       if (!append) {
         skeleton.classList.remove('d-none');
@@ -364,7 +330,7 @@ export default defineComponent({
         vacio.classList.remove('d-none');
         vacio.querySelector('p').textContent =
           'Error al cargar. Intente de nuevo.';
-        document.getElementById(CTX.sentinel).classList.add('done');
+        document.getElementById(SENTINEL).classList.add('done');
       } finally {
         cargando = false;
       }
@@ -375,7 +341,7 @@ export default defineComponent({
     function setupInfiniteScroll() {
       if (observer) observer.disconnect();
 
-      const sentinel = document.getElementById(CTX.sentinel);
+      const sentinel = document.getElementById(SENTINEL);
       if (!sentinel || sentinel.classList.contains('done')) return;
 
       observer = new IntersectionObserver(
@@ -395,49 +361,29 @@ export default defineComponent({
       observer.observe(sentinel);
     }
 
-    // ── Filter chips ──
-    feedFilters.addEventListener('click', (e) => {
-      const chip = e.target.closest(CTX.chipSelector);
-      if (!chip) return;
+    // ── Filter chips (unified: main + aside use same selector) ──
+    function applyStatusFilter(chip) {
       document
-        .querySelectorAll(CTX.chipSelector)
-        .forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-
-      // Sync right sidebar status filters
-      document.querySelectorAll('.rp-filter-chip').forEach((c) => {
-        c.classList.toggle('active', c.dataset.status === chip.dataset.status);
-      });
-
+        .querySelectorAll(`${CHIP_SELECTOR}, .rp-filter-chip`)
+        .forEach((c) => {
+          c.classList.toggle('active', c.dataset.status === chip.dataset.status);
+        });
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
-
       if (observer) observer.disconnect();
-      fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+      return fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+    }
+
+    feedFilters.addEventListener('click', (e) => {
+      const chip = e.target.closest(CHIP_SELECTOR);
+      if (chip) applyStatusFilter(chip);
     });
 
-    // ── Right Sidebar Filter chips ──
     const rpStatusFilters = document.getElementById('rp-status-filters');
     if (rpStatusFilters) {
       rpStatusFilters.addEventListener('click', (e) => {
         const chip = e.target.closest('.rp-filter-chip');
-        if (!chip) return;
-
-        // Sync desktop top filters & mobile chips & right sidebar chips
-        document
-          .querySelectorAll('.rp-filter-chip, .feed-chip, .mobile-chip')
-          .forEach((c) => {
-            c.classList.toggle(
-              'active',
-              c.dataset.status === chip.dataset.status,
-            );
-          });
-
-        filtroStatus = chip.dataset.status;
-        paginaActual = 1;
-
-        if (observer) observer.disconnect();
-        fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+        if (chip) applyStatusFilter(chip);
       });
     }
 
@@ -470,7 +416,7 @@ export default defineComponent({
           )
           .map((l) => l.textContent.trim().toLowerCase());
 
-        const listEl = document.getElementById(CTX.list);
+        const listEl = document.getElementById(LIST);
         if (listEl) {
           if (checkedLabels.length === 0) {
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
