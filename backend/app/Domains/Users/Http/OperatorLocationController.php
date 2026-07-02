@@ -13,6 +13,27 @@ use Illuminate\Support\Facades\Redis;
 
 class OperatorLocationController extends Controller
 {
+    /**
+     * Role-id → UserRole enum-case mapping (verified against RoleSeeder).
+     *
+     * The roles table stores int role_id and a string `name` column. The
+     * `name` column holds the UserRole enum string value. This controller
+     * is now driven entirely by the enum value (`role->name`), NEVER by
+     * the integer role_id.
+     *
+     * | role_id (DB) | UserRole enum case      | enum ->value        |
+     * |-------------:|-------------------------|---------------------|
+     * |            1 | AdminSistema            | admin_sistema       |
+     * |            2 | OperadorSistema         | operador_sistema    |
+     * |            3 | AdminOrganizacion       | admin_organizacion  |
+     * |            4 | OperadorOrganizacion    | operador_organizacion|
+     * |            5 | Usuario                 | usuario             |
+     * |            6 | Publicador              | publicador          |
+     *
+     * Acceptance (SCEN-3.2): grep -rn '\[2, *3, *4\]' app/Domains/Users/Http/
+     * must return zero matches in this file.
+     */
+
     private const ACTIVE_KEY = 'operators:active';
 
     private const LOCATIONS_KEY = 'operators:locations';
