@@ -191,16 +191,48 @@
           </h6>
           <div class="form-fields">
             <div class="form-fields__cell form-fields__cell--wide">
-              <p class="text-muted mb-2" style="font-size: 13px">
+              <p class="text-muted mb-2 incid-form__map-help">
                 Haga clic en el mapa interactivo para marcar las coordenadas
                 exactas de la incidencia, o presione el botón de
                 geolocalización.
               </p>
-              <div id="ici-map" class="ici-map"></div>
+              <div
+                class="incid-form__map-region"
+                role="region"
+                aria-label="Mapa de ubicación de la incidencia"
+              >
+                <div id="ici-map" class="ici-map incid-form__map-canvas"></div>
+                <div class="incid-form__map-coords visually-hidden">
+                  <div class="incid-form__map-field">
+                    <label for="lat">Latitud</label>
+                    <input
+                      id="lat"
+                      name="lat"
+                      type="text"
+                      readonly
+                      aria-live="off"
+                    />
+                  </div>
+                  <div class="incid-form__map-field">
+                    <label for="lng">Longitud</label>
+                    <input
+                      id="lng"
+                      name="lng"
+                      type="text"
+                      readonly
+                      aria-live="off"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="incid-form__map-status visually-hidden"
+                  id="map-status"
+                  aria-live="polite"
+                ></div>
+              </div>
               <div
                 id="ici-error-geom"
-                class="text-danger mt-1 fw-semibold"
-                style="display: none; font-size: 13px"
+                class="incid-form__map-error text-danger mt-1 fw-semibold"
               >
                 <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una
                 ubicación en el mapa.

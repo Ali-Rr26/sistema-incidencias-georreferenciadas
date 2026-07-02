@@ -75,14 +75,47 @@
             </div>
 
             <div
-              class="mt-3"
-              id="detalle-coords"
-              style="
-                height: 250px;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
-              "
-            ></div>
+              class="incid-detail__map-region mt-3"
+              role="region"
+              aria-label="Mapa de ubicación de la incidencia"
+            >
+              <div
+                id="detalle-coords"
+                class="incid-detail__map-coords"
+                style="
+                  height: 250px;
+                  border-radius: 8px;
+                  border: 1px solid #dee2e6;
+                "
+              ></div>
+              <div class="incid-detail__map-inputs visually-hidden">
+                <div class="incid-detail__map-field">
+                  <label for="lat">Latitud</label>
+                  <input
+                    id="lat"
+                    name="lat"
+                    type="text"
+                    readonly
+                    aria-live="off"
+                  />
+                </div>
+                <div class="incid-detail__map-field">
+                  <label for="lng">Longitud</label>
+                  <input
+                    id="lng"
+                    name="lng"
+                    type="text"
+                    readonly
+                    aria-live="off"
+                  />
+                </div>
+              </div>
+              <div
+                class="incid-detail__map-status visually-hidden"
+                id="map-status"
+                aria-live="polite"
+              ></div>
+            </div>
           </div>
         </div>
       </div>

@@ -217,3 +217,20 @@
     border-radius: 8px;
   }
 }
+
+/* === A11y map wrapper (PR #3 H6) ───────────────────────── */
+
+/* The role=region wrapper is layout-transparent so the existing
+   CSS grid placement of the map canvas is preserved to ±2 px. */
+.incid-form__map-region {
+  display: contents;
+}
+
+.incid-form__map-help {
+  font-size: 13px;
+}
+
+.incid-form__map-error {
+  display: none;
+  font-size: 13px;
+}

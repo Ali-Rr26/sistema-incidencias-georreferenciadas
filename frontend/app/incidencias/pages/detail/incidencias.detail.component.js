@@ -129,6 +129,25 @@ async function renderMap(inc) {
 
   L.marker([lat, lng]).addTo(map);
 
+  // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
+  const latInput = document.getElementById('lat');
+  const lngInput = document.getElementById('lng');
+  const mapStatus = document.getElementById('map-status');
+
+  function updateMapA11y() {
+    const c = map.getCenter();
+    const curLat = c.lat.toFixed(6);
+    const curLng = c.lng.toFixed(6);
+    if (latInput) latInput.value = curLat;
+    if (lngInput) lngInput.value = curLng;
+    if (mapStatus) {
+      mapStatus.textContent = `Coordenadas actuales: ${curLat}, ${curLng}.`;
+    }
+  }
+
+  map.on('moveend', updateMapA11y);
+  updateMapA11y();
+
   // Invalidate size after render
   setTimeout(() => map.invalidateSize(), 100);
 
