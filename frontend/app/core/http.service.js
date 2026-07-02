@@ -60,6 +60,11 @@ class HttpService {
       return this.handle401({ method, path, body });
     }
 
+    // 204 → sin cuerpo, no intentes parsearlo como JSON
+    if (res.status === 204) {
+      return null;
+    }
+
     const data = await res.json();
 
     if (!res.ok) {

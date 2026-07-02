@@ -5,7 +5,7 @@
  * with Leaflet map (reusing feed-create patterns), comments section,
  * and back button to feed.
  *
- * Uses router.params.id from the param-matching router.
+ * Uses router.routeParams.id from the param-matching router.
  */
 import { defineComponent } from '../../../utils/component.js';
 import { router } from '../../../core/router.js';
@@ -88,7 +88,7 @@ export default defineComponent({
     const emptyEl = document.getElementById('fd-empty');
     const errorEl = document.getElementById('fd-error');
 
-    const incidentId = router.params?.id;
+    const incidentId = router.routeParams?.id;
     const feedUrl = getFeedUrl();
 
     // Fix back-to-feed links based on context
