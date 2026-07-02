@@ -263,3 +263,40 @@
   background: #fff;
   cursor: pointer;
 }
+
+/* === Lifted from inline (PR #3 H10) — incidencias.index === */
+
+/* Empty/error state icon size — was style="font-size: 2.5rem" */
+.incid-index__state-icon {
+  font-size: 2.5rem;
+}
+
+/* Table column widths — replaced inline style="width: …" on <th> */
+.incid-index__col-chk {
+  width: 40px;
+}
+
+.incid-index__col-priority {
+  width: 90px;
+}
+
+.incid-index__col-status {
+  width: 110px;
+}
+
+.incid-index__col-location {
+  width: 140px;
+}
+
+.incid-index__col-date {
+  width: 100px;
+}
+
+.incid-index__col-actions {
+  width: 70px;
+}
+
+/* Toast wrapper stacking context — was style="z-index: 9999" */
+.incid-index__toast-wrapper {
+  z-index: 9999;
+}

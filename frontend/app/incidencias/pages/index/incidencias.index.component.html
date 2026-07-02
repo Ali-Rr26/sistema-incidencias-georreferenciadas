@@ -70,7 +70,7 @@
 
     <!-- Empty -->
     <div id="estado-vacio" class="gr-estado-center d-none">
-      <i class="fa-solid fa-inbox text-muted" style="font-size: 2.5rem"></i>
+      <i class="fa-solid fa-inbox text-muted incid-index__state-icon"></i>
       <p class="text-muted mt-3 mb-1">No se encontraron incidencias.</p>
       <a
         href="#/incidencias/crear"
@@ -82,8 +82,7 @@
     <!-- Error -->
     <div id="estado-error" class="gr-estado-center d-none">
       <i
-        class="fa-solid fa-triangle-exclamation text-danger"
-        style="font-size: 2.5rem"
+        class="fa-solid fa-triangle-exclamation text-danger incid-index__state-icon"
       ></i>
       <p class="text-muted mt-3 mb-1">No se pudo conectar con el servidor.</p>
       <button type="button" class="gr-btn-outline mt-1" id="btn-reintentar">
@@ -98,18 +97,18 @@
         <table class="gr-table">
           <thead>
             <tr>
-              <th style="width: 40px" class="text-center">
+              <th class="incid-index__col-chk text-center">
                 <input
                   type="checkbox"
                   class="form-check-input check-select-all"
                 />
               </th>
               <th>TÍTULO</th>
-              <th style="width: 90px">PRIORIDAD</th>
-              <th style="width: 110px">ESTADO</th>
-              <th style="width: 140px">UBICACIÓN</th>
-              <th style="width: 100px">FECHA</th>
-              <th style="width: 70px"></th>
+              <th class="incid-index__col-priority">PRIORIDAD</th>
+              <th class="incid-index__col-status">ESTADO</th>
+              <th class="incid-index__col-location">UBICACIÓN</th>
+              <th class="incid-index__col-date">FECHA</th>
+              <th class="incid-index__col-actions"></th>
             </tr>
           </thead>
           <tbody id="tabla-body"></tbody>
@@ -173,7 +172,7 @@
 </div>
 
 <!-- Toast -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+<div class="position-fixed bottom-0 end-0 p-3 incid-index__toast-wrapper">
   <div
     id="toast-msg"
     class="toast align-items-center text-white border-0"
