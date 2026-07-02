@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
@@ -12,6 +13,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -82,5 +84,10 @@ class Incident extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
     }
 }

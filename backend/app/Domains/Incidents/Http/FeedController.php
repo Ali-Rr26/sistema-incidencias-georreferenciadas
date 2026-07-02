@@ -37,7 +37,7 @@ class FeedController extends Controller
         }
 
         // PostgreSQL fallback path
-        $incidents = Incident::with(['category', 'location', 'user', 'thumbnail'])
+        $incidents = Incident::with(['category', 'location', 'user'])
             ->when($request->filled('organization_id'), fn ($q) => $q->where('organization_id', $request->integer('organization_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->get('status')))
             ->when($request->filled('location_id'), function ($q) use ($request) {
