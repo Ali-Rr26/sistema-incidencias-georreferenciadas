@@ -23,7 +23,11 @@ import loadLeaflet from '../../../shared/leaflet.js';
 
 function isAdminContext() {
   const wrapper = document.getElementById('main-wrapper');
-  return wrapper && wrapper.style.display !== 'none';
+  if (!wrapper) return false;
+  // The shell hides itself with the `.layout-hidden` class while JS
+  // is still wiring up (see `app/layout/layout.component.css`). Once
+  // `initShell()` removes that class, the shell is visible.
+  return !wrapper.classList.contains('layout-hidden');
 }
 
 function getFeedUrl() {

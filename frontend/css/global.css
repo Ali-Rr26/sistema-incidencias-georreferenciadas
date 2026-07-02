@@ -13,6 +13,9 @@
 /* Layout-usuario — user shell (Lu-* styles) */
 @import url("../app/layout-usuario/layout-usuario.component.css");
 
+/* Layout — admin shell container (.layout-hidden, etc.) */
+@import url("../app/layout/layout.component.css");
+
 /* ==============================================
    Utility classes — gradientes
    ============================================== */
