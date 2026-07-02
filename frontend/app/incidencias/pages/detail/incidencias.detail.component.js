@@ -64,7 +64,7 @@ function renderizarIncidencia(inc) {
   const thumbnailContainer = document.getElementById('detalle-thumbnail');
   if (inc.thumbnail_url) {
     thumbnailContainer.innerHTML = `
-      <img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded" style="max-height:180px;width:100%;object-fit:cover;" />
+      <img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />
     `;
     thumbnailContainer.classList.remove('d-none');
   }
@@ -118,7 +118,7 @@ async function renderMap(inc) {
   }
 
   mapEl.innerHTML =
-    '<div id="detalle-mapa" style="height: 300px; width: 100%; border-radius: 8px;"></div>';
+    '<div id="detalle-mapa" class="incid-detail__map-canvas"></div>';
 
   const map = L.map('detalle-mapa').setView([lat, lng], 15);
 
@@ -170,7 +170,7 @@ function renderizarImagenes(images) {
       (img) => `
     <div class="mb-2 position-relative">
       <a href="${img.url}" target="_blank">
-        <img src="${img.url}" alt="${img.original_name}" class="img-fluid rounded" style="width:100%;max-height:200px;object-fit:cover;" />
+        <img src="${img.url}" alt="${img.original_name}" class="img-fluid rounded incid-detail__image" />
       </a>
       <small class="text-muted d-block text-truncate mt-1">${img.original_name}</small>
     </div>`,

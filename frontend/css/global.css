@@ -16,6 +16,9 @@
 /* Layout — admin shell container (.layout-hidden, etc.) */
 @import url("../app/layout/layout.component.css");
 
+/* Incidencias detail — admin detail (.incid-detail__* classes) */
+@import url("../app/incidencias/pages/detail/incidencias.detail.component.css");
+
 /* ==============================================
    Utility classes — gradientes
    ============================================== */
