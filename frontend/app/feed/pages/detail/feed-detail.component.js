@@ -8,6 +8,16 @@
  * Uses router.routeParams.id from the param-matching router.
  */
 import { defineComponent } from '../../../utils/component.js';
+import {
+  escapeHtml,
+  timeAgo,
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+} from '../../../utils/format.js';
+import {
+  getInitials,
+  getUserDisplayName,
+} from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
@@ -21,59 +31,6 @@ function isAdminContext() {
 
 function getFeedUrl() {
   return isAdminContext() ? '/incidencias/feed' : '/feed';
-}
-
-// ── Helpers ─────────────────────────────────────────────────
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-};
-
-const PRIORITY_LABEL = {
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
-};
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffSec = Math.floor((now - then) / 1000);
-
-  if (diffSec < 60) return 'justo ahora';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `hace ${diffMin}min`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `hace ${diffHr}h`;
-  const diffDays = Math.floor(diffHr / 24);
-  if (diffDays < 7) return `hace ${diffDays}d`;
-  return new Date(dateStr).toLocaleDateString('es-EC', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function getInitials(user) {
-  if (!user) return '?';
-  const first = (user.first_name || '')[0] || '';
-  const last = (user.last_name || '')[0] || '';
-  return (first + last).toUpperCase() || '?';
-}
-
-function getUserDisplayName(user) {
-  if (!user) return 'Anónimo';
-  const parts = [user.first_name, user.last_name].filter(Boolean);
-  return parts.length ? parts.join(' ') : 'Usuario';
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }
 
 // ── Component ───────────────────────────────────────────────
