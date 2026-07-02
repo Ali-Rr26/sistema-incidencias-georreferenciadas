@@ -135,6 +135,165 @@
   font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
 }
 
+/* Desktop: sidebar takes space */
+@media (min-width: 768px) {
+  .lu-main {
+    padding-bottom: 0;
+    padding-left: 220px;
+  }
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR — Desktop only (≥768px)
+   ══════════════════════════════════════ */
+
+.lu-sidebar {
+  position: fixed;
+  top: 56px;          /* below header */
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  background: #ffffff;
+  border-right: 1px solid #eef0f5;
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
+  font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
+  overflow-y: auto;
+}
+
+/* Logo inside sidebar */
+.lu-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f5f6fa;
+}
+
+.lu-sidebar-logo .lu-logo-icon {
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, #6a5cf3, #a06bf5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lu-sidebar-logo .lu-logo-text {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #23283b;
+  letter-spacing: -0.3px;
+}
+
+/* Sidebar navigation */
+.lu-sidebar-nav {
+  flex: 1;
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lu-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #5b6172;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.lu-sidebar-item i {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.lu-sidebar-item:hover {
+  background: #f3f4f9;
+  color: #6a5cf3;
+}
+
+.lu-sidebar-item.active {
+  background: #f0edff;
+  color: #6a5cf3;
+  font-weight: 700;
+}
+
+/* Plus/Reportar button — elevated style */
+.lu-sidebar-plus {
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(106, 92, 243, 0.3);
+  margin: 6px 0;
+}
+
+.lu-sidebar-plus i {
+  background: none;
+  -webkit-text-fill-color: initial;
+  filter: none;
+}
+
+.lu-sidebar-plus:hover {
+  filter: brightness(1.08);
+  transform: translateX(2px);
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+}
+
+/* Sidebar bottom: user info */
+.lu-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid #f5f6fa;
+  cursor: default;
+}
+
+.lu-sidebar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6a5cf3, #a06bf5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.lu-sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lu-sidebar-user-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #23283b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lu-sidebar-user-role {
+  font-size: 0.7rem;
+  color: #a3a8b8;
+  text-transform: capitalize;
+}
+
 /* ─── Bottom nav ─── */
 .lu-bottom-nav {
   position: fixed;

@@ -16,6 +16,9 @@ function setupHeader() {
   const bellWrap = document.getElementById('lu-bell-wrap');
   const avatarWrap = document.getElementById('lu-avatar-wrap');
   const avatarEl = document.getElementById('lu-avatar');
+  const sidebarAvatar = document.getElementById('lu-sidebar-avatar');
+  const sidebarUserName = document.getElementById('lu-sidebar-user-name');
+  const sidebarUserRole = document.getElementById('lu-sidebar-user-role');
 
   if (auth.isAuthenticated()) {
     const user = auth.getUser();
@@ -27,6 +30,19 @@ function setupHeader() {
       const initial = (user.first_name || user.email || '?')[0].toUpperCase();
       avatarEl.textContent = initial;
     }
+
+    // Sidebar user info
+    if (sidebarAvatar) {
+      sidebarAvatar.textContent = (user.first_name || user.email || '?')[0].toUpperCase();
+    }
+    if (sidebarUserName && user) {
+      sidebarUserName.textContent = user.first_name
+? `${user.first_name} ${user.last_name || ''}`.trim()
+: user.email;
+    }
+    if (sidebarUserRole && user?.role?.name) {
+      sidebarUserRole.textContent = user.role.name.replace(/_/g, ' ');
+    }
   } else {
     if (loginBtn) loginBtn.style.display = '';
     if (bellWrap) bellWrap.classList.add('d-none');
@@ -34,14 +50,30 @@ function setupHeader() {
   }
 }
 
+function syncActiveState(targetRoute) {
+  // Update active class on both mobile bottom nav and desktop sidebar
+  document.querySelectorAll(
+    '#lu-bottom-nav .lu-nav-item, .lu-sidebar-item',
+  ).forEach((i) => {
+    if (!i.classList.contains('lu-nav-plus') && !i.classList.contains('lu-sidebar-plus')) {
+      const isSame = i.dataset.route === targetRoute;
+      i.classList.toggle('active', isSame);
+    }
+  });
+}
+
 function setupNav() {
-  const items = document.querySelectorAll(
-    '#lu-bottom-nav .lu-nav-item, .lu-header-nav .lu-header-nav-item',
+  // Bottom nav (mobile) + sidebar (desktop)
+  const navItems = document.querySelectorAll(
+    '#lu-bottom-nav .lu-nav-item, .lu-sidebar-item',
   );
 
-  items.forEach((item) => {
+  navItems.forEach((item) => {
     // Plus button — redirects to creation if authenticated
-    if (item.classList.contains('lu-nav-plus')) {
+    if (
+      item.classList.contains('lu-nav-plus') ||
+      item.classList.contains('lu-sidebar-plus')
+    ) {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         if (auth.isAuthenticated()) {
@@ -59,26 +91,16 @@ function setupNav() {
       if (targetRoute) {
         window.location.hash = `#${targetRoute}`;
       }
-
-      items.forEach((i) => {
-        if (!i.classList.contains('lu-nav-plus')) {
-          const isSame = i.dataset.route === targetRoute;
-          i.classList.toggle('active', isSame);
-        }
-      });
+      syncActiveState(targetRoute);
     });
   });
 
   // Set initial active state based on current route
   const currentPath = window.location.hash.slice(1) || '/';
-  items.forEach((item) => {
+  navItems.forEach((item) => {
     const route = item.dataset.route;
     if (route && currentPath.startsWith(route)) {
-      items.forEach((i) => {
-        if (!i.classList.contains('lu-nav-plus')) {
-          i.classList.toggle('active', i.dataset.route === route);
-        }
-      });
+      syncActiveState(route);
     }
   });
 }
