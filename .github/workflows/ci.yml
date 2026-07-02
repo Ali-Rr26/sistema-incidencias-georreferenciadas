@@ -97,3 +97,6 @@ jobs:
 
       - name: Run backend tests
         run: composer run test
+
+      - name: Check frontend constants are up-to-date
+        run: php artisan incidents:generate-frontend-constants --check
