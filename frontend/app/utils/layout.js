@@ -11,10 +11,12 @@
  */
 
 export function initShell() {
-  // The admin shell template has `style="display: none"` on #main-wrapper
-  // to hide it before JS is ready. Unhide it now that we're initializing.
+  // The admin shell template attaches `.layout-hidden` (see
+  // `app/layout/layout.component.css`) to `#main-wrapper` to keep the
+  // shell invisible until the JS layer has wired all the event
+  // listeners. Now that we know we're initializing, remove the class.
   const mainWrapper = document.getElementById('main-wrapper');
-  if (mainWrapper) mainWrapper.style.display = '';
+  if (mainWrapper) mainWrapper.classList.remove('layout-hidden');
 
   const pageWrapper = document.querySelector('.page-wrapper');
   if (pageWrapper) pageWrapper.style.display = 'block';

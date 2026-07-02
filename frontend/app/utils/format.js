@@ -6,10 +6,13 @@
  * `incidencias/pages/detail/incidencias.detail.component.js`, and
  * `incidencias/pages/pendientes/pendientes.component.js`.
  *
- * `STATUS_LABEL` is defined inline for now; the `fix-high-audit-findings`
- * change (PR #3) will replace it with a re-export from the generated
- * `utils/status.constants.js` (sourced from the `IncidentStatus` enum).
+ * `STATUS_LABEL` is re-exported from the generated
+ * `utils/status.constants.js` (sourced from the `IncidentStatus` enum
+ * on the backend via `incidents:generate-frontend-constants`).
+ * Don't redefine it here — CI will fail.
  */
+
+export { STATUS_LABEL } from './status.constants.js';
 
 /**
  * Escape a string so it is safe to interpolate into an HTML template.
@@ -49,20 +52,6 @@ export function timeAgo(dateStr) {
     month: 'short',
   });
 }
-
-/**
- * Map from incident status keys to Spanish display labels.
- *
- * Includes `pending_operator` because both `incidencias.detail.component.js`
- * and `pendientes.component.js` rely on it; the four known call sites
- * converge on this single superset.
- */
-export const STATUS_LABEL = Object.freeze({
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-  pending_operator: 'Pendiente de operador',
-});
 
 /**
  * Map from incident priority keys to Spanish display labels.
