@@ -1,42 +1,71 @@
 /**
  * Hash-based SPA Router with persistent app shell.
  *
- * Routes marked shell:true mount their template into #page-outlet (inside the
- * persistent navbar+sidebar shell). All other routes (login) mount into
- * #auth-outlet and hide the shell.
+ * Routes can mount inside one of several registered shells:
+ *   - 'admin' — navbar + sidebar layout for back-office users
+ *   - 'user'  — Instagram-style layout (top bar + sidebar desktop, bottom nav mobile)
  *
- * Shell initialisation (user data, logout wiring, layout events) runs exactly
- * once per session via setShellInitFn().
+ * Each shell is registered via registerShell() with:
+ *   - mount:    fetches and injects the shell template into #shell-outlet
+ *   - init:     runs once after the shell is first shown (wires nav, user data, etc.)
+ *   - outlet:   CSS selector for the per-page outlet inside the shell
+ *
+ * Routes that don't pass a shell name render full-page into #auth-outlet (login, etc.).
  */
-import { initShell, initPage } from '../utils/layout.js';
+import { initPage } from '../utils/layout.js';
 
 class Router {
   constructor() {
     this.routes = [];
+    this.shells = new Map();
     this.currentComponent = null;
     this._boundResolve = () => this.resolve();
-    this._shellInitialized = false;
-    this._shellInitFn = null;
+    this._shellState = new Map(); // shell name -> { mounted, initialized }
+    this._activeShell = null;
   }
 
   /**
-   * @param {string}   pattern  - hash path, e.g. '/login'
-   * @param {object}   component
-   * @param {Array}    guards   - optional canActivate guards
-   * @param {boolean}  shell    - true → mount inside persistent app shell
+   * @param {string} pattern  - hash path, e.g. '/login'
+   * @param {object} component
+   * @param {Array}  guards   - optional canActivate guards
+   * @param {string|boolean|null} shell - shell name (string), true (legacy 'admin'), or null
    */
-  addRoute(pattern, component, guards = [], shell = false) {
+  addRoute(pattern, component, guards = [], shell = null) {
+    if (shell === true) shell = 'admin';
     this.routes.push({ pattern, component, guards, shell });
   }
 
-  /** Callback invoked once when the shell is first shown (user data, logout). */
+  /**
+   * Register a shell that can host routes.
+   *
+   * @param {string}   name
+   * @param {object}   config
+   * @param {Function} config.mount        - async () => void. Injects shell HTML.
+   * @param {Function} config.init         - async () => void. Runs once when shell is first shown.
+   * @param {string}   config.outlet       - CSS selector for the per-page outlet.
+   * @param {Function} config.updateActive - (path: string) => void. Updates nav active state.
+   */
+  registerShell(name, { mount, init, outlet, updateActive }) {
+    if (!mount || !outlet) {
+      throw new Error(`registerShell(${name}): mount and outlet are required`);
+    }
+    this.shells.set(name, { mount, init, outlet, updateActive });
+    this._shellState.set(name, { mounted: false, initialized: false });
+  }
+
+  /**
+   * @deprecated Use registerShell() instead. Kept for backwards compatibility —
+   * registers an 'admin' shell using the legacy setShellInitFn() callback.
+   */
   setShellInitFn(fn) {
-    this._shellInitFn = fn;
+    this._legacyShellInitFn = fn;
   }
 
   /** Reset shell init state — call on logout so next login re-runs shell init. */
   resetShell() {
-    this._shellInitialized = false;
+    for (const [name] of this._shellState) {
+      this._shellState.set(name, { mounted: false, initialized: false });
+    }
   }
 
   navigate(path) {
@@ -95,8 +124,7 @@ class Router {
     this.currentComponent = component;
 
     if (shell) {
-      await this._mountInShell(component);
-      this._updateSidebarActive(path);
+      await this._mountInShell(shell, component, path);
     } else {
       await this._mountFull(component);
     }
@@ -107,7 +135,7 @@ class Router {
   /**
    * Match a route pattern against a path.
    * @param {string} pattern - e.g. '/incidencias/:id'
-   * @param {string} path - e.g. '/incidencias/42'
+   * @param {string} path    - e.g. '/incidencias/42'
    * @returns {object|null} params object or null if no match
    */
   _matchRoute(pattern, path) {
@@ -126,41 +154,93 @@ class Router {
     return params;
   }
 
-  async _mountInShell(component) {
-    const shell = document.getElementById('main-wrapper');
+  async _mountInShell(shellName, component, path) {
+    const shell = this.shells.get(shellName);
+    if (!shell) {
+      throw new Error(`Shell not registered: ${shellName}`);
+    }
+
+    const state = this._shellState.get(shellName);
+
+    // If switching to a different shell, unmount the previous one
+    if (this._activeShell && this._activeShell !== shellName) {
+      const prevShell = this.shells.get(this._activeShell);
+      if (prevShell) {
+        const outlet = document.querySelector(prevShell.outlet);
+        if (outlet) outlet.innerHTML = '';
+        // Run shell cleanup if provided (unsub listeners, etc.)
+        if (typeof prevShell.destroy === 'function') {
+          try {
+            prevShell.destroy();
+          } catch (err) {
+            console.error(
+              `[Router] Error destroying shell '${this._activeShell}':`,
+              err,
+            );
+          }
+        }
+      }
+      // Clear shell-outlet to remove previous shell HTML
+      const shellOutlet = document.getElementById('shell-outlet');
+      if (shellOutlet) shellOutlet.innerHTML = '';
+      this._shellState.set(this._activeShell, {
+        mounted: false,
+        initialized: false,
+      });
+    }
+
+    // Toggle shell visibility on full-page outlet (login)
     const authOutlet = document.getElementById('auth-outlet');
-    if (shell) shell.style.display = 'block';
     if (authOutlet) {
       authOutlet.innerHTML = '';
       authOutlet.style.display = 'none';
     }
 
-    if (!this._shellInitialized) {
-      initShell();
-      if (this._shellInitFn) await this._shellInitFn();
-      this._shellInitialized = true;
+    // Mount shell template if not mounted yet
+    if (!state.mounted) {
+      await shell.mount();
+      state.mounted = true;
     }
 
-    const outlet = document.getElementById('page-outlet');
-    if (!outlet) throw new Error('No se encontró #page-outlet');
+    // Run shell init once (user info, nav wiring, etc.)
+    if (!state.initialized) {
+      if (shell.init) {
+        await shell.init();
+      } else if (this._legacyShellInitFn) {
+        // Backwards compat path
+        await this._legacyShellInitFn();
+      }
+      state.initialized = true;
+    }
+
+    // Mount page content into the shell's outlet
+    const outlet = document.querySelector(shell.outlet);
+    if (!outlet) {
+      throw new Error(`Outlet not found for shell '${shellName}': ${shell.outlet}`);
+    }
 
     const html = await this._fetchTemplate(component.templateUrl);
     outlet.innerHTML = html;
 
     await this._injectStyles(component);
     initPage();
+
+    this._activeShell = shellName;
+    this._updateNavActive(shellName, path);
   }
 
   async _mountFull(component) {
-    const shell = document.getElementById('main-wrapper');
+    const shellOutlet = document.getElementById('shell-outlet');
+    if (shellOutlet) shellOutlet.innerHTML = '';
+
     const authOutlet = document.getElementById('auth-outlet');
-    if (shell) shell.style.display = 'none';
     if (authOutlet) authOutlet.style.display = 'block';
 
     const html = await this._fetchTemplate(component.templateUrl);
-    authOutlet.innerHTML = html;
+    if (authOutlet) authOutlet.innerHTML = html;
 
     await this._injectStyles(component);
+    this._activeShell = null;
   }
 
   async _injectStyles(component) {
@@ -181,15 +261,14 @@ class Router {
     }
   }
 
-  _updateSidebarActive(path) {
-    document.querySelectorAll('#sidebarnav .sidebar-item').forEach((item) => {
-      const link = item.querySelector('.sidebar-link');
-      if (!link) return;
-      const href = link.getAttribute('href');
-      const active = href === `#${path}`;
-      link.classList.toggle('active', active);
-      item.classList.toggle('selected', active);
-    });
+  /**
+   * Update active state on the current shell's navigation (sidebar, bottom nav, top nav).
+   */
+  _updateNavActive(shellName, path) {
+    const shell = this.shells.get(shellName);
+    if (shell?.updateActive) {
+      shell.updateActive(path);
+    }
   }
 
   async _fetchTemplate(url) {

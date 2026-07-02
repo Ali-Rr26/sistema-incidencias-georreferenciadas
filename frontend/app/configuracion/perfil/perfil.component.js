@@ -12,15 +12,22 @@ export default defineComponent({
   templateUrl: 'app/configuracion/perfil/perfil.component.html',
 
   async onInit() {
+    console.log('[Perfil] onInit called');
+
     // ─── Cargar perfil ────────────────────────────────────────
 
     try {
-      const resp = await http.get('/auth/me');
+      console.log('[Perfil] Fetching /me');
+      const resp = await http.get('/me');
+      console.log('[Perfil] Response:', resp);
       const u = resp.data ?? resp;
+      console.log('[Perfil] User data:', u);
       document.getElementById('perfil-nombre').value = u.first_name ?? '';
       document.getElementById('perfil-apellido').value = u.last_name ?? '';
       document.getElementById('perfil-telefono').value = u.phone ?? '';
-    } catch {
+      console.log('[Perfil] Fields populated');
+    } catch (err) {
+      console.error('[Perfil] Error loading profile:', err);
       mostrarToast('Error al cargar el perfil.', 'danger');
     }
 
@@ -42,10 +49,7 @@ export default defineComponent({
             document.getElementById('perfil-telefono').value.trim() || null,
         };
 
-        const password = document.getElementById('perfil-password').value;
-        if (password) {
-          payload.password = password;
-        }
+        console.log('[Perfil] Submitting payload:', payload);
 
         document.getElementById('perfil-btn-texto').classList.add('d-none');
         document
@@ -54,9 +58,11 @@ export default defineComponent({
         document.getElementById('btn-guardar-perfil').disabled = true;
 
         try {
-          await http.put('/auth/profile', payload);
+          const res = await http.put('/auth/profile', payload);
+          console.log('[Perfil] Update success:', res);
           mostrarToast('Perfil actualizado correctamente.', 'success');
         } catch (err) {
+          console.error('[Perfil] Update error:', err);
           mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
         } finally {
           document

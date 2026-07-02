@@ -1,17 +1,62 @@
 /**
- * Layout Usuario — mobile citizen shell with header + bottom nav,
- * and desktop navigation menu.
+ * User shell — Instagram-style citizen layout.
  *
- * Header: shows logo + navigation (desktop) + bell + avatar (auth) or login button (public).
- * Bottom nav: 5 items with active state and auth-guarded "+" button (mobile).
- * Content mounted in #shell-content by the router.
+ * Layout:
+ *   - Top header (always visible): logo, notification bell, avatar, login button
+ *   - Desktop sidebar (≥md): logo + 5 nav items + user info at bottom
+ *   - Mobile bottom nav (<md): 5 items
+ *   - Page content rendered inside #shell-content
+ *
+ * Outlet: #shell-content
+ * Mounted once per session; init runs once after first auth route activates.
  */
-import { defineComponent } from '../utils/component.js';
 import { auth } from '../auth/auth.service.js';
+
+const TEMPLATE_URL = 'app/layout-usuario/layout-usuario.component.html';
 
 let _unsubAuth = null;
 
-function setupHeader() {
+export const userShell = {
+  templateUrl: TEMPLATE_URL,
+
+  async mount() {
+    const response = await fetch(TEMPLATE_URL, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load user shell template: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const html = await response.text();
+    const outlet = document.getElementById('shell-outlet');
+    if (!outlet) {
+      throw new Error('userShell.mount: #shell-outlet not found in DOM');
+    }
+
+    outlet.innerHTML = html;
+  },
+
+  async init() {
+    await setupHeader();
+
+    // Listen for auth changes (login/logout)
+    _unsubAuth = auth.onAuthChange(() => setupHeader());
+
+    setupNav();
+  },
+
+  destroy() {
+    if (_unsubAuth) _unsubAuth();
+  },
+
+  outlet: '#shell-content',
+
+  updateActive(path) {
+    updateUserNavActive(path);
+  },
+};
+
+async function setupHeader() {
   const loginBtn = document.getElementById('lu-login-btn');
   const bellWrap = document.getElementById('lu-bell-wrap');
   const avatarWrap = document.getElementById('lu-avatar-wrap');
@@ -21,7 +66,16 @@ function setupHeader() {
   const sidebarUserRole = document.getElementById('lu-sidebar-user-role');
 
   if (auth.isAuthenticated()) {
-    const user = auth.getUser();
+    let user = auth.getUser();
+    if (!user) {
+      // Try to fetch user data if cache is empty (e.g. session restored via cookie)
+      try {
+        user = await auth.me();
+      } catch {
+        return; // can't render header without user data
+      }
+    }
+
     if (loginBtn) loginBtn.style.display = 'none';
     if (bellWrap) bellWrap.classList.remove('d-none');
     if (avatarWrap) avatarWrap.classList.remove('d-none');
@@ -32,7 +86,7 @@ function setupHeader() {
     }
 
     // Sidebar user info
-    if (sidebarAvatar) {
+    if (sidebarAvatar && user) {
       sidebarAvatar.textContent = (user.first_name ||
         user.email ||
         '?')[0].toUpperCase();
@@ -99,32 +153,12 @@ function setupNav() {
       syncActiveState(targetRoute);
     });
   });
-
-  // Set initial active state based on current route
-  const currentPath = window.location.hash.slice(1) || '/';
-  navItems.forEach((item) => {
-    const route = item.dataset.route;
-    if (route && currentPath.startsWith(route)) {
-      syncActiveState(route);
-    }
-  });
 }
 
-export default defineComponent({
-  templateUrl: 'app/layout-usuario/layout-usuario.component.html',
-
-  async onInit() {
-    // Setup header based on auth
-    setupHeader();
-
-    // Listen for auth changes (login/logout)
-    _unsubAuth = auth.onAuthChange(() => setupHeader());
-
-    // Setup nav actions
-    setupNav();
-  },
-
-  onDestroy() {
-    if (_unsubAuth) _unsubAuth();
-  },
-});
+/**
+ * Update active state of user shell nav based on current path.
+ * Called by router after each shell route resolves.
+ */
+export function updateUserNavActive(path) {
+  syncActiveState(path);
+}

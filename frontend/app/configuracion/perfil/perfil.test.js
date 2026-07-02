@@ -2,8 +2,8 @@
  * Perfil component unit tests — profile update form behavior.
  *
  * Tests the component contract, onInit fetch, submit handler payload,
- * and error handling. Imports the component which does not exist yet
- * (RED phase — test confirms failure before GREEN implementation).
+ * and error handling. The profile form does NOT include password change
+ * (handled by a separate recovery flow).
  */
 
 const mockHttp = vi.hoisted(() => ({
@@ -20,20 +20,13 @@ const mockRouter = vi.hoisted(() => ({
 
 vi.mock('../../core/router.js', () => ({ router: mockRouter }));
 
-// ── Import the component (will fail until perfil.component.js exists) ──
+// ── Import the component ──
 let perfilComponent;
 
-describe('perfilComponent — RED phase (test before code)', () => {
+describe('perfilComponent', () => {
   beforeAll(async () => {
-    // Dynamic import so the test file can load before the component exists
-    // During actual RED-to-GREEN cycle, this import will succeed after
-    // perfil.component.js is created.
-    try {
-      const mod = await import('./perfil.component.js');
-      perfilComponent = mod.default;
-    } catch {
-      perfilComponent = null;
-    }
+    const mod = await import('./perfil.component.js');
+    perfilComponent = mod.default;
   });
 
   beforeEach(() => {
@@ -43,7 +36,6 @@ describe('perfilComponent — RED phase (test before code)', () => {
         <input type="text" id="perfil-nombre" />
         <input type="text" id="perfil-apellido" />
         <input type="text" id="perfil-telefono" />
-        <input type="password" id="perfil-password" />
         <button type="submit" id="btn-guardar-perfil">
           <span id="perfil-btn-texto">Guardar</span>
           <span id="perfil-btn-loading" class="d-none">Guardando...</span>
@@ -64,7 +56,6 @@ describe('perfilComponent — RED phase (test before code)', () => {
   // ── Contract test ──────────────────────────────────────────
 
   it('exports defineComponent contract (templateUrl, onInit, onDestroy)', () => {
-    // At RED phase this will be null, at GREEN phase it must pass
     expect(perfilComponent).not.toBeNull();
     expect(perfilComponent).toHaveProperty('templateUrl');
     expect(perfilComponent).toHaveProperty('onInit');
@@ -73,9 +64,9 @@ describe('perfilComponent — RED phase (test before code)', () => {
     expect(typeof perfilComponent.onDestroy).toBe('function');
   });
 
-  // ── onInit fetches /auth/me and populates form ─────────────
+  // ── onInit fetches /me and populates form ──────────────────
 
-  it('onInit fetches user profile via GET /auth/me and populates fields', async () => {
+  it('onInit fetches user profile via GET /me and populates fields', async () => {
     mockHttp.get.mockResolvedValue({
       data: {
         id: 1,
@@ -83,14 +74,14 @@ describe('perfilComponent — RED phase (test before code)', () => {
         last_name: 'Perez',
         email: 'juan@example.com',
         phone: '123456789',
-        role: { id: 1, name: 'Admin_sistema' },
+        role: { id: 1, name: 'admin_sistema' },
         organization: { id: 1, name: 'Org1' },
       },
     });
 
     await perfilComponent.onInit();
 
-    expect(mockHttp.get).toHaveBeenCalledWith('/auth/me');
+    expect(mockHttp.get).toHaveBeenCalledWith('/me');
     expect(mockHttp.get).toHaveBeenCalledTimes(1);
     expect(document.getElementById('perfil-nombre').value).toBe('Juan');
     expect(document.getElementById('perfil-apellido').value).toBe('Perez');
@@ -107,7 +98,7 @@ describe('perfilComponent — RED phase (test before code)', () => {
         last_name: 'Perez',
         email: 'juan@example.com',
         phone: '123456789',
-        role: { id: 1, name: 'Admin_sistema' },
+        role: { id: 1, name: 'admin_sistema' },
       },
     });
     mockHttp.put.mockResolvedValue({ data: { id: 1 } });
@@ -117,7 +108,6 @@ describe('perfilComponent — RED phase (test before code)', () => {
     // Modify fields
     document.getElementById('perfil-nombre').value = 'Juan Carlos';
     document.getElementById('perfil-telefono').value = '987654321';
-    document.getElementById('perfil-password').value = 'newpass123';
 
     // Submit
     document.getElementById('form-perfil').dispatchEvent(new Event('submit'));
@@ -129,13 +119,15 @@ describe('perfilComponent — RED phase (test before code)', () => {
       first_name: 'Juan Carlos',
       last_name: 'Perez',
       phone: '987654321',
-      password: 'newpass123',
     });
+    // Password is never part of the payload
+    const payload = mockHttp.put.mock.calls[0][1];
+    expect(payload).not.toHaveProperty('password');
   });
 
-  // ── Submit without password ────────────────────────────────
+  // ── Submit with empty phone (must send null) ───────────────
 
-  it('sends PUT /auth/profile without password when field is empty', async () => {
+  it('sends PUT /auth/profile with phone: null when phone is empty', async () => {
     mockHttp.get.mockResolvedValue({
       data: {
         id: 1,
@@ -143,7 +135,7 @@ describe('perfilComponent — RED phase (test before code)', () => {
         last_name: 'Perez',
         email: 'juan@example.com',
         phone: '',
-        role: { id: 1, name: 'Admin_sistema' },
+        role: { id: 1, name: 'admin_sistema' },
       },
     });
     mockHttp.put.mockResolvedValue({ data: { id: 1 } });
@@ -153,7 +145,6 @@ describe('perfilComponent — RED phase (test before code)', () => {
     document.getElementById('perfil-nombre').value = 'Juan';
     document.getElementById('perfil-apellido').value = 'Perez';
     document.getElementById('perfil-telefono').value = '';
-    document.getElementById('perfil-password').value = '';
 
     document.getElementById('form-perfil').dispatchEvent(new Event('submit'));
 
@@ -164,9 +155,6 @@ describe('perfilComponent — RED phase (test before code)', () => {
       last_name: 'Perez',
       phone: null,
     });
-    // password MUST NOT be in the payload when empty
-    const payload = mockHttp.put.mock.calls[0][1];
-    expect(payload).not.toHaveProperty('password');
   });
 
   // ── Error handling ─────────────────────────────────────────
@@ -179,7 +167,7 @@ describe('perfilComponent — RED phase (test before code)', () => {
         last_name: 'Perez',
         email: 'juan@example.com',
         phone: '123456789',
-        role: { id: 1, name: 'Admin_sistema' },
+        role: { id: 1, name: 'admin_sistema' },
       },
     });
     mockHttp.put.mockRejectedValue(new Error('Error de conexión'));
