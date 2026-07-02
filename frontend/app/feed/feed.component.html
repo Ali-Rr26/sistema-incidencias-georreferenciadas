@@ -1,7 +1,5 @@
-<!-- Feed — dual-mode template (desktop admin / mobile citizen) -->
-
-<!-- ─── DESKTOP MODE (admin shell) ─── -->
-<div class="feed-desktop-container d-none" id="feed-desktop">
+<!-- Feed — single responsive template (CSS-grid reflows 1-col → 2-col ≥ 992px) -->
+<div id="feed" class="feed">
   <div class="feed-main">
     <!-- Composer bar (only when auth) -->
     <div class="composer-bar d-none" id="composer-bar">
@@ -16,7 +14,7 @@
       </button>
     </div>
 
-    <!-- Filters (desktop) -->
+    <!-- Filter chips (shared across viewports) -->
     <div class="feed-filters" id="feed-filters">
       <button class="feed-chip active" data-status="">Todo</button>
       <button class="feed-chip" data-status="in_progress">En proceso</button>
@@ -52,175 +50,37 @@
     </div>
   </div>
 
-  <!-- Right panel (desktop only) -->
-  <aside class="feed-right-panel">
+  <!-- Right panel (CSS hides it < 992px, no DOM swap) -->
+  <aside class="feed-aside">
     <!-- Filtros -->
     <div class="rp-card">
-      <div
-        style="
-          font-size: 14.5px;
-          font-weight: 700;
-          color: #23283b;
-          margin-bottom: 14px;
-        "
-      >
-        Filtrar feed
+      <div class="rp-card-title">Filtrar feed</div>
+      <div class="rp-card-section-label">ESTADO</div>
+      <div class="rp-filter-chips" id="rp-status-filters">
+        <div class="rp-filter-chip active" data-status="">Todo</div>
+        <div class="rp-filter-chip" data-status="in_progress">En proceso</div>
+        <div class="rp-filter-chip" data-status="pending">Pendiente</div>
+        <div class="rp-filter-chip" data-status="resolved">Resuelto</div>
       </div>
-      <div
-        style="
-          font-size: 11px;
-          font-weight: 700;
-          color: #b3b8c6;
-          letter-spacing: 0.05em;
-          margin-bottom: 7px;
-        "
-      >
-        ESTADO
-      </div>
-      <div
-        class="rp-filter-chips"
-        style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px"
-        id="rp-status-filters"
-      >
-        <div
-          class="rp-filter-chip active"
-          data-status=""
-          style="
-            padding: 5px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Todo
-        </div>
-        <div
-          class="rp-filter-chip"
-          data-status="in_progress"
-          style="
-            padding: 5px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          En proceso
-        </div>
-        <div
-          class="rp-filter-chip"
-          data-status="pending"
-          style="
-            padding: 5px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Pendiente
-        </div>
-        <div
-          class="rp-filter-chip"
-          data-status="resolved"
-          style="
-            padding: 5px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Resuelto
-        </div>
-      </div>
-      <div
-        style="
-          font-size: 11px;
-          font-weight: 700;
-          color: #b3b8c6;
-          letter-spacing: 0.05em;
-          margin-bottom: 7px;
-        "
-      >
-        TIPO
-      </div>
-      <div
-        style="display: flex; flex-direction: column; gap: 4px"
-        id="rp-category-filters"
-      >
-        <label
-          class="rp-checkbox-label"
-          data-category="1"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12.5px;
-            color: #5b6172;
-            cursor: pointer;
-            padding: 4px 0;
-          "
-        >
+      <div class="rp-card-section-label">TIPO</div>
+      <div class="rp-category-filters" id="rp-category-filters">
+        <label class="rp-checkbox-label" data-category="1">
           <span class="rp-checkbox-box checked"
-            ><i
-              class="fa-solid fa-check"
-              style="color: #fff; font-size: 9px"
-            ></i
+            ><i class="fa-solid fa-check"></i
           ></span>
           Infraestructura
         </label>
-        <label
-          class="rp-checkbox-label"
-          data-category="2"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12.5px;
-            color: #5b6172;
-            cursor: pointer;
-            padding: 4px 0;
-          "
-        >
+        <label class="rp-checkbox-label" data-category="2">
           <span class="rp-checkbox-box checked"
-            ><i
-              class="fa-solid fa-check"
-              style="color: #fff; font-size: 9px"
-            ></i
+            ><i class="fa-solid fa-check"></i
           ></span>
           Servicios públicos
         </label>
-        <label
-          class="rp-checkbox-label"
-          data-category="3"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12.5px;
-            color: #a3a8b8;
-            cursor: pointer;
-            padding: 4px 0;
-          "
-        >
+        <label class="rp-checkbox-label" data-category="3">
           <span class="rp-checkbox-box"></span>
           Medio ambiente
         </label>
-        <label
-          class="rp-checkbox-label"
-          data-category="4"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12.5px;
-            color: #a3a8b8;
-            cursor: pointer;
-            padding: 4px 0;
-          "
-        >
+        <label class="rp-checkbox-label" data-category="4">
           <span class="rp-checkbox-box"></span>
           Seguridad
         </label>
@@ -229,262 +89,54 @@
 
     <!-- Estadísticas rápidas -->
     <div class="rp-card">
-      <div
-        style="
-          font-size: 14.5px;
-          font-weight: 700;
-          color: #23283b;
-          margin-bottom: 14px;
-        "
-      >
-        Estadísticas hoy
-      </div>
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 8px 0;
-          border-bottom: 1px solid #f5f6fa;
-        "
-      >
-        <div
-          style="
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: #f0edff;
-            color: #6a5cf3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            flex-shrink: 0;
-          "
-        >
+      <div class="rp-card-title">Estadísticas hoy</div>
+      <div class="rp-stat">
+        <div class="rp-stat-icon rp-stat-icon--purple">
           <i class="fa-solid fa-circle-plus"></i>
         </div>
         <div>
-          <div
-            style="
-              font-size: 18px;
-              font-weight: 800;
-              color: #23283b;
-              line-height: 1;
-            "
-          >
-            14
-          </div>
-          <div style="font-size: 11.5px; color: #a3a8b8">Nuevas hoy</div>
+          <div class="rp-stat-value">14</div>
+          <div class="rp-stat-label">Nuevas hoy</div>
         </div>
       </div>
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 8px 0;
-          border-bottom: 1px solid #f5f6fa;
-        "
-      >
-        <div
-          style="
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: #e3f7ec;
-            color: #16a96b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            flex-shrink: 0;
-          "
-        >
+      <div class="rp-stat">
+        <div class="rp-stat-icon rp-stat-icon--green">
           <i class="fa-solid fa-circle-check"></i>
         </div>
         <div>
-          <div
-            style="
-              font-size: 18px;
-              font-weight: 800;
-              color: #23283b;
-              line-height: 1;
-            "
-          >
-            8
-          </div>
-          <div style="font-size: 11.5px; color: #a3a8b8">Resueltas hoy</div>
+          <div class="rp-stat-value">8</div>
+          <div class="rp-stat-label">Resueltas hoy</div>
         </div>
       </div>
-      <div
-        style="display: flex; align-items: center; gap: 12px; padding: 8px 0"
-      >
-        <div
-          style="
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: #fff4d6;
-            color: #d99a00;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            flex-shrink: 0;
-          "
-        >
+      <div class="rp-stat rp-stat--last">
+        <div class="rp-stat-icon rp-stat-icon--yellow">
           <i class="fa-regular fa-clock"></i>
         </div>
         <div>
-          <div
-            style="
-              font-size: 18px;
-              font-weight: 800;
-              color: #23283b;
-              line-height: 1;
-            "
-          >
-            2.4 d
-          </div>
-          <div style="font-size: 11.5px; color: #a3a8b8">
-            Promedio resolución
-          </div>
+          <div class="rp-stat-value">2.4 d</div>
+          <div class="rp-stat-label">Promedio resolución</div>
         </div>
       </div>
     </div>
 
-    <!-- Más reportadas -->
+    <!-- Zonas activas -->
     <div class="rp-card">
-      <div
-        style="
-          font-size: 14.5px;
-          font-weight: 700;
-          color: #23283b;
-          margin-bottom: 12px;
-        "
-      >
-        Zonas activas
+      <div class="rp-card-title">Zonas activas</div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--1">1</div>
+        <div class="rp-zone-name">Quito, Pichincha</div>
+        <div class="rp-zone-count">386</div>
       </div>
-      <div
-        style="display: flex; align-items: center; gap: 10px; padding: 6px 0"
-      >
-        <div
-          style="
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            background: #6a5cf3;
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          "
-        >
-          1
-        </div>
-        <div
-          style="flex: 1; font-size: 12.5px; color: #5b6172; font-weight: 500"
-        >
-          Quito, Pichincha
-        </div>
-        <div style="font-size: 12px; font-weight: 700; color: #23283b">386</div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--2">2</div>
+        <div class="rp-zone-name">Guayaquil, Guayas</div>
+        <div class="rp-zone-count">298</div>
       </div>
-      <div
-        style="display: flex; align-items: center; gap: 10px; padding: 6px 0"
-      >
-        <div
-          style="
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            background: #8a7af5;
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          "
-        >
-          2
-        </div>
-        <div
-          style="flex: 1; font-size: 12.5px; color: #5b6172; font-weight: 500"
-        >
-          Guayaquil, Guayas
-        </div>
-        <div style="font-size: 12px; font-weight: 700; color: #23283b">298</div>
-      </div>
-      <div
-        style="display: flex; align-items: center; gap: 10px; padding: 6px 0"
-      >
-        <div
-          style="
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            background: #b0a6f8;
-            color: #fff;
-            font-size: 11px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          "
-        >
-          3
-        </div>
-        <div
-          style="flex: 1; font-size: 12.5px; color: #5b6172; font-weight: 500"
-        >
-          Cuenca, Azuay
-        </div>
-        <div style="font-size: 12px; font-weight: 700; color: #23283b">174</div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--3">3</div>
+        <div class="rp-zone-name">Cuenca, Azuay</div>
+        <div class="rp-zone-count">174</div>
       </div>
     </div>
   </aside>
-</div>
-
-<!-- ─── MOBILE MODE (citizen, in layout-usuario) ─── -->
-<div class="feed-mobile-container" id="feed-mobile">
-  <!-- Filter chips (mobile) -->
-  <div class="mobile-filters" id="mobile-filters">
-    <button class="mobile-chip active" data-status="">Todo</button>
-    <button class="mobile-chip" data-status="in_progress">En proceso</button>
-    <button class="mobile-chip" data-status="pending">Pendientes</button>
-    <button class="mobile-chip" data-status="resolved">Resueltos</button>
-  </div>
-
-  <!-- Loading skeleton -->
-  <div id="feed-cargando-mobile" class="feed-skeleton-wrap">
-    <div class="feed-skeleton-card">
-      <div class="feed-skel-head">
-        <div class="feed-skel-avatar"></div>
-        <div class="feed-skel-line w-40"></div>
-      </div>
-      <div class="feed-skel-preview"></div>
-      <div class="feed-skel-body">
-        <div class="feed-skel-line w-60"></div>
-        <div class="feed-skel-line w-30"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="feed-vacio-mobile" class="feed-empty d-none">
-    <div class="feed-empty-icon">📭</div>
-    <p>No hay incidencias publicadas.</p>
-  </div>
-
-  <div id="feed-list-mobile" class="feed-mobile-cards"></div>
-
-  <!-- Infinite scroll sentinel (mobile) -->
-  <div id="feed-sentinel-mobile" class="feed-sentinel">
-    <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
-  </div>
 </div>
