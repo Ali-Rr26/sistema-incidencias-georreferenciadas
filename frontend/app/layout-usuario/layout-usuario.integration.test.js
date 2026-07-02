@@ -56,7 +56,7 @@ describe('layout-usuario bottom nav', () => {
               <i class="fas fa-bell"></i>
               <span class="lu-nav-label">Alertas</span>
             </a>
-            <a href="#/feed" class="lu-nav-item" data-route="/perfil">
+            <a href="#/configuracion/perfil" class="lu-nav-item" data-route="/configuracion/perfil">
               <i class="fas fa-user"></i>
               <span class="lu-nav-label">Perfil</span>
             </a>
@@ -94,7 +94,7 @@ describe('layout-usuario bottom nav', () => {
           <i class="fas fa-bell"></i>
           <span class="lu-nav-label">Alertas</span>
         </a>
-        <a href="#/feed" class="lu-nav-item" data-route="/perfil">
+        <a href="#/configuracion/perfil" class="lu-nav-item" data-route="/configuracion/perfil">
           <i class="fas fa-user"></i>
           <span class="lu-nav-label">Perfil</span>
         </a>

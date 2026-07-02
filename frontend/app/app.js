@@ -123,12 +123,7 @@ router.addRoute(
   [roleGuard(adminOnlyRoles)],
   true,
 );
-router.addRoute(
-  '/configuracion/perfil',
-      perfilComponent,
-      [authGuard],
-      true,
-    );
+router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], true);
 router.addRoute('/not-found', notFoundComponent, [authGuard], true);
 
 router.setShellInitFn(shellInitFn);
