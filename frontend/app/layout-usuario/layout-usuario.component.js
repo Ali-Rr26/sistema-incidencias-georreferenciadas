@@ -35,7 +35,9 @@ function setupHeader() {
 }
 
 function setupNav() {
-  const items = document.querySelectorAll('#lu-bottom-nav .lu-nav-item, .lu-header-nav .lu-header-nav-item');
+  const items = document.querySelectorAll(
+    '#lu-bottom-nav .lu-nav-item, .lu-header-nav .lu-header-nav-item',
+  );
 
   items.forEach((item) => {
     // Plus button — redirects to creation if authenticated

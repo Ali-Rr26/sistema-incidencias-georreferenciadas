@@ -3,8 +3,6 @@ import { http } from '../core/http.service.js';
 import { auth } from '../auth/auth.service.js';
 
 const POR_PAGINA = 10;
-const CAT_EMOJIS = ['🔧', '🔒', '🌿', '💧', '🚨', '🏗️', '⚡', '📍'];
-
 const STATUS_LABEL = {
   pending: 'Pendiente',
   in_progress: 'En proceso',
@@ -51,10 +49,6 @@ function getUserDisplayName(user) {
   return parts.length ? parts.join(' ') : 'Usuario';
 }
 
-function catEmoji(id) {
-  return CAT_EMOJIS[(id ?? 0) % CAT_EMOJIS.length];
-}
-
 function resolveAvatar(avatar) {
   if (!avatar) return null;
   if (typeof avatar === 'string') return avatar;
@@ -83,7 +77,6 @@ function renderCard(inc) {
   const catName = inc.category?.name ?? 'Categoría';
   const locName = inc.location?.name ?? '';
   const statusLabel = STATUS_LABEL[inc.status] ?? inc.status;
-  const emoji = catEmoji(inc.incident_category_id);
   const userName = getUserDisplayName(inc.user);
   const initials = getInitials(inc.user);
   const tiempo = timeAgo(inc.created_at);
@@ -429,15 +422,20 @@ export default defineComponent({
       rpStatusFilters.addEventListener('click', (e) => {
         const chip = e.target.closest('.rp-filter-chip');
         if (!chip) return;
-        
+
         // Sync desktop top filters & mobile chips & right sidebar chips
-        document.querySelectorAll('.rp-filter-chip, .feed-chip, .mobile-chip').forEach((c) => {
-          c.classList.toggle('active', c.dataset.status === chip.dataset.status);
-        });
-        
+        document
+          .querySelectorAll('.rp-filter-chip, .feed-chip, .mobile-chip')
+          .forEach((c) => {
+            c.classList.toggle(
+              'active',
+              c.dataset.status === chip.dataset.status,
+            );
+          });
+
         filtroStatus = chip.dataset.status;
         paginaActual = 1;
-        
+
         if (observer) observer.disconnect();
         fetchIncidencias(1, false).then(() => setupInfiniteScroll());
       });
@@ -449,32 +447,39 @@ export default defineComponent({
       rpCategoryFilters.addEventListener('click', (e) => {
         const label = e.target.closest('.rp-checkbox-label');
         if (!label) return;
-        
+
         const box = label.querySelector('.rp-checkbox-box');
         if (!box) return;
-        
+
         const checked = box.classList.toggle('checked');
         if (checked) {
-          box.innerHTML = '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
+          box.innerHTML =
+            '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
           label.style.color = '#5b6172';
         } else {
           box.innerHTML = '';
           label.style.color = '#a3a8b8';
         }
-        
+
         // Trigger local filtering on category names
-        const checkedLabels = Array.from(document.querySelectorAll('.rp-checkbox-label'))
-          .filter(l => l.querySelector('.rp-checkbox-box').classList.contains('checked'))
-          .map(l => l.textContent.trim().toLowerCase());
-          
+        const checkedLabels = Array.from(
+          document.querySelectorAll('.rp-checkbox-label'),
+        )
+          .filter((l) =>
+            l.querySelector('.rp-checkbox-box').classList.contains('checked'),
+          )
+          .map((l) => l.textContent.trim().toLowerCase());
+
         const listEl = document.getElementById(CTX.list);
         if (listEl) {
           if (checkedLabels.length === 0) {
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
           } else {
-            const filtered = todasLasIncidencias.filter(inc => {
+            const filtered = todasLasIncidencias.filter((inc) => {
               const cat = (inc.category?.name ?? '').toLowerCase();
-              return checkedLabels.some(l => cat.includes(l) || l.includes(cat));
+              return checkedLabels.some(
+                (l) => cat.includes(l) || l.includes(cat),
+              );
             });
             listEl.innerHTML = filtered.map(renderCard).join('');
           }

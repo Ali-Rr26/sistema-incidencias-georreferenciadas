@@ -4,7 +4,10 @@
 
 body.feed-view {
   background: #f3f4f9;
-  font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+  font-family:
+    'Be Vietnam Pro',
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -45,7 +48,7 @@ body.feed-view {
   background: #fff;
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 1px 3px rgba(20,20,50,.04);
+  box-shadow: 0 1px 3px rgba(20, 20, 50, 0.04);
   border: 1px solid #eef0f5;
 }
 
@@ -82,19 +85,19 @@ body.feed-view {
   background: #eef0f5;
   color: #6b7180;
 }
-.rp-filter-chip[data-status="in_progress"].active {
+.rp-filter-chip[data-status='in_progress'].active {
   background: #e4e8ff;
   color: #5a6ff0;
 }
-.rp-filter-chip[data-status="pending"].active {
+.rp-filter-chip[data-status='pending'].active {
   background: #fff4d6;
   color: #d99a00;
 }
-.rp-filter-chip[data-status="resolved"].active {
+.rp-filter-chip[data-status='resolved'].active {
   background: #d8f6e7;
   color: #16a96b;
 }
-.rp-filter-chip[data-status=""].active {
+.rp-filter-chip[data-status=''].active {
   background: #f0edff;
   color: #6a5cf3;
 }
@@ -104,7 +107,7 @@ body.feed-view {
   background: #fff;
   border-radius: 18px;
   padding: 16px 18px;
-  box-shadow: 0 1px 3px rgba(20,20,50,.04);
+  box-shadow: 0 1px 3px rgba(20, 20, 50, 0.04);
   display: flex;
   align-items: center;
   gap: 13px;
@@ -161,7 +164,9 @@ body.feed-view {
   border: none;
   box-shadow: 0 10px 20px -10px rgba(106, 92, 243, 0.6);
   white-space: nowrap;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 .composer-btn:hover {
   transform: translateY(-1px);
@@ -373,9 +378,15 @@ body.feed-view {
   background-size: 200% 100%;
   animation: feed-shimmer 1.4s infinite;
 }
-.feed-skel-line.w-40 { width: 40%; }
-.feed-skel-line.w-60 { width: 60%; }
-.feed-skel-line.w-30 { width: 30%; }
+.feed-skel-line.w-40 {
+  width: 40%;
+}
+.feed-skel-line.w-60 {
+  width: 60%;
+}
+.feed-skel-line.w-30 {
+  width: 30%;
+}
 
 .feed-skel-preview {
   height: 180px;
@@ -392,8 +403,12 @@ body.feed-view {
 }
 
 @keyframes feed-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .feed-sentinel {
@@ -420,7 +435,9 @@ body.feed-view {
   animation: feed-spin 0.7s linear infinite;
 }
 @keyframes feed-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .feed-empty {
