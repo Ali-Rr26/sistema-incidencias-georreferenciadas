@@ -12,7 +12,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Abrir incidencia existente, localizar selector de estado.
 - **Criterio:** Dropdown muestra Pendiente, En Proceso, Resuelto, Cerrado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -34,7 +34,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Seleccionar "En Proceso" del dropdown, click en "Guardar Estado".
 - **Criterio:** Badge/color del estado cambia, pestaña historial se actualiza automáticamente.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -56,7 +56,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Ir a pestaña "Historial" de una incidencia, ver lista de cambios.
 - **Criterio:** Lista ordenada cronológicamente (más reciente primero), muestra estado anterior → nuevo, usuario, fecha/hora.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -78,7 +78,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Intentar seleccionar un estado no permitido por flujo (ej: Pendiente → Cerrado).
 - **Criterio:** Opción no aparece en dropdown o aparece deshabilitada.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -89,7 +89,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Cambiar estado a "Resuelto", observar datos mostrados.
 - **Criterio:** Campo "Fecha resolución: [dd/mm/aaaa hh:mm]" visible.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
