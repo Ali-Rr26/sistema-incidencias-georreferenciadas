@@ -33,12 +33,14 @@ function setupHeader() {
 
     // Sidebar user info
     if (sidebarAvatar) {
-      sidebarAvatar.textContent = (user.first_name || user.email || '?')[0].toUpperCase();
+      sidebarAvatar.textContent = (user.first_name ||
+        user.email ||
+        '?')[0].toUpperCase();
     }
     if (sidebarUserName && user) {
       sidebarUserName.textContent = user.first_name
-? `${user.first_name} ${user.last_name || ''}`.trim()
-: user.email;
+        ? `${user.first_name} ${user.last_name || ''}`.trim()
+        : user.email;
     }
     if (sidebarUserRole && user?.role?.name) {
       sidebarUserRole.textContent = user.role.name.replace(/_/g, ' ');
@@ -52,14 +54,17 @@ function setupHeader() {
 
 function syncActiveState(targetRoute) {
   // Update active class on both mobile bottom nav and desktop sidebar
-  document.querySelectorAll(
-    '#lu-bottom-nav .lu-nav-item, .lu-sidebar-item',
-  ).forEach((i) => {
-    if (!i.classList.contains('lu-nav-plus') && !i.classList.contains('lu-sidebar-plus')) {
-      const isSame = i.dataset.route === targetRoute;
-      i.classList.toggle('active', isSame);
-    }
-  });
+  document
+    .querySelectorAll('#lu-bottom-nav .lu-nav-item, .lu-sidebar-item')
+    .forEach((i) => {
+      if (
+        !i.classList.contains('lu-nav-plus') &&
+        !i.classList.contains('lu-sidebar-plus')
+      ) {
+        const isSame = i.dataset.route === targetRoute;
+        i.classList.toggle('active', isSame);
+      }
+    });
 }
 
 function setupNav() {

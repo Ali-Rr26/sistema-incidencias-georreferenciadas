@@ -7,7 +7,6 @@
     <span class="lu-logo-text">GeoReporta</span>
   </div>
 
-
   <div class="lu-header-right" id="lu-header-right">
     <!-- Notification bell (auth) -->
     <div class="lu-bell-wrap d-none" id="lu-bell-wrap">
@@ -28,50 +27,63 @@
   <div id="shell-content"></div>
 </main>
 
-    <!-- Sidebar (desktop only) -->
-    <aside class="lu-sidebar d-none d-md-flex" id="lu-sidebar">
-      <!-- Sidebar Logo -->
-      <div class="lu-sidebar-logo">
-        <i class="fas fa-location-dot lu-logo-icon"></i>
-        <span class="lu-logo-text">GeoReporta</span>
-      </div>
+<!-- Sidebar (desktop only) -->
+<aside class="lu-sidebar d-none d-md-flex" id="lu-sidebar">
+  <!-- Sidebar Logo -->
+  <div class="lu-sidebar-logo">
+    <i class="fas fa-location-dot lu-logo-icon"></i>
+    <span class="lu-logo-text">GeoReporta</span>
+  </div>
 
-      <!-- Sidebar Nav -->
-      <nav class="lu-sidebar-nav" id="lu-sidebar-nav">
-        <a href="#/feed" class="lu-sidebar-item active" data-route="/feed">
-          <i class="fas fa-house"></i>
-          <span>Feed</span>
-        </a>
-        <a href="#/feed" class="lu-sidebar-item" data-route="/mapa">
-          <i class="fas fa-map"></i>
-          <span>Mapa</span>
-        </a>
-        <a href="javascript:void(0)" class="lu-sidebar-item lu-sidebar-plus" id="lu-sidebar-plus" data-route="">
-          <i class="fas fa-plus"></i>
-          <span>Reportar</span>
-        </a>
-        <a href="#/feed" class="lu-sidebar-item" data-route="/alertas">
-          <i class="fas fa-bell"></i>
-          <span>Alertas</span>
-        </a>
-        <a href="#/configuracion/perfil" class="lu-sidebar-item" data-route="/configuracion/perfil">
-          <i class="fas fa-user"></i>
-          <span>Mi Perfil</span>
-        </a>
-      </nav>
+  <!-- Sidebar Nav -->
+  <nav class="lu-sidebar-nav" id="lu-sidebar-nav">
+    <a href="#/feed" class="lu-sidebar-item active" data-route="/feed">
+      <i class="fas fa-house"></i>
+      <span>Feed</span>
+    </a>
+    <a href="#/feed" class="lu-sidebar-item" data-route="/mapa">
+      <i class="fas fa-map"></i>
+      <span>Mapa</span>
+    </a>
+    <a
+      href="javascript:void(0)"
+      class="lu-sidebar-item lu-sidebar-plus"
+      id="lu-sidebar-plus"
+      data-route=""
+    >
+      <i class="fas fa-plus"></i>
+      <span>Reportar</span>
+    </a>
+    <a href="#/feed" class="lu-sidebar-item" data-route="/alertas">
+      <i class="fas fa-bell"></i>
+      <span>Alertas</span>
+    </a>
+    <a
+      href="#/configuracion/perfil"
+      class="lu-sidebar-item"
+      data-route="/configuracion/perfil"
+    >
+      <i class="fas fa-user"></i>
+      <span>Mi Perfil</span>
+    </a>
+  </nav>
 
-      <!-- Sidebar bottom: user avatar -->
-      <div class="lu-sidebar-user" id="lu-sidebar-user">
-        <div class="lu-sidebar-avatar" id="lu-sidebar-avatar">?</div>
-        <div class="lu-sidebar-user-info">
-          <span class="lu-sidebar-user-name" id="lu-sidebar-user-name">Usuario</span>
-          <span class="lu-sidebar-user-role" id="lu-sidebar-user-role">Usuario</span>
-        </div>
-      </div>
-    </aside>
+  <!-- Sidebar bottom: user avatar -->
+  <div class="lu-sidebar-user" id="lu-sidebar-user">
+    <div class="lu-sidebar-avatar" id="lu-sidebar-avatar">?</div>
+    <div class="lu-sidebar-user-info">
+      <span class="lu-sidebar-user-name" id="lu-sidebar-user-name"
+        >Usuario</span
+      >
+      <span class="lu-sidebar-user-role" id="lu-sidebar-user-role"
+        >Usuario</span
+      >
+    </div>
+  </div>
+</aside>
 
-    <!-- Bottom navigation (mobile only) -->
-    <nav class="lu-bottom-nav d-md-none" id="lu-bottom-nav">
+<!-- Bottom navigation (mobile only) -->
+<nav class="lu-bottom-nav d-md-none" id="lu-bottom-nav">
   <a href="#/feed" class="lu-nav-item active" data-route="/feed">
     <i class="fas fa-house"></i>
     <span class="lu-nav-label">Feed</span>

@@ -149,7 +149,7 @@
 
 .lu-sidebar {
   position: fixed;
-  top: 56px;          /* below header */
+  top: 56px; /* below header */
   left: 0;
   bottom: 0;
   width: 220px;
