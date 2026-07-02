@@ -50,7 +50,7 @@ router.addRoute('/login', loginComponent);
 router.addRoute('/feed', feedComponent, [authGuard], 'user');
 router.addRoute('/feed/crear', incidenciaFormComponent, [authGuard], 'user');
 router.addRoute('/feed/:id', feedDetailComponent, [], 'user');
-router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'user');
+router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'admin');
 
 // ─── Admin routes (admin shell, role-guarded) ───────────────────────
 router.addRoute(
