@@ -8,8 +8,7 @@
         <span class="gr-breadcrumb__sep">/</span>
         <a
           href="#/incidencias"
-          class="gr-breadcrumb__item"
-          style="text-decoration: none; color: inherit"
+          class="gr-breadcrumb__item incid-detail__breadcrumb-link"
           >Incidencias</a
         >
         <span class="gr-breadcrumb__sep">/</span>
@@ -34,7 +33,7 @@
       <!-- Main info -->
       <div class="col-lg-8">
         <div class="gr-card">
-          <div style="padding: 24px 28px">
+          <div class="incid-detail__card-body">
             <div id="detalle-thumbnail" class="d-none mb-3"></div>
 
             <div class="d-flex justify-content-between align-items-start mb-3">
@@ -75,14 +74,39 @@
             </div>
 
             <div
-              class="mt-3"
-              id="detalle-coords"
-              style="
-                height: 250px;
-                border-radius: 8px;
-                border: 1px solid #dee2e6;
-              "
-            ></div>
+              class="incid-detail__map-region mt-3"
+              role="region"
+              aria-label="Mapa de ubicación de la incidencia"
+            >
+              <div id="detalle-coords" class="incid-detail__map-coords"></div>
+              <div class="incid-detail__map-inputs visually-hidden">
+                <div class="incid-detail__map-field">
+                  <label for="lat">Latitud</label>
+                  <input
+                    id="lat"
+                    name="lat"
+                    type="text"
+                    readonly
+                    aria-live="off"
+                  />
+                </div>
+                <div class="incid-detail__map-field">
+                  <label for="lng">Longitud</label>
+                  <input
+                    id="lng"
+                    name="lng"
+                    type="text"
+                    readonly
+                    aria-live="off"
+                  />
+                </div>
+              </div>
+              <div
+                class="incid-detail__map-status visually-hidden"
+                id="map-status"
+                aria-live="polite"
+              ></div>
+            </div>
           </div>
         </div>
       </div>
@@ -92,7 +116,7 @@
         <!-- Action buttons -->
         <div id="detalle-acciones" class="d-none mb-3">
           <div class="gr-card">
-            <div style="padding: 24px 28px">
+            <div class="incid-detail__card-body">
               <h5 class="fw-bold mb-3">
                 <i class="fas fa-tasks me-2"></i>Acciones
               </h5>
@@ -128,7 +152,7 @@
 
         <!-- Images -->
         <div class="gr-card">
-          <div style="padding: 24px 28px">
+          <div class="incid-detail__card-body">
             <h5 class="fw-bold mb-3">
               <i class="fas fa-images me-2"></i>Imágenes
             </h5>
@@ -149,10 +173,9 @@
                 <i class="fas fa-upload me-1"></i>Subir imagen
               </button>
               <div id="detalle-upload-progress" class="d-none mt-2">
-                <div class="progress" style="height: 6px">
+                <div class="progress incid-detail__progress">
                   <div
-                    class="progress-bar progress-bar-striped progress-bar-animated"
-                    style="width: 100%"
+                    class="progress-bar progress-bar-striped progress-bar-animated incid-detail__progress-bar"
                   ></div>
                 </div>
                 <small class="text-muted">Subiendo...</small>
@@ -173,7 +196,7 @@
 </div>
 
 <!-- Toast -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+<div class="position-fixed bottom-0 end-0 p-3 incid-detail__toast-wrapper">
   <div
     id="toast-imagen"
     class="toast align-items-center text-white bg-success border-0"

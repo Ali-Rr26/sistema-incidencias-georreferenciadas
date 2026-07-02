@@ -56,8 +56,14 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             }
         }
 
+        // REQ-2 (H2): relations[] is now caller-driven. Each controller passes
+        // the minimal set it actually consumes (see IncidentController::index
+        // vs ::show). When the key is absent we fall back to an empty eager-load
+        // set so the repository never silently retains stale behaviour.
+        $relations = $filters['relations'] ?? [];
+
         $query
-            ->with(['category', 'location', 'user', 'organization'])
+            ->with(is_array($relations) ? $relations : [])
             ->withCount('comments')
             ->when($filters['title'] ?? null, fn (Builder $q, string $v) => $q->where(function (Builder $q) use ($v): void {
                 $q->where('title', 'ilike', '%'.$v.'%')

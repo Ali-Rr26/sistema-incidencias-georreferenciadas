@@ -1,20 +1,8 @@
 import { defineComponent } from '../../../utils/component.js';
+import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { auth } from '../../../auth/auth.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-  pending_operator: 'Pendiente de operador',
-};
-
-const PRIORITY_LABEL = {
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
-};
 
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
@@ -76,7 +64,7 @@ function renderizarIncidencia(inc) {
   const thumbnailContainer = document.getElementById('detalle-thumbnail');
   if (inc.thumbnail_url) {
     thumbnailContainer.innerHTML = `
-      <img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded" style="max-height:180px;width:100%;object-fit:cover;" />
+      <img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />
     `;
     thumbnailContainer.classList.remove('d-none');
   }
@@ -130,7 +118,7 @@ async function renderMap(inc) {
   }
 
   mapEl.innerHTML =
-    '<div id="detalle-mapa" style="height: 300px; width: 100%; border-radius: 8px;"></div>';
+    '<div id="detalle-mapa" class="incid-detail__map-canvas"></div>';
 
   const map = L.map('detalle-mapa').setView([lat, lng], 15);
 
@@ -140,6 +128,25 @@ async function renderMap(inc) {
   }).addTo(map);
 
   L.marker([lat, lng]).addTo(map);
+
+  // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
+  const latInput = document.getElementById('lat');
+  const lngInput = document.getElementById('lng');
+  const mapStatus = document.getElementById('map-status');
+
+  function updateMapA11y() {
+    const c = map.getCenter();
+    const curLat = c.lat.toFixed(6);
+    const curLng = c.lng.toFixed(6);
+    if (latInput) latInput.value = curLat;
+    if (lngInput) lngInput.value = curLng;
+    if (mapStatus) {
+      mapStatus.textContent = `Coordenadas actuales: ${curLat}, ${curLng}.`;
+    }
+  }
+
+  map.on('moveend', updateMapA11y);
+  updateMapA11y();
 
   // Invalidate size after render
   setTimeout(() => map.invalidateSize(), 100);
@@ -163,7 +170,7 @@ function renderizarImagenes(images) {
       (img) => `
     <div class="mb-2 position-relative">
       <a href="${img.url}" target="_blank">
-        <img src="${img.url}" alt="${img.original_name}" class="img-fluid rounded" style="width:100%;max-height:200px;object-fit:cover;" />
+        <img src="${img.url}" alt="${img.original_name}" class="img-fluid rounded incid-detail__image" />
       </a>
       <small class="text-muted d-block text-truncate mt-1">${img.original_name}</small>
     </div>`,

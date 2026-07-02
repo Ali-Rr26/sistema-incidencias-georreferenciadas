@@ -1,4 +1,5 @@
 import { initShell } from '../utils/layout.js';
+import { ROLE_LABELS, resolveRoleName } from '../utils/role.js';
 import { auth } from '../auth/auth.service.js';
 import { router } from '../core/router.js';
 
@@ -112,22 +113,6 @@ function wireLogout() {
   });
   document.getElementById('logout-sidebar')?.addEventListener('click', logout);
 }
-
-function resolveRoleName(user) {
-  if (!user?.role) return null;
-  if (typeof user.role === 'string') return user.role;
-  if (typeof user.role === 'object' && user.role?.name) return user.role.name;
-  return null;
-}
-
-const ROLE_LABELS = {
-  admin_sistema: 'Super Administrador',
-  admin_organizacion: 'Administrador de Organización',
-  operador_organizacion: 'Operador de Organización',
-  publicador: 'Publicador',
-  usuario: 'Usuario',
-  operador_sistema: 'Operador de Sistema',
-};
 
 function getRoleDisplayName(roleName) {
   return ROLE_LABELS[roleName] || roleName;

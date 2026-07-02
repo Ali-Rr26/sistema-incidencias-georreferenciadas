@@ -309,8 +309,12 @@ describe('perfilComponent — shell independence', () => {
         await perfilComponent.onInit();
 
         expect(document.getElementById('perfil-nombre').value).toBe('Maria');
-        expect(document.getElementById('perfil-apellido').value).toBe('Gonzalez');
-        expect(document.getElementById('perfil-telefono').value).toBe('5551234567');
+        expect(document.getElementById('perfil-apellido').value).toBe(
+          'Gonzalez',
+        );
+        expect(document.getElementById('perfil-telefono').value).toBe(
+          '5551234567',
+        );
       });
 
       it('does not introduce shell-specific selectors into the rendered DOM', async () => {
@@ -355,21 +359,21 @@ describe('perfilComponent — shell independence', () => {
       '.lu-header',
     ];
 
-    const sources = [
-      'perfil.component.js',
-      'perfil.component.html',
-    ];
+    const sources = ['perfil.component.js', 'perfil.component.html'];
 
-    it.each(sources)('%s does not contain shell-specific selectors', (filename) => {
-      const filePath = resolve(__dirname, filename);
-      const source = readFileSync(filePath, 'utf8');
+    it.each(sources)(
+      '%s does not contain shell-specific selectors',
+      (filename) => {
+        const filePath = resolve(__dirname, filename);
+        const source = readFileSync(filePath, 'utf8');
 
-      for (const forbidden of forbiddenSubstrings) {
-        expect(
-          source.includes(forbidden),
-          `expected ${filename} NOT to contain "${forbidden}"`,
-        ).toBe(false);
-      }
-    });
+        for (const forbidden of forbiddenSubstrings) {
+          expect(
+            source.includes(forbidden),
+            `expected ${filename} NOT to contain "${forbidden}"`,
+          ).toBe(false);
+        }
+      },
+    );
   });
 });

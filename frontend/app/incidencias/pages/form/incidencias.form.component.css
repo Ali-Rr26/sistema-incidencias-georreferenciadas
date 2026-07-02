@@ -217,3 +217,44 @@
     border-radius: 8px;
   }
 }
+
+/* === A11y map wrapper (PR #3 H6) ───────────────────────── */
+
+/* The role=region wrapper is layout-transparent so the existing
+   CSS grid placement of the map canvas is preserved to ±2 px. */
+.incid-form__map-region {
+  display: contents;
+}
+
+.incid-form__map-help {
+  font-size: 13px;
+}
+
+.incid-form__map-error {
+  display: none;
+  font-size: 13px;
+}
+
+/* === Lifted from inline (PR #3 H10) ─────────────────────── */
+
+/* Breadcrumb link that should look like the surrounding text but
+   still be navigable (no underline, inherit colour). */
+.incid-form__breadcrumb-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Padding inside the outer form-card body. */
+.incid-form__form-card-body {
+  padding: 28px 32px;
+}
+
+/* Required-fields hint paragraph. */
+.incid-form__required-hint {
+  font-size: 13px;
+}
+
+/* Toast wrapper stacking context. */
+.incid-form__toast-wrapper {
+  z-index: 9999;
+}

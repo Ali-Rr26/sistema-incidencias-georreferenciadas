@@ -44,7 +44,14 @@ export default defineComponent({
       const el = document.getElementById(id);
       if (el) {
         el.textContent = '';
-        el.style.display = 'none';
+        // `incid-form__map-error` keeps its font-size + hidden-by-default
+        // styling; we only toggle visibility here.
+        if (el.classList.contains('incid-form__map-error')) {
+          el.style.display = 'none';
+        } else {
+          el.classList.remove('d-block');
+          el.classList.add('d-none');
+        }
       }
     }
 
@@ -52,17 +59,20 @@ export default defineComponent({
       const el = document.getElementById(id);
       if (el) {
         el.textContent = msg;
-        el.style.display = 'block';
+        if (el.classList.contains('incid-form__map-error')) {
+          el.style.display = 'block';
+        } else {
+          el.classList.remove('d-none');
+          el.classList.add('d-block');
+        }
       }
     }
 
     function resetAllErrors() {
-      document
-        .querySelectorAll(`[id^="${P}error-"]`)
-        .forEach((el) => {
-          el.textContent = '';
-          el.style.display = 'none';
-        });
+      document.querySelectorAll(`[id^="${P}error-"]`).forEach((el) => {
+        el.textContent = '';
+        el.style.display = 'none';
+      });
       const banner = document.getElementById(P + 'error');
       if (banner) {
         banner.textContent = '';
@@ -105,6 +115,26 @@ export default defineComponent({
     }
 
     map.on('click', (e) => setMarker(e.latlng.lat, e.latlng.lng));
+
+    // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
+    const latInput = document.getElementById('lat');
+    const lngInput = document.getElementById('lng');
+    const mapStatus = document.getElementById('map-status');
+
+    function updateMapA11y() {
+      const c = map.getCenter();
+      const lat = c.lat.toFixed(6);
+      const lng = c.lng.toFixed(6);
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+      if (mapStatus) {
+        mapStatus.textContent = `Coordenadas actuales: ${lat}, ${lng}.`;
+      }
+    }
+
+    map.on('moveend', updateMapA11y);
+    updateMapA11y();
+
     setTimeout(() => map.invalidateSize(), 100);
 
     // Re-invalidate when the map container is resized (e.g. viewport change
@@ -118,38 +148,40 @@ export default defineComponent({
     }
 
     // ── Geolocation ──
-    document.getElementById(P + 'btn-geo')?.addEventListener('click', function () {
-      if (!navigator.geolocation) {
-        showFieldError(
-          P + 'error-geom',
-          'Geolocalización no disponible en este navegador.',
-        );
-        return;
-      }
-      const btn = this;
-      btn.disabled = true;
-      btn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-1"></span> Detectando...';
-
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setMarker(pos.coords.latitude, pos.coords.longitude);
-          map.setZoom(16);
-          btn.disabled = false;
-          btn.innerHTML =
-            '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
-        },
-        () => {
+    document
+      .getElementById(P + 'btn-geo')
+      ?.addEventListener('click', function () {
+        if (!navigator.geolocation) {
           showFieldError(
             P + 'error-geom',
-            'No se pudo obtener la ubicación. Verifique los permisos del navegador.',
+            'Geolocalización no disponible en este navegador.',
           );
-          btn.disabled = false;
-          btn.innerHTML =
-            '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
-        },
-      );
-    });
+          return;
+        }
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-1"></span> Detectando...';
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setMarker(pos.coords.latitude, pos.coords.longitude);
+            map.setZoom(16);
+            btn.disabled = false;
+            btn.innerHTML =
+              '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
+          },
+          () => {
+            showFieldError(
+              P + 'error-geom',
+              'No se pudo obtener la ubicación. Verifique los permisos del navegador.',
+            );
+            btn.disabled = false;
+            btn.innerHTML =
+              '<i class="fas fa-crosshairs me-1"></i> Usar mi ubicación actual';
+          },
+        );
+      });
 
     // ── Load categories (flat) ──
     try {
