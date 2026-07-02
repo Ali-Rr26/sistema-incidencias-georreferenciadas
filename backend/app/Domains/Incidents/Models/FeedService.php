@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class FeedService
@@ -11,6 +12,7 @@ class FeedService
     private const CANDIDATE_LIMIT = 500;
 
     private const V2_ITEMS_KEY = 'feed:v2:items';
+
     private const V2_INDEX_KEY = 'feed:v2:index';
 
     /** @deprecated Legacy keys — use feed:v2:* instead */
@@ -33,7 +35,10 @@ class FeedService
         // Wrap in try-catch for backward compat with tests mocking old key expectations
         try {
             $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('Feed v2 index lookup failed, falling back to v1', [
+                'exception' => $e->getMessage(),
+            ]);
             $candidateIds = [];
         }
 
