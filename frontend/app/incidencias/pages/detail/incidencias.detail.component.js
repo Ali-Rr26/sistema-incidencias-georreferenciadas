@@ -10,6 +10,22 @@ const STATUS_LABEL = {
   pending_operator: 'Pendiente de operador',
 };
 
+// CP-02-04-F: transiciones válidas por estado actual
+const VALID_TRANSITIONS = {
+  pending: ['in_progress'],
+  pending_operator: ['in_progress'],
+  in_progress: ['resolved'],
+  resolved: [],
+};
+
+// CP-02-01-F: todos los estados visibles en dropdown (Cerrado sin soporte backend)
+const DROPDOWN_STATUSES = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'in_progress', label: 'En Proceso' },
+  { value: 'resolved', label: 'Resuelto' },
+  { value: 'closed', label: 'Cerrado' },
+];
+
 const PRIORITY_LABEL = {
   high: 'Alta',
   medium: 'Media',
@@ -33,6 +49,8 @@ export default defineComponent({
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
     setupActionButtons(id, inc);
+    setupEstado(id, inc);
+    cargarHistorial(id);
   },
 
   onDestroy() {
@@ -217,6 +235,133 @@ function setupUpload(incidentId) {
       progress.classList.add('d-none');
     }
   });
+}
+
+// ── Gestión de Estado (CP-02-01-F / 02-02-F / 02-04-F / 02-05-F) ──
+
+function setupEstado(incidentId, inc) {
+  const select = document.getElementById('detalle-estado-select');
+  const btnGuardar = document.getElementById('btn-guardar-estado');
+  const btnTexto = document.getElementById('btn-estado-texto');
+  const btnLoading = document.getElementById('btn-estado-loading');
+  const errorEl = document.getElementById('detalle-estado-error');
+  const errorMsg = document.getElementById('detalle-estado-msg');
+  const resolucionEl = document.getElementById('detalle-resolucion');
+  const fechaResEl = document.getElementById('detalle-fecha-resolucion');
+
+  if (!select || !btnGuardar) return;
+
+  const currentStatus = inc.status;
+  const validNext = VALID_TRANSITIONS[currentStatus] ?? [];
+
+  // CP-02-01-F: mostrar todos los estados; CP-02-04-F: deshabilitar inválidos
+  select.innerHTML = DROPDOWN_STATUSES.map(({ value, label }) => {
+    const isCurrent = value === currentStatus;
+    const isValid = validNext.includes(value);
+    const disabled = isCurrent || !isValid;
+    return `<option value="${value}"${isCurrent ? ' selected' : ''}${disabled ? ' disabled' : ''}>${label}${isCurrent ? ' (actual)' : ''}</option>`;
+  }).join('');
+
+  if (validNext.length === 0) {
+    btnGuardar.disabled = true;
+    select.disabled = true;
+  }
+
+  // CP-02-05-F: mostrar fecha resolución si ya está resuelto
+  if (currentStatus === 'resolved' && inc.resolution_date) {
+    resolucionEl.classList.remove('d-none');
+    fechaResEl.textContent = new Date(inc.resolution_date).toLocaleString(
+      'es-EC',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      },
+    );
+  }
+
+  // CP-02-02-F: guardar nuevo estado
+  btnGuardar.addEventListener('click', async () => {
+    const newStatus = select.value;
+    if (!validNext.includes(newStatus)) return;
+
+    btnTexto.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+    btnGuardar.disabled = true;
+    errorEl.classList.add('d-none');
+
+    try {
+      const payload = { status: newStatus };
+      if (newStatus === 'resolved') {
+        payload.resolution_date = new Date().toISOString();
+      }
+      await http.put(`/incidents/${incidentId}`, payload);
+      window.location.reload();
+    } catch (err) {
+      console.error('Error al cambiar estado:', err);
+      errorMsg.textContent = err.message || 'No se pudo cambiar el estado.';
+      errorEl.classList.remove('d-none');
+      btnTexto.classList.remove('d-none');
+      btnLoading.classList.add('d-none');
+      btnGuardar.disabled = false;
+    }
+  });
+}
+
+// ── Historial de estados (CP-02-03-F) ──────────────────────
+
+async function cargarHistorial(incidentId) {
+  const loadingEl = document.getElementById('detalle-historial-loading');
+  const listEl = document.getElementById('detalle-historial-list');
+  const vacioEl = document.getElementById('detalle-historial-vacio');
+
+  if (!loadingEl || !listEl) return;
+
+  try {
+    const resp = await http.get(`/incidents/${incidentId}/status-history`);
+    const items = resp.data ?? [];
+
+    loadingEl.classList.add('d-none');
+
+    if (items.length === 0) {
+      vacioEl.classList.remove('d-none');
+      return;
+    }
+
+    // más reciente primero (DESC)
+    listEl.innerHTML = [...items]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map((item) => {
+        const prev =
+          STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
+        const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
+        const user = item.user
+          ? [item.user.first_name, item.user.last_name]
+              .filter(Boolean)
+              .join(' ')
+          : 'Sistema';
+        const fecha = new Date(item.created_at).toLocaleString('es-EC', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return `
+          <div class="border-start border-2 border-primary ps-3 mb-3">
+            <div class="small fw-semibold">${prev} → ${next}</div>
+            <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+          </div>`;
+      })
+      .join('');
+  } catch (err) {
+    console.error('Error al cargar historial:', err);
+    loadingEl.classList.add('d-none');
+    vacioEl.textContent = 'Error al cargar historial.';
+    vacioEl.classList.remove('d-none');
+  }
 }
 
 // ── Claim / Release / Confirmar ────────────────────────────
