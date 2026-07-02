@@ -1,6 +1,7 @@
 /* ============================================================
-   Unified Create Incident Component
-   Context-aware form with admin (gr-page) and citizen (ici-*) layouts.
+   Unified Create Incident Form
+   Single responsive template; CSS grid reflows field groups
+   1-col → 2-col ≥ 992px.
    ============================================================ */
 
 /* ── Shared ─────────────────────────────────────────────── */
@@ -20,7 +21,34 @@
   object-fit: cover;
 }
 
-/* ── Citizen form styles ───────────────────────────────── */
+/* ── Form layout (CSS grid field groups) ────────────────── */
+
+.incidencias-form {
+  width: 100%;
+}
+
+.form-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 992px) {
+  .form-fields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.form-fields__cell {
+  min-width: 0;
+}
+
+.form-fields__cell--wide {
+  grid-column: 1 / -1;
+}
+
+/* ── Citizen form styles (kept for compatibility) ────────── */
 
 .ici-create {
   max-width: 600px;
@@ -117,8 +145,11 @@
   color: #8e8e8e;
 }
 
+/* ── Map (responsive height via clamp) ──────────────────── */
+
 .ici-map {
   width: 100%;
+  height: clamp(280px, 50vh, 360px);
   border-radius: 12px;
   border: 2px dashed #cbd5e1;
   z-index: 1;
