@@ -18,6 +18,9 @@ class OperatorLocationController extends Controller
 
     private const TTL_SECONDS = 300;
 
+    /** ID del rol operador_organizacion en la BD. */
+    private const OPERADOR_ORG_ROLE_ID = 4;
+
     /**
      * Update the logged-in operator's location in Redis.
      */
@@ -25,8 +28,8 @@ class OperatorLocationController extends Controller
     {
         $user = $request->user();
 
-        // Enforce that only operators and system roles can ping location
-        if (! in_array($user->role_id, [1, 2, 4])) {
+        // Solo admins de sistema, operadores de sistema u operadores de org pueden reportar ubicación
+        if (! $user->isSystemAdmin() && ! in_array($user->role_id, [2, self::OPERADOR_ORG_ROLE_ID], true)) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
@@ -53,8 +56,8 @@ class OperatorLocationController extends Controller
     {
         $currentUser = $request->user();
 
-        // Enforce allowed roles (AdminSistema, OperadorSistema, AdminOrganizacion, OperadorOrganizacion)
-        if (! in_array($currentUser->role_id, [1, 2, 3, 4])) {
+        // Admins de sistema, operadores de sistema, admins de org u operadores de org
+        if (! $currentUser->isSystemAdmin() && ! in_array($currentUser->role_id, [2, 3, self::OPERADOR_ORG_ROLE_ID], true)) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
@@ -75,10 +78,10 @@ class OperatorLocationController extends Controller
             return response()->json([]);
         }
 
-        // Query active users with role "operador_organizacion" (ID 4)
+        // Query active users with role "operador_organizacion"
         $query = User::query()
             ->whereIn('id', $activeIds)
-            ->where('role_id', 4);
+            ->where('role_id', self::OPERADOR_ORG_ROLE_ID);
 
         // If organization-scoped, filter by current user's organization
         if ($currentUser->organization_id !== null) {

@@ -1,17 +1,17 @@
 import { defineComponent } from '../../utils/component.js';
 import { http } from '../../core/http.service.js';
 
+function mostrarToast(mensaje, tipo) {
+  const el = document.getElementById('toast-msg');
+  el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
+  document.getElementById('toast-msg-texto').textContent = mensaje;
+  new bootstrap.Toast(el, { delay: 3000 }).show();
+}
+
 export default defineComponent({
   templateUrl: 'app/configuracion/perfil/perfil.component.html',
 
   async onInit() {
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
     // ─── Cargar perfil ────────────────────────────────────────
 
     try {

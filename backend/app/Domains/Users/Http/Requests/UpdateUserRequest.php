@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http\Requests;
 
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -30,10 +32,13 @@ class UpdateUserRequest extends FormRequest
         }
 
         if ($user->isOrganizationAdmin()) {
-            // Cannot assign administrative roles (admin_sistema=1, operador_sistema=2)
+            // Cannot assign administrative roles (admin_sistema, operador_sistema)
             if ($this->has('role_id')) {
                 $roleId = $this->input('role_id');
-                if (in_array((int) $roleId, [1, 2], true)) {
+                if (in_array((int) $roleId, [
+                    Role::where('name', UserRole::AdminSistema->value)->first()?->id,
+                    Role::where('name', UserRole::OperadorSistema->value)->first()?->id,
+                ], true)) {
                     return false;
                 }
             }
