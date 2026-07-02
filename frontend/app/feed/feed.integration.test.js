@@ -14,7 +14,7 @@ vi.mock('../utils/layout.js', () => layout);
 import { auth } from '../auth/auth.service.js';
 
 const FEED_TEMPLATE = `
-<div class="feed-desktop-container d-none" id="feed-desktop">
+<div class="feed" id="feed">
   <div class="feed-main">
     <div class="composer-bar d-none" id="composer-bar">
       <div class="composer-avatar" id="composer-avatar">?</div>
@@ -34,18 +34,9 @@ const FEED_TEMPLATE = `
     <div id="feed-list" class="feed-cards"></div>
     <div id="feed-sentinel" class="feed-sentinel"></div>
   </div>
-  <aside class="feed-right-panel">
+  <aside class="feed-aside">
     <div class="rp-card rp-map"><div class="rp-map-placeholder"></div></div>
   </aside>
-</div>
-<div class="feed-mobile-container" id="feed-mobile">
-  <div class="mobile-filters" id="mobile-filters">
-    <button class="mobile-chip active" data-status="">Todo</button>
-  </div>
-  <div id="feed-cargando-mobile" class="feed-skeleton-wrap d-none"></div>
-  <div id="feed-vacio-mobile" class="feed-empty d-none"><p>No hay incidencias.</p></div>
-  <div id="feed-list-mobile" class="feed-mobile-cards"></div>
-  <div id="feed-sentinel-mobile" class="feed-sentinel"></div>
 </div>
 `;
 
@@ -115,7 +106,6 @@ describe('feed integration', () => {
         <div id="page-outlet">${FEED_TEMPLATE}</div>
       </div>
       <div id="auth-outlet"></div>
-      <div id="user-wrapper" style="display:none"></div>
     `;
 
     fetchMock = vi.fn(async (url) => {
@@ -170,9 +160,13 @@ describe('feed integration', () => {
     );
     expect(detailBtns.length).toBe(3);
 
-    // Desktop container exists (visibility managed by shell)
-    const desktop = document.getElementById('feed-desktop');
-    expect(desktop).not.toBeNull();
+    // Single #feed container exists (viewport reflow handled by CSS, not JS)
+    const feed = document.getElementById('feed');
+    expect(feed).not.toBeNull();
+    expect(feed.querySelector('.feed-main')).not.toBeNull();
+    expect(feed.querySelector('.feed-aside')).not.toBeNull();
+    expect(document.getElementById('feed-desktop')).toBeNull();
+    expect(document.getElementById('feed-mobile')).toBeNull();
 
     feedComponent.onDestroy();
   });
