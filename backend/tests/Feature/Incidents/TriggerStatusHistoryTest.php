@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -110,7 +111,7 @@ it('CP-02-06-B: el trigger registra created_at con timestamp válido reciente', 
         ->latest('created_at')
         ->first();
 
-    $timestamp = \Carbon\Carbon::parse($record->created_at);
+    $timestamp = Carbon::parse($record->created_at);
 
     expect($timestamp->greaterThanOrEqualTo($before))->toBeTrue();
     expect($timestamp->lessThanOrEqualTo(now()->addSecond()))->toBeTrue();
