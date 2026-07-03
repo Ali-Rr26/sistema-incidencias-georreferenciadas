@@ -1,6 +1,7 @@
 import { router } from './core/router.js';
 import { adminShell } from './layout/layout.component.js';
 import { userShell } from './layout-usuario/layout-usuario.component.js';
+import { appShell } from './app-shell/app-shell.component.js';
 
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
@@ -26,8 +27,12 @@ import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 
 // ─── Register shells ────────────────────────────────────────────────
+// PR #2 (consolidar-layout-unico) is TRANSITIONAL: the existing 'admin'
+// and 'user' shells stay registered alongside the new unified 'app' shell.
+// PR #3 will migrate every route off 'admin'/'user' and remove them.
 router.registerShell('admin', adminShell);
 router.registerShell('user', userShell);
+router.registerShell('app', appShell);
 
 // ─── Role definitions ───────────────────────────────────────────────
 const adminOrgRoles = [
