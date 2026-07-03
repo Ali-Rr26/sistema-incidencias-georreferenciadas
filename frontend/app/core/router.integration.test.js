@@ -2,6 +2,11 @@
  * Router integration test — shell route mounting with registerShell.
  *
  * Verifies that the router correctly mounts a route inside a registered shell.
+ *
+ * Also covers the role-mismatch guard added in PR #2 of consolidar-layout-unico:
+ * when a route is tagged with a `role` and the current user's role does not
+ * match (and the tag is not 'both'), the router redirects to that user's
+ * home shell.
  */
 const layout = vi.hoisted(() => ({
   initPage: vi.fn(),
@@ -29,6 +34,10 @@ describe('router integration', () => {
     router.resetShell();
     layout.initShell.mockClear();
     layout.initPage.mockClear();
+    // Reset role-tracking state introduced by PR #2 (T-2.4).
+    if (typeof router.setCurrentUserRole === 'function') {
+      router.setCurrentUserRole(null);
+    }
 
     document.body.innerHTML = `
       <div id="main-wrapper">
@@ -57,6 +66,19 @@ describe('router integration', () => {
           li.classList.toggle('selected', active);
           a.classList.toggle('active', active);
         });
+      },
+    });
+
+    // Register 'app' shell mock (PR #2 — transitional: alongside 'admin' and 'user').
+    // The unified appShell introduced in PR #1 mounts under the same #page-outlet,
+    // so its mock here mirrors the admin one for outlet purposes.
+    router.registerShell('app', {
+      mount: vi.fn().mockResolvedValue(undefined),
+      init: vi.fn().mockImplementation(() => layout.initShell()),
+      outlet: '#page-outlet',
+      updateActive() {
+        // No-op: in production, appShell.updateActive toggles
+        // .app-shell-nav-item[data-route=...].active.
       },
     });
 
@@ -116,5 +138,34 @@ describe('router integration', () => {
     expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css', {
       cache: 'no-store',
     });
+  });
+
+  // ──────────────────────────────────────────────────────────────
+  // Role-mismatch guard (PR #2 — T-2.2 + T-2.1 + T-2.4)
+  // ──────────────────────────────────────────────────────────────
+
+  it('redirects to the user home when the current user role does not match the route role', async () => {
+    const onInit = vi.fn();
+
+    // Citizen is trying to reach an admin-tagged route.
+    router.setCurrentUserRole('citizen');
+
+    router.addRoute(
+      '/dashboard',
+      {
+        templateUrl: '/templates/dashboard.html',
+        styleUrl: '/styles/dashboard.css',
+        onInit,
+      },
+      [],
+      'admin', // shell (existing semantics)
+      'admin', // role tag (NEW in PR #2)
+    );
+
+    await router.resolve();
+
+    // Citizen's home is /feed. The router must redirect — not mount the page.
+    expect(window.location.hash).toBe('#/feed');
+    expect(onInit).not.toHaveBeenCalled();
   });
 });
