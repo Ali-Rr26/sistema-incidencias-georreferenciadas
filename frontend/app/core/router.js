@@ -24,6 +24,7 @@ class Router {
   constructor() {
     this.routes = [];
     this.shells = new Map();
+    this._shellStyleUrls = {}; // shellName → CSS path (avoids stale module cache issues)
     this.currentComponent = null;
     this._boundResolve = () => this.resolve();
     this._shellState = new Map(); // shell name -> { mounted, initialized }
@@ -87,12 +88,18 @@ class Router {
    * @param {string}   config.outlet       - CSS selector for the per-page outlet.
    * @param {Function} config.updateActive - (path: string) => void. Updates nav active state.
    */
-  registerShell(name, { mount, init, outlet, updateActive }) {
+  registerShell(name, { mount, init, outlet, updateActive, styleUrl }) {
     if (!mount || !outlet) {
       throw new Error(`registerShell(${name}): mount and outlet are required`);
     }
     this.shells.set(name, { mount, init, outlet, updateActive });
     this._shellState.set(name, { mounted: false, initialized: false });
+    // Convention-based default: if the shell didn't pass styleUrl, fall back
+    // to a hardcoded CSS path matching the shell name. This avoids stale
+    // module cache scenarios where the shell module was loaded without
+    // `styleUrl` and we still want to inject its CSS.
+    const fallbackStyleUrl = `app/${name === 'app' ? 'app-shell' : `layout-${name}`}/app-shell.component.css`;
+    this._shellStyleUrls[name] = styleUrl || fallbackStyleUrl;
   }
 
   /**
@@ -289,6 +296,15 @@ class Router {
     const html = await this._fetchTemplate(component.templateUrl);
     outlet.innerHTML = html;
 
+    // Inject shell styles (e.g., grid layout, role-based visibility) before
+    // component styles so component rules can reference shell chrome.
+    // We resolve the URL through an explicit shellName → styleUrl map so
+    // this works even when the shell module was loaded with a stale cache
+    // and lacks `styleUrl`.
+    const shellStyleUrl = this._shellStyleUrls?.[shellName] || shell.styleUrl;
+    if (shellStyleUrl && !document.getElementById(`shell-style-${shellName}`)) {
+      await this._injectShellStyles(shellName, shellStyleUrl);
+    }
     await this._injectStyles(component);
     initPage();
 
@@ -319,6 +335,21 @@ class Router {
     style.textContent = css;
     document.head.appendChild(style);
     component._styleId = id;
+  }
+
+  /**
+   * Inject the shell's CSS once. The CSS path is resolved through
+   * `_shellStyleUrls` (set by `registerShell()`) so it works even when
+   * the shell module was cached without `styleUrl`.
+   */
+  async _injectShellStyles(shellName, styleUrl) {
+    if (!styleUrl) return;
+    const css = await this._fetchTemplate(styleUrl);
+    const style = document.createElement('style');
+    const id = `shell-style-${shellName}`;
+    style.id = id;
+    style.textContent = css;
+    document.head.appendChild(style);
   }
 
   _cleanupStyles(component) {

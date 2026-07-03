@@ -22,6 +22,7 @@ import { auth } from '../auth/auth.service.js';
 import { resolveRoleName } from '../utils/role.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
+const STYLE_URL = 'app/app-shell/app-shell.component.css';
 
 let _unsubAuth = null;
 
@@ -40,6 +41,7 @@ export function classifyRole(user) {
 
 export const appShell = {
   templateUrl: TEMPLATE_URL,
+  styleUrl: STYLE_URL,
 
   async mount() {
     const response = await fetch(TEMPLATE_URL, { cache: 'no-store' });
