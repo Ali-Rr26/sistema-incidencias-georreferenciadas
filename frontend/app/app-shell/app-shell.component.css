@@ -108,10 +108,14 @@ body[data-role='admin'] .app-shell-bottom-nav [data-show-on-role~='admin'] {
 body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='citizen'] {
   display: inline-flex !important;
 }
-body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='authenticated'] {
+body[data-role='citizen']
+  .app-shell-bottom-nav
+  [data-show-on-role~='authenticated'] {
   display: inline-flex !important;
 }
-body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='citizen guest'] {
+body[data-role='citizen']
+  .app-shell-bottom-nav
+  [data-show-on-role~='citizen guest'] {
   display: inline-flex !important;
 }
 body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='guest'] {
@@ -120,7 +124,9 @@ body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='guest'] {
 body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='public'] {
   display: inline-flex !important;
 }
-body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='citizen guest'] {
+body[data-role='guest']
+  .app-shell-bottom-nav
+  [data-show-on-role~='citizen guest'] {
   display: inline-flex !important;
 }
 
