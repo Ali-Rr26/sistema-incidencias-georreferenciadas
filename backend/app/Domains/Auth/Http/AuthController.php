@@ -10,6 +10,8 @@ use App\Domains\Auth\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -99,6 +101,50 @@ class AuthController
     {
         return response()->json(
             new UserResource($request->user()->load('role')),
+        );
+    }
+
+    /**
+     * PUT /api/auth/profile
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user === null) {
+            return response()->json(['message' => 'No autenticado'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'sometimes|string|max:100',
+            'last_name' => 'sometimes|string|max:100',
+            'phone' => 'sometimes|nullable|string|max:50',
+            'password' => 'sometimes|nullable|string|min:8',
+            // REQ-7 (H7 from audit): avatar MUST be an array. When the array
+            // contains an `urls` key, the inner array is capped at 5 entries
+            // and each entry MUST be a syntactically-valid URL.
+            'avatar' => ['sometimes', 'array'],
+            'avatar.urls' => Rule::when(
+                $request->has('avatar.urls'),
+                ['array', 'max:5'],
+            ),
+            'avatar.urls.*' => Rule::when(
+                $request->has('avatar.urls'),
+                ['string', 'url'],
+            ),
+        ]);
+
+        if (array_key_exists('password', $validated)) {
+            if ($validated['password'] !== null && $validated['password'] !== '') {
+                $validated['password'] = Hash::make($validated['password']);
+            } else {
+                unset($validated['password']);
+            }
+        }
+
+        $user->update($validated);
+
+        return response()->json(
+            new UserResource($user->load(['role', 'organization'])),
         );
     }
 

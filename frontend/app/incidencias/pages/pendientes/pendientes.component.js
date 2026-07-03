@@ -1,12 +1,6 @@
 import { defineComponent } from '../../../utils/component.js';
+import { STATUS_LABEL, escapeHtml } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-  pending_operator: 'Pendiente de operador',
-};
 
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/pendientes/pendientes.component.html',
@@ -162,13 +156,4 @@ function mostrarToastError(msg) {
   if (msgEl) msgEl.textContent = msg;
   el.className = 'toast align-items-center text-white bg-danger border-0';
   new bootstrap.Toast(el, { delay: 4000 }).show();
-}
-
-// ── Sanitize ───────────────────────────────────────────────
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

@@ -1,11 +1,15 @@
 /**
- * Feed component unit tests — detectContext() with DOM simulation.
+ * Feed component unit tests — single responsive template contract.
  *
- * detectContext() checks if #main-wrapper is visible → 'desktop', else 'mobile'.
- * We test the feed component's onInit behavior in different DOM states.
+ * The feed component renders a single #feed element with .feed-main and
+ * .feed-aside children. It no longer probes #main-wrapper or toggles
+ * #feed-desktop/#feed-mobile containers — viewport reflow is handled
+ * by CSS grid + media query.
  */
-// Import the component module — this also executes module-level code
-// but we only test the exported component definition
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
 const feedModule = await import('./feed.component.js');
 const feedComponent = feedModule.default;
 
@@ -17,7 +21,13 @@ function htmlResponse(body) {
   };
 }
 
-describe('feed detectContext (DOM simulation)', () => {
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const feedHtmlPath = join(__dirname, 'feed.component.html');
+const feedJsPath = join(__dirname, 'feed.component.js');
+const feedHtml = readFileSync(feedHtmlPath, 'utf8');
+const feedJs = readFileSync(feedJsPath, 'utf8');
+
+describe('feed component — single responsive template', () => {
   let fetchMock;
 
   beforeEach(() => {
@@ -35,9 +45,7 @@ describe('feed detectContext (DOM simulation)', () => {
         };
       }
       if (url.includes('feed.component.html')) {
-        return htmlResponse(
-          '<div id="feed-desktop" class="d-none"></div><div id="feed-mobile"></div>',
-        );
+        return htmlResponse('<div id="feed" class="feed"></div>');
       }
       return htmlResponse('');
     });
@@ -46,44 +54,6 @@ describe('feed detectContext (DOM simulation)', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it('detects desktop mode when #main-wrapper is visible', async () => {
-    document.body.innerHTML = `
-      <div id="main-wrapper" style="display:block">
-        <div id="page-outlet"></div>
-      </div>
-      <div id="auth-outlet"></div>
-    `;
-
-    // Verify the DOM setup
-    const wrapper = document.getElementById('main-wrapper');
-    expect(wrapper).not.toBeNull();
-    expect(wrapper.style.display).toBe('block');
-  });
-
-  it('detects mobile mode when #main-wrapper display is none', async () => {
-    document.body.innerHTML = `
-      <div id="main-wrapper" style="display:none">
-        <div id="page-outlet"></div>
-      </div>
-      <div id="auth-outlet"></div>
-    `;
-
-    const wrapper = document.getElementById('main-wrapper');
-    expect(wrapper).not.toBeNull();
-    expect(wrapper.style.display).toBe('none');
-  });
-
-  it('detects mobile mode when #main-wrapper does not exist', async () => {
-    document.body.innerHTML = `
-      <div id="user-wrapper">
-        <div id="shell-content"></div>
-      </div>
-    `;
-
-    const wrapper = document.getElementById('main-wrapper');
-    expect(wrapper).toBeNull();
   });
 
   it('component exports defineComponent contract', () => {
@@ -98,8 +68,31 @@ describe('feed detectContext (DOM simulation)', () => {
   it('onInit handles missing DOM gracefully', async () => {
     document.body.innerHTML = '';
 
-    // Should not throw
     await expect(feedComponent.onInit()).resolves.toBeUndefined();
     feedComponent.onDestroy();
+  });
+
+  it('template has exactly one #feed container (no dual desktop/mobile split)', () => {
+    expect((feedHtml.match(/id="feed"/g) || []).length).toBe(1);
+    expect(feedHtml).not.toMatch(/id="feed-desktop"/);
+    expect(feedHtml).not.toMatch(/id="feed-mobile"/);
+    expect(feedHtml).not.toMatch(/id="feed-list-mobile"/);
+    expect(feedHtml).not.toMatch(/id="feed-sentinel-mobile"/);
+    expect(feedHtml).not.toMatch(/id="feed-cargando-mobile"/);
+    expect(feedHtml).not.toMatch(/id="feed-vacio-mobile"/);
+  });
+
+  it('template uses .feed-main + .feed-aside siblings under #feed', () => {
+    expect(feedHtml).toMatch(/id="feed"[^>]*>\s*<div class="feed-main"/);
+    expect(feedHtml).toMatch(/<aside class="feed-aside"/);
+  });
+
+  it('component does not probe #main-wrapper for context detection', () => {
+    expect(feedJs).not.toMatch(/main-wrapper/);
+    expect(feedJs).not.toMatch(/detectContext/);
+    expect(feedJs).not.toMatch(/feed-list-mobile/);
+    expect(feedJs).not.toMatch(/feed-sentinel-mobile/);
+    expect(feedJs).not.toMatch(/feed-cargando-mobile/);
+    expect(feedJs).not.toMatch(/feed-vacio-mobile/);
   });
 });

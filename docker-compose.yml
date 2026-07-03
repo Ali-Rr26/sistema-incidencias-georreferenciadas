@@ -8,13 +8,16 @@ services:
       dockerfile: frontend/Dockerfile
     ports:
       - "${FRONTEND_PORT:-3000}:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html
     depends_on:
       backend:
         condition: service_started
     networks:
       - dev-network
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /usr/share/nginx/html
 
   # ==========================================
   # BACKEND
@@ -38,6 +41,10 @@ services:
       - ./backend/resources:/var/www/backend/resources
       - ./backend/database:/var/www/backend/database
       - ./backend/tests:/var/www/backend/tests
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend
     depends_on:
       db:
         condition: service_healthy

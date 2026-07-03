@@ -1,20 +1,30 @@
 /**
- * initShell — runs ONCE when the app shell (navbar + sidebar) is first shown.
- * Wires persistent UI interactions that live in index.html.
+ * initShell — wires the admin shell's persistent UI interactions:
+ *   - nav-toggler click → toggle sidebar
+ *   - sidebar-overlay click → close sidebar
+ *
+ * Called once when the admin shell is first shown (via adminShell.init()).
+ * Sidebar active state is handled by the router via updateActive().
  *
  * initPage — runs on every route change inside the shell.
- * Re-initialises Bootstrap widgets and Feather icons for newly mounted content.
+ * Re-initialises Bootstrap widgets for newly mounted content.
  */
 
 export function initShell() {
+  // The admin shell template attaches `.layout-hidden` (see
+  // `app/layout/layout.component.css`) to `#main-wrapper` to keep the
+  // shell invisible until the JS layer has wired all the event
+  // listeners. Now that we know we're initializing, remove the class.
+  const mainWrapper = document.getElementById('main-wrapper');
+  if (mainWrapper) mainWrapper.classList.remove('layout-hidden');
+
   const pageWrapper = document.querySelector('.page-wrapper');
   if (pageWrapper) pageWrapper.style.display = 'block';
 
   const navToggler = document.querySelector('.nav-toggler');
   if (navToggler) {
     navToggler.addEventListener('click', () => {
-      const wrapper = document.getElementById('main-wrapper');
-      wrapper?.classList.toggle('show-sidebar');
+      mainWrapper?.classList.toggle('show-sidebar');
       const icon = navToggler.querySelector('i');
       if (icon) {
         icon.classList.toggle('ti-menu');
@@ -26,24 +36,9 @@ export function initShell() {
   const overlay = document.getElementById('sidebar-overlay');
   if (overlay) {
     overlay.addEventListener('click', () => {
-      document.getElementById('main-wrapper')?.classList.remove('show-sidebar');
+      mainWrapper?.classList.remove('show-sidebar');
     });
   }
-
-  updateSidebarActiveState();
-  window.addEventListener('hashchange', updateSidebarActiveState);
-}
-
-function updateSidebarActiveState() {
-  const hash = window.location.hash || '#/dashboard';
-
-  document.querySelectorAll('#sidebarnav .sidebar-item').forEach((li) => {
-    const a = li.querySelector(':scope > a.sidebar-link');
-    if (!a) return;
-    const href = a.getAttribute('href') || '';
-    const isActive = href && href !== 'javascript:void(0)' && hash === href;
-    li.classList.toggle('selected', isActive);
-  });
 }
 
 export function initPage() {

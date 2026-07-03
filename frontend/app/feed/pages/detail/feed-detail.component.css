@@ -280,6 +280,17 @@
   background: #f8f9fc;
 }
 
+/* === A11y map wrapper (PR #3 H6) ──────────────────────── */
+
+/* `display: contents` keeps the wrapper layout-transparent so the
+   existing CSS grid placement of `.fd-map-container` is preserved
+   within ±2 px. The labelled inputs + status region are read by
+   assistive tech but visually hidden via Bootstrap's
+   `.visually-hidden`. */
+.feed-detail__map-region {
+  display: contents;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
   .fd-detail {

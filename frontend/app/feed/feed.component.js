@@ -1,81 +1,19 @@
 import { defineComponent } from '../utils/component.js';
+import {
+  escapeHtml,
+  timeAgo,
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+} from '../utils/format.js';
+import {
+  getInitials,
+  getUserDisplayName,
+  resolveAvatar,
+} from '../utils/avatar.js';
 import { http } from '../core/http.service.js';
 import { auth } from '../auth/auth.service.js';
 
 const POR_PAGINA = 10;
-const CAT_EMOJIS = ['🔧', '🔒', '🌿', '💧', '🚨', '🏗️', '⚡', '📍'];
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-};
-
-const PRIORITY_LABEL = {
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
-};
-
-// ── Helpers ────────────────────────────────────────────────
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffSec = Math.floor((now - then) / 1000);
-
-  if (diffSec < 60) return 'justo ahora';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `hace ${diffMin}min`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `hace ${diffHr}h`;
-  const diffDays = Math.floor(diffHr / 24);
-  if (diffDays < 7) return `hace ${diffDays}d`;
-  return new Date(dateStr).toLocaleDateString('es-EC', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function getInitials(user) {
-  if (!user) return '?';
-  const first = (user.first_name || '')[0] || '';
-  const last = (user.last_name || '')[0] || '';
-  return (first + last).toUpperCase() || '?';
-}
-
-function getUserDisplayName(user) {
-  if (!user) return 'Anónimo';
-  const parts = [user.first_name, user.last_name].filter(Boolean);
-  return parts.length ? parts.join(' ') : 'Usuario';
-}
-
-function catEmoji(id) {
-  return CAT_EMOJIS[(id ?? 0) % CAT_EMOJIS.length];
-}
-
-function resolveAvatar(avatar) {
-  if (!avatar) return null;
-  if (typeof avatar === 'string') return avatar;
-  if (typeof avatar === 'object') {
-    if (avatar.url) return avatar.url;
-    if (Array.isArray(avatar.urls) && avatar.urls.length > 0)
-      return avatar.urls[0];
-    if (Array.isArray(avatar) && avatar.length > 0) {
-      const first = avatar[0];
-      return typeof first === 'string' ? first : first?.url || null;
-    }
-  }
-  return null;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
 
 // ── Card renderer ──────────────────────────────────────────
 
@@ -83,7 +21,6 @@ function renderCard(inc) {
   const catName = inc.category?.name ?? 'Categoría';
   const locName = inc.location?.name ?? '';
   const statusLabel = STATUS_LABEL[inc.status] ?? inc.status;
-  const emoji = catEmoji(inc.incident_category_id);
   const userName = getUserDisplayName(inc.user);
   const initials = getInitials(inc.user);
   const tiempo = timeAgo(inc.created_at);
@@ -229,46 +166,14 @@ function renderCard(inc) {
   `;
 }
 
-// ── Context detection ──────────────────────────────────────
+// ── DOM ids (single responsive template) ───────────────────
 
-const CTX = {
-  list: '',
-  filters: '',
-  skeleton: '',
-  vacio: '',
-  sentinel: '',
-  containerDesktop: 'feed-desktop',
-  containerMobile: 'feed-mobile',
-  chipSelector: '.feed-chip, .mobile-chip',
-};
-
-function detectContext() {
-  const wrapper = document.getElementById('main-wrapper');
-  const isDesktop = wrapper && wrapper.style.display !== 'none';
-
-  // Toggle container visibility
-  const desktop = document.getElementById(CTX.containerDesktop);
-  const mobile = document.getElementById(CTX.containerMobile);
-  if (desktop) desktop.classList.toggle('d-none', !isDesktop);
-  if (mobile) mobile.classList.toggle('d-none', isDesktop);
-
-  // Selectors per mode
-  if (isDesktop) {
-    CTX.list = 'feed-list';
-    CTX.filters = 'feed-filters';
-    CTX.skeleton = 'feed-cargando';
-    CTX.vacio = 'feed-vacio';
-    CTX.sentinel = 'feed-sentinel';
-  } else {
-    CTX.list = 'feed-list-mobile';
-    CTX.filters = 'mobile-filters';
-    CTX.skeleton = 'feed-cargando-mobile';
-    CTX.vacio = 'feed-vacio-mobile';
-    CTX.sentinel = 'feed-sentinel-mobile';
-  }
-
-  return isDesktop ? 'desktop' : 'mobile';
-}
+const LIST = 'feed-list';
+const FILTERS = 'feed-filters';
+const SKELETON = 'feed-cargando';
+const VACIO = 'feed-vacio';
+const SENTINEL = 'feed-sentinel';
+const CHIP_SELECTOR = '.feed-chip';
 
 // ── Component ──────────────────────────────────────────────
 
@@ -284,8 +189,6 @@ export default defineComponent({
     let todasLasIncidencias = [];
     let observer = null;
 
-    // ── Context ───────────────────────────────────────────────
-    detectContext();
     document.body.classList.add('feed-view');
 
     // Composer setup
@@ -306,8 +209,8 @@ export default defineComponent({
       });
     }
 
-    const feedList = document.getElementById(CTX.list);
-    const feedFilters = document.getElementById(CTX.filters);
+    const feedList = document.getElementById(LIST);
+    const feedFilters = document.getElementById(FILTERS);
     if (!feedFilters || !feedList) return;
 
     // ── Fetch ───────────────────────────────────────────────
@@ -316,10 +219,10 @@ export default defineComponent({
       if (cargando) return;
       cargando = true;
 
-      const listEl = document.getElementById(CTX.list);
-      const skeleton = document.getElementById(CTX.skeleton);
-      const vacio = document.getElementById(CTX.vacio);
-      const sentinel = document.getElementById(CTX.sentinel);
+      const listEl = document.getElementById(LIST);
+      const skeleton = document.getElementById(SKELETON);
+      const vacio = document.getElementById(VACIO);
+      const sentinel = document.getElementById(SENTINEL);
 
       if (!append) {
         skeleton.classList.remove('d-none');
@@ -371,7 +274,7 @@ export default defineComponent({
         vacio.classList.remove('d-none');
         vacio.querySelector('p').textContent =
           'Error al cargar. Intente de nuevo.';
-        document.getElementById(CTX.sentinel).classList.add('done');
+        document.getElementById(SENTINEL).classList.add('done');
       } finally {
         cargando = false;
       }
@@ -382,7 +285,7 @@ export default defineComponent({
     function setupInfiniteScroll() {
       if (observer) observer.disconnect();
 
-      const sentinel = document.getElementById(CTX.sentinel);
+      const sentinel = document.getElementById(SENTINEL);
       if (!sentinel || sentinel.classList.contains('done')) return;
 
       observer = new IntersectionObserver(
@@ -402,44 +305,32 @@ export default defineComponent({
       observer.observe(sentinel);
     }
 
-    // ── Filter chips ──
-    feedFilters.addEventListener('click', (e) => {
-      const chip = e.target.closest(CTX.chipSelector);
-      if (!chip) return;
+    // ── Filter chips (unified: main + aside use same selector) ──
+    function applyStatusFilter(chip) {
       document
-        .querySelectorAll(CTX.chipSelector)
-        .forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-
-      // Sync right sidebar status filters
-      document.querySelectorAll('.rp-filter-chip').forEach((c) => {
-        c.classList.toggle('active', c.dataset.status === chip.dataset.status);
-      });
-
+        .querySelectorAll(`${CHIP_SELECTOR}, .rp-filter-chip`)
+        .forEach((c) => {
+          c.classList.toggle(
+            'active',
+            c.dataset.status === chip.dataset.status,
+          );
+        });
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
-
       if (observer) observer.disconnect();
-      fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+      return fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+    }
+
+    feedFilters.addEventListener('click', (e) => {
+      const chip = e.target.closest(CHIP_SELECTOR);
+      if (chip) applyStatusFilter(chip);
     });
 
-    // ── Right Sidebar Filter chips ──
     const rpStatusFilters = document.getElementById('rp-status-filters');
     if (rpStatusFilters) {
       rpStatusFilters.addEventListener('click', (e) => {
         const chip = e.target.closest('.rp-filter-chip');
-        if (!chip) return;
-        
-        // Sync desktop top filters & mobile chips & right sidebar chips
-        document.querySelectorAll('.rp-filter-chip, .feed-chip, .mobile-chip').forEach((c) => {
-          c.classList.toggle('active', c.dataset.status === chip.dataset.status);
-        });
-        
-        filtroStatus = chip.dataset.status;
-        paginaActual = 1;
-        
-        if (observer) observer.disconnect();
-        fetchIncidencias(1, false).then(() => setupInfiniteScroll());
+        if (chip) applyStatusFilter(chip);
       });
     }
 
@@ -449,32 +340,39 @@ export default defineComponent({
       rpCategoryFilters.addEventListener('click', (e) => {
         const label = e.target.closest('.rp-checkbox-label');
         if (!label) return;
-        
+
         const box = label.querySelector('.rp-checkbox-box');
         if (!box) return;
-        
+
         const checked = box.classList.toggle('checked');
         if (checked) {
-          box.innerHTML = '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
+          box.innerHTML =
+            '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
           label.style.color = '#5b6172';
         } else {
           box.innerHTML = '';
           label.style.color = '#a3a8b8';
         }
-        
+
         // Trigger local filtering on category names
-        const checkedLabels = Array.from(document.querySelectorAll('.rp-checkbox-label'))
-          .filter(l => l.querySelector('.rp-checkbox-box').classList.contains('checked'))
-          .map(l => l.textContent.trim().toLowerCase());
-          
-        const listEl = document.getElementById(CTX.list);
+        const checkedLabels = Array.from(
+          document.querySelectorAll('.rp-checkbox-label'),
+        )
+          .filter((l) =>
+            l.querySelector('.rp-checkbox-box').classList.contains('checked'),
+          )
+          .map((l) => l.textContent.trim().toLowerCase());
+
+        const listEl = document.getElementById(LIST);
         if (listEl) {
           if (checkedLabels.length === 0) {
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
           } else {
-            const filtered = todasLasIncidencias.filter(inc => {
+            const filtered = todasLasIncidencias.filter((inc) => {
               const cat = (inc.category?.name ?? '').toLowerCase();
-              return checkedLabels.some(l => cat.includes(l) || l.includes(cat));
+              return checkedLabels.some(
+                (l) => cat.includes(l) || l.includes(cat),
+              );
             });
             listEl.innerHTML = filtered.map(renderCard).join('');
           }

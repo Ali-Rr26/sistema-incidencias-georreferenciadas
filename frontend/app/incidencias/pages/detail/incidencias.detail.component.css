@@ -1,0 +1,67 @@
+/* ============================================================
+   INCIDENCIAS DETAIL — admin detail page
+   ============================================================ */
+
+/* Shared padding inside `gr-card` content blocks on this page
+   (action panel, image panel, main info panel). All three sites
+   used the same `style="padding: 24px 28px"` literal before the
+   lift. */
+.incid-detail__card-body {
+  padding: 24px 28px;
+}
+
+/* Breadcrumb link that should look like the surrounding text but
+   still be navigable (no underline, inherit colour). */
+.incid-detail__breadcrumb-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Map container — read-only Leaflet canvas with a soft border.
+   Replaces the previous multi-line `style="height: 250px;
+   border-radius: 8px; border: 1px solid #dee2e6;"`. */
+.incid-detail__map-coords {
+  height: 250px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* Upload progress bar — slimmer height than the default Bootstrap
+   `.progress` for the image upload widget, plus the indeterminate
+   "100%" bar that animates the upload state. */
+.incid-detail__progress {
+  height: 6px;
+}
+
+.incid-detail__progress-bar {
+  width: 100%;
+}
+
+/* Toast wrapper position. Mirrors every other toast on the
+   codebase — kept identical so we can DRY later if we choose to. */
+.incid-detail__toast-wrapper {
+  z-index: 9999;
+}
+
+/* Thumbnail + image gallery tiles. Were rendered with inline
+   `style="…"` strings from `incidencias.detail.component.js`; lifted
+   here so the markup can be reviewed alongside its CSS. */
+.incid-detail__thumbnail-img {
+  max-height: 180px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.incid-detail__image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+/* Inner Leaflet canvas. `renderMap()` injects this `<div>` into
+   `#detalle-coords`; the previous inline style is now a class. */
+.incid-detail__map-canvas {
+  height: 300px;
+  width: 100%;
+  border-radius: 8px;
+}

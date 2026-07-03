@@ -35,27 +35,36 @@ beforeEach(function (): void {
 });
 
 it('rebuilds the Redis feed from PostgreSQL', function (): void {
-    Redis::shouldReceive('del')
-        ->once()
-        ->with(Mockery::pattern('/.*feed:incidents$/'));
-
-    // Pipeline: hmset + zadd per incident
+    // Pipeline for incidents: hset + zadd
     Redis::shouldReceive('pipeline')
         ->once()
         ->andReturnSelf();
 
-    Redis::shouldReceive('hmset')
+    Redis::shouldReceive('hset')
         ->once()
-        ->with(Mockery::pattern('/^incident:\d+$/'), Mockery::type('array'));
+        ->with('feed:v2:items', Mockery::type('string'), Mockery::type('string'));
 
     Redis::shouldReceive('zadd')
         ->once()
-        ->with('feed:incidents', Mockery::type('float'), Mockery::type('string'));
+        ->with('feed:v2:index', Mockery::type('float'), Mockery::type('string'));
 
     Redis::shouldReceive('exec')
         ->once();
 
+    // TTL on v2 keys + old key
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:items', 604800);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:index', 604800);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:incidents', 604800);
+
     $this->artisan('feed:rebuild')
-        ->expectsOutputToContain('Synced 1 incidents to Redis.')
+        ->expectsOutputToContain('Synced 1 incidents to Redis feed v2.')
         ->assertExitCode(0);
 });

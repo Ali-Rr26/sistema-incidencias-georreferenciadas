@@ -1,0 +1,16 @@
+/* ============================================================
+   ADMIN LAYOUT — admin shell container styles
+   ============================================================ */
+
+/* The admin shell template ships `#main-wrapper` with this class
+   so the shell is invisible before the JS init runs. `initShell`
+   in `utils/layout.js` removes the class to reveal the shell.
+
+   Keeping the rule here (instead of an inline `style="display: none"`
+   in the template) preserves separation between markup and
+   presentation; the class name is also used by
+   `feed-detail.component.js#isAdminContext()` to decide whether to
+   route to the admin or citizen feed. */
+.layout-hidden {
+  display: none;
+}

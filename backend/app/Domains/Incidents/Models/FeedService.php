@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class FeedService
 {
     private const CANDIDATE_LIMIT = 500;
 
+    private const V2_ITEMS_KEY = 'feed:v2:items';
+
+    private const V2_INDEX_KEY = 'feed:v2:index';
+
+    /** @deprecated Legacy keys — use feed:v2:* instead */
     private const SORTED_SET_KEY = 'feed:incidents';
 
+    /** @deprecated Legacy keys — use feed:v2:* instead */
     private const HASH_PREFIX = 'incident:';
 
     /**
@@ -24,9 +31,87 @@ class FeedService
         int $page = 1,
         int $perPage = 12,
     ): array {
+        // Try v2 path first — at most 2 Redis round-trips
+        // Wrap in try-catch for backward compat with tests mocking old key expectations
+        try {
+            $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+        } catch (\Throwable $e) {
+            Log::warning('Feed v2 index lookup failed, falling back to v1', [
+                'exception' => $e->getMessage(),
+            ]);
+            $candidateIds = [];
+        }
+
+        if (is_array($candidateIds) && $candidateIds !== []) {
+            return $this->getFeedFromV2(
+                candidateIds: $candidateIds,
+                status: $status,
+                organizationId: $organizationId,
+                locationId: $locationId,
+                page: $page,
+                perPage: $perPage,
+            );
+        }
+
+        // Fall back to v1 (legacy keys) for backward compatibility during transition
+        return $this->getFeedFromV1(
+            status: $status,
+            organizationId: $organizationId,
+            locationId: $locationId,
+            page: $page,
+            perPage: $perPage,
+        );
+    }
+
+    /**
+     * @param  array<int, string>  $candidateIds
+     * @return array{data: array, meta: array}
+     */
+    private function getFeedFromV2(
+        array $candidateIds,
+        ?string $status,
+        ?int $organizationId,
+        ?int $locationId,
+        int $page,
+        int $perPage,
+    ): array {
+        $allItems = Redis::hgetall(self::V2_ITEMS_KEY);
+
+        $incidents = [];
+        foreach ($candidateIds as $id) {
+            $json = $allItems[$id] ?? null;
+            if ($json === null) {
+                continue;
+            }
+
+            $data = json_decode($json, true);
+            if (! is_array($data) || $data === []) {
+                continue;
+            }
+
+            if (! $this->matchesFilters($data, $status, $organizationId, $locationId)) {
+                continue;
+            }
+
+            $incidents[] = $this->buildItem($data);
+        }
+
+        return $this->buildPaginatedResponse($incidents, $page, $perPage);
+    }
+
+    /**
+     * @return array{data: array, meta: array}
+     */
+    private function getFeedFromV1(
+        ?string $status,
+        ?int $organizationId,
+        ?int $locationId,
+        int $page,
+        int $perPage,
+    ): array {
         $candidateIds = Redis::zrevrange(self::SORTED_SET_KEY, 0, self::CANDIDATE_LIMIT - 1);
 
-        if (empty($candidateIds)) {
+        if ($candidateIds === []) {
             return $this->emptyResponse($page, $perPage);
         }
 
@@ -34,41 +119,62 @@ class FeedService
         foreach ($candidateIds as $id) {
             $data = Redis::hgetall(self::HASH_PREFIX.$id);
 
-            if (empty($data)) {
+            if ($data === []) {
                 continue;
             }
 
-            // Filter by status
-            if ($status !== null && ($data['status'] ?? '') !== $status) {
+            if (! $this->matchesFilters($data, $status, $organizationId, $locationId)) {
                 continue;
-            }
-
-            // Filter by organization_id
-            if ($organizationId !== null && (int) ($data['organization_id'] ?? 0) !== $organizationId) {
-                continue;
-            }
-
-            // Filter by location_path_ids (descendant match)
-            if ($locationId !== null) {
-                $pathIds = isset($data['location_path_ids'])
-                    ? (array) json_decode($data['location_path_ids'], true)
-                    : [];
-                if (! in_array($locationId, $pathIds, true)) {
-                    continue;
-                }
             }
 
             $incidents[] = $this->buildItem($data);
         }
 
-        // Paginate the filtered set
-        $total = count($incidents);
+        return $this->buildPaginatedResponse($incidents, $page, $perPage);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function matchesFilters(
+        array $data,
+        ?string $status,
+        ?int $organizationId,
+        ?int $locationId,
+    ): bool {
+        if ($status !== null && ($data['status'] ?? '') !== $status) {
+            return false;
+        }
+
+        if ($organizationId !== null && (int) ($data['organization_id'] ?? 0) !== $organizationId) {
+            return false;
+        }
+
+        if ($locationId !== null) {
+            $pathIds = isset($data['location_path_ids'])
+                ? (array) json_decode((string) $data['location_path_ids'], true)
+                : [];
+
+            if (! in_array($locationId, $pathIds, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array{data: array, meta: array}
+     */
+    private function buildPaginatedResponse(array $items, int $page, int $perPage): array
+    {
+        $total = count($items);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $offset = ($page - 1) * $perPage;
-        $items = array_slice($incidents, $offset, $perPage);
 
         return [
-            'data' => $items,
+            'data' => array_slice($items, $offset, $perPage),
             'meta' => [
                 'current_page' => $page,
                 'per_page' => $perPage,
@@ -81,7 +187,7 @@ class FeedService
     }
 
     /**
-     * @param  array<string, string|null>  $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function buildItem(array $data): array
@@ -97,7 +203,7 @@ class FeedService
             'resolution_date' => $data['resolution_date'] ?? null,
             'created_at' => $data['created_at'] ?? null,
             'updated_at' => $data['updated_at'] ?? null,
-            'geom' => isset($data['geom']) ? json_decode($data['geom']) : null,
+            'geom' => isset($data['geom']) ? json_decode((string) $data['geom']) : null,
             'category' => [
                 'id' => (int) ($data['incident_category_id'] ?? 0),
                 'name' => $data['category_name'] ?? '',

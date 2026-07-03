@@ -41,6 +41,27 @@
   <!-- Map -->
   <div class="fd-section">
     <h3 class="fd-section-title">Ubicación</h3>
-    <div id="fd-map" class="fd-map-container"></div>
+    <div
+      class="feed-detail__map-region"
+      role="region"
+      aria-label="Mapa de ubicación de la incidencia"
+    >
+      <div id="fd-map" class="fd-map-container feed-detail__map-canvas"></div>
+      <div class="feed-detail__map-coords visually-hidden">
+        <div class="feed-detail__map-field">
+          <label for="lat">Latitud</label>
+          <input id="lat" name="lat" type="text" readonly aria-live="off" />
+        </div>
+        <div class="feed-detail__map-field">
+          <label for="lng">Longitud</label>
+          <input id="lng" name="lng" type="text" readonly aria-live="off" />
+        </div>
+      </div>
+      <div
+        class="feed-detail__map-status visually-hidden"
+        id="map-status"
+        aria-live="polite"
+      ></div>
+    </div>
   </div>
 </div>

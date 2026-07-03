@@ -6,12 +6,14 @@ use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
+use App\Domains\Incidents\Http\IncidentStatsController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
+use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
@@ -27,9 +29,15 @@ Route::middleware('jwt')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Operator tracking
+    Route::post('/operator/location', [OperatorLocationController::class, 'update']);
+    Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
 
     // Core
     Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);
+    Route::get('incidents/stats', IncidentStatsController::class);
     Route::post('incidents/{incident}/claim', [IncidentController::class, 'claim'])->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
     Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');

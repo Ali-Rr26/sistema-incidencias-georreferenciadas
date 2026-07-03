@@ -5,7 +5,16 @@ declare(strict_types=1);
 use App\Domains\Auth\Services\AuthService;
 use App\Domains\Users\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    // User factory references role_id; seed a placeholder role.
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+});
 
 it('logs in and returns access tokens plus the user payload', function (): void {
     $user = User::factory()->make([
@@ -96,4 +105,75 @@ it('logs out and revokes the current session when provided', function (): void {
             'message' => 'Sesión cerrada exitosamente.',
         ])
         ->assertCookieExpired('refresh_token');
+});
+
+// ─── updateProfile: avatar validator (REQ-7 / H7 / SCEN-7.1..7.4) ────
+
+it('SCEN-7.1: accepts a valid avatar.urls payload and returns 200', function (): void {
+    $user = User::factory()->create([
+        'email' => 'avatar@example.com',
+        'first_name' => 'Old',
+        'last_name' => 'Name',
+        'avatar' => null,
+    ]);
+
+    $response = $this->withoutMiddleware()->actingAs($user)->putJson('/api/auth/profile', [
+        'avatar' => [
+            'urls' => ['https://cdn.example.com/a.png', 'https://cdn.example.com/b.png'],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('email', 'avatar@example.com');
+
+    $user->refresh();
+    expect($user->avatar)->toBeArray()
+        ->and($user->avatar['urls'])->toBe([
+            'https://cdn.example.com/a.png',
+            'https://cdn.example.com/b.png',
+        ]);
+});
+
+it('SCEN-7.2: rejects avatar as a string with 422 on the avatar field', function (): void {
+    $user = User::factory()->create();
+
+    $response = $this->withoutMiddleware()->actingAs($user)->putJson('/api/auth/profile', [
+        'avatar' => 'not-an-array',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['avatar']);
+});
+
+it('SCEN-7.3: rejects avatar.urls over the 5-entry cap with 422 on the avatar.urls field', function (): void {
+    $user = User::factory()->create();
+
+    $response = $this->withoutMiddleware()->actingAs($user)->putJson('/api/auth/profile', [
+        'avatar' => [
+            'urls' => [
+                'https://cdn.example.com/a.png',
+                'https://cdn.example.com/b.png',
+                'https://cdn.example.com/c.png',
+                'https://cdn.example.com/d.png',
+                'https://cdn.example.com/e.png',
+                'https://cdn.example.com/f.png',
+            ],
+        ],
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['avatar.urls']);
+});
+
+it('SCEN-7.4: rejects a non-URL avatar.urls entry with 422 on the indexed urls field', function (): void {
+    $user = User::factory()->create();
+
+    $response = $this->withoutMiddleware()->actingAs($user)->putJson('/api/auth/profile', [
+        'avatar' => [
+            'urls' => ['https://cdn.example.com/a.png', 'not-a-url'],
+        ],
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['avatar.urls.1']);
 });

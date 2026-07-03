@@ -5,9 +5,16 @@
  * with Leaflet map (reusing feed-create patterns), comments section,
  * and back button to feed.
  *
- * Uses router.params.id from the param-matching router.
+ * Uses router.routeParams.id from the param-matching router.
  */
 import { defineComponent } from '../../../utils/component.js';
+import {
+  escapeHtml,
+  timeAgo,
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+} from '../../../utils/format.js';
+import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
@@ -16,64 +23,15 @@ import loadLeaflet from '../../../shared/leaflet.js';
 
 function isAdminContext() {
   const wrapper = document.getElementById('main-wrapper');
-  return wrapper && wrapper.style.display !== 'none';
+  if (!wrapper) return false;
+  // The shell hides itself with the `.layout-hidden` class while JS
+  // is still wiring up (see `app/layout/layout.component.css`). Once
+  // `initShell()` removes that class, the shell is visible.
+  return !wrapper.classList.contains('layout-hidden');
 }
 
 function getFeedUrl() {
   return isAdminContext() ? '/incidencias/feed' : '/feed';
-}
-
-// ── Helpers ─────────────────────────────────────────────────
-
-const STATUS_LABEL = {
-  pending: 'Pendiente',
-  in_progress: 'En proceso',
-  resolved: 'Resuelto',
-};
-
-const PRIORITY_LABEL = {
-  high: 'Alta',
-  medium: 'Media',
-  low: 'Baja',
-};
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffSec = Math.floor((now - then) / 1000);
-
-  if (diffSec < 60) return 'justo ahora';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `hace ${diffMin}min`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `hace ${diffHr}h`;
-  const diffDays = Math.floor(diffHr / 24);
-  if (diffDays < 7) return `hace ${diffDays}d`;
-  return new Date(dateStr).toLocaleDateString('es-EC', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function getInitials(user) {
-  if (!user) return '?';
-  const first = (user.first_name || '')[0] || '';
-  const last = (user.last_name || '')[0] || '';
-  return (first + last).toUpperCase() || '?';
-}
-
-function getUserDisplayName(user) {
-  if (!user) return 'Anónimo';
-  const parts = [user.first_name, user.last_name].filter(Boolean);
-  return parts.length ? parts.join(' ') : 'Usuario';
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }
 
 // ── Component ───────────────────────────────────────────────
@@ -88,7 +46,7 @@ export default defineComponent({
     const emptyEl = document.getElementById('fd-empty');
     const errorEl = document.getElementById('fd-error');
 
-    const incidentId = router.params?.id;
+    const incidentId = router.routeParams?.id;
     const feedUrl = getFeedUrl();
 
     // Fix back-to-feed links based on context
@@ -219,6 +177,25 @@ export default defineComponent({
     }).addTo(map);
 
     L.marker([lat, lng]).addTo(map);
+
+    // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
+    const latInput = document.getElementById('lat');
+    const lngInput = document.getElementById('lng');
+    const mapStatus = document.getElementById('map-status');
+
+    function updateMapA11y() {
+      const c = map.getCenter();
+      const curLat = c.lat.toFixed(6);
+      const curLng = c.lng.toFixed(6);
+      if (latInput) latInput.value = curLat;
+      if (lngInput) lngInput.value = curLng;
+      if (mapStatus) {
+        mapStatus.textContent = `Coordenadas actuales: ${curLat}, ${curLng}.`;
+      }
+    }
+
+    map.on('moveend', updateMapA11y);
+    updateMapA11y();
 
     // Invalidate size after mount
     setTimeout(() => map.invalidateSize(), 150);
