@@ -28,7 +28,7 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $users = $this->users->paginate(
-            $request->only(['role_id', 'per_page']),
+            $request->only(['role_id', 'organization_id', 'search', 'per_page']),
         );
 
         return new UserCollection($users)->response();
@@ -39,35 +39,31 @@ class UserController extends Controller
         $user = $this->users->create(
             $request->validated(),
         );
+        $user->load(['role', 'organization']);
 
         return (new UserResource($user))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(User $user): JsonResponse
     {
-        $user = $this->users->findById($id);
-
-        if ($user === null) {
-            return response()->json([
-                'message' => 'Usuario no encontrado.',
-            ], Response::HTTP_NOT_FOUND);
-        }
+        $user->load(['role', 'organization']);
 
         return new UserResource($user)->response();
     }
 
-    public function update(UpdateUserRequest $request, int $id): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $user = $this->users->update($id, $request->validated());
+        $user = $this->users->update($user->id, $request->validated());
+        $user->load(['role', 'organization']);
 
         return new UserResource($user)->response();
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(User $user): JsonResponse
     {
-        $this->users->delete($id);
+        $this->users->delete($user->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

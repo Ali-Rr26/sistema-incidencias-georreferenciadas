@@ -1,4 +1,5 @@
 import { defineComponent } from '../../../utils/component.js';
+import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 import {
@@ -17,22 +18,28 @@ export default defineComponent({
     let totalPaginas = 1;
     let idEliminar = null;
 
-    // Helpers
+    // Helpers — labels come from the shared utils so the dictionary lives
+    // in exactly one place. The badge wrappers themselves stay local because
+    // they also encode the colour scheme.
+    const PRIORITY_COLOR = {
+      high: 'danger',
+      medium: 'warning',
+      low: 'success',
+    };
+    const STATUS_COLOR = {
+      pending: 'secondary',
+      in_progress: 'primary',
+      resolved: 'success',
+      pending_operator: 'warning',
+    };
+
     function badgePrioridad(p) {
-      const map = { high: 'danger', medium: 'warning', low: 'success' };
-      const labels = { high: 'Alta', medium: 'Media', low: 'Baja' };
-      const label = labels[p] || '—';
-      return `<span class="badge bg-${map[p] || 'secondary'}">${label}</span>`;
+      const label = PRIORITY_LABEL[p] || '—';
+      return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
     }
 
     function badgeEstado(e) {
-      const map = {
-        pending: { color: 'secondary', label: 'Pendiente' },
-        in_progress: { color: 'primary', label: 'En proceso' },
-        resolved: { color: 'success', label: 'Resuelto' },
-      };
-      const cfg = map[e] || { color: 'secondary', label: e || '—' };
-      return `<span class="badge bg-${cfg.color}">${cfg.label}</span>`;
+      return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
     }
 
     function formatearFecha(iso) {
@@ -71,16 +78,16 @@ export default defineComponent({
         .map((inc) => {
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
+          const titulo = inc.title || 'Sin título';
           return `<tr>
           <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
           <td>
-            <span class="fw-semibold">${categoria}</span>
-            <br><small class="text-muted">${inc.status.replace('_', ' ')} — ${badgePrioridad(inc.priority).replace(/^<span /, '<span style="font-size:0.7rem" ')}</small>
+            <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
+              <span class="fw-semibold">${titulo}</span>
+            </div>
+            <small class="text-muted">${categoria}</small>
           </td>
           <td>${badgePrioridad(inc.priority)}</td>
-          <td>
-            <span class="small">${categoria}</span>
-          </td>
           <td>${badgeEstado(inc.status)}</td>
           <td class="small text-muted">${ubicacion}</td>
           <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
@@ -89,8 +96,12 @@ export default defineComponent({
               <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                 <i class="fas fa-eye"></i>
               </a>
+              <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
+                data-id="${inc.id}" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
               <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
+                data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
@@ -104,18 +115,18 @@ export default defineComponent({
         .map((inc) => {
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
+          const titulo = inc.title || 'Sin título';
           return `
           <div class="card mb-2 shadow-sm">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-1">
-                <h6 class="card-title mb-0 me-2" style="font-size:.9rem;">${categoria}</h6>
+                <div style="min-width:0;flex:1;margin-right:8px;">
+                  <h6 class="card-title mb-0" style="font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titulo}</h6>
+                  <small class="text-muted" style="font-size:.78rem;">${categoria}</small>
+                </div>
                 ${badgePrioridad(inc.priority)}
               </div>
               <div class="d-flex flex-wrap gap-2 mb-2">
-                <span class="badge bg-light text-dark border" style="font-size:.75rem;">
-                  <i class="fas fa-tag" style="font-size:0.7rem;"></i>
-                  ${categoria}
-                </span>
                 ${badgeEstado(inc.status)}
               </div>
               <div class="d-flex justify-content-between align-items-center">
@@ -131,8 +142,12 @@ export default defineComponent({
                   <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                     <i class="fas fa-eye"></i>
                   </a>
+                  <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
+                    data-id="${inc.id}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                    data-id="${inc.id}" data-titulo="${categoria}" title="Eliminar">
+                    data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
                     <i class="fas fa-trash-alt"></i>
                   </button>
                 </div>
@@ -160,12 +175,14 @@ export default defineComponent({
       paginaActual = pagina || 1;
       mostrarEstado('cargando');
 
+      const buscar = document.getElementById('filtro-buscar').value.trim();
       const params = new URLSearchParams({
         page: paginaActual,
         per_page: POR_PAGINA,
         priority: document.getElementById('filtro-prioridad').value,
         status: document.getElementById('filtro-estado').value,
       });
+      if (buscar) params.set('title', buscar);
 
       try {
         const resp = await http.get('/incidents?' + params.toString());
@@ -178,22 +195,27 @@ export default defineComponent({
       }
     }
 
-    // Eliminar handlers
-    function abrirModalEliminar(e) {
-      const btn = e.target.closest('.btn-eliminar');
-      if (!btn) return;
-      idEliminar = btn.dataset.id;
+    // Click handlers: editar y eliminar
+    function manejarClicks(e) {
+      const editar = e.target.closest('.btn-editar');
+      if (editar) {
+        window.location.hash = '#/incidencias/crear?id=' + editar.dataset.id;
+        return;
+      }
+      const eliminar = e.target.closest('.btn-eliminar');
+      if (!eliminar) return;
+      idEliminar = eliminar.dataset.id;
       document.getElementById('modal-eliminar-titulo').textContent =
-        btn.dataset.titulo;
+        eliminar.dataset.titulo;
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
     }
 
     document
       .getElementById('tabla-body')
-      .addEventListener('click', abrirModalEliminar);
+      .addEventListener('click', manejarClicks);
     document
       .getElementById('contenedor-cards')
-      .addEventListener('click', abrirModalEliminar);
+      .addEventListener('click', manejarClicks);
 
     document
       .getElementById('btn-confirmar-eliminar')

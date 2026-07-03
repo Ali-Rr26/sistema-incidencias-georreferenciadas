@@ -1,12 +1,15 @@
 import { router } from './core/router.js';
-import { mountLayout, shellInitFn } from './layout/layout.component.js';
+import { adminShell } from './layout/layout.component.js';
+import { userShell } from './layout-usuario/layout-usuario.component.js';
 
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
 import incidenciasIndexComponent from './incidencias/pages/index/incidencias.index.component.js';
-import incidenciasFormComponent from './incidencias/pages/form/incidencias.form.component.js';
+import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.component.js';
+import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
+import { roleGuard } from './auth/role.guard.js';
 import { auth } from './auth/auth.service.js';
 
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
@@ -17,47 +20,123 @@ import categoriasComponent from './configuracion/categorias/pages/index/categori
 import categoriasFormComponent from './configuracion/categorias/pages/form/categorias.form.component.js';
 import usuariosComponent from './configuracion/usuarios/pages/index/usuarios.index.component.js';
 import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.form.component.js';
+import perfilComponent from './configuracion/perfil/perfil.component.js';
 import feedComponent from './feed/feed.component.js';
+import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
+import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 
+// ─── Register shells ────────────────────────────────────────────────
+router.registerShell('admin', adminShell);
+router.registerShell('user', userShell);
+
+// ─── Role definitions ───────────────────────────────────────────────
+const adminOrgRoles = [
+  'admin_sistema',
+  'admin_organizacion',
+  'operador_organizacion',
+];
+const adminOnlyRoles = ['admin_sistema', 'admin_organizacion'];
+const allAdminRoles = [
+  'admin_sistema',
+  'admin_organizacion',
+  'operador_organizacion',
+  'publicador',
+];
+
+// ─── Public routes (no shell) ───────────────────────────────────────
 router.addRoute('/login', loginComponent);
-router.addRoute('/feed', feedComponent);
-router.addRoute('/dashboard', dashboardComponent, [authGuard], true);
-router.addRoute('/incidencias', incidenciasIndexComponent, [authGuard], true);
+
+// ─── Citizen routes (user shell, authGuard only — accessible to all roles) ─
+router.addRoute('/feed', feedComponent, [authGuard], 'user');
+router.addRoute('/feed/crear', incidenciaFormComponent, [authGuard], 'user');
+router.addRoute('/feed/:id', feedDetailComponent, [], 'user');
+router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'admin');
+
+// ─── Admin routes (admin shell, role-guarded) ───────────────────────
+router.addRoute(
+  '/dashboard',
+  dashboardComponent,
+  [roleGuard(allAdminRoles)],
+  'admin',
+);
+router.addRoute(
+  '/incidencias',
+  incidenciasIndexComponent,
+  [roleGuard(adminOrgRoles)],
+  'admin',
+);
 router.addRoute(
   '/incidencias/crear',
-  incidenciasFormComponent,
-  [authGuard],
-  true,
+  incidenciaFormComponent,
+  [roleGuard(adminOrgRoles)],
+  'admin',
 );
-router.addRoute('/usuarios', usuariosComponent, [authGuard], true);
-router.addRoute('/usuarios/crear', usuariosFormComponent, [authGuard], true);
-router.addRoute('/organizaciones', organizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/incidencias/:id',
+  incidenciasDetailComponent,
+  [roleGuard(adminOrgRoles)],
+  'admin',
+);
+router.addRoute(
+  '/incidencias/pendientes',
+  pendientesComponent,
+  [roleGuard(['publicador'])],
+  'admin',
+);
+
+router.addRoute(
+  '/usuarios',
+  usuariosComponent,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
+);
+router.addRoute(
+  '/usuarios/crear',
+  usuariosFormComponent,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
+);
+router.addRoute(
+  '/organizaciones',
+  organizacionesComponent,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
+);
 router.addRoute(
   '/organizaciones/crear',
   organizacionesFormComponent,
-  [authGuard],
-  true,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
 );
-router.addRoute('/localizaciones', localizacionesComponent, [authGuard], true);
+router.addRoute(
+  '/localizaciones',
+  localizacionesComponent,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
+);
 router.addRoute(
   '/localizaciones/crear',
   localizacionesFormComponent,
-  [authGuard],
-  true,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
 );
-router.addRoute('/categorias', categoriasComponent, [authGuard], true);
+router.addRoute(
+  '/categorias',
+  categoriasComponent,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
+);
 router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
-  [authGuard],
-  true,
+  [roleGuard(adminOnlyRoles)],
+  'admin',
 );
-router.addRoute('/not-found', notFoundComponent, [authGuard], true);
 
-router.setShellInitFn(shellInitFn);
+router.addRoute('/not-found', notFoundComponent, [authGuard], 'user');
 
+// ─── Boot: restore session, then start router. Router mounts shells on demand. ───
 (async () => {
-  await mountLayout();
   await auth.tryRestoreSession();
   router.init();
 })();

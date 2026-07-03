@@ -15,6 +15,11 @@ import {
 } from '../core/http.service.js';
 
 class AuthService {
+  constructor() {
+    this._cachedUser = null;
+    this._authChangeCallbacks = [];
+  }
+
   async login(email, password) {
     const data = await http.post('/login', { email, password });
     setAccessToken(data.access_token);
@@ -29,11 +34,34 @@ class AuthService {
       // Clear state even if server call fails
     }
     clearAuthState();
-    window.location.hash = '#/login';
+    this._cachedUser = null;
+    this._notifyAuthChange();
   }
 
-  async me() {
-    return await http.get('/me');
+  async me(forceRefresh = false) {
+    if (this._cachedUser && !forceRefresh) {
+      return this._cachedUser;
+    }
+    const data = await http.get('/me');
+    this._cachedUser = data.data || data;
+    return this._cachedUser;
+  }
+
+  getUser() {
+    return this._cachedUser;
+  }
+
+  /** Subscribe to auth state changes. Returns an unsubscribe function. */
+  onAuthChange(callback) {
+    this._authChangeCallbacks.push(callback);
+    return () => {
+      const idx = this._authChangeCallbacks.indexOf(callback);
+      if (idx >= 0) this._authChangeCallbacks.splice(idx, 1);
+    };
+  }
+
+  _notifyAuthChange() {
+    this._authChangeCallbacks.forEach((cb) => cb());
   }
 
   async tryRestoreSession() {

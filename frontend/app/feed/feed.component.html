@@ -1,72 +1,142 @@
-<!-- Feed público estilo Instagram/Facebook -->
-<header class="ig-header">
-  <div class="ig-header-left">
-    <span class="ig-logo">📍 Incidencias</span>
-  </div>
-  <div class="ig-header-right">
-    <a href="#/login" class="ig-btn-login">Ingresar</a>
-  </div>
-</header>
+<!-- Feed — single responsive template (CSS-grid reflows 1-col → 2-col ≥ 992px) -->
+<div id="feed" class="feed">
+  <div class="feed-main">
+    <!-- Composer bar (only when auth) -->
+    <div class="composer-bar d-none" id="composer-bar">
+      <div class="composer-avatar" id="composer-avatar">MR</div>
+      <div class="composer-input-wrap">
+        <span class="composer-placeholder"
+          >¿Qué incidencia deseas reportar hoy?</span
+        >
+      </div>
+      <button class="composer-btn">
+        <i class="fa-solid fa-location-dot"></i> Reportar
+      </button>
+    </div>
 
-<div class="ig-filters" id="feed-filters">
-  <button class="ig-chip active" data-status="">Todos</button>
-  <button class="ig-chip" data-status="pending">Pendientes</button>
-  <button class="ig-chip" data-status="in_progress">En proceso</button>
-  <button class="ig-chip" data-status="resolved">Resueltos</button>
+    <!-- Filter chips (shared across viewports) -->
+    <div class="feed-filters" id="feed-filters">
+      <button class="feed-chip active" data-status="">Todo</button>
+      <button class="feed-chip" data-status="in_progress">En proceso</button>
+      <button class="feed-chip" data-status="pending">Pendientes</button>
+      <button class="feed-chip" data-status="resolved">Resueltos</button>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div id="feed-cargando" class="feed-skeleton-wrap">
+      <div class="feed-skeleton-card">
+        <div class="feed-skel-head">
+          <div class="feed-skel-avatar"></div>
+          <div class="feed-skel-line w-40"></div>
+        </div>
+        <div class="feed-skel-preview"></div>
+        <div class="feed-skel-body">
+          <div class="feed-skel-line w-60"></div>
+          <div class="feed-skel-line w-30"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="feed-vacio" class="feed-empty d-none">
+      <div class="feed-empty-icon">📭</div>
+      <p>No hay incidencias publicadas.</p>
+    </div>
+
+    <div id="feed-list" class="feed-cards"></div>
+
+    <!-- Infinite scroll sentinel -->
+    <div id="feed-sentinel" class="feed-sentinel">
+      <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Right panel (CSS hides it < 992px, no DOM swap) -->
+  <aside class="feed-aside">
+    <!-- Filtros -->
+    <div class="rp-card">
+      <div class="rp-card-title">Filtrar feed</div>
+      <div class="rp-card-section-label">ESTADO</div>
+      <div class="rp-filter-chips" id="rp-status-filters">
+        <div class="rp-filter-chip active" data-status="">Todo</div>
+        <div class="rp-filter-chip" data-status="in_progress">En proceso</div>
+        <div class="rp-filter-chip" data-status="pending">Pendiente</div>
+        <div class="rp-filter-chip" data-status="resolved">Resuelto</div>
+      </div>
+      <div class="rp-card-section-label">TIPO</div>
+      <div class="rp-category-filters" id="rp-category-filters">
+        <label class="rp-checkbox-label" data-category="1">
+          <span class="rp-checkbox-box checked"
+            ><i class="fa-solid fa-check"></i
+          ></span>
+          Infraestructura
+        </label>
+        <label class="rp-checkbox-label" data-category="2">
+          <span class="rp-checkbox-box checked"
+            ><i class="fa-solid fa-check"></i
+          ></span>
+          Servicios públicos
+        </label>
+        <label class="rp-checkbox-label" data-category="3">
+          <span class="rp-checkbox-box"></span>
+          Medio ambiente
+        </label>
+        <label class="rp-checkbox-label" data-category="4">
+          <span class="rp-checkbox-box"></span>
+          Seguridad
+        </label>
+      </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="rp-card">
+      <div class="rp-card-title">Estadísticas hoy</div>
+      <div class="rp-stat">
+        <div class="rp-stat-icon rp-stat-icon--purple">
+          <i class="fa-solid fa-circle-plus"></i>
+        </div>
+        <div>
+          <div class="rp-stat-value">14</div>
+          <div class="rp-stat-label">Nuevas hoy</div>
+        </div>
+      </div>
+      <div class="rp-stat">
+        <div class="rp-stat-icon rp-stat-icon--green">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <div class="rp-stat-value">8</div>
+          <div class="rp-stat-label">Resueltas hoy</div>
+        </div>
+      </div>
+      <div class="rp-stat rp-stat--last">
+        <div class="rp-stat-icon rp-stat-icon--yellow">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+        <div>
+          <div class="rp-stat-value">2.4 d</div>
+          <div class="rp-stat-label">Promedio resolución</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zonas activas -->
+    <div class="rp-card">
+      <div class="rp-card-title">Zonas activas</div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--1">1</div>
+        <div class="rp-zone-name">Quito, Pichincha</div>
+        <div class="rp-zone-count">386</div>
+      </div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--2">2</div>
+        <div class="rp-zone-name">Guayaquil, Guayas</div>
+        <div class="rp-zone-count">298</div>
+      </div>
+      <div class="rp-zone">
+        <div class="rp-zone-rank rp-zone-rank--3">3</div>
+        <div class="rp-zone-name">Cuenca, Azuay</div>
+        <div class="rp-zone-count">174</div>
+      </div>
+    </div>
+  </aside>
 </div>
-
-<main class="ig-main">
-  <!-- Loading skeleton -->
-  <div id="feed-cargando" class="ig-skeleton-wrap">
-    <div class="ig-skeleton-card">
-      <div class="ig-skel-head">
-        <div class="ig-skel-avatar"></div>
-        <div class="ig-skel-line w-40"></div>
-      </div>
-      <div class="ig-skel-preview"></div>
-      <div class="ig-skel-body">
-        <div class="ig-skel-line w-60"></div>
-        <div class="ig-skel-line w-30"></div>
-      </div>
-    </div>
-    <div class="ig-skeleton-card">
-      <div class="ig-skel-head">
-        <div class="ig-skel-avatar"></div>
-        <div class="ig-skel-line w-40"></div>
-      </div>
-      <div class="ig-skel-preview"></div>
-      <div class="ig-skel-body">
-        <div class="ig-skel-line w-60"></div>
-        <div class="ig-skel-line w-30"></div>
-      </div>
-    </div>
-    <div class="ig-skeleton-card">
-      <div class="ig-skel-head">
-        <div class="ig-skel-avatar"></div>
-        <div class="ig-skel-line w-40"></div>
-      </div>
-      <div class="ig-skel-preview"></div>
-      <div class="ig-skel-body">
-        <div class="ig-skel-line w-60"></div>
-        <div class="ig-skel-line w-30"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="feed-vacio" class="ig-empty d-none">
-    <div class="ig-empty-icon">📭</div>
-    <p>No hay incidencias publicadas.</p>
-  </div>
-
-  <div id="feed-list" class="ig-feed-list"></div>
-
-  <!-- Infinite scroll sentinel -->
-  <div id="feed-sentinel" class="ig-sentinel">
-    <div class="ig-sentinel-spinner"><div class="ig-spinner"></div></div>
-  </div>
-</main>
-
-<!-- Floating action button -->
-<a href="#/login" class="ig-fab" id="fab-reportar" title="Reportar incidencia">
-  <i class="fas fa-plus"></i>
-</a>

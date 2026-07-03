@@ -11,12 +11,13 @@ use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Seed role for UserFactory (role_id=1)
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $this->user = User::factory()->create();
 

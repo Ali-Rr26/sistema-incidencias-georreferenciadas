@@ -1,58 +1,108 @@
+# Deploy Stack — Sistema de Incidencias Georreferenciadas
+# Uso: docker stack deploy -c deploy.yml incidencias-stack
+#
+# Requisitos:
+#   - Docker Swarm mode activado
+#   - Archivo .env con variables de entorno (DB_PASSWORD, JWT_SECRET, etc.)
+#   - PostGIS 17+, Redis 8+
+
 version: "3.9"
 
 services:
-  app:
-    image: laravel-app:latest
-
-    volumes:
-      - ./proyecto:/var/www
-
+  frontend:
+    image: ghcr.io/sistema-incidencias/frontend:latest
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
     networks:
-      - app-network
-
+      - incidencias-network
     deploy:
-      replicas: 3
-
+      replicas: 2
       restart_policy:
         condition: any
 
-  web:
-    image: nginx:alpine
-
+  backend:
+    image: ghcr.io/sistema-incidencias/backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      OCTANE_SERVER: frankenphp
     ports:
-      - "80:80"
-
-    volumes:
-      - ./proyecto:/var/www
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      - db
+      - redis
     networks:
-      - app-network
-
+      - incidencias-network
     deploy:
       replicas: 2
-
       restart_policy:
         condition: any
 
   db:
-    image: mysql:8.0
-
+    image: postgis/postgis:17-3.5-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: incidencias_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-
+      POSTGRES_DB: ${DB_DATABASE:-incidencias_db}
+      POSTGRES_USER: ${DB_USERNAME:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Variable DB_PASSWORD requerida}
     volumes:
-      - db_data:/var/lib/mysql
-
+      - db_data:/var/lib/postgresql/data
     networks:
-      - app-network
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?Variable CLOUDFLARE_TUNNEL_TOKEN requerida}
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
 
 volumes:
   db_data:
+  redis_data:
 
 networks:
-  app-network:
+  incidencias-network:
     driver: overlay

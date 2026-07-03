@@ -140,23 +140,21 @@ export default defineComponent({
   styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
 
   async onInit() {
-    // C3 y stats en paralelo — si el backend no está, todo falla silenciosamente
-    const [, statsResult] = await Promise.allSettled([
+    // C3, stats y feed de actividad en paralelo — todo falla silenciosamente
+    const [, statsResult, feedResult] = await Promise.allSettled([
       loadC3(),
-      http.get('/incidents?per_page=1'),
+      http.get('/incidents/stats'),
+      http.get('/incidents?per_page=5'),
     ]);
 
-    const data =
+    const stats =
       statsResult.status === 'fulfilled' ? (statsResult.value ?? {}) : {};
-    const meta = data.meta ?? {};
-    const total = meta.total ?? 0;
-    const datos = data.data ?? [];
-    const pendientes = datos.filter((d) => d.status === 'pending').length;
-    const resueltas = datos.filter((d) => d.status === 'resolved').length;
-    const ubicaciones = [
-      ...new Set(datos.map((d) => d.location?.name).filter(Boolean)),
-    ].length;
-    const en_proceso = Math.max(0, total - pendientes - resueltas);
+    const byStatus = stats.by_status ?? {};
+    const total = stats.total ?? 0;
+    const pendientes = byStatus.pending ?? 0;
+    const en_proceso = byStatus.in_progress ?? 0;
+    const resueltas = byStatus.resolved ?? 0;
+    const ubicaciones = stats.locations_count ?? 0;
 
     // Counters animados
     animateCounter(document.getElementById('stat-incidencias'), total);
@@ -186,9 +184,10 @@ export default defineComponent({
     // Donut C3
     initDonut(pendientes, en_proceso, resueltas, total);
 
-    // Activity feed — últimas 5 incidencias
+    // Activity feed — últimas 5 incidencias (independiente de stats)
     try {
-      const resp = await http.get('/incidents?per_page=5');
+      const resp =
+        feedResult.status === 'fulfilled' ? (feedResult.value ?? {}) : {};
       const items =
         resp.data ?? resp.items ?? (Array.isArray(resp) ? resp : []);
       buildActivityFeed(items);

@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Organizations\Models;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Models\IncidentOrganizationAssignment;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,6 +20,8 @@ class Organization extends Model
         'name',
         'location_id',
         'parent_id',
+        'incident_category_id',
+        'max_active_claims',
     ];
 
     public function location(): BelongsTo
@@ -39,23 +39,13 @@ class Organization extends Model
         return $this->hasMany(self::class, 'parent_id');
     }
 
-    public function incidentCategories(): BelongsToMany
+    public function category(): BelongsTo
     {
-        return $this->belongsToMany(IncidentCategory::class, 'category_organization');
+        return $this->belongsTo(IncidentCategory::class, 'incident_category_id');
     }
 
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
-    }
-
-    public function organizationAssignments(): HasMany
-    {
-        return $this->hasMany(IncidentOrganizationAssignment::class, 'organization_id');
-    }
-
-    public function claims(): HasMany
-    {
-        return $this->organizationAssignments();
     }
 }

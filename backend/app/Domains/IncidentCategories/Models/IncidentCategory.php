@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\IncidentCategories\Models;
 
-use App\Domains\Organizations\Models\Organization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -19,11 +17,6 @@ class IncidentCategory extends Model
         'name',
         'parent_id',
     ];
-
-    public function organizations(): BelongsToMany
-    {
-        return $this->belongsToMany(Organization::class, 'category_organization');
-    }
 
     public function parent(): BelongsTo
     {

@@ -10,6 +10,15 @@
 @import url("../app/layout/sidebar/sidebar.component.css");
 @import url("../app/layout/navbar/navbar.component.css");
 
+/* Layout-usuario — user shell (Lu-* styles) */
+@import url("../app/layout-usuario/layout-usuario.component.css");
+
+/* Layout — admin shell container (.layout-hidden, etc.) */
+@import url("../app/layout/layout.component.css");
+
+/* Incidencias detail — admin detail (.incid-detail__* classes) */
+@import url("../app/incidencias/pages/detail/incidencias.detail.component.css");
+
 /* ==============================================
    Utility classes — gradientes
    ============================================== */
@@ -557,6 +566,7 @@ body, #main-wrapper { font-family: var(--font-family); }
 .gr-form-card {
   max-width: 920px;
   width: 100%;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {

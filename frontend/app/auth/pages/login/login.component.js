@@ -41,7 +41,13 @@ export default defineComponent({
 
       try {
         await auth.login(emailInput.value, passwordInput.value);
-        window.location.hash = '#/dashboard';
+        const user = await auth.me();
+        const role = user?.role?.name;
+        if (role === 'usuario') {
+          window.location.hash = '#/feed';
+        } else {
+          window.location.hash = '#/dashboard';
+        }
       } catch (err) {
         errorAlert.textContent =
           err.message || 'Error al iniciar sesión. Verificá tus credenciales.';

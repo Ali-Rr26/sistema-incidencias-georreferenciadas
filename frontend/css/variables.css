@@ -70,6 +70,30 @@
   --gradient-sidebar-active: linear-gradient(118deg, #6a5cf3 0%, #a06bf5 100%);
 
   /* =============================================
+     Status badges (feed)
+     ============================================= */
+  --status-pending-bg:   #fff4d6;
+  --status-pending-text: #d99a00;
+  --status-progress-bg:   #e4e8ff;
+  --status-progress-text: #5a6ff0;
+  --status-resolved-bg:   #d8f6e7;
+  --status-resolved-text: #16a96b;
+
+  /* =============================================
+     Priority badges (feed)
+     ============================================= */
+  --priority-high-bg:   #ffe9ee;
+  --priority-high-text: #fa5a7d;
+  --priority-medium-text: #f0a020;
+  --priority-low-text:    #16a96b;
+
+  /* =============================================
+     Card (feed)
+     ============================================= */
+  --card-radius: 18px;
+  --primary-gradient: linear-gradient(135deg, #6a5cf3, #a06bf5);
+
+  /* =============================================
      Typography
      ============================================= */
   --font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;

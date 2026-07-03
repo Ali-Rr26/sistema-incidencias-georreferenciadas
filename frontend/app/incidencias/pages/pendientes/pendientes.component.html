@@ -1,0 +1,78 @@
+<div class="gr-page">
+  <!-- Header -->
+  <div class="gr-page__header">
+    <div>
+      <h1 class="gr-page__title">Incidencias Pendientes</h1>
+      <nav class="gr-breadcrumb">
+        <span class="gr-breadcrumb__item">Gestión</span>
+        <span class="gr-breadcrumb__sep">/</span>
+        <span class="gr-breadcrumb__item gr-breadcrumb__item--active"
+          >Pendientes de verificación</span
+        >
+      </nav>
+      <p class="text-muted mt-1">
+        Incidencias sin asignar que coinciden con tu categoría y ubicación.
+      </p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="pendientes-loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 text-muted">Cargando incidencias pendientes...</p>
+  </div>
+
+  <!-- Error -->
+  <div id="pendientes-error" class="d-none">
+    <div class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      Error al cargar las incidencias pendientes.
+      <button
+        id="btn-pendientes-reintentar"
+        class="btn btn-sm btn-outline-danger ms-3"
+      >
+        Reintentar
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty -->
+  <div id="pendientes-vacio" class="d-none">
+    <div class="text-center py-5">
+      <i
+        class="fas fa-check-circle text-success incid-pendientes__check-icon"
+      ></i>
+      <h4 class="mt-3">No hay incidencias pendientes</h4>
+      <p class="text-muted">
+        Todas las incidencias en tu área han sido verificadas o asignadas.
+      </p>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div id="pendientes-lista" class="d-none">
+    <div class="row g-3" id="pendientes-cards"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3 incid-pendientes__toast-wrapper">
+  <div
+    id="pendientes-toast"
+    class="toast align-items-center text-white bg-success border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="d-flex">
+      <div class="toast-body" id="pendientes-toast-msg">
+        Incidencia confirmada correctamente.
+      </div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+  </div>
+</div>

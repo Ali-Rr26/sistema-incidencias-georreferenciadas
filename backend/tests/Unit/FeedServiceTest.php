@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Incidents\Models\FeedService;
 use Illuminate\Support\Facades\Redis;
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 it('returns empty feed when Redis has no incidents', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn([]);
 
@@ -20,12 +22,11 @@ it('returns empty feed when Redis has no incidents', function (): void {
 });
 
 it('fetches and parses incidents from Redis', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn([
             'id' => '1',
@@ -40,7 +41,6 @@ it('fetches and parses incidents from Redis', function (): void {
             'updated_at' => '2026-06-26T10:00:00+00:00',
             'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
             'category_name' => 'Accidente',
-            'category_organizations' => '[{"id":1,"name":"Bomberos"}]',
             'organization_name' => 'Org A',
             'location_name' => 'Quito',
             'location_path_ids' => '[1,10,100]',
@@ -49,7 +49,7 @@ it('fetches and parses incidents from Redis', function (): void {
             'user_avatar' => null,
         ]);
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:2')
         ->andReturn([
             'id' => '2',
@@ -64,7 +64,6 @@ it('fetches and parses incidents from Redis', function (): void {
             'updated_at' => '2026-06-25T08:30:00+00:00',
             'geom' => null,
             'category_name' => 'Robo',
-            'category_organizations' => '[]',
             'organization_name' => 'Org A',
             'location_name' => 'Guayaquil',
             'location_path_ids' => '[1,20,200]',
@@ -91,8 +90,7 @@ it('fetches and parses incidents from Redis', function (): void {
 });
 
 it('filters incidents by status', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2', '3']);
 
@@ -107,7 +105,6 @@ it('filters incidents by status', function (): void {
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
         'category_name' => 'Accidente',
-        'category_organizations' => '[]',
         'organization_name' => 'Org A',
         'location_name' => 'Quito',
         'location_path_ids' => '[1,10,100]',
@@ -115,15 +112,15 @@ it('filters incidents by status', function (): void {
         'user_last_name' => 'Pérez',
     ];
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn(array_merge($hashData, ['status' => 'pending']));
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:2')
         ->andReturn(array_merge($hashData, ['id' => '2', 'status' => 'resolved']));
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:3')
         ->andReturn(array_merge($hashData, ['id' => '3', 'status' => 'pending']));
 
@@ -136,8 +133,7 @@ it('filters incidents by status', function (): void {
 });
 
 it('filters incidents by organization_id', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
 
@@ -152,7 +148,6 @@ it('filters incidents by organization_id', function (): void {
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
         'category_name' => 'Accidente',
-        'category_organizations' => '[]',
         'organization_name' => 'Org A',
         'location_name' => 'Quito',
         'location_path_ids' => '[]',
@@ -160,11 +155,11 @@ it('filters incidents by organization_id', function (): void {
         'user_last_name' => 'Pérez',
     ];
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn(array_merge($baseData, ['organization_id' => '5']));
 
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:2')
         ->andReturn(array_merge($baseData, ['id' => '2', 'organization_id' => '10']));
 
@@ -176,8 +171,7 @@ it('filters incidents by organization_id', function (): void {
 });
 
 it('filters incidents by location_id via location_path_ids', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
 
@@ -192,7 +186,6 @@ it('filters incidents by location_id via location_path_ids', function (): void {
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
         'category_name' => 'Accidente',
-        'category_organizations' => '[]',
         'organization_name' => 'Org A',
         'location_name' => 'Quito',
         'user_first_name' => 'Juan',
@@ -200,12 +193,12 @@ it('filters incidents by location_id via location_path_ids', function (): void {
     ];
 
     // incident:1 has location_path_ids containing 999 (match)
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn(array_merge($baseData, ['location_path_ids' => '[1,10,100,999]']));
 
     // incident:2 does not contain 999 (no match)
-    $mock->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:2')
         ->andReturn(array_merge($baseData, ['id' => '2', 'location_path_ids' => '[1,20,200]']));
 
@@ -217,8 +210,7 @@ it('filters incidents by location_id via location_path_ids', function (): void {
 });
 
 it('paginates results correctly', function (): void {
-    $mock = Mockery::mock('alias:'.Redis::class);
-    $mock->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2', '3', '4', '5']);
 
@@ -233,7 +225,6 @@ it('paginates results correctly', function (): void {
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
         'category_name' => 'Accidente',
-        'category_organizations' => '[]',
         'organization_name' => 'Org A',
         'location_name' => 'Quito',
         'location_path_ids' => '[]',
@@ -242,7 +233,7 @@ it('paginates results correctly', function (): void {
     ];
 
     foreach (range(1, 5) as $id) {
-        $mock->shouldReceive('hgetall')
+        Redis::shouldReceive('hgetall')
             ->with("incident:{$id}")
             ->andReturn(array_merge($baseData, ['id' => (string) $id]));
     }

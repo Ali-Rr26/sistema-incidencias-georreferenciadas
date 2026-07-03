@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
-use App\Domains\Incidents\Enums\OrganizationAssignmentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -46,6 +45,9 @@ class Incident extends Model
         'priority',
         'resolution_date',
         'geom',
+        'images',
+        'claimed_by',
+        'claimed_at',
     ];
 
     protected $attributes = [
@@ -59,6 +61,8 @@ class Incident extends Model
             'resolution_date' => 'datetime',
             'status' => IncidentStatus::class,
             'priority' => IncidentPriority::class,
+            'images' => 'array',
+            'claimed_at' => 'datetime',
         ];
     }
 
@@ -82,23 +86,8 @@ class Incident extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function organizationAssignments(): HasMany
+    public function comments(): HasMany
     {
-        return $this->hasMany(IncidentOrganizationAssignment::class);
-    }
-
-    public function activeOrganizationAssignment(): HasOne
-    {
-        return $this->hasOne(IncidentOrganizationAssignment::class)->where('status', OrganizationAssignmentStatus::Accepted->value);
-    }
-
-    public function claims(): HasMany
-    {
-        return $this->organizationAssignments();
-    }
-
-    public function acceptedClaim(): HasOne
-    {
-        return $this->activeOrganizationAssignment();
+        return $this->hasMany(Comment::class);
     }
 }

@@ -9,15 +9,14 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->redis = Mockery::mock('alias:'.Redis::class);
-
     // Seed role for UserFactory (role_id=1)
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test']);
@@ -36,27 +35,36 @@ beforeEach(function (): void {
 });
 
 it('rebuilds the Redis feed from PostgreSQL', function (): void {
-    $this->redis->shouldReceive('del')
-        ->once()
-        ->with(Mockery::pattern('/.*feed:incidents$/'));
-
-    // Pipeline: hmset + zadd per incident
-    $this->redis->shouldReceive('pipeline')
+    // Pipeline for incidents: hset + zadd
+    Redis::shouldReceive('pipeline')
         ->once()
         ->andReturnSelf();
 
-    $this->redis->shouldReceive('hmset')
+    Redis::shouldReceive('hset')
         ->once()
-        ->with(Mockery::pattern('/^incident:\d+$/'), Mockery::type('array'));
+        ->with('feed:v2:items', Mockery::type('string'), Mockery::type('string'));
 
-    $this->redis->shouldReceive('zadd')
+    Redis::shouldReceive('zadd')
         ->once()
-        ->with('feed:incidents', Mockery::type('float'), Mockery::type('string'));
+        ->with('feed:v2:index', Mockery::type('float'), Mockery::type('string'));
 
-    $this->redis->shouldReceive('exec')
+    Redis::shouldReceive('exec')
         ->once();
 
+    // TTL on v2 keys + old key
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:items', 604800);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:index', 604800);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:incidents', 604800);
+
     $this->artisan('feed:rebuild')
-        ->expectsOutputToContain('Synced 1 incidents to Redis.')
+        ->expectsOutputToContain('Synced 1 incidents to Redis feed v2.')
         ->assertExitCode(0);
 });

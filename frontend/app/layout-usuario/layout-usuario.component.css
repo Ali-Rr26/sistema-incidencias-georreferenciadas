@@ -1,0 +1,450 @@
+/* ============================================================
+   LAYOUT USUARIO — mobile-first citizen shell
+   Header (56px) + scrollable content + bottom nav (60px)
+   ============================================================ */
+
+/* ─── Header ─── */
+.lu-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
+}
+
+.lu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lu-logo-icon {
+  font-size: 1.3rem;
+  color: #6a5cf3;
+  background: var(
+    --primary-gradient,
+    linear-gradient(135deg, #6a5cf3, #a06bf5)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lu-logo-text {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-dark, #23283b);
+  letter-spacing: -0.3px;
+}
+
+.lu-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Notification bell */
+.lu-bell-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f3f4f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lu-bell-icon {
+  font-size: 1rem;
+  color: var(--text-default, #5b6172);
+}
+
+.lu-bell-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fa5a7d;
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Avatar */
+.lu-avatar-wrap {
+  width: 34px;
+  height: 34px;
+}
+
+.lu-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(
+    --primary-gradient,
+    linear-gradient(135deg, #6a5cf3, #a06bf5)
+  );
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Login button (public) */
+.lu-login-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6a5cf3;
+  background: transparent;
+  border: 1px solid #6a5cf3;
+  border-radius: 22px;
+  padding: 5px 16px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.lu-login-btn:hover {
+  background: #6a5cf3;
+  color: #fff;
+}
+
+/* ─── Main content ─── */
+.lu-main {
+  padding-top: 56px;
+  padding-bottom: 60px;
+  min-height: 100vh;
+  background: var(--bg-page, #f3f4f9);
+  font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
+}
+
+/* Desktop: sidebar takes space */
+@media (min-width: 768px) {
+  .lu-main {
+    padding-bottom: 0;
+    padding-left: 220px;
+  }
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR — Desktop only (≥768px)
+   ══════════════════════════════════════ */
+
+.lu-sidebar {
+  position: fixed;
+  top: 56px; /* below header */
+  left: 0;
+  bottom: 0;
+  width: 220px;
+  background: #ffffff;
+  border-right: 1px solid #eef0f5;
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
+  font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
+  overflow-y: auto;
+}
+
+/* Logo inside sidebar */
+.lu-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f5f6fa;
+}
+
+.lu-sidebar-logo .lu-logo-icon {
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, #6a5cf3, #a06bf5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lu-sidebar-logo .lu-logo-text {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #23283b;
+  letter-spacing: -0.3px;
+}
+
+/* Sidebar navigation */
+.lu-sidebar-nav {
+  flex: 1;
+  padding: 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lu-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #5b6172;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.lu-sidebar-item i {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.lu-sidebar-item:hover {
+  background: #f3f4f9;
+  color: #6a5cf3;
+}
+
+.lu-sidebar-item.active {
+  background: #f0edff;
+  color: #6a5cf3;
+  font-weight: 700;
+}
+
+/* Plus/Reportar button — elevated style */
+.lu-sidebar-plus {
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(106, 92, 243, 0.3);
+  margin: 6px 0;
+}
+
+.lu-sidebar-plus i {
+  background: none;
+  -webkit-text-fill-color: initial;
+  filter: none;
+}
+
+.lu-sidebar-plus:hover {
+  filter: brightness(1.08);
+  transform: translateX(2px);
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+}
+
+/* Sidebar bottom: user info */
+.lu-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid #f5f6fa;
+  cursor: default;
+}
+
+.lu-sidebar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6a5cf3, #a06bf5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.lu-sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lu-sidebar-user-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #23283b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lu-sidebar-user-role {
+  font-size: 0.7rem;
+  color: #a3a8b8;
+  text-transform: capitalize;
+}
+
+/* ─── Bottom nav ─── */
+.lu-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 60px;
+  background: #fff;
+  border-top: 1px solid #eef0f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+  font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
+}
+
+.lu-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+  color: #b3b8c6;
+  font-size: 0.6rem;
+  font-weight: 500;
+  transition: color 0.15s;
+  flex: 1;
+  position: relative;
+  padding: 6px 0;
+}
+
+.lu-nav-item i {
+  font-size: 1.2rem;
+  transition: color 0.15s;
+}
+
+.lu-nav-item .lu-nav-label {
+  font-size: 0.6rem;
+  margin-top: 1px;
+}
+
+.lu-nav-item.active {
+  color: #6a5cf3;
+}
+
+.lu-nav-item.active i {
+  color: #6a5cf3;
+}
+
+/* Plus button (center, elevated) */
+.lu-nav-plus {
+  position: relative;
+  margin-top: -12px;
+}
+
+.lu-nav-plus i {
+  font-size: 2.2rem;
+  background: var(
+    --primary-gradient,
+    linear-gradient(135deg, #6a5cf3, #a06bf5)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 6px rgba(106, 92, 243, 0.4));
+}
+
+.lu-nav-plus.active i {
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Responsive Desktop Navbar Adaptation ─── */
+
+.lu-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.lu-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 0 auto;
+}
+
+.lu-header-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #b3b8c6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+.lu-header-nav-item i {
+  font-size: 1rem;
+}
+.lu-header-nav-item:hover {
+  color: #6a5cf3;
+  background: #f3f4f9;
+}
+.lu-header-nav-item.active {
+  color: #6a5cf3;
+  background: #f0edff;
+}
+
+/* Plus button inside top header nav */
+.lu-header-nav-item.lu-nav-plus {
+  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(106, 92, 243, 0.2);
+}
+.lu-header-nav-item.lu-nav-plus:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.lu-header-nav-item.lu-nav-plus .lu-nav-plus-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lu-header-nav-item.lu-nav-plus i {
+  font-size: 0.85rem;
+  background: none;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+  filter: none;
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .lu-bottom-nav {
+    display: none !important;
+  }
+  .lu-main {
+    padding-bottom: 0;
+  }
+  .lu-header {
+    padding: 0 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  .lu-header-center {
+    display: none !important;
+  }
+}

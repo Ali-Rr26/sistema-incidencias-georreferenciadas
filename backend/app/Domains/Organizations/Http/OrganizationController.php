@@ -44,47 +44,33 @@ class OrganizationController extends Controller
     public function store(StoreOrganizationRequest $request): JsonResponse
     {
         $organization = $this->organizations->create(
-            $request->safe()->except(['category_ids']),
+            $request->validated(),
         );
-
-        if ($request->filled('category_ids')) {
-            $organization->incidentCategories()->sync($request->input('category_ids'));
-        }
-
-        $organization->load('incidentCategories');
+        $organization->load(['category', 'location', 'parent']);
 
         return (new OrganizationResource($organization))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Organization $organization): JsonResponse
     {
-        $organization = $this->organizations->findById($id);
-
-        if ($organization === null) {
-            return response()->json(['message' => 'Organization not found'], Response::HTTP_NOT_FOUND);
-        }
+        $organization->load(['category', 'location', 'parent']);
 
         return (new OrganizationResource($organization))->response();
     }
 
-    public function update(UpdateOrganizationRequest $request, int $id): JsonResponse
+    public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
     {
-        $organization = $this->organizations->update($id, $request->safe()->except(['category_ids']));
-
-        if ($request->filled('category_ids')) {
-            $organization->incidentCategories()->sync($request->input('category_ids'));
-        }
-
-        $organization->load('incidentCategories');
+        $organization = $this->organizations->update($organization->id, $request->validated());
+        $organization->load(['category', 'location', 'parent']);
 
         return (new OrganizationResource($organization))->response();
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Organization $organization): JsonResponse
     {
-        $this->organizations->delete($id);
+        $this->organizations->delete($organization->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }

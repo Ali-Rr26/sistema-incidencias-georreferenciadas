@@ -8,15 +8,15 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->redis = Mockery::mock('alias:'.Redis::class);
+    // No alias setup
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {
-    $this->redis->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1']);
 
-    $this->redis->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn([
             'id' => '1',
@@ -31,7 +31,6 @@ it('returns feed from Redis with correct JSON structure', function (): void {
             'updated_at' => '2026-06-26T10:00:00+00:00',
             'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
             'category_name' => 'Accidente',
-            'category_organizations' => '[{"id":1,"name":"Bomberos"}]',
             'organization_name' => 'Defensa Civil',
             'location_name' => 'Quito',
             'location_path_ids' => '[1,10,100]',
@@ -49,7 +48,7 @@ it('returns feed from Redis with correct JSON structure', function (): void {
                 'id',
                 'status',
                 'priority',
-                'category' => ['id', 'name', 'organizations'],
+                'category' => ['id', 'name'],
                 'user' => ['id', 'first_name', 'last_name', 'avatar'],
                 'location' => ['id', 'name'],
                 'geom',
@@ -65,7 +64,7 @@ it('returns feed from Redis with correct JSON structure', function (): void {
 });
 
 it('falls back to PostgreSQL when Redis throws an exception', function (): void {
-    $this->redis->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andThrow(new RuntimeException('Redis connection refused'));
 
@@ -78,7 +77,7 @@ it('falls back to PostgreSQL when Redis throws an exception', function (): void 
 });
 
 it('applies status filter when reading from Redis', function (): void {
-    $this->redis->shouldReceive('zrevrange')
+    Redis::shouldReceive('zrevrange')
         ->with('feed:incidents', 0, 499)
         ->andReturn(['1', '2']);
 
@@ -93,7 +92,6 @@ it('applies status filter when reading from Redis', function (): void {
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
         'category_name' => 'Cat',
-        'category_organizations' => '[]',
         'organization_name' => 'Org',
         'location_name' => 'Loc',
         'location_path_ids' => '[]',
@@ -102,11 +100,11 @@ it('applies status filter when reading from Redis', function (): void {
         'user_avatar' => null,
     ];
 
-    $this->redis->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:1')
         ->andReturn(array_merge($baseData, ['id' => '1', 'status' => 'pending']));
 
-    $this->redis->shouldReceive('hgetall')
+    Redis::shouldReceive('hgetall')
         ->with('incident:2')
         ->andReturn(array_merge($baseData, ['id' => '2', 'status' => 'resolved']));
 

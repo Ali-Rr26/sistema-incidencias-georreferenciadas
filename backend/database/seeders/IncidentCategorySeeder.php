@@ -70,9 +70,15 @@ class IncidentCategorySeeder extends Seeder
 
         $this->command?->info('Assigning categories to all organizations...');
 
-        $allCategoryIds = IncidentCategory::pluck('id');
+        $firstCategoryId = IncidentCategory::first()?->id;
+        if ($firstCategoryId === null) {
+            return;
+        }
+
         foreach ($organizations as $organization) {
-            $organization->incidentCategories()->syncWithoutDetaching($allCategoryIds);
+            if ($organization->incident_category_id === null) {
+                $organization->update(['incident_category_id' => $firstCategoryId]);
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
-        'passsword',
+        'password',
     ];
 
     protected function casts(): array
@@ -88,5 +88,30 @@ class User extends Authenticatable
             ->where('resource', $resource)
             ->where('action', $action)
             ->exists() ?? false;
+    }
+
+    public function isPublicador(): bool
+    {
+        return $this->role?->name === UserRole::Publicador->value;
+    }
+
+    public function belongsToOrganization(Organization $org): bool
+    {
+        return $this->organization_id === $org->id;
+    }
+
+    public function isOrganizationMember(): bool
+    {
+        return $this->organization_id !== null;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->role?->name === UserRole::OperadorOrganizacion->value;
+    }
+
+    public function isRegularUser(): bool
+    {
+        return $this->role?->name === UserRole::Usuario->value;
     }
 }

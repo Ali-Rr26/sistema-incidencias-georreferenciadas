@@ -7,6 +7,37 @@ namespace App\Domains\Incidents\Enums;
 enum IncidentStatus: string
 {
     case Pending = 'pending';
+    case PendingOperator = 'pending_operator';
     case InProgress = 'in_progress';
     case Resolved = 'resolved';
+
+    /**
+     * Stable key exposed to the frontend map (matches the backed value).
+     *
+     * The frontend codegen (`incidents:generate-frontend-constants`) emits
+     * one entry per case using this method as the key so the generated
+     * `status.constants.js` map keys stay aligned with `$this->value`.
+     */
+    public function frontendKey(): string
+    {
+        return $this->value;
+    }
+
+    /**
+     * Spanish display label for the incident status.
+     *
+     * The canonical labels live here so the frontend constants file (see
+     * `incidents:generate-frontend-constants`) cannot drift; the match
+     * arms intentionally cover every case — adding a new case without
+     * updating this method triggers a `UnhandledMatchError`.
+     */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Pending => 'Pendiente',
+            self::PendingOperator => 'Pendiente de operador',
+            self::InProgress => 'En proceso',
+            self::Resolved => 'Resuelto',
+        };
+    }
 }

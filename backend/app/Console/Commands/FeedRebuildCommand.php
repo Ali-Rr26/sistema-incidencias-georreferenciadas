@@ -11,20 +11,23 @@ use Illuminate\Support\Facades\Redis;
 
 class FeedRebuildCommand extends Command
 {
+    private const V2_ITEMS_KEY = 'feed:v2:items';
+
+    private const V2_INDEX_KEY = 'feed:v2:index';
+
+    private const FEED_TTL = 604800; // 7 days
+
     protected $signature = 'feed:rebuild';
 
-    protected $description = 'Rebuild Redis feed data from PostgreSQL';
+    protected $description = 'Rebuild Redis feed v2 data from PostgreSQL';
 
     public function handle(): int
     {
-        $this->info('Rebuilding Redis feed from PostgreSQL...');
-
-        $prefix = config('database.redis.options.prefix', '');
-        Redis::del($prefix.'feed:incidents');
+        $this->info('Rebuilding Redis feed v2 from PostgreSQL...');
 
         $incidentCount = 0;
 
-        Incident::with(['category.organizations', 'location', 'user'])
+        Incident::with(['category', 'location', 'user'])
             ->chunk(100, function ($incidents) use (&$incidentCount): void {
                 $pipe = Redis::pipeline();
 
@@ -47,9 +50,6 @@ class FeedRebuildCommand extends Command
                         'updated_at' => $incident->updated_at?->toIso8601String(),
                         'geom' => $incident->geom ? $incident->geom->toJson() : null,
                         'category_name' => $incident->category?->name ?? '',
-                        'category_organizations' => json_encode(
-                            $incident->category?->organizations?->map(fn ($o) => ['id' => $o->id, 'name' => $o->name]) ?? [],
-                        ),
                         'organization_name' => $incident->organization?->name ?? '',
                         'location_name' => $incident->location?->name ?? '',
                         'location_path_ids' => json_encode($locationPathIds),
@@ -58,8 +58,8 @@ class FeedRebuildCommand extends Command
                         'user_avatar' => $incident->user?->avatar,
                     ];
 
-                    $pipe->hmset('incident:'.$incident->id, $data);
-                    $pipe->zadd('feed:incidents', (float) $incident->created_at->timestamp, (string) $incident->id);
+                    $pipe->hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
+                    $pipe->zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
 
                     $incidentCount++;
                 }
@@ -67,9 +67,16 @@ class FeedRebuildCommand extends Command
                 $pipe->exec();
             });
 
-        $this->info("Synced {$incidentCount} incidents to Redis.");
+        // Set TTL on v2 keys once after all inserts
+        Redis::expire(self::V2_ITEMS_KEY, self::FEED_TTL);
+        Redis::expire(self::V2_INDEX_KEY, self::FEED_TTL);
 
-        // Sync comments to Redis
+        // TTL the old key so it auto-expires during transition
+        Redis::expire('feed:incidents', self::FEED_TTL);
+
+        $this->info("Synced {$incidentCount} incidents to Redis feed v2.");
+
+        // Sync comments to Redis (unchanged — uses incident: and comment: keys)
         $commentCount = 0;
 
         Comment::with('user')
@@ -79,7 +86,6 @@ class FeedRebuildCommand extends Command
                 foreach ($comments as $comment) {
                     $commentSetKey = 'incident:'.$comment->incident_id.':comments';
                     $commentHashKey = 'comment:'.$comment->id;
-                    $incidentHashKey = 'incident:'.$comment->incident_id;
 
                     $data = [
                         'id' => (string) $comment->id,

@@ -12,12 +12,34 @@ class UpdateIncidentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $incident = Incident::find($this->route('incident'));
+        $incident = $this->route('incident');
+        if (! $incident instanceof Incident) {
+            $incident = Incident::find($incident);
+        }
+
         if ($incident === null) {
             return false;
         }
 
-        return $this->user()?->can('update', $incident) ?? false;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        if (! $user->can('update', $incident)) {
+            return false;
+        }
+
+        if ($user->isOperator()) {
+            $lockedFields = ['title', 'priority', 'incident_category_id', 'location_id'];
+            foreach ($lockedFields as $field) {
+                if ($this->has($field)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public function rules(): array
@@ -31,6 +53,10 @@ class UpdateIncidentRequest extends FormRequest
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
             'geom' => 'nullable|json',
+
+            // Imágenes opcionales (multipart)
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
         ];
     }
 
