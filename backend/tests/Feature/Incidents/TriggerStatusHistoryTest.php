@@ -31,11 +31,11 @@ beforeEach(function (): void {
 
     $this->incident = Incident::create([
         'incident_category_id' => $category->id,
-        'user_id'              => $this->reporter->id,
-        'location_id'          => $location->id,
-        'title'                => 'Incidencia CP-02-06-B',
-        'status'               => Incident::STATUS_PENDING,
-        'priority'             => Incident::PRIORITY_MEDIUM,
+        'user_id' => $this->reporter->id,
+        'location_id' => $location->id,
+        'title' => 'Incidencia CP-02-06-B',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
     ]);
 });
 
