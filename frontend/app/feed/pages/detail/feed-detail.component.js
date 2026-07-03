@@ -19,19 +19,15 @@ import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
 import loadLeaflet from '../../../shared/leaflet.js';
 
-// ── Detect context: admin shell vs citizen layout ──
-
-function isAdminContext() {
-  const wrapper = document.getElementById('main-wrapper');
-  if (!wrapper) return false;
-  // The shell hides itself with the `.layout-hidden` class while JS
-  // is still wiring up (see `app/layout/layout.component.css`). Once
-  // `initShell()` removes that class, the shell is visible.
-  return !wrapper.classList.contains('layout-hidden');
-}
-
+// ── Detect context: admin vs citizen ──
+//
+// PR #3 (T-3.7): the role is now read from the matched route's role
+// tag (router.currentRoute?.role) rather than probing the DOM. The role
+// tag is the single source of truth and survives any DOM shape changes
+// introduced by the unified appShell.
 function getFeedUrl() {
-  return isAdminContext() ? '/incidencias/feed' : '/feed';
+  const role = router.currentRoute?.role;
+  return role === 'admin' ? '/incidencias/feed' : '/feed';
 }
 
 // ── Component ───────────────────────────────────────────────

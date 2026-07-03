@@ -33,6 +33,10 @@ class Router {
     // specific role will treat the visitor as a mismatch and redirect to
     // the public fallback (citizen's home: /feed).
     this._currentUserRole = null;
+    // PR #3 (T-3.7): expose the matched route so page components can
+    // read their own role tag without re-matching. Settled at the top
+    // of resolve() before guards run; cleared on teardown.
+    this.currentRoute = null;
   }
 
   /**
@@ -146,6 +150,15 @@ class Router {
       this.navigate('/not-found');
       return;
     }
+
+    // PR #3 (T-3.7): expose the matched route so page components can
+    // read their own role/shell metadata directly. Set BEFORE guards
+    // run so guards can also consult it.
+    this.currentRoute = {
+      pattern: route.pattern,
+      role: route.role,
+      shell: route.shell,
+    };
 
     const { component, guards, shell, role } = route;
 
@@ -342,6 +355,7 @@ class Router {
       this.currentComponent.onDestroy();
       this._cleanupStyles(this.currentComponent);
     }
+    this.currentRoute = null;
   }
 }
 
