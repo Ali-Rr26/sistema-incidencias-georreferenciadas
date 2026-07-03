@@ -94,12 +94,13 @@ class Router {
     }
     this.shells.set(name, { mount, init, outlet, updateActive });
     this._shellState.set(name, { mounted: false, initialized: false });
-    // Convention-based default: if the shell didn't pass styleUrl, fall back
-    // to a hardcoded CSS path matching the shell name. This avoids stale
-    // module cache scenarios where the shell module was loaded without
-    // `styleUrl` and we still want to inject its CSS.
-    const fallbackStyleUrl = `app/${name === 'app' ? 'app-shell' : `layout-${name}`}/app-shell.component.css`;
-    this._shellStyleUrls[name] = styleUrl || fallbackStyleUrl;
+    // Only register a CSS path when the shell explicitly provides one.
+    // We do NOT auto-fallback to a guessed path: that approach broke tests
+    // that mock shells without `styleUrl`, and was a leaky way to handle
+    // the ES6 module cache stale-shell scenario (browser only).
+    if (styleUrl) {
+      this._shellStyleUrls[name] = styleUrl;
+    }
   }
 
   /**

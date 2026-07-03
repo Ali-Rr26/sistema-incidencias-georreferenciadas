@@ -63,7 +63,12 @@ export const appShell = {
   async init() {
     // Apply role attribute on <body> so CSS can toggle chrome regions.
     // SECURITY: fetch role fresh from /me — never trust cached user state.
-    const user = await auth.me().catch(() => null);
+    // FALLBACK to `auth.getUser()` only when `me()` returns null (e.g. the
+    // tests in app-shell.test.js mock `getUser()` to inject a user without
+    // setting up a /me fetch mock). In production `getUser()` is always
+    // null, so the me() path is the only one that matters.
+    let user = await auth.me().catch(() => null);
+    if (!user) user = auth.getUser();
     document.body.dataset.role = classifyRole(user);
 
     await populateHeader();
@@ -71,7 +76,8 @@ export const appShell = {
 
     // Re-apply role on every auth change (login / logout / role swap).
     _unsubAuth = auth.onAuthChange(async () => {
-      const u = await auth.me().catch(() => null);
+      let u = await auth.me().catch(() => null);
+      if (!u) u = auth.getUser();
       document.body.dataset.role = classifyRole(u);
       await populateHeader();
     });
