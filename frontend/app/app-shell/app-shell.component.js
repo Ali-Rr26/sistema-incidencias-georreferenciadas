@@ -26,6 +26,19 @@ const STYLE_URL = 'app/app-shell/app-shell.component.css';
 
 let _unsubAuth = null;
 
+// User-menu module-scope state (T-1.11).
+// Stored as module refs so destroy() can fully tear down — proposal R6.
+let _userMenuTrigger = null;
+let _userMenuPanel = null;
+let _userMenuItems = [];
+let _isMenuOpen = false;
+let _onDocClick = null;
+let _onKeydown = null;
+let _logoutDebounceTimer = null;
+// Stored per-item listener refs so destroy() can remove them.
+const _itemClickListeners = new WeakMap();
+const _itemKeydownListeners = new WeakMap();
+
 /**
  * Classify a user object into one of the three shell role buckets.
  * Public for tests + future role-guard helpers.
@@ -90,6 +103,37 @@ export const appShell = {
       _unsubAuth();
       _unsubAuth = null;
     }
+    // T-1.11.12: tear down user-menu listeners + debounce timer.
+    // Close the panel first (if open) so its hidden state is consistent
+    // before we null the refs. hidePanel() is a no-op when already closed.
+    hidePanel();
+    if (_onDocClick) {
+      document.removeEventListener('click', _onDocClick, true);
+      _onDocClick = null;
+    }
+    if (_onKeydown) {
+      document.removeEventListener('keydown', _onKeydown);
+      _onKeydown = null;
+    }
+    if (_logoutDebounceTimer) {
+      clearTimeout(_logoutDebounceTimer);
+      _logoutDebounceTimer = null;
+    }
+    if (_userMenuTrigger) {
+      _userMenuTrigger.removeEventListener('click', toggleMenu);
+    }
+    _userMenuItems.forEach((item) => {
+      const clickListener = _itemClickListeners.get(item);
+      const keydownListener = _itemKeydownListeners.get(item);
+      if (clickListener) item.removeEventListener('click', clickListener);
+      if (keydownListener) item.removeEventListener('keydown', keydownListener);
+      _itemClickListeners.delete(item);
+      _itemKeydownListeners.delete(item);
+    });
+    _userMenuTrigger = null;
+    _userMenuPanel = null;
+    _userMenuItems = [];
+    _isMenuOpen = false;
   },
 
   outlet: '#page-outlet',
@@ -154,8 +198,11 @@ async function populateHeader() {
  * Wire up dynamic navigation actions:
  *   - The citizen/guest "+" plus button: redirect to /feed/crear when
  *     authenticated, /login otherwise.
- *   - The admin user-menu trigger: opens a dropdown menu (placeholder —
- *     full menu is wired in PR #2 alongside router integration).
+ *   - The admin user-menu trigger: opens a WAI-ARIA menu-button dropdown
+ *     with "Mi perfil" (navigate) and "Cerrar sesión" (await auth.logout()
+ *     then redirect). Adds Escape-to-close, focus restoration, outside-click
+ *     close, and a 300 ms debounce on logout to mitigate the async race
+ *     documented in proposal R2.
  */
 function wireNav() {
   const plusBtn = document.getElementById('app-shell-bottom-plus');
@@ -168,5 +215,128 @@ function wireNav() {
         window.location.hash = '#/login';
       }
     });
+  }
+
+  // T-1.11.6 — cache user-menu refs (admin-only DOM, but guard with null-check).
+  _userMenuTrigger = document.getElementById('app-shell-user-menu-trigger');
+  _userMenuPanel = document.getElementById('app-shell-user-menu-panel');
+  _userMenuItems = _userMenuPanel
+    ? Array.from(_userMenuPanel.querySelectorAll('[role="menuitem"]'))
+    : [];
+
+  if (_userMenuTrigger) {
+    _userMenuTrigger.addEventListener('click', toggleMenu);
+    _userMenuItems.forEach((item) => {
+      const clickListener = () => handleItem(item);
+      const keydownListener = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleItem(item);
+        }
+      };
+      item.addEventListener('click', clickListener);
+      item.addEventListener('keydown', keydownListener);
+      _itemClickListeners.set(item, clickListener);
+      _itemKeydownListeners.set(item, keydownListener);
+    });
+
+    // T-1.11.8 — capture-phase document click closes the panel on outside-click.
+    _onDocClick = (event) => {
+      if (!_isMenuOpen) return;
+      const target = event.target;
+      if (
+        _userMenuTrigger.contains(target) ||
+        (_userMenuPanel && _userMenuPanel.contains(target))
+      ) {
+        return;
+      }
+      hidePanel();
+    };
+    document.addEventListener('click', _onDocClick, true);
+
+    // T-1.11.9 — Escape closes the panel + restores focus.
+    _onKeydown = (event) => {
+      if (event.key === 'Escape' && _isMenuOpen) {
+        hidePanel();
+      }
+    };
+    document.addEventListener('keydown', _onKeydown);
+  }
+}
+
+/**
+ * Toggle the user-menu panel visibility (T-1.11.7).
+ */
+function toggleMenu() {
+  if (_isMenuOpen) {
+    hidePanel();
+  } else {
+    showPanel();
+  }
+}
+
+/**
+ * Show the user-menu panel, flip aria-expanded, focus the first menu item.
+ */
+function showPanel() {
+  _isMenuOpen = true;
+  if (_userMenuPanel) _userMenuPanel.hidden = false;
+  if (_userMenuTrigger) {
+    _userMenuTrigger.setAttribute('aria-expanded', 'true');
+  }
+  if (_userMenuItems[0]) {
+    _userMenuItems[0].focus();
+  }
+}
+
+/**
+ * Hide the user-menu panel, flip aria-expanded, return focus to the trigger.
+ * Idempotent — calling on an already-closed panel is a no-op (REQ-5).
+ */
+function hidePanel() {
+  if (!_isMenuOpen) return;
+  _isMenuOpen = false;
+  if (_userMenuPanel) _userMenuPanel.hidden = true;
+  if (_userMenuTrigger) {
+    _userMenuTrigger.setAttribute('aria-expanded', 'false');
+    _userMenuTrigger.focus();
+  }
+}
+
+/**
+ * Activate a menu item (T-1.11.10 + T-1.11.11).
+ *
+ * - "Mi perfil" — assign window.location.hash to '#/configuracion/perfil',
+ *   close the panel.
+ * - "Cerrar sesión" — set aria-disabled + pointer-events for a 300 ms
+ *   debounce window (proposal R2 race mitigation), await auth.logout(),
+ *   then redirect to '#/login'. A second click during the debounce window
+ *   is a no-op.
+ */
+async function handleItem(item) {
+  if (!item) return;
+
+  if (item.id === 'app-shell-user-menu-profile') {
+    window.location.hash = '#/configuracion/perfil';
+    hidePanel();
+    return;
+  }
+
+  if (item.id === 'app-shell-user-menu-logout') {
+    // Debounce guard — second click during the 300ms window is a no-op.
+    if (item.getAttribute('aria-disabled') === 'true') return;
+    item.setAttribute('aria-disabled', 'true');
+    item.style.pointerEvents = 'none';
+
+    if (_logoutDebounceTimer) clearTimeout(_logoutDebounceTimer);
+    _logoutDebounceTimer = setTimeout(() => {
+      item.setAttribute('aria-disabled', 'false');
+      item.style.pointerEvents = '';
+      _logoutDebounceTimer = null;
+    }, 300);
+
+    await auth.logout();
+    window.location.hash = '#/login';
+    hidePanel();
   }
 }

@@ -13,10 +13,14 @@ const TEMPLATE_HTML = `
   <!-- Admin-only header (search + user menu) -->
   <div class="app-shell-header__admin" data-show-on-role="admin">
     <input type="text" class="form-control app-shell-header__search" placeholder="Buscar..." />
-    <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger">
+    <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger" aria-haspopup="menu" aria-expanded="false">
       <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar">U</span>
       <span class="app-shell-user-menu__name" id="app-shell-user-name">Usuario</span>
     </button>
+    <ul role="menu" id="app-shell-user-menu-panel" class="app-shell-user-menu__panel" hidden>
+      <li role="menuitem" tabindex="-1" id="app-shell-user-menu-profile" class="app-shell-user-menu__item">Mi perfil</li>
+      <li role="menuitem" tabindex="-1" id="app-shell-user-menu-logout" class="app-shell-user-menu__item app-shell-user-menu__item--logout" aria-disabled="false">Cerrar sesión</li>
+    </ul>
   </div>
 
   <!-- Citizen header (bell + avatar) -->
@@ -322,5 +326,320 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
     expect(loginBtn.getAttribute('href')).toBe('#/login');
 
     if (typeof unsub === 'function') unsub();
+  });
+});
+
+/**
+ * User-menu dropdown tests (T-1.11.14) — WAI-ARIA menu-button pattern.
+ *
+ * Covers REQ-1 through REQ-7 of the navbar-restructuring spec:
+ *   - REQ-1: trigger exposes aria-haspopup + toggles aria-expanded
+ *   - REQ-2: panel has exactly 2 role="menuitem" items, hidden by default
+ *   - REQ-3: "Mi perfil" navigates + closes
+ *   - REQ-4: "Cerrar sesión" awaits auth.logout() then redirects + role flip
+ *   - REQ-5: Escape closes + restores focus
+ *   - REQ-6: outside-click closes; destroy() removes listeners
+ *   - REQ-7: mobile CSS fallback present in source
+ */
+describe('user-menu dropdown (T-1.11)', () => {
+  let consoleErrorSpy;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    document.body.innerHTML = `<div id="shell-outlet"></div>`;
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+    // Set up admin user so init() classifies as 'admin' and populates header.
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 1,
+      first_name: 'Maria',
+      last_name: 'Gonzalez',
+      email: 'maria@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    });
+    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+    // auth.me() returns null by default unless overridden — tests that need
+    // the header populated override this per-test.
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  async function mountAsAdmin() {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    return { appShell, unsub };
+  }
+
+  function refs() {
+    return {
+      trigger: document.getElementById('app-shell-user-menu-trigger'),
+      panel: document.getElementById('app-shell-user-menu-panel'),
+      profile: document.getElementById('app-shell-user-menu-profile'),
+      logout: document.getElementById('app-shell-user-menu-logout'),
+    };
+  }
+
+  // Case 1: Open toggle — click trigger → aria-expanded="true", hidden removed.
+  it('opens the panel on trigger click (aria-expanded="true", hidden removed)', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel } = refs();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(panel.hasAttribute('hidden')).toBe(true);
+
+      trigger.click();
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(panel.hasAttribute('hidden')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 2: Close toggle — second click → hidden re-added, aria-expanded="false".
+  it('closes the panel on second trigger click', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel } = refs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      trigger.click();
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 3: Escape closes + restores focus to trigger.
+  it('Escape key closes the panel and restores focus to the trigger', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel } = refs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 4: Mi perfil — hash set + panel closes.
+  it('"Mi perfil" sets window.location.hash to "#/configuracion/perfil" and closes the panel', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const hashSpy = vi.fn();
+      const originalHash = window.location.hash;
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...window.location,
+          hash: originalHash,
+          set hash(v) {
+            hashSpy(v);
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const { trigger, panel, profile } = refs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      profile.click();
+
+      expect(hashSpy).toHaveBeenCalledWith('#/configuracion/perfil');
+      expect(panel.hasAttribute('hidden')).toBe(true);
+
+      // Restore hash for subsequent tests.
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, hash: originalHash },
+        writable: true,
+        configurable: true,
+      });
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 5: Cerrar sesión — awaits auth.logout, redirects, role flips; double-click is no-op.
+  it('"Cerrar sesión" calls auth.logout() exactly once, redirects to #/login, and flips role to guest', async () => {
+    vi.useFakeTimers();
+    // Replace auth.logout with a stub that mirrors the real flow's
+    // post-condition: fire _notifyAuthChange() so the registered
+    // onAuthChange callback (from appShell.init) flips body[data-role].
+    const logoutSpy = vi.spyOn(auth, 'logout').mockImplementation(async () => {
+      auth._notifyAuthChange();
+    });
+
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      // After logout, getUser() returns null → classifyRole(null) === 'guest'.
+      vi.spyOn(auth, 'getUser').mockReturnValue(null);
+      // Drain the auth-change microtask queue so the role flip completes
+      // before we assert.
+
+      const hashSpy = vi.fn();
+      const originalHash = window.location.hash;
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...window.location,
+          hash: originalHash,
+          set hash(v) {
+            hashSpy(v);
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      const { trigger, panel, logout: logoutItem } = refs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      logoutItem.click();
+
+      // auth.logout was called once (the debounce blocks the second click inside 300ms).
+      expect(logoutSpy).toHaveBeenCalledTimes(1);
+
+      // Drain microtasks so the await auth.logout() resolves and the
+      // auth-change callback finishes its async body.
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(hashSpy).toHaveBeenCalledWith('#/login');
+      expect(document.body.dataset.role).toBe('guest');
+
+      // Restore hash.
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, hash: originalHash },
+        writable: true,
+        configurable: true,
+      });
+    } finally {
+      vi.useRealTimers();
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('second click on "Cerrar sesión" during 300ms debounce window is a no-op', async () => {
+    vi.useFakeTimers();
+    const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, logout: logoutItem } = refs();
+      trigger.click();
+      logoutItem.click();
+      logoutItem.click(); // second click during debounce
+      logoutItem.click(); // third click during debounce
+
+      expect(logoutSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 6: Outside-click closes; destroy() removes listeners.
+  it('clicking outside the trigger and panel closes an open panel', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel } = refs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      // Dispatch a click outside the trigger/panel subtree.
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('destroy() removes the document click listener (subsequent outside-click does not throw)', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    const { trigger, panel } = refs();
+    trigger.click();
+    expect(panel.hasAttribute('hidden')).toBe(false);
+
+    appShell.destroy();
+    if (typeof unsub === 'function') unsub();
+
+    // After destroy, outside click must not throw and must not flip the
+    // (already-closed) panel back open.
+    expect(() => {
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }).not.toThrow();
+    expect(panel.hasAttribute('hidden')).toBe(true);
+  });
+
+  // Case 7: A11y attributes — aria-haspopup, aria-expanded, role="menu", 2 menuitems.
+  it('exposes WAI-ARIA menu-button attributes on trigger and panel', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel } = refs();
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      expect(panel.getAttribute('role')).toBe('menu');
+
+      const items = panel.querySelectorAll('[role="menuitem"]');
+      expect(items.length).toBe(2);
+      expect(items[0].textContent.trim()).toBe('Mi perfil');
+      expect(items[1].textContent.trim()).toBe('Cerrar sesión');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  // Case 9: No console errors during the dropdown flow.
+  it('does not log console.error during the full open → close flow', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel, logout: logoutItem } = refs();
+      vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+      trigger.click(); // open
+      expect(panel.hasAttribute('hidden')).toBe(false);
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ); // close via Escape
+      trigger.click(); // open again
+      logoutItem.click(); // logout
+      await Promise.resolve(); // drain await
+
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
   });
 });

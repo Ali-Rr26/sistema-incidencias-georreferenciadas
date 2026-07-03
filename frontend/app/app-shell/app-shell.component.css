@@ -439,3 +439,69 @@ body[data-role='guest']
   overflow-y: auto;
   background: #f3f4f9;
 }
+
+/* ============================================================
+   USER MENU — admin dropdown (T-1.11)
+   Anchored to #app-shell-user-menu-trigger.
+   Visibility: HTML `hidden` attribute + CSS belt-and-suspenders
+   `[aria-expanded="false"] + .app-shell-user-menu__panel { display: none }`.
+   Mobile fallback: position: fixed below the header.
+   ============================================================ */
+
+.app-shell-user-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  padding: 6px 0;
+  margin: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #eef0f5;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(35, 40, 59, 0.08);
+  z-index: 200;
+}
+
+/* Belt-and-suspenders: if [hidden] is overridden, hide when trigger is collapsed. */
+[aria-expanded='false'] + .app-shell-user-menu__panel {
+  display: none;
+}
+
+.app-shell-user-menu__item {
+  padding: 10px 16px;
+  cursor: pointer;
+  color: #23283b;
+  font-size: 0.95rem;
+  user-select: none;
+}
+
+.app-shell-user-menu__item:hover {
+  background: #f5f6fb;
+}
+
+.app-shell-user-menu__item--logout {
+  color: #b4273a;
+}
+
+/* Programmatic focus path (R10 mitigation): explicit focus-visible ring,
+   and suppress outline on :focus without :focus-visible (mouse clicks). */
+.app-shell-user-menu__item:focus-visible {
+  outline: 2px solid #6a5cf3;
+  outline-offset: -2px;
+}
+
+.app-shell-user-menu__item:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Mobile fallback — anchor to viewport instead of trigger. */
+@media (max-width: 767.98px) {
+  .app-shell-user-menu__panel {
+    position: fixed;
+    top: 56px;
+    right: 8px;
+    left: 8px;
+    min-width: 0;
+  }
+}

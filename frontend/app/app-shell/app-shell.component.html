@@ -36,6 +36,8 @@
         class="app-shell-user-menu__trigger"
         id="app-shell-user-menu-trigger"
         type="button"
+        aria-haspopup="menu"
+        aria-expanded="false"
       >
         <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar"
           >U</span
@@ -45,6 +47,30 @@
         >
         <i class="fa-solid fa-chevron-down app-shell-user-menu__arrow"></i>
       </button>
+      <ul
+        role="menu"
+        id="app-shell-user-menu-panel"
+        class="app-shell-user-menu__panel"
+        hidden
+      >
+        <li
+          role="menuitem"
+          tabindex="-1"
+          id="app-shell-user-menu-profile"
+          class="app-shell-user-menu__item"
+        >
+          Mi perfil
+        </li>
+        <li
+          role="menuitem"
+          tabindex="-1"
+          id="app-shell-user-menu-logout"
+          class="app-shell-user-menu__item app-shell-user-menu__item--logout"
+          aria-disabled="false"
+        >
+          Cerrar sesión
+        </li>
+      </ul>
     </div>
 
     <!-- Citizen header: notification bell + avatar -->
