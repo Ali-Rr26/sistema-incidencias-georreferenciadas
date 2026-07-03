@@ -73,13 +73,15 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
 
   it('admin-mode renders the full chrome (header + admin sidebar + admin bottom nav)', async () => {
     const { auth } = await import('../auth/auth.service.js');
-    const getUserSpy = vi.spyOn(auth, 'getUser').mockReturnValue({
+    const adminUser = {
       id: 1,
       first_name: 'Admin',
       last_name: 'Root',
       email: 'admin@georeporta.test',
       role: { id: 1, name: 'admin_sistema' },
-    });
+    };
+    const getUserSpy = vi.spyOn(auth, 'getUser').mockReturnValue(adminUser);
+    vi.spyOn(auth, 'me').mockResolvedValue(adminUser);
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
 
     const { appShell } = await import('./app-shell.component.js');
@@ -100,12 +102,14 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
 
   it('citizen-mode renders citizen chrome (bell + avatar header + citizen sidebar + plus button)', async () => {
     const { auth } = await import('../auth/auth.service.js');
-    vi.spyOn(auth, 'getUser').mockReturnValue({
+    const citizenUser = {
       id: 7,
       first_name: 'Carla',
       email: 'carla@ciudadana.test',
       role: { id: 5, name: 'usuario' },
-    });
+    };
+    vi.spyOn(auth, 'getUser').mockReturnValue(citizenUser);
+    vi.spyOn(auth, 'me').mockResolvedValue(citizenUser);
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
 
     const { appShell } = await import('./app-shell.component.js');
@@ -141,6 +145,7 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
   it('guest-mode shows the login button (no auth)', async () => {
     const { auth } = await import('../auth/auth.service.js');
     vi.spyOn(auth, 'getUser').mockReturnValue(null);
+    vi.spyOn(auth, 'me').mockResolvedValue(null);
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(false);
 
     const { appShell } = await import('./app-shell.component.js');
@@ -163,13 +168,18 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
   it('role switching via auth change callback toggles body[data-role] correctly', async () => {
     const { auth } = await import('../auth/auth.service.js');
     const getUserSpy = vi.spyOn(auth, 'getUser');
+    // `me()` is called once on init and once per auth-change callback.
+    // Chain mockResolvedValueOnce to match each getUserSpy state in order.
+    const meSpy = vi.spyOn(auth, 'me');
 
     // Start as admin.
-    getUserSpy.mockReturnValue({
+    const adminUser = {
       id: 1,
       first_name: 'Admin',
       role: { id: 1, name: 'admin_sistema' },
-    });
+    };
+    getUserSpy.mockReturnValue(adminUser);
+    meSpy.mockResolvedValueOnce(adminUser);
 
     const { appShell } = await import('./app-shell.component.js');
     await appShell.mount();
@@ -181,17 +191,20 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
     // init(). Trigger it by simulating auth state transitions.
     if (Array.isArray(auth._authChangeCallbacks)) {
       // Switch to citizen.
-      getUserSpy.mockReturnValue({
+      const citizenUser = {
         id: 2,
         first_name: 'Ciudadana',
         role: { id: 5, name: 'usuario' },
-      });
+      };
+      getUserSpy.mockReturnValue(citizenUser);
+      meSpy.mockResolvedValueOnce(citizenUser);
       // Wait for async callbacks to settle.
       await Promise.all(auth._authChangeCallbacks.map((cb) => cb()));
       expect(document.body.dataset.role).toBe('citizen');
 
       // Switch to guest (logout).
       getUserSpy.mockReturnValue(null);
+      meSpy.mockResolvedValueOnce(null);
       await Promise.all(auth._authChangeCallbacks.map((cb) => cb()));
       expect(document.body.dataset.role).toBe('guest');
     } else {
