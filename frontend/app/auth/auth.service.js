@@ -3,7 +3,19 @@
  *
  * - Tokens stored in http.service.js module memory (not localStorage)
  * - Refresh token stored in HttpOnly cookie (managed by backend)
- * - Logout sends session_id for revocation
+ *
+ * SECURITY PRINCIPLE — no cache:
+ *   Auth state is **never cached locally**. Every `auth.me()` call hits
+ *   `/me` against the backend. `login.user` is for UI hints only and
+ *   does NOT contain the `role` field — only `/me` does.
+ *
+ *   Rationale: Cached role can become stale when the backend changes a
+ *   user's role, locks the account, or revokes the session. Security
+ *   decisions (route guards, role-mismatch checks, role-driven chrome)
+ *   MUST always reflect the current backend state.
+ *
+ *   Trade-off: every /me call is ~30-80ms over LAN. Acceptable for the
+ *   security guarantee.
  */
 import {
   http,
@@ -16,14 +28,18 @@ import {
 
 class AuthService {
   constructor() {
-    this._cachedUser = null;
     this._authChangeCallbacks = [];
+    // No _cachedUser. Always-on /me for role + identity.
   }
 
   async login(email, password) {
     const data = await http.post('/login', { email, password });
     setAccessToken(data.access_token);
     setSessionId(data.session_id);
+    // Notify subscribers (router role tracker, appShell header) that
+    // auth state has changed. Without this call, the router stays in
+    // 'guest' and the appShell never gets the new role/avatar.
+    this._notifyAuthChange();
     return data;
   }
 
@@ -34,21 +50,29 @@ class AuthService {
       // Clear state even if server call fails
     }
     clearAuthState();
-    this._cachedUser = null;
     this._notifyAuthChange();
   }
 
-  async me(forceRefresh = false) {
-    if (this._cachedUser && !forceRefresh) {
-      return this._cachedUser;
-    }
+  /**
+   * Fetch current user from backend. ALWAYS hits /me.
+   * Never cached — see SECURITY PRINCIPLE above.
+   */
+  async me() {
     const data = await http.get('/me');
-    this._cachedUser = data.data || data;
-    return this._cachedUser;
+    return data.data || data;
   }
 
+  /**
+   * Synchronous getter removed. Always use `await auth.me()` instead.
+   * Returning null forces callers to make their code async and to
+   * fetch fresh state instead of trusting a cached user object.
+   */
   getUser() {
-    return this._cachedUser;
+    return null;
+  }
+
+  isAuthenticated() {
+    return !!getAccessToken();
   }
 
   /** Subscribe to auth state changes. Returns an unsubscribe function. */
@@ -71,10 +95,6 @@ class AuthService {
     } catch {
       // No valid refresh cookie — user must log in
     }
-  }
-
-  isAuthenticated() {
-    return !!getAccessToken();
   }
 }
 

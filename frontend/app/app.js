@@ -116,17 +116,24 @@ router.addRoute('/not-found', notFoundComponent, [authGuard], 'app', 'citizen');
 // Keep the router's "current user role" bucket in sync with auth state.
 // classifyRole is the single source of truth shared with appShell so the
 // router's role check stays consistent with the shell's chrome toggling.
-function syncCurrentUserRole() {
-  router.setCurrentUserRole(classifyRole(auth.getUser()));
+//
+// SECURITY: classification never uses a cached user — every call awaits
+// a fresh `auth.me()` so role changes / revocations on the backend take
+// effect immediately for security decisions.
+async function syncCurrentUserRole() {
+  const user = await auth.me().catch(() => null);
+  router.setCurrentUserRole(classifyRole(user));
 }
-auth.onAuthChange(syncCurrentUserRole);
+auth.onAuthChange(() => {
+  syncCurrentUserRole();
+});
 syncCurrentUserRole();
 
 // ─── Boot: restore session, then start router. Router mounts shells on demand. ───
 (async () => {
   await auth.tryRestoreSession();
-  // Re-sync after the session restore (getUser() may now hold a payload).
-  syncCurrentUserRole();
+  // Re-sync after the session restore (token may now be set).
+  await syncCurrentUserRole();
   router.init();
 })();
 

@@ -41,8 +41,12 @@ export default defineComponent({
 
       try {
         await auth.login(emailInput.value, passwordInput.value);
+        // SECURITY: Always fetch /me after login to get the authoritative
+        // role. The login response's `user` field lacks `role` and is for
+        // UI display only.
         const user = await auth.me();
         const role = user?.role?.name;
+        // citizen-style users land on /feed; everyone else on /dashboard
         if (role === 'usuario') {
           window.location.hash = '#/feed';
         } else {

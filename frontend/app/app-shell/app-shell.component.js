@@ -60,7 +60,8 @@ export const appShell = {
 
   async init() {
     // Apply role attribute on <body> so CSS can toggle chrome regions.
-    const user = auth.getUser();
+    // SECURITY: fetch role fresh from /me — never trust cached user state.
+    const user = await auth.me().catch(() => null);
     document.body.dataset.role = classifyRole(user);
 
     await populateHeader();
@@ -68,7 +69,7 @@ export const appShell = {
 
     // Re-apply role on every auth change (login / logout / role swap).
     _unsubAuth = auth.onAuthChange(async () => {
-      const u = auth.getUser();
+      const u = await auth.me().catch(() => null);
       document.body.dataset.role = classifyRole(u);
       await populateHeader();
     });
@@ -110,22 +111,15 @@ export const appShell = {
  * Populate the role-specific header content. Admin gets the user menu
  * (name + avatar), citizen gets a single-letter avatar, guest has no
  * header content beyond the login button (already in the template).
+ *
+ * SECURITY: Always fetches /me fresh — never uses cached user state.
  */
 async function populateHeader() {
-  const user = auth.getUser();
-  const role = classifyRole(user);
+  const u = await auth.me().catch(() => null);
+  if (!u) return;
+  const role = classifyRole(u);
 
   if (role === 'admin') {
-    let u = user;
-    if (!u) {
-      try {
-        u = await auth.me();
-      } catch {
-        return;
-      }
-    }
-    if (!u) return;
-
     const nameEl = document.getElementById('app-shell-user-name');
     const avatarEl = document.getElementById('app-shell-user-avatar');
     if (nameEl) {
@@ -141,16 +135,6 @@ async function populateHeader() {
   }
 
   if (role === 'citizen') {
-    let u = user;
-    if (!u) {
-      try {
-        u = await auth.me();
-      } catch {
-        return;
-      }
-    }
-    if (!u) return;
-
     const avatarEl = document.getElementById('app-shell-avatar');
     if (avatarEl) {
       avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
