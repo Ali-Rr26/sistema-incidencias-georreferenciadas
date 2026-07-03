@@ -19,6 +19,7 @@ const DROPDOWN_STATUSES = [
   { value: 'resolved', label: 'Resuelto' },
   { value: 'closed', label: 'Cerrado' },
 ];
+
 export default defineComponent({
   templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
 
