@@ -68,33 +68,60 @@
    ROLE-BASED VISIBILITY (data-show-on-role)
    Default = hidden; shown only when body[data-role] matches
    one of the space-separated values.
-   Uses !important to win over display: revert rules.
+
+   IMPORTANT: We do NOT use `display: revert` because it wins over
+   element-specific display rules (e.g. .app-shell-header__admin's
+   `display: flex`). Instead we explicitly set the correct display
+   value per element type, all with !important to win over the
+   base `[data-show-on-role] { display: none !important; }`.
    ============================================================ */
 
 [data-show-on-role] {
   display: none !important;
 }
 
-body[data-role='admin'] [data-show-on-role~='admin'] {
-  display: revert !important;
+/* Header chrome regions */
+body[data-role='admin'] .app-shell-header__admin {
+  display: flex !important;
 }
-body[data-role='citizen'] [data-show-on-role~='citizen'] {
-  display: revert !important;
+body[data-role='citizen'] .app-shell-header__citizen {
+  display: flex !important;
 }
-body[data-role='citizen'] [data-show-on-role~='authenticated'] {
-  display: revert !important;
+body[data-role='guest'] .app-shell-login-btn {
+  display: inline-block !important;
 }
-body[data-role='citizen'] [data-show-on-role~='citizen guest'] {
-  display: revert !important;
+
+/* Sidebar nav blocks (per role) */
+body[data-role='admin'] #app-shell-admin-sidebar {
+  display: block !important;
 }
-body[data-role='guest'] [data-show-on-role~='guest'] {
-  display: revert !important;
+body[data-role='citizen'] #app-shell-citizen-sidebar {
+  display: block !important;
 }
-body[data-role='guest'] [data-show-on-role~='public'] {
-  display: revert !important;
+
+/* Bottom nav items: a tags default to inline; we need them visible inside
+   the flex bottom-nav container. We use inline-flex so each item can host
+   icon + label without breaking the flex layout of the bottom-nav parent. */
+body[data-role='admin'] .app-shell-bottom-nav [data-show-on-role~='admin'] {
+  display: inline-flex !important;
 }
-body[data-role='guest'] [data-show-on-role~='citizen guest'] {
-  display: revert !important;
+body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='citizen'] {
+  display: inline-flex !important;
+}
+body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='authenticated'] {
+  display: inline-flex !important;
+}
+body[data-role='citizen'] .app-shell-bottom-nav [data-show-on-role~='citizen guest'] {
+  display: inline-flex !important;
+}
+body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='guest'] {
+  display: inline-flex !important;
+}
+body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='public'] {
+  display: inline-flex !important;
+}
+body[data-role='guest'] .app-shell-bottom-nav [data-show-on-role~='citizen guest'] {
+  display: inline-flex !important;
 }
 
 /* ============================================================
