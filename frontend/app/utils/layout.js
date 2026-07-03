@@ -1,13 +1,20 @@
 /**
- * initShell — wires the admin shell's persistent UI interactions:
- *   - nav-toggler click → toggle sidebar
- *   - sidebar-overlay click → close sidebar
+ * Layout helpers shared across the admin, user, and app shells.
  *
- * Called once when the admin shell is first shown (via adminShell.init()).
- * Sidebar active state is handled by the router via updateActive().
+ * Three exports, each with a single responsibility:
  *
- * initPage — runs on every route change inside the shell.
- * Re-initialises Bootstrap widgets for newly mounted content.
+ *   - initShell()  : wires persistent shell UI (sidebar toggle, overlay).
+ *                    Called once per shell, on first mount.
+ *   - initPage()   : wires per-route Bootstrap widgets (tooltips, popovers).
+ *                    Called on every route change inside the shell.
+ *   - setupShell() : convenience that runs both, in the canonical order.
+ *                    Useful for shells that don't separate mount/init from
+ *                    page rendering (e.g. future QA harnesses or the
+ *                    appShell drop-in test fixtures). Kept additive — every
+ *                    existing call site still calls initShell/initPage
+ *                    directly.
+ *
+ * initLayout() is retained as a backwards-compat alias of setupShell().
  */
 
 export function initShell() {
@@ -57,7 +64,21 @@ export function initPage() {
   });
 }
 
-/** Backwards-compat alias used by any code that still imports initLayout. */
+/**
+ * PR #2 (consolidar-layout-unico): one-shot helper that runs both phases
+ * of shell setup in the order they need to run. Equivalent to the old
+ * initLayout() but with an explicit, documented contract.
+ *
+ * Existing callers (and unit tests) keep working — they import the named
+ * functions directly. This helper is additive so PR #3 can adopt it for
+ * the new appShell without disturbing the legacy call sites.
+ */
+export function setupShell() {
+  initShell();
+  initPage();
+}
+
+/** Backwards-compat alias — kept so any code that still imports it works. */
 export function initLayout() {
   initShell();
   initPage();

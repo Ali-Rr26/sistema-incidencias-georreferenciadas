@@ -1,6 +1,7 @@
 import { router } from './core/router.js';
 import { adminShell } from './layout/layout.component.js';
 import { userShell } from './layout-usuario/layout-usuario.component.js';
+import { appShell, classifyRole } from './app-shell/app-shell.component.js';
 
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
@@ -26,8 +27,12 @@ import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 
 // ─── Register shells ────────────────────────────────────────────────
+// PR #2 (consolidar-layout-unico) is TRANSITIONAL: the existing 'admin'
+// and 'user' shells stay registered alongside the new unified 'app' shell.
+// PR #3 will migrate every route off 'admin'/'user' and remove them.
 router.registerShell('admin', adminShell);
 router.registerShell('user', userShell);
+router.registerShell('app', appShell);
 
 // ─── Role definitions ───────────────────────────────────────────────
 const adminOrgRoles = [
@@ -53,11 +58,14 @@ router.addRoute('/feed/:id', feedDetailComponent, [], 'user');
 router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'admin');
 
 // ─── Admin routes (admin shell, role-guarded) ───────────────────────
+// NOTE: only /dashboard has been migrated to the new role-tag API as the
+// PR #2 demonstration case. PR #3 will migrate the rest.
 router.addRoute(
   '/dashboard',
   dashboardComponent,
   [roleGuard(allAdminRoles)],
   'admin',
+  'admin', // NEW (PR #2): route is admin-only via role-mismatch guard.
 );
 router.addRoute(
   '/incidencias',
@@ -135,9 +143,21 @@ router.addRoute(
 
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'user');
 
+// ─── Role tracking (PR #2 — T-2.5) ─────────────────────────────────
+// Keep the router's "current user role" bucket in sync with auth state.
+// classifyRole is the single source of truth shared with appShell so the
+// router's role check stays consistent with the shell's chrome toggling.
+function syncCurrentUserRole() {
+  router.setCurrentUserRole(classifyRole(auth.getUser()));
+}
+auth.onAuthChange(syncCurrentUserRole);
+syncCurrentUserRole();
+
 // ─── Boot: restore session, then start router. Router mounts shells on demand. ───
 (async () => {
   await auth.tryRestoreSession();
+  // Re-sync after the session restore (getUser() may now hold a payload).
+  syncCurrentUserRole();
   router.init();
 })();
 
