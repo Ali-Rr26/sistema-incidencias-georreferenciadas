@@ -17,14 +17,16 @@ const TEMPLATE_HTML = `
   <!-- Admin-only header (search + user menu) -->
   <div class="app-shell-header__admin" data-show-on-role="admin">
     <input type="text" class="form-control app-shell-header__search" placeholder="Buscar..." />
-    <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger" aria-haspopup="menu" aria-expanded="false">
-      <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar">U</span>
-      <span class="app-shell-user-menu__name" id="app-shell-user-name">Usuario</span>
-    </button>
-    <ul role="menu" id="app-shell-user-menu-panel" class="app-shell-user-menu__panel" hidden>
-      <li role="menuitem" tabindex="-1" id="app-shell-user-menu-profile" class="app-shell-user-menu__item">Mi perfil</li>
-      <li role="menuitem" tabindex="-1" id="app-shell-user-menu-logout" class="app-shell-user-menu__item app-shell-user-menu__item--logout" aria-disabled="false">Cerrar sesión</li>
-    </ul>
+    <div class="app-shell-user-menu">
+      <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger" aria-haspopup="menu" aria-expanded="false">
+    <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar">U</span>
+    <span class="app-shell-user-menu__name" id="app-shell-user-name">Usuario</span>
+      </button>
+      <ul role="menu" id="app-shell-user-menu-panel" class="app-shell-user-menu__panel" hidden>
+    <li role="menuitem" tabindex="-1" id="app-shell-user-menu-profile" class="app-shell-user-menu__item">Mi perfil</li>
+    <li role="menuitem" tabindex="-1" id="app-shell-user-menu-logout" class="app-shell-user-menu__item app-shell-user-menu__item--logout" aria-disabled="false">Cerrar sesión</li>
+      </ul>
+    </div>
   </div>
 
   <!-- Citizen header (bell + avatar) -->
