@@ -10,6 +10,7 @@
 CLAUDE.md
 backend/frankenphp
 /frontend/node_modules
+/frontend/coverage
 /.playwright-mcp
 sdd/arregla-inconsistencias/design.md
 sdd/ok-arranquemos-entonces/verify-report.md
