@@ -4,6 +4,7 @@
  * Routes can mount inside one of several registered shells:
  *   - 'admin' — navbar + sidebar layout for back-office users
  *   - 'user'  — Instagram-style layout (top bar + sidebar desktop, bottom nav mobile)
+ *   - 'app'   — unified responsive shell (consolidar-layout-unico, PR #1/3 + PR #2/3)
  *
  * Each shell is registered via registerShell() with:
  *   - mount:    fetches and injects the shell template into #shell-outlet
@@ -11,6 +12,11 @@
  *   - outlet:   CSS selector for the per-page outlet inside the shell
  *
  * Routes that don't pass a shell name render full-page into #auth-outlet (login, etc.).
+ *
+ * Role-based gating (PR #2 — transitional, full migration in PR #3):
+ *   - addRoute(..., shell, role) tags a route with a role bucket.
+ *   - setCurrentUserRole(role) tells the router which bucket the visitor is in.
+ *   - resolve() redirects mismatched visitors to /dashboard (admins) or /feed (others).
  */
 import { initPage } from '../utils/layout.js';
 
@@ -18,21 +24,58 @@ class Router {
   constructor() {
     this.routes = [];
     this.shells = new Map();
+    this._shellStyleUrls = {}; // shellName → CSS path (avoids stale module cache issues)
     this.currentComponent = null;
     this._boundResolve = () => this.resolve();
     this._shellState = new Map(); // shell name -> { mounted, initialized }
     this._activeShell = null;
+    // Role-tracking for the role-mismatch guard (PR #2, T-2.4).
+    // Default null = no role known → role-tagged routes that require a
+    // specific role will treat the visitor as a mismatch and redirect to
+    // the public fallback (citizen's home: /feed).
+    this._currentUserRole = null;
+    // PR #3 (T-3.7): expose the matched route so page components can
+    // read their own role tag without re-matching. Settled at the top
+    // of resolve() before guards run; cleared on teardown.
+    this.currentRoute = null;
   }
 
   /**
-   * @param {string} pattern  - hash path, e.g. '/login'
-   * @param {object} component
-   * @param {Array}  guards   - optional canActivate guards
-   * @param {string|boolean|null} shell - shell name (string), true (legacy 'admin'), or null
+   * Set the role bucket the current visitor belongs to. Consumed by the
+   * role-mismatch guard in resolve() when a route declares a `role` tag.
+   *
+   * Role buckets (see app-shell/app-shell.component.js → classifyRole):
+   *   - 'admin'   : admin_sistema | admin_organizacion
+   *   - 'citizen' : all other authenticated roles
+   *   - 'guest'   : unauthenticated
+   *   - 'both'    : reserved as a route tag only — never a current role
+   *
+   * Pass `null` to clear (e.g. on logout) so no role enforcement applies.
+   *
+   * @param {string|null} role
    */
-  addRoute(pattern, component, guards = [], shell = null) {
+  setCurrentUserRole(role) {
+    this._currentUserRole = role;
+  }
+
+  /**
+   * @param {string}   pattern  - hash path, e.g. '/login'
+   * @param {object}   component
+   * @param {Array}    guards   - optional canActivate guards
+   * @param {string|boolean|null} shell
+   *     - shell name (string, e.g. 'admin' | 'user' | 'app')
+   *     - true (legacy 'admin' shortcut)
+   *     - null/undefined → render full-page (login, error pages)
+   * @param {string|undefined} role
+   *     NEW (PR #2, T-2.1) — optional role tag for the role-mismatch guard:
+   *     - 'admin'   : only admin visitors may proceed
+   *     - 'citizen' : only citizen visitors may proceed
+   *     - 'both'    : any authenticated visitor may proceed
+   *     - undefined : no role enforcement (public)
+   */
+  addRoute(pattern, component, guards = [], shell = null, role = undefined) {
     if (shell === true) shell = 'admin';
-    this.routes.push({ pattern, component, guards, shell });
+    this.routes.push({ pattern, component, guards, shell, role });
   }
 
   /**
@@ -45,12 +88,19 @@ class Router {
    * @param {string}   config.outlet       - CSS selector for the per-page outlet.
    * @param {Function} config.updateActive - (path: string) => void. Updates nav active state.
    */
-  registerShell(name, { mount, init, outlet, updateActive }) {
+  registerShell(name, { mount, init, outlet, updateActive, styleUrl }) {
     if (!mount || !outlet) {
       throw new Error(`registerShell(${name}): mount and outlet are required`);
     }
     this.shells.set(name, { mount, init, outlet, updateActive });
     this._shellState.set(name, { mounted: false, initialized: false });
+    // Only register a CSS path when the shell explicitly provides one.
+    // We do NOT auto-fallback to a guessed path: that approach broke tests
+    // that mock shells without `styleUrl`, and was a leaky way to handle
+    // the ES6 module cache stale-shell scenario (browser only).
+    if (styleUrl) {
+      this._shellStyleUrls[name] = styleUrl;
+    }
   }
 
   /**
@@ -109,11 +159,34 @@ class Router {
       return;
     }
 
-    const { component, guards, shell } = route;
+    // PR #3 (T-3.7): expose the matched route so page components can
+    // read their own role/shell metadata directly. Set BEFORE guards
+    // run so guards can also consult it.
+    this.currentRoute = {
+      pattern: route.pattern,
+      role: route.role,
+      shell: route.shell,
+    };
+
+    const { component, guards, shell, role } = route;
 
     for (const guard of guards) {
       const canProceed = await guard.canActivate();
       if (canProceed === false) return;
+    }
+
+    // Role-mismatch guard (PR #2, T-2.2).
+    // Only fires for routes that opt in via the `role` tag. Public routes
+    // (role undefined) and 'both' routes are never blocked.
+    if (
+      role !== undefined &&
+      role !== 'both' &&
+      this._currentUserRole &&
+      role !== this._currentUserRole
+    ) {
+      const home = this._currentUserRole === 'admin' ? '/dashboard' : '/feed';
+      this.navigate(home);
+      return;
     }
 
     if (this.currentComponent) {
@@ -224,6 +297,15 @@ class Router {
     const html = await this._fetchTemplate(component.templateUrl);
     outlet.innerHTML = html;
 
+    // Inject shell styles (e.g., grid layout, role-based visibility) before
+    // component styles so component rules can reference shell chrome.
+    // We resolve the URL through an explicit shellName → styleUrl map so
+    // this works even when the shell module was loaded with a stale cache
+    // and lacks `styleUrl`.
+    const shellStyleUrl = this._shellStyleUrls?.[shellName] || shell.styleUrl;
+    if (shellStyleUrl && !document.getElementById(`shell-style-${shellName}`)) {
+      await this._injectShellStyles(shellName, shellStyleUrl);
+    }
     await this._injectStyles(component);
     initPage();
 
@@ -254,6 +336,21 @@ class Router {
     style.textContent = css;
     document.head.appendChild(style);
     component._styleId = id;
+  }
+
+  /**
+   * Inject the shell's CSS once. The CSS path is resolved through
+   * `_shellStyleUrls` (set by `registerShell()`) so it works even when
+   * the shell module was cached without `styleUrl`.
+   */
+  async _injectShellStyles(shellName, styleUrl) {
+    if (!styleUrl) return;
+    const css = await this._fetchTemplate(styleUrl);
+    const style = document.createElement('style');
+    const id = `shell-style-${shellName}`;
+    style.id = id;
+    style.textContent = css;
+    document.head.appendChild(style);
   }
 
   _cleanupStyles(component) {
@@ -290,6 +387,7 @@ class Router {
       this.currentComponent.onDestroy();
       this._cleanupStyles(this.currentComponent);
     }
+    this.currentRoute = null;
   }
 }
 

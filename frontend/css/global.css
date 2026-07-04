@@ -4,26 +4,28 @@
    ============================================== */
 
 /* Design tokens — colores, sombras, gradientes centralizados */
-@import url("variables.css");
-
-/* Sidebar — shared across all authenticated views */
-@import url("../app/layout/sidebar/sidebar.component.css");
-@import url("../app/layout/navbar/navbar.component.css");
-
-/* Layout-usuario — user shell (Lu-* styles) */
-@import url("../app/layout-usuario/layout-usuario.component.css");
-
-/* Layout — admin shell container (.layout-hidden, etc.) */
-@import url("../app/layout/layout.component.css");
+@import url('variables.css');
 
 /* Incidencias detail — admin detail (.incid-detail__* classes) */
-@import url("../app/incidencias/pages/detail/incidencias.detail.component.css");
+@import url('../app/incidencias/pages/detail/incidencias.detail.component.css');
+
+/*
+ * PR #3 (consolidar-layout-unico): the legacy adminShell (app/layout/)
+ * and userShell (app/layout-usuario/) directories were deleted along with
+ * their sidebar/navbar CSS files. Their CSS is now self-contained inside
+ * the unified appShell (app/app-shell/app-shell.component.css), so the
+ * four `@import` lines for the deleted files were dropped here.
+ */
 
 /* ==============================================
    Utility classes — gradientes
    ============================================== */
-.bg-gradient-primary { background: var(--gradient-primary); }
-.bg-gradient-dark    { background: var(--gradient-dark); }
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+.bg-gradient-dark {
+  background: var(--gradient-dark);
+}
 .btn-gradient {
   background: var(--gradient-primary);
   border: none;
@@ -87,7 +89,10 @@ fieldset,
   border-color: var(--border-medium);
   box-shadow: none;
   font-size: 14px;
-  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .form-control:focus,
@@ -115,7 +120,11 @@ fieldset,
 .btn {
   border-radius: 10px;
   font-weight: 600;
-  transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease, background .15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 
 .btn:active {
@@ -266,9 +275,13 @@ fieldset,
 /* ==============================================
    GeoReporta — Base font + layout overrides
    ============================================== */
-body, #main-wrapper { font-family: var(--font-family); }
+body,
+#main-wrapper {
+  font-family: var(--font-family);
+}
 
-#main-wrapper[data-layout=vertical][data-header-position=fixed] .topbar.gr-topbar,
+#main-wrapper[data-layout='vertical'][data-header-position='fixed']
+  .topbar.gr-topbar,
 .topbar.gr-topbar {
   position: fixed !important;
   top: 0 !important;
@@ -281,10 +294,11 @@ body, #main-wrapper { font-family: var(--font-family); }
 }
 
 @media (max-width: 1169.98px) {
-  #main-wrapper[data-layout=vertical][data-sidebartype=full] .page-wrapper {
+  #main-wrapper[data-layout='vertical'][data-sidebartype='full'] .page-wrapper {
     margin-left: 0 !important;
   }
-  #main-wrapper[data-layout=vertical][data-header-position=fixed] .topbar.gr-topbar,
+  #main-wrapper[data-layout='vertical'][data-header-position='fixed']
+    .topbar.gr-topbar,
   .topbar.gr-topbar {
     left: 0 !important;
     width: 100% !important;
@@ -325,8 +339,12 @@ body, #main-wrapper { font-family: var(--font-family); }
   gap: 6px;
 }
 
-.gr-breadcrumb__sep { opacity: .5; }
-.gr-breadcrumb__item--active { color: #8a90a0; }
+.gr-breadcrumb__sep {
+  opacity: 0.5;
+}
+.gr-breadcrumb__item--active {
+  color: #8a90a0;
+}
 
 .gr-card {
   background: #fff;
@@ -353,10 +371,13 @@ body, #main-wrapper { font-family: var(--font-family); }
   cursor: pointer;
   text-decoration: none;
   box-shadow: var(--shadow-custom);
-  transition: opacity .15s ease;
+  transition: opacity 0.15s ease;
 }
 
-.gr-btn-primary:hover { opacity: .9; color: #fff; }
+.gr-btn-primary:hover {
+  opacity: 0.9;
+  color: #fff;
+}
 
 .gr-btn-primary--inline {
   height: auto;
@@ -423,7 +444,7 @@ body, #main-wrapper { font-family: var(--font-family); }
   outline: none;
   color: #444;
   box-sizing: border-box;
-  transition: border-color .15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .gr-filters__input:focus {
@@ -438,7 +459,9 @@ body, #main-wrapper { font-family: var(--font-family); }
   flex-wrap: wrap;
 }
 
-.gr-select-wrap { position: relative; }
+.gr-select-wrap {
+  position: relative;
+}
 
 .gr-select {
   height: 42px;
@@ -479,10 +502,12 @@ body, #main-wrapper { font-family: var(--font-family); }
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background .15s ease;
+  transition: background 0.15s ease;
 }
 
-.gr-btn-filter:hover { background: #f3f0ff; }
+.gr-btn-filter:hover {
+  background: #f3f0ff;
+}
 
 .gr-btn-filter--clear {
   width: 42px;
@@ -492,9 +517,14 @@ body, #main-wrapper { font-family: var(--font-family); }
   color: #8a90a0;
 }
 
-.gr-btn-filter--clear:hover { background: #f7f8fc; border-color: var(--border-medium); }
+.gr-btn-filter--clear:hover {
+  background: #f7f8fc;
+  border-color: var(--border-medium);
+}
 
-.gr-table-wrap { overflow-x: auto; }
+.gr-table-wrap {
+  overflow-x: auto;
+}
 
 .gr-table {
   width: 100%;
@@ -507,7 +537,7 @@ body, #main-wrapper { font-family: var(--font-family); }
   font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
   padding: 16px 12px 12px;
   border-bottom: 1px solid var(--border-light);
   text-transform: uppercase;
@@ -516,11 +546,15 @@ body, #main-wrapper { font-family: var(--font-family); }
 
 .gr-table tbody tr {
   border-bottom: 1px solid #f5f6fa;
-  transition: background .1s ease;
+  transition: background 0.1s ease;
 }
 
-.gr-table tbody tr:nth-child(even) { background: #fafbfd; }
-.gr-table tbody tr:hover { background: #f5f7ff; }
+.gr-table tbody tr:nth-child(even) {
+  background: #fafbfd;
+}
+.gr-table tbody tr:hover {
+  background: #f5f7ff;
+}
 
 .gr-table tbody td {
   padding: 13px 12px;
@@ -545,18 +579,49 @@ body, #main-wrapper { font-family: var(--font-family); }
   font-weight: 600;
 }
 
-.gr-status__dot { width: 6px; height: 6px; border-radius: 50%; }
+.gr-status__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
 
-.gr-status--proceso   { background: #e4e8ff; color: #5a6ff0; }
-.gr-status--proceso .gr-status__dot   { background: #5a6ff0; }
-.gr-status--pendiente { background: #fff4d6; color: #d99a00; }
-.gr-status--pendiente .gr-status__dot { background: #d99a00; }
-.gr-status--resuelto  { background: #d8f6e7; color: #16a96b; }
-.gr-status--resuelto .gr-status__dot  { background: #16a96b; }
+.gr-status--proceso {
+  background: #e4e8ff;
+  color: #5a6ff0;
+}
+.gr-status--proceso .gr-status__dot {
+  background: #5a6ff0;
+}
+.gr-status--pendiente {
+  background: #fff4d6;
+  color: #d99a00;
+}
+.gr-status--pendiente .gr-status__dot {
+  background: #d99a00;
+}
+.gr-status--resuelto {
+  background: #d8f6e7;
+  color: #16a96b;
+}
+.gr-status--resuelto .gr-status__dot {
+  background: #16a96b;
+}
 
-.gr-priority--alta  { color: #fa5a7d; font-weight: 600; font-size: 12.5px; }
-.gr-priority--media { color: #f0a020; font-weight: 600; font-size: 12.5px; }
-.gr-priority--baja  { color: #16a96b; font-weight: 600; font-size: 12.5px; }
+.gr-priority--alta {
+  color: #fa5a7d;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.gr-priority--media {
+  color: #f0a020;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.gr-priority--baja {
+  color: #16a96b;
+  font-weight: 600;
+  font-size: 12.5px;
+}
 
 .gr-estado-center {
   text-align: center;
