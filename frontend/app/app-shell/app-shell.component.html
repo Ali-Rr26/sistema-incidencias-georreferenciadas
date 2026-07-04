@@ -93,24 +93,55 @@ aria-hidden="true"
           </div>
     </div>
 
-    <!-- Citizen header: notification bell + avatar -->
-    <div class="app-shell-header__citizen" data-show-on-role="citizen">
-      <button
-        class="app-shell-header__bell"
-        id="app-shell-bell"
-        type="button"
-        aria-label="Notificaciones"
-      >
-        <i class="fa-regular fa-bell"></i>
-      </button>
-      <a
-        class="app-shell-avatar"
-        id="app-shell-avatar-link"
-        href="#/configuracion/perfil"
-      >
-        <span class="app-shell-avatar__letter" id="app-shell-avatar">?</span>
-      </a>
-    </div>
+        <!-- Citizen header: notification bell + user menu dropdown -->
+        <div class="app-shell-header__citizen" data-show-on-role="citizen">
+          <button
+            class="app-shell-header__bell"
+            id="app-shell-bell"
+            type="button"
+            aria-label="Notificaciones"
+          >
+            <i class="fa-regular fa-bell"></i>
+          </button>
+          <div class="app-shell-user-menu app-shell-user-menu--compact">
+            <button
+              class="app-shell-user-menu__trigger app-shell-user-menu__trigger--avatar"
+              id="app-shell-citizen-menu-trigger"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-label="Menú de usuario"
+            >
+              <span class="app-shell-avatar__letter" id="app-shell-avatar"
+                >?</span
+              >
+            </button>
+            <ul
+              role="menu"
+              id="app-shell-citizen-menu-panel"
+              class="app-shell-user-menu__panel"
+              hidden
+            >
+              <li
+                role="menuitem"
+                tabindex="-1"
+                id="app-shell-citizen-menu-profile"
+                class="app-shell-user-menu__item"
+              >
+                Mi perfil
+              </li>
+              <li
+                role="menuitem"
+                tabindex="-1"
+                id="app-shell-citizen-menu-logout"
+                class="app-shell-user-menu__item app-shell-user-menu__item--logout"
+                aria-disabled="false"
+              >
+                Cerrar sesión
+              </li>
+            </ul>
+          </div>
+        </div>
 
     <!-- Guest header: login button -->
     <a

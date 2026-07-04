@@ -29,12 +29,20 @@ const TEMPLATE_HTML = `
     </div>
   </div>
 
-  <!-- Citizen header (bell + avatar) -->
+<!-- Citizen header (bell + user menu dropdown) -->
   <div class="app-shell-header__citizen" data-show-on-role="citizen">
     <button class="app-shell-header__bell" id="app-shell-bell">
       <i class="fa-regular fa-bell"></i>
     </button>
-    <span class="app-shell-avatar" id="app-shell-avatar">?</span>
+    <div class="app-shell-user-menu app-shell-user-menu--compact">
+      <button class="app-shell-user-menu__trigger app-shell-user-menu__trigger--avatar" id="app-shell-citizen-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-label="Menú de usuario">
+    <span class="app-shell-avatar__letter" id="app-shell-avatar">?</span>
+      </button>
+      <ul role="menu" id="app-shell-citizen-menu-panel" class="app-shell-user-menu__panel" hidden>
+    <li role="menuitem" tabindex="-1" id="app-shell-citizen-menu-profile" class="app-shell-user-menu__item">Mi perfil</li>
+    <li role="menuitem" tabindex="-1" id="app-shell-citizen-menu-logout" class="app-shell-user-menu__item app-shell-user-menu__item--logout" aria-disabled="false">Cerrar sesión</li>
+      </ul>
+    </div>
   </div>
 
   <!-- Guest header (login button) -->
@@ -893,24 +901,183 @@ describe('user-menu dropdown (T-1.11)', () => {
   });
 
   // Case 9: No console errors during the dropdown flow.
-  it('does not log console.error during the full open → close flow', async () => {
-    const { appShell, unsub } = await mountAsAdmin();
-    try {
-      const { trigger, panel, logout: logoutItem } = refs();
-      vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
-      trigger.click(); // open
-      expect(panel.hasAttribute('hidden')).toBe(false);
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      ); // close via Escape
-      trigger.click(); // open again
-      logoutItem.click(); // logout
-      await Promise.resolve(); // drain await
+      it('does not log console.error during the full open → close flow', async () => {
+        const { appShell, unsub } = await mountAsAdmin();
+        try {
+          const { trigger, panel, logout: logoutItem } = refs();
+          vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+          trigger.click(); // open
+          expect(panel.hasAttribute('hidden')).toBe(false);
+          document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+          ); // close via Escape
+          trigger.click(); // open again
+          logoutItem.click(); // logout
+          await Promise.resolve(); // drain await
 
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
-    } finally {
-      appShell.destroy();
-      if (typeof unsub === 'function') unsub();
-    }
-  });
-});
+          expect(consoleErrorSpy).not.toHaveBeenCalled();
+        } finally {
+          appShell.destroy();
+          if (typeof unsub === 'function') unsub();
+        }
+      });
+    });
+
+    /**
+     * Citizen user-menu dropdown — mirrors the admin menu but uses a compact
+     * trigger (just the avatar, no name + chevron). The behavioural contract
+     * is the same: aria-haspopup, click to open, Escape to close, "Mi perfil"
+     * navigates, "Cerrar sesión" calls auth.logout() with a 300ms debounce.
+     */
+    describe('citizen user-menu dropdown', () => {
+      let consoleErrorSpy;
+
+      beforeEach(async () => {
+        vi.clearAllMocks();
+        document.body.replaceChildren(
+          Object.assign(document.createElement('div'), {
+            id: 'shell-outlet',
+          }),
+        );
+        document.body.removeAttribute('data-role');
+        vi.stubGlobal('fetch', mockFetchTemplate());
+        // Citizen user — triggers the citizen header chrome.
+        vi.spyOn(auth, 'getUser').mockReturnValue({
+          id: 7,
+          first_name: 'Carla',
+          email: 'carla@ciudadana.test',
+          role: { id: 5, name: 'usuario' },
+        });
+        vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+        vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        vi.unstubAllGlobals();
+        consoleErrorSpy.mockRestore();
+        vi.useRealTimers();
+      });
+
+      async function mountAsCitizen() {
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        const unsub = await appShell.init();
+        return { appShell, unsub };
+      }
+
+      function citizenRefs() {
+        return {
+          trigger: document.getElementById('app-shell-citizen-menu-trigger'),
+          panel: document.getElementById('app-shell-citizen-menu-panel'),
+          profile: document.getElementById('app-shell-citizen-menu-profile'),
+          logout: document.getElementById('app-shell-citizen-menu-logout'),
+        };
+      }
+
+      it('renders the compact trigger and a hidden 2-item panel', async () => {
+        const { appShell, unsub } = await mountAsCitizen();
+        try {
+          const { trigger, panel } = citizenRefs();
+          expect(trigger).toBeTruthy();
+          expect(trigger.classList.contains('app-shell-user-menu__trigger--avatar')).toBe(true);
+          expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+          expect(trigger.getAttribute('aria-expanded')).toBe('false');
+          expect(panel.hasAttribute('hidden')).toBe(true);
+
+          const items = panel.querySelectorAll('[role="menuitem"]');
+          expect(items.length).toBe(2);
+          expect(items[0].textContent.trim()).toBe('Mi perfil');
+          expect(items[1].textContent.trim()).toBe('Cerrar sesión');
+        } finally {
+          appShell.destroy();
+          if (typeof unsub === 'function') unsub();
+        }
+      });
+
+      it('opens on trigger click and closes on Escape', async () => {
+        const { appShell, unsub } = await mountAsCitizen();
+        try {
+          const { trigger, panel } = citizenRefs();
+          trigger.click();
+          expect(panel.hasAttribute('hidden')).toBe(false);
+          expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+          document.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+          );
+          expect(panel.hasAttribute('hidden')).toBe(true);
+          expect(trigger.getAttribute('aria-expanded')).toBe('false');
+        } finally {
+          appShell.destroy();
+          if (typeof unsub === 'function') unsub();
+        }
+      });
+
+      it('"Cerrar sesión" calls auth.logout() once and debounces rapid clicks', async () => {
+        vi.useFakeTimers();
+        const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+
+        const { appShell, unsub } = await mountAsCitizen();
+        try {
+          const { trigger, logout } = citizenRefs();
+          trigger.click();
+          logout.click();
+          logout.click();
+          logout.click();
+
+          expect(logoutSpy).toHaveBeenCalledTimes(1);
+        } finally {
+          vi.useRealTimers();
+          appShell.destroy();
+          if (typeof unsub === 'function') unsub();
+        }
+      });
+
+      it('destroy() removes the citizen menu listeners (outside-click is a no-op)', async () => {
+        const { appShell, unsub } = await mountAsCitizen();
+        const { trigger, panel } = citizenRefs();
+        trigger.click();
+        expect(panel.hasAttribute('hidden')).toBe(false);
+
+        appShell.destroy();
+        if (typeof unsub === 'function') unsub();
+
+        expect(() => {
+          document.body.dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+          );
+        }).not.toThrow();
+        expect(panel.hasAttribute('hidden')).toBe(true);
+      });
+
+      it('keeps the admin and citizen menus independent (opening one does not affect the other)', async () => {
+        // The admin menu and citizen menu live in different DOM subtrees;
+        // opening the admin trigger must not close or interfere with the
+        // citizen trigger and vice versa.
+        const { appShell, unsub } = await mountAsCitizen();
+        try {
+          const admin = {
+            trigger: document.getElementById('app-shell-user-menu-trigger'),
+            panel: document.getElementById('app-shell-user-menu-panel'),
+          };
+          const citizen = {
+            trigger: document.getElementById('app-shell-citizen-menu-trigger'),
+            panel: document.getElementById('app-shell-citizen-menu-panel'),
+          };
+
+          // Open admin — citizen panel must remain hidden.
+          admin.trigger.click();
+          expect(admin.panel.hasAttribute('hidden')).toBe(false);
+          expect(citizen.panel.hasAttribute('hidden')).toBe(true);
+
+          // Open citizen — admin panel must remain open (no global close).
+          citizen.trigger.click();
+          expect(admin.panel.hasAttribute('hidden')).toBe(false);
+          expect(citizen.panel.hasAttribute('hidden')).toBe(false);
+        } finally {
+          appShell.destroy();
+          if (typeof unsub === 'function') unsub();
+        }
+      });
+    });

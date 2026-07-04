@@ -300,15 +300,39 @@ body[data-role='guest']
   text-transform: uppercase;
 }
 
-.app-shell-user-menu__name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #23283b;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+    .app-shell-user-menu__name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #23283b;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Compact trigger — used in the citizen header where we only show the
+       avatar circle (no name + chevron). The button is a transparent round
+       hit area; the avatar letter inside is the only visible affordance. */
+    .app-shell-user-menu__trigger--avatar {
+      padding: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .app-shell-user-menu__trigger--avatar:hover {
+      /* Keep the background transparent so the gradient avatar stays
+         visible; the hover affordance is a soft ring around the button. */
+      background: transparent;
+      box-shadow: 0 0 0 4px #f3f4f9;
+    }
+
+    .app-shell-user-menu__trigger--avatar:focus-visible {
+      outline: 2px solid #6a5cf3;
+      outline-offset: 2px;
+    }
 
     /* Citizen header — bell + avatar.
        Same as admin: pushed to the right via margin-left:auto. */
