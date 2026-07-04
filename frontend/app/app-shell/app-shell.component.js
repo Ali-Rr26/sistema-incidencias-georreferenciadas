@@ -77,6 +77,9 @@ export const appShell = {
     }
 
 const html = await response.text();
+    if (!html.trim()) {
+      throw new Error('appShell.mount: template body is empty');
+    }
     const outlet = document.getElementById('shell-outlet');
     if (!outlet) {
       throw new Error('appShell.mount: #shell-outlet not found in DOM');
@@ -87,12 +90,31 @@ const html = await response.text();
     // template source were ever compromised the worst case is markup
     // injection, not script execution. The template is served from our
     // own static assets, but defense-in-depth matters.
+    //
+    // We append each parsed child one at a time rather than going through
+    // a DocumentFragment + replaceChildren in a single call. The fragment
+    // approach was observed to drop the parsed nodes in some browsers
+    // (the adoption step across documents can fail silently when the
+    // fragment's children come from the parsed HTML's document). The
+    // explicit appendChild loop makes each adoption observable.
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const fragment = document.createDocumentFragment();
-    while (doc.body.firstChild) {
-      fragment.appendChild(doc.body.firstChild);
+    outlet.replaceChildren();
+    for (const node of Array.from(doc.body.childNodes)) {
+      outlet.appendChild(node);
     }
-    outlet.replaceChildren(fragment);
+
+    // Sanity check: the router downstream does
+    // `document.querySelector('#page-outlet')` and throws
+    // "Outlet not found" if it's missing. If the insert pipeline dropped
+    // our nodes for any reason, fail loudly here with diagnostics so the
+    // failure points at the right call site instead of confusingly
+    // surfacing in the router.
+    if (!outlet.querySelector('#page-outlet')) {
+      throw new Error(
+        `appShell.mount: #page-outlet not present after insert. ` +
+          `template length=${html.length} bytes, outlet children=${outlet.children.length}`,
+      );
+    }
   },
 
   async init() {
