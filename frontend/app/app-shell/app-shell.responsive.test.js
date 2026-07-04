@@ -78,9 +78,14 @@ describe('appShell — responsive CSS (T-1.9)', () => {
 
   describe('CSS source contract', () => {
     let css;
+    // Strip /* ... */ comments once so regexes don't get tripped up by
+    // multi-line comments inside rule bodies (e.g. the off-canvas
+    // overlay block that explains the transform).
+    let cssNoComments;
 
     beforeAll(() => {
       css = readCss();
+      cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
     });
 
     it('declares CSS grid layout with sidebar + header + main areas', () => {
@@ -90,12 +95,28 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       expect(css).toMatch(/main/);
     });
 
-    it('declares a mobile breakpoint that hides sidebar', () => {
-      // A media query that affects .app-shell-sidebar display
+    it('declares a mobile breakpoint that hides the sidebar offscreen', () => {
+      // A media query that affects .app-shell-sidebar layout
       const mobileRule = /@media[^{]*\(max-width:\s*7\d{2}/i;
       expect(css).toMatch(mobileRule);
-      // The mobile block must hide sidebar
-      expect(css).toMatch(/\.app-shell-sidebar[^}]*display:\s*none/);
+      // The mobile block must park the sidebar off-canvas (transform
+      // translateX(-100%)) so the hamburger toggle can slide it in.
+      expect(cssNoComments).toMatch(
+        /\.app-shell-sidebar\s*\{[^}]*transform:\s*translateX\(-100%\)/,
+      );
+      // The opened state must reverse the transform.
+      expect(cssNoComments).toMatch(
+        /\.app-shell-sidebar\.is-open\s*\{[^}]*transform:\s*translateX\(0\)/,
+      );
+    });
+
+    it('declares a sidebar-backdrop element for the mobile overlay', () => {
+      // The backdrop sits over the main area when the sidebar is open.
+      expect(cssNoComments).toMatch(/\.app-shell-sidebar-backdrop/);
+      // Backdrop has an .is-open modifier that toggles pointer events.
+      expect(cssNoComments).toMatch(
+        /\.app-shell-sidebar-backdrop\.is-open\s*\{[^}]*pointer-events:\s*auto/,
+      );
     });
 
     it('declares a desktop breakpoint that shows sidebar', () => {
@@ -112,6 +133,30 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       // Mobile breakpoint: bottom nav is shown (display: flex or block)
       expect(css).toMatch(
         /@media[^{]*\(max-width:[\s\S]*?\.app-shell-bottom-nav[^}]*display:\s*(flex|block|grid)/,
+      );
+    });
+
+    it('declares a sidebar toggle button styled to match the header chrome', () => {
+      // The button lives in the header and shares the header's hover colour.
+      expect(cssNoComments).toMatch(/\.app-shell-sidebar-toggle\s*\{/);
+      // 38x38 size to match the existing icon buttons.
+      expect(cssNoComments).toMatch(
+        /\.app-shell-sidebar-toggle\s*\{[^}]*width:\s*38px[^}]*height:\s*38px/,
+      );
+    });
+
+    it('declares a desktop collapsed modifier that narrows the grid', () => {
+      // The collapsed state swaps the first grid column from 240px to 72px.
+      expect(cssNoComments).toMatch(
+        /\.app-shell--sidebar-collapsed\s*\{[^}]*grid-template-columns:\s*72px\s+1fr/,
+      );
+      // And hides the nav-item text labels.
+      expect(cssNoComments).toMatch(
+        /\.app-shell--sidebar-collapsed[^{}]*\.app-shell-nav-item\s+span\s*\{[^}]*display:\s*none/,
+      );
+      // Section titles (PRINCIPAL, GESTIÓN, ...) are also hidden.
+      expect(cssNoComments).toMatch(
+        /\.app-shell--sidebar-collapsed[^{}]*\.app-shell-section\s*\{[^}]*display:\s*none/,
       );
     });
 
@@ -134,9 +179,6 @@ describe('appShell — responsive CSS (T-1.9)', () => {
     });
 
     it('prefix scheme uses app-shell-* for all custom classes', () => {
-      // Strip /* ... */ comments so the regex doesn't pick up incidental
-      // mentions like `index.html` from a comment header.
-      const cssNoComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
       // Class selectors begin with `.` followed by an identifier char.
       // The root grid container is intentionally `.app-shell` (no dash)
       // so we allow either `.app-shell` standalone OR `.app-shell-...`.

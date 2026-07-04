@@ -7,7 +7,11 @@
 import { auth } from '../auth/auth.service.js';
 
 const TEMPLATE_HTML = `
+<div class="app-shell">
 <header class="app-shell-header">
+  <button type="button" class="app-shell-sidebar-toggle" id="app-shell-sidebar-toggle" aria-label="Alternar barra lateral" aria-controls="app-shell-sidebar" aria-expanded="true">
+<i class="fa-solid fa-angles-left app-shell-sidebar-toggle__icon" aria-hidden="true"></i>
+  </button>
   <div class="app-shell-header__brand">GeoReporta</div>
 
   <!-- Admin-only header (search + user menu) -->
@@ -37,7 +41,8 @@ const TEMPLATE_HTML = `
   </a>
 </header>
 
-<aside class="app-shell-sidebar">
+</div>
+<aside class="app-shell-sidebar" id="app-shell-sidebar">
   <!-- Admin sidebar nav -->
   <nav class="app-shell-sidebar__nav" id="app-shell-admin-sidebar" data-show-on-role="admin">
     <ul>
@@ -123,13 +128,17 @@ function mockFetchTemplate(templateHtml = TEMPLATE_HTML) {
   });
 }
 
-describe('appShell — lifecycle (T-1.8)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    document.body.innerHTML = `<div id="shell-outlet"></div>`;
-    document.body.removeAttribute('data-role');
-    vi.stubGlobal('fetch', mockFetchTemplate());
-  });
+    describe('appShell — lifecycle (T-1.8)', () => {
+      beforeEach(() => {
+        vi.clearAllMocks();
+        document.body.replaceChildren(
+          Object.assign(document.createElement('div'), {
+            id: 'shell-outlet',
+          }),
+        );
+        document.body.removeAttribute('data-role');
+        vi.stubGlobal('fetch', mockFetchTemplate());
+      });
 
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -202,23 +211,275 @@ describe('appShell — lifecycle (T-1.8)', () => {
   it('destroy() is callable and does not throw', async () => {
     const { appShell } = await import('./app-shell.component.js');
 
-    await appShell.mount();
-    await appShell.init();
+        await appShell.mount();
+        await appShell.init();
 
-    expect(() => appShell.destroy()).not.toThrow();
-  });
-});
+        expect(() => appShell.destroy()).not.toThrow();
+      });
+    });
+
+    /**
+     * Sidebar collapse/expand toggle tests.
+     *
+     * The toggle button (#app-shell-sidebar-toggle) lives in the header and
+     * works in two modes:
+     *   - Desktop (>=768px): toggles a persisted collapsed preference that
+     *     narrows the grid from 240px to 72px (icon-only). State persists
+     *     across sessions via localStorage.
+     *   - Mobile (<768px): opens/closes an off-canvas overlay. State is
+     *     transient (not persisted) because the sidebar is off-screen by
+     *     default on mobile.
+     */
+    describe('appShell — sidebar toggle', () => {
+      // jsdom 25 does not expose localStorage for opaque origins, so we
+      // install an in-memory mock for tests that exercise persistence.
+      const memoryStorage = (() => {
+        const store = new Map();
+        return {
+          getItem: vi.fn((k) => (store.has(k) ? store.get(k) : null)),
+          setItem: vi.fn((k, v) => store.set(k, String(v))),
+          removeItem: vi.fn((k) => store.delete(k)),
+          clear: vi.fn(() => store.clear()),
+        };
+      })();
+
+      beforeEach(() => {
+        vi.clearAllMocks();
+        memoryStorage.clear();
+        // Install localStorage before the appShell runs so init() can read
+        // the persisted collapsed preference. jsdom returns undefined
+        // here, so we stub a fresh in-memory implementation per test.
+        Object.defineProperty(window, 'localStorage', {
+          value: memoryStorage,
+          writable: true,
+          configurable: true,
+        });
+        document.body.replaceChildren(
+          Object.assign(document.createElement('div'), {
+            id: 'shell-outlet',
+          }),
+        );
+        document.body.removeAttribute('data-role');
+        vi.stubGlobal('fetch', mockFetchTemplate());
+        try {
+          localStorage.clear();
+        } catch (_e) {
+          /* storage may be disabled in jsdom */
+        }
+        // Default matchMedia: desktop viewport. Individual tests can override.
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+          matches: !/max-width.*7\d{2}/.test(query),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }));
+      });
+
+      afterEach(() => {
+        vi.unstubAllGlobals();
+      });
+
+      it('renders a sidebar toggle button in the header', async () => {
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        expect(btn).toBeTruthy();
+        expect(btn.getAttribute('aria-label')).toBeTruthy();
+        expect(btn.getAttribute('aria-controls')).toBe('app-shell-sidebar');
+        expect(btn.getAttribute('aria-expanded')).toBe('true');
+
+        appShell.destroy();
+      });
+
+      it('toggles the desktop collapsed class on the grid container', async () => {
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const grid = document.querySelector('.app-shell');
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+
+        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
+        btn.click();
+        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
+        expect(btn.getAttribute('aria-expanded')).toBe('false');
+        btn.click();
+        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
+        expect(btn.getAttribute('aria-expanded')).toBe('true');
+
+        appShell.destroy();
+      });
+
+      it('persists the desktop collapsed preference to localStorage', async () => {
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        btn.click();
+        expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('1');
+        btn.click();
+        expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('0');
+
+        appShell.destroy();
+      });
+
+      it('restores the desktop collapsed preference on init', async () => {
+        try {
+          localStorage.setItem('appShell:sidebarCollapsed', '1');
+        } catch (_e) {
+          /* skip if storage disabled */
+        }
+
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const grid = document.querySelector('.app-shell');
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
+        expect(btn.getAttribute('aria-expanded')).toBe('false');
+
+        appShell.destroy();
+      });
+
+      it('opens the mobile off-canvas overlay when the toggle is clicked', async () => {
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+          matches: /max-width.*7\d{2}/.test(query),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }));
+
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const sidebar = document.getElementById('app-shell-sidebar');
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+
+        expect(sidebar.classList.contains('is-open')).toBe(false);
+        btn.click();
+        expect(sidebar.classList.contains('is-open')).toBe(true);
+        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+        expect(backdrop).toBeTruthy();
+        expect(backdrop.classList.contains('is-open')).toBe(true);
+
+        btn.click();
+        expect(sidebar.classList.contains('is-open')).toBe(false);
+        expect(backdrop.classList.contains('is-open')).toBe(false);
+
+        appShell.destroy();
+      });
+
+      it('closes the mobile overlay when the backdrop is clicked', async () => {
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+          matches: /max-width.*7\d{2}/.test(query),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }));
+
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        const sidebar = document.getElementById('app-shell-sidebar');
+        btn.click();
+        expect(sidebar.classList.contains('is-open')).toBe(true);
+
+        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+        backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(sidebar.classList.contains('is-open')).toBe(false);
+
+        appShell.destroy();
+      });
+
+      it('closes the mobile overlay when Escape is pressed', async () => {
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+          matches: /max-width.*7\d{2}/.test(query),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }));
+
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        const sidebar = document.getElementById('app-shell-sidebar');
+        btn.click();
+        expect(sidebar.classList.contains('is-open')).toBe(true);
+
+        document.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        expect(sidebar.classList.contains('is-open')).toBe(false);
+
+        appShell.destroy();
+      });
+
+      it('destroy() removes the mobile backdrop from the DOM', async () => {
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+          matches: /max-width.*7\d{2}/.test(query),
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }));
+
+        const { appShell } = await import('./app-shell.component.js');
+        await appShell.mount();
+        await appShell.init();
+
+        const btn = document.getElementById('app-shell-sidebar-toggle');
+        btn.click();
+        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+        expect(backdrop).toBeTruthy();
+
+        appShell.destroy();
+
+        expect(document.querySelector('.app-shell-sidebar-backdrop')).toBeFalsy();
+      });
+    });
 
 describe('appShell — role-specific rendering (T-1.10)', () => {
   let fetchMock;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    document.body.innerHTML = `<div id="shell-outlet"></div>`;
-    document.body.removeAttribute('data-role');
-    fetchMock = mockFetchTemplate();
-    vi.stubGlobal('fetch', fetchMock);
-  });
+      beforeEach(() => {
+        vi.clearAllMocks();
+        document.body.replaceChildren(
+          Object.assign(document.createElement('div'), {
+            id: 'shell-outlet',
+          }),
+        );
+        document.body.removeAttribute('data-role');
+        fetchMock = mockFetchTemplate();
+        vi.stubGlobal('fetch', fetchMock);
+      });
 
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -344,12 +605,16 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
 describe('user-menu dropdown (T-1.11)', () => {
   let consoleErrorSpy;
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    document.body.innerHTML = `<div id="shell-outlet"></div>`;
-    document.body.removeAttribute('data-role');
-    vi.stubGlobal('fetch', mockFetchTemplate());
-    // Set up admin user so init() classifies as 'admin' and populates header.
+      beforeEach(async () => {
+        vi.clearAllMocks();
+        document.body.replaceChildren(
+          Object.assign(document.createElement('div'), {
+            id: 'shell-outlet',
+          }),
+        );
+        document.body.removeAttribute('data-role');
+        vi.stubGlobal('fetch', mockFetchTemplate());
+        // Set up admin user so init() classifies as 'admin' and populates header.
     vi.spyOn(auth, 'getUser').mockReturnValue({
       id: 1,
       first_name: 'Maria',
@@ -452,7 +717,9 @@ describe('user-menu dropdown (T-1.11)', () => {
       Object.defineProperty(window, 'location', {
         value: {
           ...window.location,
-          hash: originalHash,
+          get hash() {
+            return originalHash;
+          },
           set hash(v) {
             hashSpy(v);
           },
@@ -504,7 +771,9 @@ describe('user-menu dropdown (T-1.11)', () => {
       Object.defineProperty(window, 'location', {
         value: {
           ...window.location,
-          hash: originalHash,
+          get hash() {
+            return originalHash;
+          },
           set hash(v) {
             hashSpy(v);
           },

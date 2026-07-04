@@ -7,6 +7,20 @@
 -->
 <div class="app-shell">
   <header class="app-shell-header">
+    <button
+      type="button"
+      class="app-shell-sidebar-toggle"
+      id="app-shell-sidebar-toggle"
+      aria-label="Alternar barra lateral"
+      aria-controls="app-shell-sidebar"
+      aria-expanded="true"
+    >
+      <i
+class="fa-solid fa-angles-left app-shell-sidebar-toggle__icon"
+aria-hidden="true"
+      ></i>
+    </button>
+
     <div class="app-shell-header__brand">
       <i class="fa-solid fa-location-dot"></i>
       <span class="app-shell-header__brand-name">GeoReporta</span>
@@ -103,7 +117,7 @@
     </a>
   </header>
 
-  <aside class="app-shell-sidebar">
+  <aside class="app-shell-sidebar" id="app-shell-sidebar">
     <!-- Admin sidebar: full nav with sections (PRINCIPAL / GESTIÓN / CONFIGURACIÓN) -->
     <nav
       class="app-shell-sidebar__nav"

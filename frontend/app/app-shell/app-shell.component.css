@@ -48,7 +48,41 @@
       'bottom';
   }
   .app-shell-sidebar {
-    display: none;
+    /* On mobile, the sidebar becomes an off-canvas overlay toggled by
+       the hamburger button. We use position:fixed + transform so the
+       panel can slide in/out without reflowing the grid. The .is-open
+       modifier is set by the JS when the user taps the toggle. */
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: none;
+  }
+  .app-shell-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 16px rgba(35, 40, 59, 0.12);
+  }
+  .app-shell-sidebar-backdrop {
+    /* Backdrop covers the main area when the mobile sidebar is open.
+       Created lazily by the JS on first toggle. */
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    background: rgba(35, 40, 59, 0.4);
+    z-index: 140;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease-out;
+  }
+  .app-shell-sidebar-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
   }
   .app-shell-bottom-nav {
     display: flex !important;
@@ -340,6 +374,76 @@ body[data-role='guest']
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* ============================================================
+   SIDEBAR TOGGLE — collapsed state (desktop)
+   Triggered by adding .app-shell--sidebar-collapsed to the root
+   grid container. We narrow the first column to icon-only width,
+   hide section titles + nav-item text, and keep tooltips working
+   via the title="" attribute on each item.
+   ============================================================ */
+
+.app-shell--sidebar-collapsed {
+  grid-template-columns: 72px 1fr;
+}
+
+.app-shell--sidebar-collapsed .app-shell-section {
+  display: none;
+}
+
+.app-shell--sidebar-collapsed .app-shell-nav-item {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.app-shell--sidebar-collapsed .app-shell-nav-item span {
+  display: none;
+}
+
+.app-shell--sidebar-collapsed .app-shell-nav-item i {
+  font-size: 1.15rem;
+}
+
+.app-shell--sidebar-collapsed .app-shell-sidebar {
+  padding: 12px 6px;
+  align-items: center;
+}
+
+/* Sidebar toggle button in the header */
+.app-shell-sidebar-toggle {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #5b6172;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.app-shell-sidebar-toggle:hover {
+  background: #f3f4f9;
+  color: #6a5cf3;
+}
+
+.app-shell-sidebar-toggle__icon {
+  transition: transform 200ms ease;
+}
+
+.app-shell--sidebar-collapsed .app-shell-sidebar-toggle__icon {
+  transform: rotate(180deg);
+}
+
+/* Smooth grid column transition on desktop */
+@media (min-width: 768px) {
+  .app-shell {
+    transition: grid-template-columns 200ms ease;
+  }
 }
 
 .app-shell-section {
