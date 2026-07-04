@@ -76,7 +76,7 @@ export const appShell = {
       );
     }
 
-const html = await response.text();
+    const html = await response.text();
     if (!html.trim()) {
       throw new Error('appShell.mount: template body is empty');
     }
@@ -184,196 +184,197 @@ const html = await response.text();
   },
 };
 
-    // ─── Internal helpers ────────────────────────────────────────────────
+// ─── Internal helpers ────────────────────────────────────────────────
 
-    /**
-     * Wire the sidebar collapse/expand toggle.
-     *
-     * Desktop: clicking the button flips a persisted collapsed preference
-     * and adds .app-shell--sidebar-collapsed to the root grid container.
-     *
-     * Mobile (<768px): clicking the button opens/closes an off-canvas
-     * overlay. The collapsed preference is ignored on mobile because the
-     * sidebar is already off-screen by default.
-     *
-     * Persistence: we use localStorage with try/catch so private-browsing
-     * mode (where storage throws) degrades gracefully to in-memory only.
-     */
-    function wireSidebarToggle() {
-      const grid = document.querySelector('.app-shell');
-      if (!grid) return;
-      _sidebarEl = document.getElementById('app-shell-sidebar');
-      _sidebarToggleBtn = document.getElementById('app-shell-sidebar-toggle');
-      if (!_sidebarToggleBtn) return;
+/**
+ * Wire the sidebar collapse/expand toggle.
+ *
+ * Desktop: clicking the button flips a persisted collapsed preference
+ * and adds .app-shell--sidebar-collapsed to the root grid container.
+ *
+ * Mobile (<768px): clicking the button opens/closes an off-canvas
+ * overlay. The collapsed preference is ignored on mobile because the
+ * sidebar is already off-screen by default.
+ *
+ * Persistence: we use localStorage with try/catch so private-browsing
+ * mode (where storage throws) degrades gracefully to in-memory only.
+ */
+function wireSidebarToggle() {
+  const grid = document.querySelector('.app-shell');
+  if (!grid) return;
+  _sidebarEl = document.getElementById('app-shell-sidebar');
+  _sidebarToggleBtn = document.getElementById('app-shell-sidebar-toggle');
+  if (!_sidebarToggleBtn) return;
 
-      // Restore persisted preference. If storage is unavailable (private
-      // browsing) the catch keeps _sidebarCollapsed at its default false.
+  // Restore persisted preference. If storage is unavailable (private
+  // browsing) the catch keeps _sidebarCollapsed at its default false.
+  try {
+    _sidebarCollapsed =
+      localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === '1';
+  } catch (_e) {
+    _sidebarCollapsed = false;
+  }
+  applySidebarCollapsed();
+
+  _sidebarToggleBtn.addEventListener('click', () => {
+    if (isMobileViewport()) {
+      _sidebarOpenMobile = !_sidebarOpenMobile;
+      applySidebarMobileOpen();
+    } else {
+      _sidebarCollapsed = !_sidebarCollapsed;
       try {
-        _sidebarCollapsed =
-          localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === '1';
+        localStorage.setItem(
+          SIDEBAR_COLLAPSE_STORAGE_KEY,
+          _sidebarCollapsed ? '1' : '0',
+        );
       } catch (_e) {
-        _sidebarCollapsed = false;
+        /* storage unavailable — preference stays in-memory only */
       }
       applySidebarCollapsed();
-
-      _sidebarToggleBtn.addEventListener('click', () => {
-        if (isMobileViewport()) {
-          _sidebarOpenMobile = !_sidebarOpenMobile;
-          applySidebarMobileOpen();
-        } else {
-          _sidebarCollapsed = !_sidebarCollapsed;
-          try {
-            localStorage.setItem(
-              SIDEBAR_COLLAPSE_STORAGE_KEY,
-              _sidebarCollapsed ? '1' : '0',
-            );
-          } catch (_e) {
-            /* storage unavailable — preference stays in-memory only */
-          }
-          applySidebarCollapsed();
-        }
-      });
-
-      // Backdrop click closes the mobile overlay.
-      _onSidebarDocClick = (event) => {
-        if (!_sidebarOpenMobile) return;
-        const target = event.target;
-        if (_sidebarBackdropEl && _sidebarBackdropEl.contains(target)) {
-          _sidebarOpenMobile = false;
-          applySidebarMobileOpen();
-        }
-      };
-      document.addEventListener('click', _onSidebarDocClick, true);
-
-      // Escape closes the mobile overlay.
-      _onSidebarKeydown = (event) => {
-        if (event.key === 'Escape' && _sidebarOpenMobile) {
-          _sidebarOpenMobile = false;
-          applySidebarMobileOpen();
-        }
-      };
-      document.addEventListener('keydown', _onSidebarKeydown);
-
-      // Re-sync state on viewport cross so a resize from mobile to desktop
-      // (or vice versa) doesn't leave a half-applied class.
-      _onResize = () => {
-        if (isMobileViewport()) {
-          // Moving to mobile: drop the desktop collapsed class but keep the
-          // stored preference for the next desktop session.
-          grid.classList.remove('app-shell--sidebar-collapsed');
-          // Close the mobile overlay on resize to avoid stale state.
-          if (_sidebarOpenMobile) {
-            _sidebarOpenMobile = false;
-            applySidebarMobileOpen();
-          }
-        } else {
-          // Moving to desktop: re-apply the persisted preference and
-          // force-close the mobile overlay state.
-          _sidebarOpenMobile = false;
-          applySidebarMobileOpen();
-          applySidebarCollapsed();
-        }
-      };
-      window.addEventListener('resize', _onResize);
     }
+  });
 
-    /**
-     * Apply or remove the desktop collapsed class based on `_sidebarCollapsed`.
-     * Also flips the toggle button's aria-expanded + title to match.
-     */
-    function applySidebarCollapsed() {
-      const grid = document.querySelector('.app-shell');
-      if (!grid) return;
-      grid.classList.toggle('app-shell--sidebar-collapsed', _sidebarCollapsed);
-      if (_sidebarToggleBtn) {
-        _sidebarToggleBtn.setAttribute(
-          'aria-expanded',
-          _sidebarCollapsed ? 'false' : 'true',
-        );
-        _sidebarToggleBtn.setAttribute(
-          'title',
-          _sidebarCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral',
-        );
-      }
-    }
-
-    /**
-     * Apply the mobile off-canvas overlay state. Lazily creates the backdrop
-     * element the first time we need it so the DOM stays clean for desktop
-     * users who never trigger the mobile path.
-     */
-    function applySidebarMobileOpen() {
-      if (!_sidebarEl) return;
-      _sidebarEl.classList.toggle('is-open', _sidebarOpenMobile);
-      if (_sidebarToggleBtn) {
-        _sidebarToggleBtn.setAttribute(
-          'aria-expanded',
-          _sidebarOpenMobile ? 'true' : 'false',
-        );
-      }
-      if (_sidebarOpenMobile) {
-        if (!_sidebarBackdropEl) {
-          _sidebarBackdropEl = document.createElement('div');
-          _sidebarBackdropEl.className = 'app-shell-sidebar-backdrop';
-          document.body.appendChild(_sidebarBackdropEl);
-        }
-        _sidebarBackdropEl.classList.add('is-open');
-      } else if (_sidebarBackdropEl) {
-        _sidebarBackdropEl.classList.remove('is-open');
-      }
-    }
-
-    /**
-     * Cheap viewport check. matchMedia is the only reliable way to mirror
-     * the CSS breakpoint without coupling to specific browser APIs.
-     */
-    function isMobileViewport() {
-      if (typeof window.matchMedia !== 'function') return false;
-      return window.matchMedia(`(max-width: ${SIDEBAR_COLLAPSE_BREAKPOINT - 0.02}px)`)
-        .matches;
-    }
-
-    /**
-     * Remove every sidebar-toggle listener + DOM helper. Called from
-     * destroy() so the shell can be torn down without leaving dangling
-     * handlers.
-     */
-    function teardownSidebarToggle() {
-      if (_sidebarToggleBtn) {
-        // The click listener is anonymous, so we can't remove it directly.
-        // Replacing the node with a clone strips all listeners attached
-        // via addEventListener — a safe tear-down for a node we own.
-        const clone = _sidebarToggleBtn.cloneNode(true);
-        _sidebarToggleBtn.parentNode.replaceChild(clone, _sidebarToggleBtn);
-        _sidebarToggleBtn = clone;
-      }
-      if (_onSidebarDocClick) {
-        document.removeEventListener('click', _onSidebarDocClick, true);
-        _onSidebarDocClick = null;
-      }
-      if (_onSidebarKeydown) {
-        document.removeEventListener('keydown', _onSidebarKeydown);
-        _onSidebarKeydown = null;
-      }
-      if (_onResize) {
-        window.removeEventListener('resize', _onResize);
-        _onResize = null;
-      }
-      if (_sidebarBackdropEl && _sidebarBackdropEl.parentNode) {
-        _sidebarBackdropEl.parentNode.removeChild(_sidebarBackdropEl);
-      }
-      _sidebarBackdropEl = null;
-      _sidebarEl = null;
+  // Backdrop click closes the mobile overlay.
+  _onSidebarDocClick = (event) => {
+    if (!_sidebarOpenMobile) return;
+    const target = event.target;
+    if (_sidebarBackdropEl && _sidebarBackdropEl.contains(target)) {
       _sidebarOpenMobile = false;
+      applySidebarMobileOpen();
     }
+  };
+  document.addEventListener('click', _onSidebarDocClick, true);
 
-    /**
-     * Populate the role-specific header content. Admin gets the user menu
-     * (name + avatar), citizen gets a single-letter avatar, guest has no
-     * header content beyond the login button (already in the template).
-     *
-     * SECURITY: Always fetches /me fresh — never uses cached user state.
-     */
+  // Escape closes the mobile overlay.
+  _onSidebarKeydown = (event) => {
+    if (event.key === 'Escape' && _sidebarOpenMobile) {
+      _sidebarOpenMobile = false;
+      applySidebarMobileOpen();
+    }
+  };
+  document.addEventListener('keydown', _onSidebarKeydown);
+
+  // Re-sync state on viewport cross so a resize from mobile to desktop
+  // (or vice versa) doesn't leave a half-applied class.
+  _onResize = () => {
+    if (isMobileViewport()) {
+      // Moving to mobile: drop the desktop collapsed class but keep the
+      // stored preference for the next desktop session.
+      grid.classList.remove('app-shell--sidebar-collapsed');
+      // Close the mobile overlay on resize to avoid stale state.
+      if (_sidebarOpenMobile) {
+        _sidebarOpenMobile = false;
+        applySidebarMobileOpen();
+      }
+    } else {
+      // Moving to desktop: re-apply the persisted preference and
+      // force-close the mobile overlay state.
+      _sidebarOpenMobile = false;
+      applySidebarMobileOpen();
+      applySidebarCollapsed();
+    }
+  };
+  window.addEventListener('resize', _onResize);
+}
+
+/**
+ * Apply or remove the desktop collapsed class based on `_sidebarCollapsed`.
+ * Also flips the toggle button's aria-expanded + title to match.
+ */
+function applySidebarCollapsed() {
+  const grid = document.querySelector('.app-shell');
+  if (!grid) return;
+  grid.classList.toggle('app-shell--sidebar-collapsed', _sidebarCollapsed);
+  if (_sidebarToggleBtn) {
+    _sidebarToggleBtn.setAttribute(
+      'aria-expanded',
+      _sidebarCollapsed ? 'false' : 'true',
+    );
+    _sidebarToggleBtn.setAttribute(
+      'title',
+      _sidebarCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral',
+    );
+  }
+}
+
+/**
+ * Apply the mobile off-canvas overlay state. Lazily creates the backdrop
+ * element the first time we need it so the DOM stays clean for desktop
+ * users who never trigger the mobile path.
+ */
+function applySidebarMobileOpen() {
+  if (!_sidebarEl) return;
+  _sidebarEl.classList.toggle('is-open', _sidebarOpenMobile);
+  if (_sidebarToggleBtn) {
+    _sidebarToggleBtn.setAttribute(
+      'aria-expanded',
+      _sidebarOpenMobile ? 'true' : 'false',
+    );
+  }
+  if (_sidebarOpenMobile) {
+    if (!_sidebarBackdropEl) {
+      _sidebarBackdropEl = document.createElement('div');
+      _sidebarBackdropEl.className = 'app-shell-sidebar-backdrop';
+      document.body.appendChild(_sidebarBackdropEl);
+    }
+    _sidebarBackdropEl.classList.add('is-open');
+  } else if (_sidebarBackdropEl) {
+    _sidebarBackdropEl.classList.remove('is-open');
+  }
+}
+
+/**
+ * Cheap viewport check. matchMedia is the only reliable way to mirror
+ * the CSS breakpoint without coupling to specific browser APIs.
+ */
+function isMobileViewport() {
+  if (typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(
+    `(max-width: ${SIDEBAR_COLLAPSE_BREAKPOINT - 0.02}px)`,
+  ).matches;
+}
+
+/**
+ * Remove every sidebar-toggle listener + DOM helper. Called from
+ * destroy() so the shell can be torn down without leaving dangling
+ * handlers.
+ */
+function teardownSidebarToggle() {
+  if (_sidebarToggleBtn) {
+    // The click listener is anonymous, so we can't remove it directly.
+    // Replacing the node with a clone strips all listeners attached
+    // via addEventListener — a safe tear-down for a node we own.
+    const clone = _sidebarToggleBtn.cloneNode(true);
+    _sidebarToggleBtn.parentNode.replaceChild(clone, _sidebarToggleBtn);
+    _sidebarToggleBtn = clone;
+  }
+  if (_onSidebarDocClick) {
+    document.removeEventListener('click', _onSidebarDocClick, true);
+    _onSidebarDocClick = null;
+  }
+  if (_onSidebarKeydown) {
+    document.removeEventListener('keydown', _onSidebarKeydown);
+    _onSidebarKeydown = null;
+  }
+  if (_onResize) {
+    window.removeEventListener('resize', _onResize);
+    _onResize = null;
+  }
+  if (_sidebarBackdropEl && _sidebarBackdropEl.parentNode) {
+    _sidebarBackdropEl.parentNode.removeChild(_sidebarBackdropEl);
+  }
+  _sidebarBackdropEl = null;
+  _sidebarEl = null;
+  _sidebarOpenMobile = false;
+}
+
+/**
+ * Populate the role-specific header content. Admin gets the user menu
+ * (name + avatar), citizen gets a single-letter avatar, guest has no
+ * header content beyond the login button (already in the template).
+ *
+ * SECURITY: Always fetches /me fresh — never uses cached user state.
+ */
 async function populateHeader() {
   const u = await auth.me().catch(() => null);
   if (!u) return;

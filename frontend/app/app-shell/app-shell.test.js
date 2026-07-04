@@ -138,17 +138,17 @@ function mockFetchTemplate(templateHtml = TEMPLATE_HTML) {
   });
 }
 
-    describe('appShell — lifecycle (T-1.8)', () => {
-      beforeEach(() => {
-        vi.clearAllMocks();
-        document.body.replaceChildren(
-          Object.assign(document.createElement('div'), {
-            id: 'shell-outlet',
-          }),
-        );
-        document.body.removeAttribute('data-role');
-        vi.stubGlobal('fetch', mockFetchTemplate());
-      });
+describe('appShell — lifecycle (T-1.8)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+  });
 
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -221,275 +221,275 @@ function mockFetchTemplate(templateHtml = TEMPLATE_HTML) {
   it('destroy() is callable and does not throw', async () => {
     const { appShell } = await import('./app-shell.component.js');
 
-        await appShell.mount();
-        await appShell.init();
+    await appShell.mount();
+    await appShell.init();
 
-        expect(() => appShell.destroy()).not.toThrow();
-      });
+    expect(() => appShell.destroy()).not.toThrow();
+  });
+});
+
+/**
+ * Sidebar collapse/expand toggle tests.
+ *
+ * The toggle button (#app-shell-sidebar-toggle) lives in the header and
+ * works in two modes:
+ *   - Desktop (>=768px): toggles a persisted collapsed preference that
+ *     narrows the grid from 240px to 72px (icon-only). State persists
+ *     across sessions via localStorage.
+ *   - Mobile (<768px): opens/closes an off-canvas overlay. State is
+ *     transient (not persisted) because the sidebar is off-screen by
+ *     default on mobile.
+ */
+describe('appShell — sidebar toggle', () => {
+  // jsdom 25 does not expose localStorage for opaque origins, so we
+  // install an in-memory mock for tests that exercise persistence.
+  const memoryStorage = (() => {
+    const store = new Map();
+    return {
+      getItem: vi.fn((k) => (store.has(k) ? store.get(k) : null)),
+      setItem: vi.fn((k, v) => store.set(k, String(v))),
+      removeItem: vi.fn((k) => store.delete(k)),
+      clear: vi.fn(() => store.clear()),
+    };
+  })();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    memoryStorage.clear();
+    // Install localStorage before the appShell runs so init() can read
+    // the persisted collapsed preference. jsdom returns undefined
+    // here, so we stub a fresh in-memory implementation per test.
+    Object.defineProperty(window, 'localStorage', {
+      value: memoryStorage,
+      writable: true,
+      configurable: true,
     });
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+    try {
+      localStorage.clear();
+    } catch (_e) {
+      /* storage may be disabled in jsdom */
+    }
+    // Default matchMedia: desktop viewport. Individual tests can override.
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: !/max-width.*7\d{2}/.test(query),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+  });
 
-    /**
-     * Sidebar collapse/expand toggle tests.
-     *
-     * The toggle button (#app-shell-sidebar-toggle) lives in the header and
-     * works in two modes:
-     *   - Desktop (>=768px): toggles a persisted collapsed preference that
-     *     narrows the grid from 240px to 72px (icon-only). State persists
-     *     across sessions via localStorage.
-     *   - Mobile (<768px): opens/closes an off-canvas overlay. State is
-     *     transient (not persisted) because the sidebar is off-screen by
-     *     default on mobile.
-     */
-    describe('appShell — sidebar toggle', () => {
-      // jsdom 25 does not expose localStorage for opaque origins, so we
-      // install an in-memory mock for tests that exercise persistence.
-      const memoryStorage = (() => {
-        const store = new Map();
-        return {
-          getItem: vi.fn((k) => (store.has(k) ? store.get(k) : null)),
-          setItem: vi.fn((k, v) => store.set(k, String(v))),
-          removeItem: vi.fn((k) => store.delete(k)),
-          clear: vi.fn(() => store.clear()),
-        };
-      })();
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-      beforeEach(() => {
-        vi.clearAllMocks();
-        memoryStorage.clear();
-        // Install localStorage before the appShell runs so init() can read
-        // the persisted collapsed preference. jsdom returns undefined
-        // here, so we stub a fresh in-memory implementation per test.
-        Object.defineProperty(window, 'localStorage', {
-          value: memoryStorage,
-          writable: true,
-          configurable: true,
-        });
-        document.body.replaceChildren(
-          Object.assign(document.createElement('div'), {
-            id: 'shell-outlet',
-          }),
-        );
-        document.body.removeAttribute('data-role');
-        vi.stubGlobal('fetch', mockFetchTemplate());
-        try {
-          localStorage.clear();
-        } catch (_e) {
-          /* storage may be disabled in jsdom */
-        }
-        // Default matchMedia: desktop viewport. Individual tests can override.
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-          matches: !/max-width.*7\d{2}/.test(query),
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        }));
-      });
+  it('renders a sidebar toggle button in the header', async () => {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      afterEach(() => {
-        vi.unstubAllGlobals();
-      });
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    expect(btn).toBeTruthy();
+    expect(btn.getAttribute('aria-label')).toBeTruthy();
+    expect(btn.getAttribute('aria-controls')).toBe('app-shell-sidebar');
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
 
-      it('renders a sidebar toggle button in the header', async () => {
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    appShell.destroy();
+  });
 
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        expect(btn).toBeTruthy();
-        expect(btn.getAttribute('aria-label')).toBeTruthy();
-        expect(btn.getAttribute('aria-controls')).toBe('app-shell-sidebar');
-        expect(btn.getAttribute('aria-expanded')).toBe('true');
+  it('toggles the desktop collapsed class on the grid container', async () => {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-        appShell.destroy();
-      });
+    const grid = document.querySelector('.app-shell');
+    const btn = document.getElementById('app-shell-sidebar-toggle');
 
-      it('toggles the desktop collapsed class on the grid container', async () => {
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
+    btn.click();
+    expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    btn.click();
+    expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
 
-        const grid = document.querySelector('.app-shell');
-        const btn = document.getElementById('app-shell-sidebar-toggle');
+    appShell.destroy();
+  });
 
-        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
-        btn.click();
-        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
-        expect(btn.getAttribute('aria-expanded')).toBe('false');
-        btn.click();
-        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(false);
-        expect(btn.getAttribute('aria-expanded')).toBe('true');
+  it('persists the desktop collapsed preference to localStorage', async () => {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-        appShell.destroy();
-      });
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    btn.click();
+    expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('1');
+    btn.click();
+    expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('0');
 
-      it('persists the desktop collapsed preference to localStorage', async () => {
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    appShell.destroy();
+  });
 
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        btn.click();
-        expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('1');
-        btn.click();
-        expect(localStorage.getItem('appShell:sidebarCollapsed')).toBe('0');
+  it('restores the desktop collapsed preference on init', async () => {
+    try {
+      localStorage.setItem('appShell:sidebarCollapsed', '1');
+    } catch (_e) {
+      /* skip if storage disabled */
+    }
 
-        appShell.destroy();
-      });
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      it('restores the desktop collapsed preference on init', async () => {
-        try {
-          localStorage.setItem('appShell:sidebarCollapsed', '1');
-        } catch (_e) {
-          /* skip if storage disabled */
-        }
+    const grid = document.querySelector('.app-shell');
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
 
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    appShell.destroy();
+  });
 
-        const grid = document.querySelector('.app-shell');
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        expect(grid.classList.contains('app-shell--sidebar-collapsed')).toBe(true);
-        expect(btn.getAttribute('aria-expanded')).toBe('false');
+  it('opens the mobile off-canvas overlay when the toggle is clicked', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: /max-width.*7\d{2}/.test(query),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
 
-        appShell.destroy();
-      });
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      it('opens the mobile off-canvas overlay when the toggle is clicked', async () => {
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-          matches: /max-width.*7\d{2}/.test(query),
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        }));
+    const sidebar = document.getElementById('app-shell-sidebar');
+    const btn = document.getElementById('app-shell-sidebar-toggle');
 
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    expect(sidebar.classList.contains('is-open')).toBe(false);
+    btn.click();
+    expect(sidebar.classList.contains('is-open')).toBe(true);
+    const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+    expect(backdrop).toBeTruthy();
+    expect(backdrop.classList.contains('is-open')).toBe(true);
 
-        const sidebar = document.getElementById('app-shell-sidebar');
-        const btn = document.getElementById('app-shell-sidebar-toggle');
+    btn.click();
+    expect(sidebar.classList.contains('is-open')).toBe(false);
+    expect(backdrop.classList.contains('is-open')).toBe(false);
 
-        expect(sidebar.classList.contains('is-open')).toBe(false);
-        btn.click();
-        expect(sidebar.classList.contains('is-open')).toBe(true);
-        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
-        expect(backdrop).toBeTruthy();
-        expect(backdrop.classList.contains('is-open')).toBe(true);
+    appShell.destroy();
+  });
 
-        btn.click();
-        expect(sidebar.classList.contains('is-open')).toBe(false);
-        expect(backdrop.classList.contains('is-open')).toBe(false);
+  it('closes the mobile overlay when the backdrop is clicked', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: /max-width.*7\d{2}/.test(query),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
 
-        appShell.destroy();
-      });
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      it('closes the mobile overlay when the backdrop is clicked', async () => {
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-          matches: /max-width.*7\d{2}/.test(query),
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        }));
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    const sidebar = document.getElementById('app-shell-sidebar');
+    btn.click();
+    expect(sidebar.classList.contains('is-open')).toBe(true);
 
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+    backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(sidebar.classList.contains('is-open')).toBe(false);
 
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        const sidebar = document.getElementById('app-shell-sidebar');
-        btn.click();
-        expect(sidebar.classList.contains('is-open')).toBe(true);
+    appShell.destroy();
+  });
 
-        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
-        backdrop.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        expect(sidebar.classList.contains('is-open')).toBe(false);
+  it('closes the mobile overlay when Escape is pressed', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: /max-width.*7\d{2}/.test(query),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
 
-        appShell.destroy();
-      });
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      it('closes the mobile overlay when Escape is pressed', async () => {
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-          matches: /max-width.*7\d{2}/.test(query),
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        }));
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    const sidebar = document.getElementById('app-shell-sidebar');
+    btn.click();
+    expect(sidebar.classList.contains('is-open')).toBe(true);
 
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    expect(sidebar.classList.contains('is-open')).toBe(false);
 
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        const sidebar = document.getElementById('app-shell-sidebar');
-        btn.click();
-        expect(sidebar.classList.contains('is-open')).toBe(true);
+    appShell.destroy();
+  });
 
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-        );
-        expect(sidebar.classList.contains('is-open')).toBe(false);
+  it('destroy() removes the mobile backdrop from the DOM', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: /max-width.*7\d{2}/.test(query),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
 
-        appShell.destroy();
-      });
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    await appShell.init();
 
-      it('destroy() removes the mobile backdrop from the DOM', async () => {
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-          matches: /max-width.*7\d{2}/.test(query),
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        }));
+    const btn = document.getElementById('app-shell-sidebar-toggle');
+    btn.click();
+    const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
+    expect(backdrop).toBeTruthy();
 
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        await appShell.init();
+    appShell.destroy();
 
-        const btn = document.getElementById('app-shell-sidebar-toggle');
-        btn.click();
-        const backdrop = document.querySelector('.app-shell-sidebar-backdrop');
-        expect(backdrop).toBeTruthy();
-
-        appShell.destroy();
-
-        expect(document.querySelector('.app-shell-sidebar-backdrop')).toBeFalsy();
-      });
-    });
+    expect(document.querySelector('.app-shell-sidebar-backdrop')).toBeFalsy();
+  });
+});
 
 describe('appShell — role-specific rendering (T-1.10)', () => {
   let fetchMock;
 
-      beforeEach(() => {
-        vi.clearAllMocks();
-        document.body.replaceChildren(
-          Object.assign(document.createElement('div'), {
-            id: 'shell-outlet',
-          }),
-        );
-        document.body.removeAttribute('data-role');
-        fetchMock = mockFetchTemplate();
-        vi.stubGlobal('fetch', fetchMock);
-      });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    fetchMock = mockFetchTemplate();
+    vi.stubGlobal('fetch', fetchMock);
+  });
 
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -615,16 +615,16 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
 describe('user-menu dropdown (T-1.11)', () => {
   let consoleErrorSpy;
 
-      beforeEach(async () => {
-        vi.clearAllMocks();
-        document.body.replaceChildren(
-          Object.assign(document.createElement('div'), {
-            id: 'shell-outlet',
-          }),
-        );
-        document.body.removeAttribute('data-role');
-        vi.stubGlobal('fetch', mockFetchTemplate());
-        // Set up admin user so init() classifies as 'admin' and populates header.
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+    // Set up admin user so init() classifies as 'admin' and populates header.
     vi.spyOn(auth, 'getUser').mockReturnValue({
       id: 1,
       first_name: 'Maria',
@@ -901,183 +901,183 @@ describe('user-menu dropdown (T-1.11)', () => {
   });
 
   // Case 9: No console errors during the dropdown flow.
-      it('does not log console.error during the full open → close flow', async () => {
-        const { appShell, unsub } = await mountAsAdmin();
-        try {
-          const { trigger, panel, logout: logoutItem } = refs();
-          vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
-          trigger.click(); // open
-          expect(panel.hasAttribute('hidden')).toBe(false);
-          document.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-          ); // close via Escape
-          trigger.click(); // open again
-          logoutItem.click(); // logout
-          await Promise.resolve(); // drain await
+  it('does not log console.error during the full open → close flow', async () => {
+    const { appShell, unsub } = await mountAsAdmin();
+    try {
+      const { trigger, panel, logout: logoutItem } = refs();
+      vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+      trigger.click(); // open
+      expect(panel.hasAttribute('hidden')).toBe(false);
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ); // close via Escape
+      trigger.click(); // open again
+      logoutItem.click(); // logout
+      await Promise.resolve(); // drain await
 
-          expect(consoleErrorSpy).not.toHaveBeenCalled();
-        } finally {
-          appShell.destroy();
-          if (typeof unsub === 'function') unsub();
-        }
-      });
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+});
+
+/**
+ * Citizen user-menu dropdown — mirrors the admin menu but uses a compact
+ * trigger (just the avatar, no name + chevron). The behavioural contract
+ * is the same: aria-haspopup, click to open, Escape to close, "Mi perfil"
+ * navigates, "Cerrar sesión" calls auth.logout() with a 300ms debounce.
+ */
+describe('citizen user-menu dropdown', () => {
+  let consoleErrorSpy;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+    // Citizen user — triggers the citizen header chrome.
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 7,
+      first_name: 'Carla',
+      email: 'carla@ciudadana.test',
+      role: { id: 5, name: 'usuario' },
     });
+    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
 
-    /**
-     * Citizen user-menu dropdown — mirrors the admin menu but uses a compact
-     * trigger (just the avatar, no name + chevron). The behavioural contract
-     * is the same: aria-haspopup, click to open, Escape to close, "Mi perfil"
-     * navigates, "Cerrar sesión" calls auth.logout() with a 300ms debounce.
-     */
-    describe('citizen user-menu dropdown', () => {
-      let consoleErrorSpy;
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
+  });
 
-      beforeEach(async () => {
-        vi.clearAllMocks();
-        document.body.replaceChildren(
-          Object.assign(document.createElement('div'), {
-            id: 'shell-outlet',
-          }),
-        );
-        document.body.removeAttribute('data-role');
-        vi.stubGlobal('fetch', mockFetchTemplate());
-        // Citizen user — triggers the citizen header chrome.
-        vi.spyOn(auth, 'getUser').mockReturnValue({
-          id: 7,
-          first_name: 'Carla',
-          email: 'carla@ciudadana.test',
-          role: { id: 5, name: 'usuario' },
-        });
-        vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
-        vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
-        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      });
+  async function mountAsCitizen() {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    return { appShell, unsub };
+  }
 
-      afterEach(() => {
-        vi.unstubAllGlobals();
-        consoleErrorSpy.mockRestore();
-        vi.useRealTimers();
-      });
+  function citizenRefs() {
+    return {
+      trigger: document.getElementById('app-shell-citizen-menu-trigger'),
+      panel: document.getElementById('app-shell-citizen-menu-panel'),
+      profile: document.getElementById('app-shell-citizen-menu-profile'),
+      logout: document.getElementById('app-shell-citizen-menu-logout'),
+    };
+  }
 
-      async function mountAsCitizen() {
-        const { appShell } = await import('./app-shell.component.js');
-        await appShell.mount();
-        const unsub = await appShell.init();
-        return { appShell, unsub };
-      }
+  it('renders the compact trigger and a hidden 2-item panel', async () => {
+    const { appShell, unsub } = await mountAsCitizen();
+    try {
+      const { trigger, panel } = citizenRefs();
+      expect(trigger).toBeTruthy();
+      expect(
+        trigger.classList.contains('app-shell-user-menu__trigger--avatar'),
+      ).toBe(true);
+      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(panel.hasAttribute('hidden')).toBe(true);
 
-      function citizenRefs() {
-        return {
-          trigger: document.getElementById('app-shell-citizen-menu-trigger'),
-          panel: document.getElementById('app-shell-citizen-menu-panel'),
-          profile: document.getElementById('app-shell-citizen-menu-profile'),
-          logout: document.getElementById('app-shell-citizen-menu-logout'),
-        };
-      }
+      const items = panel.querySelectorAll('[role="menuitem"]');
+      expect(items.length).toBe(2);
+      expect(items[0].textContent.trim()).toBe('Mi perfil');
+      expect(items[1].textContent.trim()).toBe('Cerrar sesión');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
 
-      it('renders the compact trigger and a hidden 2-item panel', async () => {
-        const { appShell, unsub } = await mountAsCitizen();
-        try {
-          const { trigger, panel } = citizenRefs();
-          expect(trigger).toBeTruthy();
-          expect(trigger.classList.contains('app-shell-user-menu__trigger--avatar')).toBe(true);
-          expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
-          expect(trigger.getAttribute('aria-expanded')).toBe('false');
-          expect(panel.hasAttribute('hidden')).toBe(true);
+  it('opens on trigger click and closes on Escape', async () => {
+    const { appShell, unsub } = await mountAsCitizen();
+    try {
+      const { trigger, panel } = citizenRefs();
+      trigger.click();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
 
-          const items = panel.querySelectorAll('[role="menuitem"]');
-          expect(items.length).toBe(2);
-          expect(items[0].textContent.trim()).toBe('Mi perfil');
-          expect(items[1].textContent.trim()).toBe('Cerrar sesión');
-        } finally {
-          appShell.destroy();
-          if (typeof unsub === 'function') unsub();
-        }
-      });
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
 
-      it('opens on trigger click and closes on Escape', async () => {
-        const { appShell, unsub } = await mountAsCitizen();
-        try {
-          const { trigger, panel } = citizenRefs();
-          trigger.click();
-          expect(panel.hasAttribute('hidden')).toBe(false);
-          expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  it('"Cerrar sesión" calls auth.logout() once and debounces rapid clicks', async () => {
+    vi.useFakeTimers();
+    const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
 
-          document.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-          );
-          expect(panel.hasAttribute('hidden')).toBe(true);
-          expect(trigger.getAttribute('aria-expanded')).toBe('false');
-        } finally {
-          appShell.destroy();
-          if (typeof unsub === 'function') unsub();
-        }
-      });
+    const { appShell, unsub } = await mountAsCitizen();
+    try {
+      const { trigger, logout } = citizenRefs();
+      trigger.click();
+      logout.click();
+      logout.click();
+      logout.click();
 
-      it('"Cerrar sesión" calls auth.logout() once and debounces rapid clicks', async () => {
-        vi.useFakeTimers();
-        const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
+      expect(logoutSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
 
-        const { appShell, unsub } = await mountAsCitizen();
-        try {
-          const { trigger, logout } = citizenRefs();
-          trigger.click();
-          logout.click();
-          logout.click();
-          logout.click();
+  it('destroy() removes the citizen menu listeners (outside-click is a no-op)', async () => {
+    const { appShell, unsub } = await mountAsCitizen();
+    const { trigger, panel } = citizenRefs();
+    trigger.click();
+    expect(panel.hasAttribute('hidden')).toBe(false);
 
-          expect(logoutSpy).toHaveBeenCalledTimes(1);
-        } finally {
-          vi.useRealTimers();
-          appShell.destroy();
-          if (typeof unsub === 'function') unsub();
-        }
-      });
+    appShell.destroy();
+    if (typeof unsub === 'function') unsub();
 
-      it('destroy() removes the citizen menu listeners (outside-click is a no-op)', async () => {
-        const { appShell, unsub } = await mountAsCitizen();
-        const { trigger, panel } = citizenRefs();
-        trigger.click();
-        expect(panel.hasAttribute('hidden')).toBe(false);
+    expect(() => {
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }).not.toThrow();
+    expect(panel.hasAttribute('hidden')).toBe(true);
+  });
 
-        appShell.destroy();
-        if (typeof unsub === 'function') unsub();
+  it('keeps the admin and citizen menus independent (opening one does not affect the other)', async () => {
+    // The admin menu and citizen menu live in different DOM subtrees;
+    // opening the admin trigger must not close or interfere with the
+    // citizen trigger and vice versa.
+    const { appShell, unsub } = await mountAsCitizen();
+    try {
+      const admin = {
+        trigger: document.getElementById('app-shell-user-menu-trigger'),
+        panel: document.getElementById('app-shell-user-menu-panel'),
+      };
+      const citizen = {
+        trigger: document.getElementById('app-shell-citizen-menu-trigger'),
+        panel: document.getElementById('app-shell-citizen-menu-panel'),
+      };
 
-        expect(() => {
-          document.body.dispatchEvent(
-            new MouseEvent('click', { bubbles: true }),
-          );
-        }).not.toThrow();
-        expect(panel.hasAttribute('hidden')).toBe(true);
-      });
+      // Open admin — citizen panel must remain hidden.
+      admin.trigger.click();
+      expect(admin.panel.hasAttribute('hidden')).toBe(false);
+      expect(citizen.panel.hasAttribute('hidden')).toBe(true);
 
-      it('keeps the admin and citizen menus independent (opening one does not affect the other)', async () => {
-        // The admin menu and citizen menu live in different DOM subtrees;
-        // opening the admin trigger must not close or interfere with the
-        // citizen trigger and vice versa.
-        const { appShell, unsub } = await mountAsCitizen();
-        try {
-          const admin = {
-            trigger: document.getElementById('app-shell-user-menu-trigger'),
-            panel: document.getElementById('app-shell-user-menu-panel'),
-          };
-          const citizen = {
-            trigger: document.getElementById('app-shell-citizen-menu-trigger'),
-            panel: document.getElementById('app-shell-citizen-menu-panel'),
-          };
-
-          // Open admin — citizen panel must remain hidden.
-          admin.trigger.click();
-          expect(admin.panel.hasAttribute('hidden')).toBe(false);
-          expect(citizen.panel.hasAttribute('hidden')).toBe(true);
-
-          // Open citizen — admin panel must remain open (no global close).
-          citizen.trigger.click();
-          expect(admin.panel.hasAttribute('hidden')).toBe(false);
-          expect(citizen.panel.hasAttribute('hidden')).toBe(false);
-        } finally {
-          appShell.destroy();
-          if (typeof unsub === 'function') unsub();
-        }
-      });
-    });
+      // Open citizen — admin panel must remain open (no global close).
+      citizen.trigger.click();
+      expect(admin.panel.hasAttribute('hidden')).toBe(false);
+      expect(citizen.panel.hasAttribute('hidden')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+});

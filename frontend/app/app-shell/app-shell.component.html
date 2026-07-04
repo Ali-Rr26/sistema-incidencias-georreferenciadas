@@ -16,8 +16,8 @@
       aria-expanded="true"
     >
       <i
-class="fa-solid fa-angles-left app-shell-sidebar-toggle__icon"
-aria-hidden="true"
+        class="fa-solid fa-angles-left app-shell-sidebar-toggle__icon"
+        aria-hidden="true"
       ></i>
     </button>
 
@@ -46,102 +46,96 @@ aria-hidden="true"
       <button class="app-shell-header__icon-btn" aria-label="Configuración">
         <i class="fa-solid fa-gear"></i>
       </button>
-          <div class="app-shell-user-menu">
-            <button
-              class="app-shell-user-menu__trigger"
-              id="app-shell-user-menu-trigger"
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded="false"
-            >
-              <span
-                class="app-shell-user-menu__avatar"
-                id="app-shell-user-avatar"
-                >U</span
-              >
-              <span
-                class="app-shell-user-menu__name"
-                id="app-shell-user-name"
-                >Usuario</span
-              >
-              <i class="fa-solid fa-chevron-down app-shell-user-menu__arrow"></i>
-            </button>
-            <ul
-              role="menu"
-              id="app-shell-user-menu-panel"
-              class="app-shell-user-menu__panel"
-              hidden
-            >
-              <li
-                role="menuitem"
-                tabindex="-1"
-                id="app-shell-user-menu-profile"
-                class="app-shell-user-menu__item"
-              >
-                Mi perfil
-              </li>
-              <li
-                role="menuitem"
-                tabindex="-1"
-                id="app-shell-user-menu-logout"
-                class="app-shell-user-menu__item app-shell-user-menu__item--logout"
-                aria-disabled="false"
-              >
-                Cerrar sesión
-              </li>
-            </ul>
-          </div>
+      <div class="app-shell-user-menu">
+        <button
+          class="app-shell-user-menu__trigger"
+          id="app-shell-user-menu-trigger"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded="false"
+        >
+          <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar"
+            >U</span
+          >
+          <span class="app-shell-user-menu__name" id="app-shell-user-name"
+            >Usuario</span
+          >
+          <i class="fa-solid fa-chevron-down app-shell-user-menu__arrow"></i>
+        </button>
+        <ul
+          role="menu"
+          id="app-shell-user-menu-panel"
+          class="app-shell-user-menu__panel"
+          hidden
+        >
+          <li
+            role="menuitem"
+            tabindex="-1"
+            id="app-shell-user-menu-profile"
+            class="app-shell-user-menu__item"
+          >
+            Mi perfil
+          </li>
+          <li
+            role="menuitem"
+            tabindex="-1"
+            id="app-shell-user-menu-logout"
+            class="app-shell-user-menu__item app-shell-user-menu__item--logout"
+            aria-disabled="false"
+          >
+            Cerrar sesión
+          </li>
+        </ul>
+      </div>
     </div>
 
-        <!-- Citizen header: notification bell + user menu dropdown -->
-        <div class="app-shell-header__citizen" data-show-on-role="citizen">
-          <button
-            class="app-shell-header__bell"
-            id="app-shell-bell"
-            type="button"
-            aria-label="Notificaciones"
+    <!-- Citizen header: notification bell + user menu dropdown -->
+    <div class="app-shell-header__citizen" data-show-on-role="citizen">
+      <button
+        class="app-shell-header__bell"
+        id="app-shell-bell"
+        type="button"
+        aria-label="Notificaciones"
+      >
+        <i class="fa-regular fa-bell"></i>
+      </button>
+      <div class="app-shell-user-menu app-shell-user-menu--compact">
+        <button
+          class="app-shell-user-menu__trigger app-shell-user-menu__trigger--avatar"
+          id="app-shell-citizen-menu-trigger"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-label="Menú de usuario"
+        >
+          <span class="app-shell-avatar__letter" id="app-shell-avatar">?</span>
+        </button>
+        <ul
+          role="menu"
+          id="app-shell-citizen-menu-panel"
+          class="app-shell-user-menu__panel"
+          hidden
+        >
+          <li
+            role="menuitem"
+            tabindex="-1"
+            id="app-shell-citizen-menu-profile"
+            class="app-shell-user-menu__item"
           >
-            <i class="fa-regular fa-bell"></i>
-          </button>
-          <div class="app-shell-user-menu app-shell-user-menu--compact">
-            <button
-              class="app-shell-user-menu__trigger app-shell-user-menu__trigger--avatar"
-              id="app-shell-citizen-menu-trigger"
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded="false"
-              aria-label="Menú de usuario"
-            >
-              <span class="app-shell-avatar__letter" id="app-shell-avatar"
-                >?</span
-              >
-            </button>
-            <ul
-              role="menu"
-              id="app-shell-citizen-menu-panel"
-              class="app-shell-user-menu__panel"
-              hidden
-            >
-              <li
-                role="menuitem"
-                tabindex="-1"
-                id="app-shell-citizen-menu-profile"
-                class="app-shell-user-menu__item"
-              >
-                Mi perfil
-              </li>
-              <li
-                role="menuitem"
-                tabindex="-1"
-                id="app-shell-citizen-menu-logout"
-                class="app-shell-user-menu__item app-shell-user-menu__item--logout"
-                aria-disabled="false"
-              >
-                Cerrar sesión
-              </li>
-            </ul>
-          </div>
-        </div>
+            Mi perfil
+          </li>
+          <li
+            role="menuitem"
+            tabindex="-1"
+            id="app-shell-citizen-menu-logout"
+            class="app-shell-user-menu__item app-shell-user-menu__item--logout"
+            aria-disabled="false"
+          >
+            Cerrar sesión
+          </li>
+        </ul>
+      </div>
+    </div>
 
     <!-- Guest header: login button -->
     <a

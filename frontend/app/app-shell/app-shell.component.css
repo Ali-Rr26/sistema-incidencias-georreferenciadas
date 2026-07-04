@@ -168,19 +168,19 @@ body[data-role='guest']
    HEADER — top bar with brand + role-specific right content
    ============================================================ */
 
-    .app-shell-header {
-      display: flex;
-      align-items: center;
-      /* Each child sizes to its own content. The right-side group is pushed
+.app-shell-header {
+  display: flex;
+  align-items: center;
+  /* Each child sizes to its own content. The right-side group is pushed
          to the far right via margin-left:auto on .app-shell-header__admin /
          __citizen / .app-shell-login-btn, so we don't need space-between
          (which was stretching the admin row and pushing the user-menu out
          of the visible navbar width). */
-      gap: 8px;
-      padding: 0 20px;
-      background: #fff;
-      border-bottom: 1px solid #eef0f5;
-    }
+  gap: 8px;
+  padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f5;
+}
 
 .app-shell-header__brand {
   display: flex;
@@ -199,17 +199,17 @@ body[data-role='guest']
   font-size: 1.2rem;
 }
 
-    /* Admin header — search + user menu.
+/* Admin header — search + user menu.
        Pushed to the right via margin-left:auto (not flex:1) so the row
        takes only its natural width. flex:1 was stretching the search
        input and pushing the user-menu trigger out to the edge. */
-    .app-shell-header__admin {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      min-width: 0;
-    }
+.app-shell-header__admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
 
 .app-shell-header__search {
   position: relative;
@@ -258,29 +258,29 @@ body[data-role='guest']
   color: #6a5cf3;
 }
 
-    /* User menu wrapper — provides a stable containing block for the
+/* User menu wrapper — provides a stable containing block for the
        absolute-positioned panel. The panel uses position:absolute to anchor
        below the trigger, and as a sibling of the trigger (not a child) it
        needs a positioned ancestor. Wrapping both in this div makes the
        anchor explicit and decouples the trigger's own layout from the
        panel's positioning. */
-    .app-shell-user-menu {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-    }
+.app-shell-user-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
 
-    .app-shell-user-menu__trigger {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 10px 4px 4px;
-      background: transparent;
-      border: 1px solid transparent;
-      border-radius: 22px;
-      cursor: pointer;
-      font-family: inherit;
-    }
+.app-shell-user-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 22px;
+  cursor: pointer;
+  font-family: inherit;
+}
 
 .app-shell-user-menu__trigger:hover {
   background: #f3f4f9;
@@ -300,48 +300,48 @@ body[data-role='guest']
   text-transform: uppercase;
 }
 
-    .app-shell-user-menu__name {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #23283b;
-      max-width: 140px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+.app-shell-user-menu__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #23283b;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-    /* Compact trigger — used in the citizen header where we only show the
+/* Compact trigger — used in the citizen header where we only show the
        avatar circle (no name + chevron). The button is a transparent round
        hit area; the avatar letter inside is the only visible affordance. */
-    .app-shell-user-menu__trigger--avatar {
-      padding: 0;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      justify-content: center;
-      gap: 0;
-    }
+.app-shell-user-menu__trigger--avatar {
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  justify-content: center;
+  gap: 0;
+}
 
-    .app-shell-user-menu__trigger--avatar:hover {
-      /* Keep the background transparent so the gradient avatar stays
+.app-shell-user-menu__trigger--avatar:hover {
+  /* Keep the background transparent so the gradient avatar stays
          visible; the hover affordance is a soft ring around the button. */
-      background: transparent;
-      box-shadow: 0 0 0 4px #f3f4f9;
-    }
+  background: transparent;
+  box-shadow: 0 0 0 4px #f3f4f9;
+}
 
-    .app-shell-user-menu__trigger--avatar:focus-visible {
-      outline: 2px solid #6a5cf3;
-      outline-offset: 2px;
-    }
+.app-shell-user-menu__trigger--avatar:focus-visible {
+  outline: 2px solid #6a5cf3;
+  outline-offset: 2px;
+}
 
-    /* Citizen header — bell + avatar.
+/* Citizen header — bell + avatar.
        Same as admin: pushed to the right via margin-left:auto. */
-    .app-shell-header__citizen {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-    }
+.app-shell-header__citizen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
 
 .app-shell-header__bell {
   position: relative;
