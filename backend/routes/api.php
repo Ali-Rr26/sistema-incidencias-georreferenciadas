@@ -4,6 +4,7 @@ use App\Domains\Assignments\Http\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
@@ -38,6 +39,15 @@ Route::middleware('jwt')->group(function () {
     // Core
     Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);
     Route::get('incidents/stats', IncidentStatsController::class);
+    // CP-02-01-B: estados válidos del sistema
+    Route::get('incidents/statuses', fn () => response()->json([
+        'data' => collect(IncidentStatus::cases())->map(fn ($s) => [
+            'value' => $s->value,
+            'label' => $s->label(),
+        ]),
+    ]));
+    // CP-02-02-B: cambio de estado dedicado
+    Route::patch('incidents/{incident}/status', [IncidentController::class, 'updateStatus']);
     Route::post('incidents/{incident}/claim', [IncidentController::class, 'claim'])->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
     Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
