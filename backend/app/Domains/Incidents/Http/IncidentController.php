@@ -7,8 +7,10 @@ namespace App\Domains\Incidents\Http;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
+use App\Domains\Incidents\Http\Requests\UpdateIncidentStatusRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Incidents\Services\IncidentClaimService;
@@ -21,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
 class IncidentController extends Controller
@@ -171,6 +174,33 @@ class IncidentController extends Controller
         /** @var User $user */
         $user = auth()->user();
         $incident = $service->confirm($incident->id, $user);
+
+        return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Cambia el estado de una incidencia y registra historial vía trigger de PG.
+     */
+    public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): JsonResponse
+    {
+        $data = $request->validated();
+        $newStatus = IncidentStatus::from($data['status']);
+
+        DB::transaction(function () use ($incident, $newStatus, $data): void {
+            // transaction-local: se resetean al terminar el bloque
+            DB::statement("SELECT set_config('app.current_user_id', ?, true)", [(string) auth()->id()]);
+            DB::statement("SELECT set_config('app.status_comment', ?, true)", [$data['comment'] ?? '']);
+
+            $update = ['status' => $newStatus->value];
+
+            if ($newStatus === IncidentStatus::Resolved && $incident->resolution_date === null) {
+                $update['resolution_date'] = now();
+            }
+
+            $incident->update($update);
+        });
+
+        $incident->refresh()->load(['category', 'organization', 'user', 'location']);
 
         return (new IncidentResource($incident))->response();
     }
