@@ -25,6 +25,8 @@ import {
   getSessionId,
   getAccessToken,
 } from '../core/http.service.js';
+import { menuService } from '../shared/menu.service.js';
+import { notificationService } from '../shared/notification.service.js';
 
 class AuthService {
   constructor() {
@@ -49,6 +51,13 @@ class AuthService {
     } catch {
       // Clear state even if server call fails
     }
+    // Cache invalidation (T-2.11 / menu-server-driven PR 2): a stale
+    // /menus/my from a previous user or the previous session must NEVER
+    // leak into the next logged-in user's sidebar. Clear both caches
+    // BEFORE notifying subscribers so any handler that reads them
+    // observes a clean slate.
+    menuService.clearCache();
+    notificationService.clearCache();
     clearAuthState();
     this._notifyAuthChange();
   }
