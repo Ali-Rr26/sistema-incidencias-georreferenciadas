@@ -15,6 +15,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'create'],
         ['resource' => 'incidents',           'action' => 'update'],
+        ['resource' => 'incidents',           'action' => 'manage'],
         ['resource' => 'comments',            'action' => 'view'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
@@ -24,6 +25,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'locations',           'action' => 'view'],
         ['resource' => 'organizations',       'action' => 'view'],
         ['resource' => 'incident-categories', 'action' => 'view'],
+        ['resource' => 'profile',             'action' => 'view'],
     ];
 
     private const ADMIN_ORGANIZACION_PERMISSIONS = [
@@ -32,6 +34,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'create'],
         ['resource' => 'incidents',           'action' => 'update'],
         ['resource' => 'incidents',           'action' => 'delete'],
+        ['resource' => 'incidents',           'action' => 'manage'],
         ['resource' => 'comments',            'action' => 'view'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
@@ -48,23 +51,38 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'users',               'action' => 'create'],
         ['resource' => 'users',               'action' => 'update'],
         ['resource' => 'users',               'action' => 'delete'],
+        // Spec override (design Decision 1): admin_organizacion receives
+        // feed.view in addition to usuario, so org admins can verify the
+        // citizen experience in-browser. Overrides the spec rule
+        // "No other role SHALL receive feed.view in this change".
+        ['resource' => 'feed',                'action' => 'view'],
+        ['resource' => 'profile',             'action' => 'view'],
     ];
 
     private const OPERADOR_ORGANIZACION_PERMISSIONS = [
         ['resource' => 'incidents',           'action' => 'view'],
+        // Previously missing: the menu item Notificaciones was gated by
+        // notifications.view, which this role never had. Granting it here
+        // fixes the leak where the menu was hidden despite the role being
+        // able to act on notifications.
+        ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'profile',             'action' => 'view'],
     ];
 
     private const USUARIO_PERMISSIONS = [
         ['resource' => 'incidents',     'action' => 'create'],
         ['resource' => 'comments',      'action' => 'create'],
+        ['resource' => 'feed',          'action' => 'view'],
+        ['resource' => 'profile',       'action' => 'view'],
     ];
 
     private const PUBLICADOR_PERMISSIONS = [
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'profile',             'action' => 'view'],
     ];
 
     public function run(): void
