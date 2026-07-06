@@ -8,6 +8,7 @@ import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.c
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
+import { roleGuard } from './auth/role.guard.js';
 import { auth } from './auth/auth.service.js';
 
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
@@ -22,6 +23,8 @@ import perfilComponent from './configuracion/perfil/perfil.component.js';
 import feedComponent from './feed/feed.component.js';
 import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
+import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.component.js';
+import rolesDetailComponent from './configuracion/roles/pages/detail/roles.detail.component.js';
 
 // ─── Register shells ────────────────────────────────────────────────
 // PR #3 (consolidar-layout-unico) — final state: only the unified
@@ -106,6 +109,20 @@ router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
   [],
+  'app',
+  'admin',
+);
+router.addRoute(
+  '/roles',
+  rolesIndexComponent,
+  [roleGuard(['admin_sistema'])],
+  'app',
+  'admin',
+);
+router.addRoute(
+  '/roles/:id',
+  rolesDetailComponent,
+  [roleGuard(['admin_sistema'])],
   'app',
   'admin',
 );

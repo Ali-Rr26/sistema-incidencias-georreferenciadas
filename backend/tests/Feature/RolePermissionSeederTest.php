@@ -89,20 +89,21 @@ it('usuario has incident creation and comment creation permissions', function ()
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
 });
 
-it('publicador has incident assignment, confirmation, and status history view permissions', function (): void {
+it('publicador has incident view and status history view permissions', function (): void {
     $user = User::factory()->create([
         'role_id' => 6, // publicador
     ]);
 
-    // Has assignments management (incident assignment)
-    expect(Gate::forUser($user)->allows('assignments.create'))->toBeTrue();
-    expect(Gate::forUser($user)->allows('assignments.update'))->toBeTrue();
-    expect(Gate::forUser($user)->allows('assignments.view'))->toBeTrue();
+    // Has incidents view (needed to see pendientes)
+    expect(Gate::forUser($user)->allows('incidents.view'))->toBeTrue();
 
     // Has status history view
     expect(Gate::forUser($user)->allows('status-history.view'))->toBeTrue();
 
-    // Does NOT have users create or comments edit
+    // Does NOT have users create, comments edit, or assignments management
+    // (the assignment/confirmation flow is gated by IncidentPolicy::confirm
+    //  on UserRole::Publicador, not by catalog permissions)
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
     expect(Gate::forUser($user)->allows('comments.update'))->toBeFalse();
+    expect(Gate::forUser($user)->allows('assignments.create'))->toBeFalse();
 });

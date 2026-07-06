@@ -20,12 +20,7 @@ class PermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'create', 'name' => 'Agregar Comentarios',         'description' => 'Comentar en incidencias'],
         ['resource' => 'comments',            'action' => 'update', 'name' => 'Editar Comentarios',          'description' => 'Editar comentarios propios'],
         ['resource' => 'comments',            'action' => 'delete', 'name' => 'Eliminar Comentarios',        'description' => 'Eliminar comentarios'],
-        // Assignments
-        ['resource' => 'assignments',         'action' => 'view',   'name' => 'Ver Asignaciones',            'description' => 'Ver asignaciones de incidencias'],
-        ['resource' => 'assignments',         'action' => 'create', 'name' => 'Crear Asignaciones',          'description' => 'Asignar incidencias a usuarios'],
-        ['resource' => 'assignments',         'action' => 'update', 'name' => 'Actualizar Asignaciones',     'description' => 'Modificar asignaciones'],
-        ['resource' => 'assignments',         'action' => 'delete', 'name' => 'Eliminar Asignaciones',       'description' => 'Eliminar asignaciones'],
-        // Status history
+// Status history
         ['resource' => 'status-history',      'action' => 'view',   'name' => 'Ver Historial de Estados',    'description' => 'Ver historial de cambios de estado'],
         // Notifications
         ['resource' => 'notifications',       'action' => 'view',   'name' => 'Ver Notificaciones',          'description' => 'Ver notificaciones propias'],

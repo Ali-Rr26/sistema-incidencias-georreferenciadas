@@ -1,0 +1,72 @@
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <a href="#/roles" class="text-decoration-none">
+      <i class="fa-solid fa-arrow-left me-1"></i> Roles
+    </a>
+  </nav>
+
+  <div id="estado-cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="text-muted mt-2 mb-0">Cargando rol…</p>
+  </div>
+
+  <div id="estado-error" class="alert alert-danger d-none" role="alert">
+    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+    <span id="error-texto">No se pudo cargar el rol.</span>
+    <a href="#/roles" class="btn btn-sm btn-outline-danger ms-2">Volver</a>
+  </div>
+
+  <div id="contenido" class="d-none">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Datos del rol</h5>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-8">
+            <label for="rol-nombre" class="form-label small mb-1">Nombre</label>
+            <input id="rol-nombre" type="text" class="form-control" autocomplete="off" />
+          </div>
+          <div class="col-md-4 d-flex gap-2">
+            <button id="btn-guardar-nombre" type="button" class="btn btn-primary">
+              <i class="fa-solid fa-save me-1"></i> Guardar nombre
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Permisos asignados</h5>
+        <small class="text-muted">
+          <span id="contador-seleccionados">0</span> seleccionados
+        </small>
+      </div>
+      <div class="card-body">
+        <div id="permisos-grupos"></div>
+        <div class="d-flex justify-content-end mt-3">
+          <button id="btn-guardar-permisos" type="button" class="btn btn-primary">
+            <i class="fa-solid fa-save me-1"></i> Guardar permisos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  id="toast-msg"
+  class="toast align-items-center text-white border-0 position-fixed bottom-0 end-0 m-4"
+  role="alert"
+  aria-live="assertive"
+  aria-atomic="true"
+>
+  <div class="d-flex">
+    <div class="toast-body" id="toast-msg-texto"></div>
+    <button
+      type="button"
+      class="btn-close btn-close-white me-2 m-auto"
+      data-bs-dismiss="toast"
+      aria-label="Cerrar"
+    ></button>
+  </div>
+</div>
