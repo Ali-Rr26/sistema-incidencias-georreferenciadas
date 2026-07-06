@@ -137,20 +137,18 @@ router.addRoute(
 
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'app', 'citizen');
 
-// ─── Role tracking (PR #2 — T-2.5) ─────────────────────────────────
-// Keep the router's "current user role" bucket in sync with auth state.
-// classifyRole is the single source of truth shared with appShell so the
-// router's role check stays consistent with the shell's chrome toggling.
-//
-// SECURITY: classification never uses a cached user — every call awaits
-// a fresh `auth.me()` so role changes / revocations on the backend take
-// effect immediately for security decisions.
+let _pendingRoleSync = Promise.resolve();
+export function pendingRoleSync() {
+  return _pendingRoleSync;
+}
 async function syncCurrentUserRole() {
   const user = await auth.me().catch(() => null);
   router.setCurrentUserRole(classifyRole(user));
 }
 auth.onAuthChange(() => {
-  syncCurrentUserRole();
+  // Track the in-flight sync so callers can await it via
+  // pendingRoleSync() when they need a deterministic role pre-navigation.
+  _pendingRoleSync = syncCurrentUserRole();
 });
 syncCurrentUserRole();
 
