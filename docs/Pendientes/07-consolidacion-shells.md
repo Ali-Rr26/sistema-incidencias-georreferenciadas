@@ -1,5 +1,10 @@
 # 07 — Consolidación de shells (deuda técnica)
 
+> ⚠️ **DOCUMENTO DESACTUALIZADO — completado por el PR #43 antes de este backlog.**
+> El refactor `099beebe refactor(frontend): consolidate admin + user shells into single
+> responsive appShell (#43)` ya está mergeado en `develop`. Este doc queda como
+> referencia histórica del estado previo al PR #43.
+
 **Tipo:** Deuda técnica
 **Severidad:** 🟡 Baja (sin impacto funcional)
 **Backend:** — · **Frontend:** ⚠️ Consolidación incompleta
@@ -17,6 +22,7 @@ router.registerShell('user', userShell);     // ./layout-usuario/layout-usuario.
 ```
 
 El "appShell único" solo existe como:
+
 - artefacto viejo en `frontend/coverage/` (reporte de cobertura obsoleto),
 - referencias en refs de branch (`fix/consolidar-layout-pr1-app-shell`).
 
@@ -65,3 +71,18 @@ consolidación de shells es el momento natural para unificar la navegación.
 - `frontend/app/layout-usuario/**`
 - `frontend/app/core/router.js` (limpieza de compat legacy)
 - `.gitignore`
+
+## Estado real (post PR #43)
+
+El PR #43 (`099beebe`) mergeó la consolidación. Lo que existe hoy:
+
+- `frontend/app/app-shell/app-shell.component.{js,html,css}` — un solo shell
+  responsivo con CSS grid que adapta el chrome al rol (`admin` | `citizen` |
+  `guest`) vía `body[data-role]`.
+- `frontend/app/app.js` registra un único shell bajo el nombre `app`. Las
+  rutas usan el 5to parámetro (`'app', 'admin' | 'citizen' | 'both'`) para
+  declarar el modo.
+- Los shells viejos (`layout/`, `layout-usuario/`) y los shims
+  (`mountLayout`, `shellInitFn`, `setShellInitFn`) ya no existen en el branch.
+
+Este doc se cierra sin acción adicional.
