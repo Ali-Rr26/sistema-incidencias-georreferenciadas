@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class PermissionSeeder extends Seeder
 {
@@ -62,8 +63,32 @@ class PermissionSeeder extends Seeder
         ['resource' => 'menus',               'action' => 'delete', 'name' => 'Eliminar Menús',              'description' => 'Eliminar menús'],
     ];
 
-    public function run(): void
+public function run(): void
     {
+        // Idempotent: borra permisos que ya no están en el catálogo
+        // (data huérfana de seeds anteriores).
+        $keepResources = array_unique(array_map(
+            fn (array $p) => "{$p['resource']}.{$p['action']}",
+            self::PERMISSIONS,
+        ));
+        $keepPairs = array_map(
+            fn (string $slug) => ['resource' => explode('.', $slug)[0], 'action' => explode('.', $slug)[1]],
+            $keepResources,
+        );
+
+        // Borrar permisos huérfanos (los que no están en el array PERMISSIONS)
+        $existing = Permission::all();
+        foreach ($existing as $perm) {
+            $stillValid = collect($keepPairs)->contains(fn ($p) =>
+                $p['resource'] === $perm->resource && $p['action'] === $perm->action
+            );
+            if (! $stillValid) {
+                DB::table('role_permission')->where('permission_id', $perm->permission_id)->delete();
+                DB::table('menu_permission')->where('permission_id', $perm->permission_id)->delete();
+                $perm->delete();
+            }
+        }
+
         foreach (self::PERMISSIONS as $data) {
             Permission::updateOrCreate(
                 ['resource' => $data['resource'], 'action' => $data['action']],

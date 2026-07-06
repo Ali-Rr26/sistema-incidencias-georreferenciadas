@@ -43,9 +43,22 @@ class MenuSeeder extends Seeder
             15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
         ];
 
-    public function run(): void
+public function run(): void
     {
-        // Clear menu_permission first (FK constraint)
+        // Idempotent seed:
+        //  1. Drop menus que ya no están en el array (data vieja huérfana)
+        //  2. Drop menu_permission para esos menus
+        //  3. Crear/actualizar cada menu del array
+        //  4. Re-asignar menu_permission para los menus activos
+
+        $keepIds = array_keys(self::MENUS);
+        $toDelete = Menu::whereNotIn('menu_id', $keepIds)->pluck('menu_id')->all();
+        if (! empty($toDelete)) {
+        DB::table('menu_permission')->whereIn('menu_id', $toDelete)->delete();
+        Menu::whereIn('menu_id', $toDelete)->delete();
+        }
+
+        // Clear remaining menu_permission for a clean re-assign
         DB::table('menu_permission')->delete();
 
         foreach (self::MENUS as $menuId => $data) {
