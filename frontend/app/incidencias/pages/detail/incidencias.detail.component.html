@@ -150,6 +150,74 @@
           </div>
         </div>
 
+        <!-- Estado (CP-02-01-F / CP-02-02-F / CP-02-04-F / CP-02-05-F) -->
+        <div class="gr-card mb-3">
+          <div style="padding: 24px 28px">
+            <h5 class="fw-bold mb-3">
+              <i class="fas fa-exchange-alt me-2"></i>Cambiar Estado
+            </h5>
+            <div class="mb-2">
+              <select
+                id="detalle-estado-select"
+                class="form-select form-select-sm"
+              ></select>
+            </div>
+            <button
+              id="btn-guardar-estado"
+              class="btn btn-primary btn-sm w-100 mb-2"
+            >
+              <span id="btn-estado-texto">Guardar Estado</span>
+              <span id="btn-estado-loading" class="d-none">
+                <span
+                  class="spinner-border spinner-border-sm me-1"
+                  role="status"
+                ></span
+                >Guardando...
+              </span>
+            </button>
+            <div id="detalle-estado-error" class="d-none">
+              <div
+                class="alert alert-danger py-2 mb-2 small"
+                id="detalle-estado-msg"
+              ></div>
+            </div>
+            <div
+              id="detalle-resolucion"
+              class="d-none mt-2 p-2 bg-light rounded"
+            >
+              <small class="text-muted d-block">
+                <i class="fas fa-calendar-check me-1"></i>Fecha resolución
+              </small>
+              <span
+                id="detalle-fecha-resolucion"
+                class="small fw-semibold text-success"
+              ></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial (CP-02-03-F) -->
+        <div class="gr-card mb-3">
+          <div style="padding: 24px 28px">
+            <h5 class="fw-bold mb-3">
+              <i class="fas fa-history me-2"></i>Historial de estados
+            </h5>
+            <div id="detalle-historial-loading" class="text-center py-2">
+              <div
+                class="spinner-border spinner-border-sm text-secondary"
+                role="status"
+              ></div>
+            </div>
+            <div id="detalle-historial-list"></div>
+            <p
+              id="detalle-historial-vacio"
+              class="text-muted small mb-0 d-none"
+            >
+              Sin cambios de estado registrados.
+            </p>
+          </div>
+        </div>
+
         <!-- Images -->
         <div class="gr-card">
           <div class="incid-detail__card-body">
