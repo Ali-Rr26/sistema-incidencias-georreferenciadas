@@ -20,6 +20,7 @@
  */
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName } from '../utils/role.js';
+import { menuService } from '../shared/menu.service.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
 const STYLE_URL = 'app/app-shell/app-shell.component.css';
@@ -128,9 +129,17 @@ export const appShell = {
     if (!user) user = auth.getUser();
     document.body.dataset.role = classifyRole(user);
 
-    await populateHeader();
-    wireNav();
-    wireSidebarToggle();
+await populateHeader();
+        wireNav();
+        wireSidebarToggle();
+
+        // Render admin sidebar dynamically from /api/menus/my.
+        // Falls back silently if the endpoint fails or the user is not admin.
+        if (document.body.dataset.role === 'admin') {
+          renderAdminMenu().catch(() => {
+            // No-op: empty sidebar is preferable to crashing the shell.
+          });
+        }
 
     // Re-apply role on every auth change (login / logout / role swap).
     _unsubAuth = auth.onAuthChange(async () => {
@@ -375,6 +384,58 @@ function teardownSidebarToggle() {
  *
  * SECURITY: Always fetches /me fresh — never uses cached user state.
  */
+async function renderAdminMenu() {
+  const listEl = document.getElementById('app-shell-admin-menu-list');
+  if (!listEl) return;
+
+  const tree = await menuService.getMyMenu();
+  if (!Array.isArray(tree) || tree.length === 0) return;
+
+  const nodes = [];
+  for (const item of tree) {
+    if (item.children && item.children.length > 0) {
+      nodes.push(buildSectionHeader(item.name));
+      for (const child of item.children) {
+        if (child.route) nodes.push(buildLeafLink(child));
+      }
+    } else if (item.route) {
+      nodes.push(buildLeafLink(item));
+    }
+  }
+
+  listEl.replaceChildren(...nodes);
+}
+
+function buildSectionHeader(name) {
+  const li = document.createElement('li');
+  li.className = 'app-shell-section';
+  const span = document.createElement('span');
+  span.textContent = String(name ?? '').toUpperCase();
+  li.appendChild(span);
+  return li;
+}
+
+function buildLeafLink(item) {
+  const li = document.createElement('li');
+  const a = document.createElement('a');
+  a.href = `#${item.route}`;
+  a.className = 'app-shell-nav-item';
+  a.dataset.route = item.route;
+
+  if (item.icon) {
+    const i = document.createElement('i');
+    i.className = item.icon;
+    a.appendChild(i);
+  }
+
+  const label = document.createElement('span');
+  label.textContent = item.name ?? '';
+  a.appendChild(label);
+
+  li.appendChild(a);
+  return li;
+}
+
 async function populateHeader() {
   const u = await auth.me().catch(() => null);
   if (!u) return;

@@ -150,87 +150,16 @@
 
   <aside class="app-shell-sidebar" id="app-shell-sidebar">
     <!-- Admin sidebar: full nav with sections (PRINCIPAL / GESTIÓN / CONFIGURACIÓN) -->
-    <nav
+<nav
       class="app-shell-sidebar__nav"
       id="app-shell-admin-sidebar"
       data-show-on-role="admin"
     >
-      <ul class="app-shell-sidebar__list">
-        <li class="app-shell-section"><span>PRINCIPAL</span></li>
-        <li>
-          <a
-            href="#/dashboard"
-            class="app-shell-nav-item"
-            data-route="/dashboard"
-          >
-            <i class="fa-solid fa-gauge-high"></i>
-            <span>Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/incidencias"
-            class="app-shell-nav-item"
-            data-route="/incidencias"
-          >
-            <i class="fa-solid fa-clipboard-list"></i>
-            <span>Incidencias</span>
-          </a>
-        </li>
-
-        <li class="app-shell-section"><span>GESTIÓN</span></li>
-        <li>
-          <a
-            href="#/usuarios"
-            class="app-shell-nav-item"
-            data-route="/usuarios"
-          >
-            <i class="fa-solid fa-users"></i>
-            <span>Usuarios</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/organizaciones"
-            class="app-shell-nav-item"
-            data-route="/organizaciones"
-          >
-            <i class="fa-solid fa-building"></i>
-            <span>Organizaciones</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/localizaciones"
-            class="app-shell-nav-item"
-            data-route="/localizaciones"
-          >
-            <i class="fa-solid fa-map"></i>
-            <span>Localizaciones</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/categorias"
-            class="app-shell-nav-item"
-            data-route="/categorias"
-          >
-            <i class="fa-solid fa-tag"></i>
-            <span>Categorías</span>
-          </a>
-        </li>
-
-        <li class="app-shell-section"><span>CONFIGURACIÓN</span></li>
-        <li>
-          <a
-            href="#/configuracion/perfil"
-            class="app-shell-nav-item"
-            data-route="/configuracion/perfil"
-          >
-            <i class="fa-solid fa-user"></i>
-            <span>Perfil</span>
-          </a>
-        </li>
+      <ul
+        class="app-shell-sidebar__list"
+        id="app-shell-admin-menu-list"
+      >
+        <!-- Renderizado dinámico desde GET /api/menus/my (ver app-shell.component.js → renderAdminMenu) -->
       </ul>
     </nav>
 

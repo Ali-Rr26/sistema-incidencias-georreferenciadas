@@ -13,27 +13,32 @@ class MenuSeeder extends Seeder
      * parent_id = null  → root menu
      * permission        → the permission that gates visibility (null = parent pulled in automatically)
      *
-     * @var array<int, array{name: string, route: string, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
+* Rutas alineadas con frontend/app/app.js. Padres de sección tienen
+     * `route => null` (no son navegables, solo agrupan hijos).
+     *
+     * IDs con huecos: 5 era Asignaciones (borrado paso 06),
+     *                  9 era Permisos (borrado paso 05-A),
+     *                  10 era Menús (sin contraparte, removido),
+     *                  15 era Notificaciones (sin ruta todavía, paso 07).
+     *
+     * @var array<int, array{name: string, route: string|null, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
      */
     private const MENUS = [
-        1 => ['name' => 'Dashboard',              'route' => '/dashboard',            'icon' => 'layout-dashboard', 'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
-        // Incidencias group
-        2 => ['name' => 'Incidencias',            'route' => '/incidents',             'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
-        3 => ['name' => 'Lista de Incidencias',   'route' => '/incidents',             'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
-        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidents/create',      'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
-        
-        // Gestión group (admin area)
-        6 => ['name' => 'Gestión',                'route' => '/management',            'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
-        7 => ['name' => 'Usuarios',               'route' => '/users',                 'icon' => 'user',             'parent_id' => 6,    'permission' => ['resource' => 'users',               'action' => 'view']],
-        8 => ['name' => 'Roles',                  'route' => '/roles',                 'icon' => 'shield',           'parent_id' => 6,    'permission' => ['resource' => 'roles',               'action' => 'view']],
-10 => ['name' => 'Menús',                  'route' => '/menus',                 'icon' => 'menu',             'parent_id' => 6,    'permission' => ['resource' => 'menus',               'action' => 'view']],
-        // Catálogos group
-        11 => ['name' => 'Catálogos',              'route' => '/catalogs',              'icon' => 'book-open',        'parent_id' => null, 'permission' => null],
-        12 => ['name' => 'Ubicaciones',            'route' => '/locations',             'icon' => 'map',              'parent_id' => 11,   'permission' => ['resource' => 'locations',           'action' => 'view']],
-        13 => ['name' => 'Categorías',             'route' => '/incident-categories',   'icon' => 'tag',              'parent_id' => 11,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
-        14 => ['name' => 'Organizaciones',         'route' => '/organizations',         'icon' => 'building',         'parent_id' => 11,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-        // Standalone
-        15 => ['name' => 'Notificaciones',         'route' => '/notifications',         'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
+        1 => ['name' => 'Dashboard',              'route' => '/dashboard',             'icon' => 'layout-dashboard', 'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
+        // Incidencias group (parent header, no navegable)
+        2 => ['name' => 'Incidencias',            'route' => null,                     'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
+        3 => ['name' => 'Lista de Incidencias',   'route' => '/incidencias',           'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
+        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
+        6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes','icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
+        // Gestión group (admin area, parent header)
+        7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
+        8 => ['name' => 'Usuarios',               'route' => '/usuarios',              'icon' => 'user',             'parent_id' => 7,    'permission' => ['resource' => 'users',               'action' => 'view']],
+        9 => ['name' => 'Roles',                  'route' => '/roles',                 'icon' => 'shield',           'parent_id' => 7,    'permission' => ['resource' => 'roles',               'action' => 'view']],
+        // Catálogos group (parent header)
+        10 => ['name' => 'Catálogos',             'route' => null,                     'icon' => 'book-open',        'parent_id' => null, 'permission' => null],
+        11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
+        12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
+        13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
     ];
 
     public function run(): void
