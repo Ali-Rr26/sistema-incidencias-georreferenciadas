@@ -21,23 +21,15 @@
 import { initPage } from '../utils/layout.js';
 
 class Router {
-      constructor() {
-        this.routes = [];
-        this.shells = new Map();
-        this._shellStyleUrls = {}; // shellName → CSS path (avoids stale module cache issues)
-        this.currentComponent = null;
-        this._boundResolve = () => this.resolve();
-        this._shellState = new Map(); // shell name -> { mounted, initialized }
-        this._activeShell = null;
-        /**
-         * Set to true while `shell.init()` is running. Used by the
-         * `auth:expired` listener in app.js to defer redirects until the
-         * shell has finished initializing — otherwise the redirect's
-         * `hashchange` would clear #shell-outlet mid-init, breaking the
-         * router's outlet lookup.
-         */
-        this._shellInitializing = false;
-        // Role-tracking for the role-mismatch guard (PR #2, T-2.4).
+  constructor() {
+    this.routes = [];
+    this.shells = new Map();
+    this._shellStyleUrls = {}; // shellName → CSS path (avoids stale module cache issues)
+    this.currentComponent = null;
+    this._boundResolve = () => this.resolve();
+    this._shellState = new Map(); // shell name -> { mounted, initialized }
+    this._activeShell = null;
+    // Role-tracking for the role-mismatch guard (PR #2, T-2.4).
     // Default null = no role known → role-tagged routes that require a
     // specific role will treat the visitor as a mismatch and redirect to
     // the public fallback (citizen's home: /feed).
@@ -202,7 +194,7 @@ class Router {
       this._cleanupStyles(this.currentComponent);
     }
 
-this.currentComponent = component;
+    this.currentComponent = component;
 
     if (shell) {
       await this._mountInShell(shell, component, path);
@@ -285,16 +277,11 @@ this.currentComponent = component;
 
     // Run shell init once (user info, nav wiring, etc.)
     if (!state.initialized) {
-      this._shellInitializing = true;
-      try {
-        if (shell.init) {
-          await shell.init();
-        } else if (this._legacyShellInitFn) {
-          // Backwards compat path
-          await this._legacyShellInitFn();
-        }
-      } finally {
-        this._shellInitializing = false;
+      if (shell.init) {
+        await shell.init();
+      } else if (this._legacyShellInitFn) {
+        // Backwards compat path
+        await this._legacyShellInitFn();
       }
       state.initialized = true;
     }
@@ -392,26 +379,6 @@ this.currentComponent = component;
   init() {
     window.addEventListener('hashchange', this._boundResolve);
     this.resolve();
-  }
-
-  /**
-   * Whether a shell's `init()` is currently running.
-   *
-   * Exposed so the `auth:expired` listener in app.js can defer redirects
-   * until the shell finishes initializing.
-   */
-  get isShellInitializing() {
-    return this._shellInitializing;
-  }
-
-  /**
-   * Whether a shell's `init()` is currently running.
-   *
-   * Exposed so the `auth:expired` listener in app.js can defer redirects
-   * until the shell finishes initializing.
-   */
-  get isShellInitializing() {
-    return this._shellInitializing;
   }
 
   destroy() {

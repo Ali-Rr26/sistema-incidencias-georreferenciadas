@@ -74,7 +74,7 @@ describe('http service', () => {
     );
   });
 
-it('clears state and dispatches auth:expired when refresh fails', async () => {
+  it('clears state and redirects when refresh fails', async () => {
     setAccessToken('expired-token');
 
     fetchMock
@@ -85,18 +85,9 @@ it('clears state and dispatches auth:expired when refresh fails', async () => {
         json: vi.fn().mockResolvedValue({ message: 'refresh failed' }),
       });
 
-    const handler = vi.fn();
-    window.addEventListener('auth:expired', handler);
-
     await expect(http.get('/incidents')).rejects.toThrow('Refresh failed');
 
-    // handle401 no longer redirects directly — that responsibility moved
-    // to the auth:expired listener in app.js. We only verify here that
-    // the event is fired and that state is cleared.
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(window.location.hash).toBe(''); // unchanged — listener owns the redirect
+    expect(window.location.hash).toBe('#/login');
     expect(getAccessToken()).toBeNull();
-
-    window.removeEventListener('auth:expired', handler);
   });
 });

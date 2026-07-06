@@ -111,17 +111,10 @@ class HttpService {
         },
       );
       return result;
-} catch (err) {
-      // Refresh failed. Clear state and notify, but do NOT redirect
-      // directly — redirecting mid-shell-init would clear #shell-outlet
-      // while the router is still waiting to find #page-outlet, causing
-      // "Outlet not found for shell 'app'".
-      //
-      // Instead, we dispatch a custom event. The router (see app.js)
-      // listens for it and redirects only when the shell has finished
-      // initializing — see the `auth:expired` listener below.
+    } catch (err) {
+      // Refresh failed — clear state and redirect
       clearAuthState();
-      window.dispatchEvent(new CustomEvent('auth:expired'));
+      window.location.hash = '#/login';
       // Reject all queued requests
       queue.forEach(({ reject }) =>
         reject(new Error('Sesión expirada. Inicia sesión nuevamente.')),
