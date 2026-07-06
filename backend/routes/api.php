@@ -40,12 +40,12 @@ Route::middleware('jwt')->group(function () {
     Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
     Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
     Route::apiResource('incidents', IncidentController::class);
-Route::apiResource('incidents.comments', CommentController::class)->shallow();
+    Route::apiResource('incidents.comments', CommentController::class)->shallow();
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 
-// Notificaciones del usuario autenticado
+    // Notificaciones del usuario autenticado
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
@@ -61,7 +61,7 @@ Route::apiResource('incidents.comments', CommentController::class)->shallow();
     Route::apiResource('users', UserController::class);
 
     // RBAC
-Route::apiResource('roles', RoleController::class);
+    Route::apiResource('roles', RoleController::class);
     Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
     Route::get('permissions', [RoleController::class, 'availablePermissions']);
     Route::get('menus/my', [MenuController::class, 'myMenus']);

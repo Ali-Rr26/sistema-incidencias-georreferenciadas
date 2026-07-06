@@ -111,7 +111,7 @@ class HttpService {
         },
       );
       return result;
-} catch (err) {
+    } catch (err) {
       // Refresh failed. Clear state and notify, but do NOT redirect
       // directly — redirecting mid-shell-init would clear #shell-outlet
       // while the router is still waiting to find #page-outlet, causing

@@ -21,7 +21,7 @@ class PermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'create', 'name' => 'Agregar Comentarios',         'description' => 'Comentar en incidencias'],
         ['resource' => 'comments',            'action' => 'update', 'name' => 'Editar Comentarios',          'description' => 'Editar comentarios propios'],
         ['resource' => 'comments',            'action' => 'delete', 'name' => 'Eliminar Comentarios',        'description' => 'Eliminar comentarios'],
-// Status history
+        // Status history
         ['resource' => 'status-history',      'action' => 'view',   'name' => 'Ver Historial de Estados',    'description' => 'Ver historial de cambios de estado'],
         // Notifications
         ['resource' => 'notifications',       'action' => 'view',   'name' => 'Ver Notificaciones',          'description' => 'Ver notificaciones propias'],
@@ -63,7 +63,7 @@ class PermissionSeeder extends Seeder
         ['resource' => 'menus',               'action' => 'delete', 'name' => 'Eliminar Menús',              'description' => 'Eliminar menús'],
     ];
 
-public function run(): void
+    public function run(): void
     {
         // Idempotent: borra permisos que ya no están en el catálogo
         // (data huérfana de seeds anteriores).
@@ -79,8 +79,7 @@ public function run(): void
         // Borrar permisos huérfanos (los que no están en el array PERMISSIONS)
         $existing = Permission::all();
         foreach ($existing as $perm) {
-            $stillValid = collect($keepPairs)->contains(fn ($p) =>
-                $p['resource'] === $perm->resource && $p['action'] === $perm->action
+            $stillValid = collect($keepPairs)->contains(fn ($p) => $p['resource'] === $perm->resource && $p['action'] === $perm->action
             );
             if (! $stillValid) {
                 DB::table('role_permission')->where('permission_id', $perm->permission_id)->delete();

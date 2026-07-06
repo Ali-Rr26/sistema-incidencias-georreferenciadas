@@ -24,6 +24,7 @@ class Notification extends Model
      * Eloquent no intente escribir esa columna al hacer `update()`.
      */
     public $timestamps = true;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [

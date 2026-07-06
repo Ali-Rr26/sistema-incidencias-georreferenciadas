@@ -74,7 +74,7 @@ describe('http service', () => {
     );
   });
 
-it('clears state and dispatches auth:expired when refresh fails', async () => {
+  it('clears state and dispatches auth:expired when refresh fails', async () => {
     setAccessToken('expired-token');
 
     fetchMock

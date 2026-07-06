@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Notifications\Http;
 
-use App\Domains\Notifications\Http\Policies\NotificationPolicy;
 use App\Domains\Notifications\Http\Resources\NotificationResource;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Services\NotificationService;

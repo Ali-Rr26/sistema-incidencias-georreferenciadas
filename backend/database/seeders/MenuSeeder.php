@@ -13,7 +13,7 @@ class MenuSeeder extends Seeder
      * parent_id = null  → root menu
      * permission        → the permission that gates visibility (null = parent pulled in automatically)
      *
-* Rutas alineadas con frontend/app/app.js. Padres de sección tienen
+     * Rutas alineadas con frontend/app/app.js. Padres de sección tienen
      * `route => null` (no son navegables, solo agrupan hijos).
      *
      * IDs con huecos: 5 era Asignaciones (borrado paso 06),
@@ -29,7 +29,7 @@ class MenuSeeder extends Seeder
         2 => ['name' => 'Incidencias',            'route' => null,                     'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
         3 => ['name' => 'Lista de Incidencias',   'route' => '/incidencias',           'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
         4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
-        6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes','icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
+        6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes', 'icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
         // Gestión group (admin area, parent header)
         7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
         8 => ['name' => 'Usuarios',               'route' => '/usuarios',              'icon' => 'user',             'parent_id' => 7,    'permission' => ['resource' => 'users',               'action' => 'view']],
@@ -38,12 +38,12 @@ class MenuSeeder extends Seeder
         10 => ['name' => 'Catálogos',             'route' => null,                     'icon' => 'book-open',        'parent_id' => null, 'permission' => null],
         11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
         12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
-13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-            // Standalone
-            15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
-        ];
+        13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
+        // Standalone
+        15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
+    ];
 
-public function run(): void
+    public function run(): void
     {
         // Idempotent seed:
         //  1. Drop menus que ya no están en el array (data vieja huérfana)
@@ -54,8 +54,8 @@ public function run(): void
         $keepIds = array_keys(self::MENUS);
         $toDelete = Menu::whereNotIn('menu_id', $keepIds)->pluck('menu_id')->all();
         if (! empty($toDelete)) {
-        DB::table('menu_permission')->whereIn('menu_id', $toDelete)->delete();
-        Menu::whereIn('menu_id', $toDelete)->delete();
+            DB::table('menu_permission')->whereIn('menu_id', $toDelete)->delete();
+            Menu::whereIn('menu_id', $toDelete)->delete();
         }
 
         // Clear remaining menu_permission for a clean re-assign

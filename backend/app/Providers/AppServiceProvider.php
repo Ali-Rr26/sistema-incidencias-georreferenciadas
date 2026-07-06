@@ -14,6 +14,9 @@ use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Notifications\Http\Policies\NotificationPolicy;
+use App\Domains\Notifications\Models\Notification;
+use App\Domains\Notifications\Observers\IncidentNotificationObserver;
 use App\Domains\Organizations\Repositories\EloquentOrganizationRepository;
 use App\Domains\Organizations\Repositories\OrganizationRepository;
 use App\Domains\Permissions\Models\Permission;
@@ -68,21 +71,21 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute((int) env('FEED_RATE_LIMIT_PER_MIN', 60));
         });
 
-// Admins bypass all gate/policy checks
-            Gate::before(function (User $user, string $ability): ?bool {
-                return $user->isAdmin() ? true : null;
-            });
+        // Admins bypass all gate/policy checks
+        Gate::before(function (User $user, string $ability): ?bool {
+            return $user->isAdmin() ? true : null;
+        });
 
-            // Register policy for Notification (no apiResource, so guesser
-            // does not cover it automatically).
-            try {
-                Gate::policy(
-                    \App\Domains\Notifications\Models\Notification::class,
-                    \App\Domains\Notifications\Http\Policies\NotificationPolicy::class,
-                );
-            } catch (\Throwable) {
-                // Models not loaded yet (e.g. during package discovery).
-            }
+        // Register policy for Notification (no apiResource, so guesser
+        // does not cover it automatically).
+        try {
+            Gate::policy(
+                Notification::class,
+                NotificationPolicy::class,
+            );
+        } catch (\Throwable) {
+            // Models not loaded yet (e.g. during package discovery).
+        }
 
         // Dynamic gates from permissions table
         // Cada permiso en DB se convierte en un Gate: {resource}.{action}
@@ -97,19 +100,19 @@ class AppServiceProvider extends ServiceProvider
             // Tabla aún no existe (primera migración), no hay permisos aún
         }
 
-// Register RedisIncidentSync as observer for Incident model events
-            Incident::observe(RedisIncidentSync::class);
+        // Register RedisIncidentSync as observer for Incident model events
+        Incident::observe(RedisIncidentSync::class);
 
-            // Register IncidentNotificationObserver to dispatch user notifications
-            // when an incident is claimed, released, or resolved.
-            try {
-                Incident::observe(\App\Domains\Notifications\Observers\IncidentNotificationObserver::class);
-            } catch (\Throwable) {
-                // Notifications tables not ready yet — skip silently.
-            }
+        // Register IncidentNotificationObserver to dispatch user notifications
+        // when an incident is claimed, released, or resolved.
+        try {
+            Incident::observe(IncidentNotificationObserver::class);
+        } catch (\Throwable) {
+            // Notifications tables not ready yet — skip silently.
+        }
 
-            // Register RedisCommentSync as observer for Comment model events
-            Comment::observe(RedisCommentSync::class);
+        // Register RedisCommentSync as observer for Comment model events
+        Comment::observe(RedisCommentSync::class);
 
         // =====================================================================
         // Connection health checks — logged on every boot
