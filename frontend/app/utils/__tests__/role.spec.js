@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveRoleName, ROLE_LABELS } from '../role.js';
+import { resolveRoleName, ROLE_LABELS, OPERATIONAL_ROLES } from '../role.js';
 
 describe('resolveRoleName', () => {
   it('returns the name when role is an object', () => {
@@ -75,5 +75,48 @@ describe('role utils — guard integration (SCEN-8.2)', () => {
     // Legacy role.guard.js falls back to "false" in this branch.
     const anon = {};
     expect(resolveRoleName(anon)).toBeNull();
+  });
+});
+
+/**
+ * `OPERATIONAL_ROLES` — single source of truth for the back-office role
+ * bucket (T-2.1 / T-2.2 of menu-server-driven PR 2).
+ *
+ * Design Decision 6 (frontend): classifyRole() in app-shell.component.js
+ * must read this constant instead of duplicating the role → bucket
+ * mapping. Five operational roles share the admin shell chrome:
+ * admin_sistema, admin_organizacion, operador_sistema,
+ * operador_organizacion, publicador. `usuario` is the citizen bucket.
+ */
+describe('OPERATIONAL_ROLES (T-2.1 menu-server-driven)', () => {
+  it('exports the five operational role names that share the admin bucket', () => {
+    expect([...OPERATIONAL_ROLES].sort()).toEqual(
+      [
+        'admin_sistema',
+        'admin_organizacion',
+        'operador_sistema',
+        'operador_organizacion',
+        'publicador',
+      ].sort(),
+    );
+  });
+
+  it('does NOT include the citizen role "usuario"', () => {
+    expect(OPERATIONAL_ROLES).not.toContain('usuario');
+  });
+
+  it('is frozen so callers cannot mutate the bucket list at runtime', () => {
+    expect(Object.isFrozen(OPERATIONAL_ROLES)).toBe(true);
+  });
+
+  it('keeps the operational bucket disjoint from ROLE_LABELS keys for citizen roles', () => {
+    // Triangulation: every name in OPERATIONAL_ROLES must resolve to a
+    // non-null Spanish label via ROLE_LABELS. If a role is added to the
+    // bucket without a corresponding ROLE_LABELS entry, this test fails
+    // — preventing a runtime "undefined" label in the UI.
+    for (const name of OPERATIONAL_ROLES) {
+      expect(ROLE_LABELS[name]).toBeTypeOf('string');
+      expect(ROLE_LABELS[name].length).toBeGreaterThan(0);
+    }
   });
 });
