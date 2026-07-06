@@ -61,6 +61,12 @@ class PermissionSeeder extends Seeder
         ['resource' => 'menus',               'action' => 'create', 'name' => 'Crear Menús',                 'description' => 'Agregar nuevos menús'],
         ['resource' => 'menus',               'action' => 'update', 'name' => 'Actualizar Menús',            'description' => 'Modificar menús existentes'],
         ['resource' => 'menus',               'action' => 'delete', 'name' => 'Eliminar Menús',              'description' => 'Eliminar menús'],
+        // Incidents: back-office create/manage (distinto de incidents.create, que es ciudadano)
+        ['resource' => 'incidents',           'action' => 'manage', 'name' => 'Gestionar Incidencias (Back-office)', 'description' => 'Crear/gestionar incidencias desde el back-office'],
+        // Feed ciudadano (Inicio + Reportar)
+        ['resource' => 'feed',                'action' => 'view',   'name' => 'Ver Feed',                   'description' => 'Acceso al feed ciudadano de incidencias'],
+        // Perfil propio (visibilidad universal)
+        ['resource' => 'profile',             'action' => 'view',   'name' => 'Ver Perfil',                 'description' => 'Ver perfil propio'],
     ];
 
     public function run(): void
