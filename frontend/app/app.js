@@ -173,4 +173,23 @@ document.addEventListener('change', (e) => {
   }
 });
 
+// ─── auth:expired listener ──────────────────────────────────────────────────
+// http.service.js dispatches this event when a 401 cannot be recovered via
+// refresh. We translate that into a redirect to /login — but only AFTER the
+// router's shell has finished initializing. Redirecting during shell init
+// would clear #shell-outlet mid-mount and break the router's outlet lookup.
+window.addEventListener('auth:expired', () => {
+  if (router.isShellInitializing) {
+    // Defer until the shell finishes initializing. Re-dispatch the same
+    // event on the next tick; the listener will run again.
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }, 0);
+    return;
+  }
+  if (window.location.hash !== '#/login') {
+    window.location.hash = '#/login';
+  }
+});
+
 window.__router = router;

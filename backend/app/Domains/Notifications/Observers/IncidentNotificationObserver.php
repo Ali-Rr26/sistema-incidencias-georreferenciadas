@@ -7,7 +7,6 @@ namespace App\Domains\Notifications\Observers;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Services\NotificationService;
-use App\Domains\Users\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**

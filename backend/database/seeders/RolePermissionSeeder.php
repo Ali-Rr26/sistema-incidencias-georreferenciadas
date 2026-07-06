@@ -13,18 +13,18 @@ class RolePermissionSeeder extends Seeder
     private const OPERADOR_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
-['resource' => 'incidents',           'action' => 'create'],
-            ['resource' => 'incidents',           'action' => 'update'],
-            ['resource' => 'comments',            'action' => 'view'],
-            ['resource' => 'comments',            'action' => 'create'],
-            ['resource' => 'comments',            'action' => 'update'],
-            ['resource' => 'status-history',      'action' => 'view'],
-            ['resource' => 'notifications',       'action' => 'view'],
-            ['resource' => 'notifications',       'action' => 'update'],
-            ['resource' => 'locations',           'action' => 'view'],
-            ['resource' => 'organizations',       'action' => 'view'],
-            ['resource' => 'incident-categories', 'action' => 'view'],
-        ];
+        ['resource' => 'incidents',           'action' => 'create'],
+        ['resource' => 'incidents',           'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
+    ];
 
     private const ADMIN_ORGANIZACION_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
@@ -34,7 +34,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'delete'],
         ['resource' => 'comments',            'action' => 'view'],
         ['resource' => 'comments',            'action' => 'create'],
-['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'comments',            'action' => 'delete'],
         ['resource' => 'status-history',      'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'view'],
@@ -62,7 +62,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'comments',      'action' => 'create'],
     ];
 
-private const PUBLICADOR_PERMISSIONS = [
+    private const PUBLICADOR_PERMISSIONS = [
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'status-history',      'action' => 'view'],
     ];

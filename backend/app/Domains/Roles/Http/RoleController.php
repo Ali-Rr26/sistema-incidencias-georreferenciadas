@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domains\Roles\Http;
 
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Http\Requests\StoreRoleRequest;
 use App\Domains\Roles\Http\Requests\UpdateRoleRequest;
 use App\Domains\Roles\Http\Resources\RoleCollection;
 use App\Domains\Roles\Http\Resources\RoleResource;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Roles\Repositories\RoleRepository;
-use App\Domains\Permissions\Models\Permission;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,63 +65,63 @@ class RoleController extends Controller
         return new RoleResource($role)->response();
     }
 
-public function destroy(int $id): JsonResponse
-        {
-            $this->roles->delete($id);
+    public function destroy(int $id): JsonResponse
+    {
+        $this->roles->delete($id);
 
-            return response()->json(null, Response::HTTP_NO_CONTENT);
-        }
-
-        /**
-         * Sincroniza el conjunto de permisos del rol.
-         *
-         * Solo `admin_sistema` puede ejecutar esta acción: asignar permisos
-         * a un rol es una operación estructural que afecta las policies y
-         * los Gates dinámicos generados en boot.
-         */
-        public function syncPermissions(Request $request, int $id): JsonResponse
-        {
-            $user = $request->user();
-
-            if ($user === null || ! $user->isSystemAdmin()) {
-                return response()->json([
-                    'message' => 'Solo admin_sistema puede sincronizar permisos de un rol.',
-                ], Response::HTTP_FORBIDDEN);
-            }
-
-            $validated = $request->validate([
-                'permissions' => 'required|array',
-                'permissions.*' => 'integer|exists:permissions,permission_id',
-            ]);
-
-            $role = $this->roles->syncPermissions($id, $validated['permissions']);
-
-            return (new RoleResource($role->load('permissions')))->response();
-        }
-
-        /**
-         * Devuelve el catálogo de permisos disponibles, agrupados por resource.
-         *
-         * Solo lectura — los permisos son estructurales y se mantienen via seeders.
-         * Este endpoint existe para alimentar la UI de asignación de permisos
-         * a roles (ver roles.detail.component.js).
-         */
-        public function availablePermissions(Request $request): JsonResponse
-        {
-            $permissions = Permission::orderBy('resource')->orderBy('action')->get();
-
-            $grouped = $permissions->groupBy('resource')->map(function ($items, $resource) {
-                return [
-                    'resource' => $resource,
-                    'permissions' => $items->map(fn (Permission $p) => [
-                        'id' => $p->permission_id,
-                        'action' => $p->action,
-                        'name' => $p->name,
-                        'description' => $p->description,
-                    ])->values(),
-                ];
-            })->values();
-
-            return response()->json(['data' => $grouped]);
-        }
+        return response()->json(null, Response::HTTP_NO_CONTENT);
     }
+
+    /**
+     * Sincroniza el conjunto de permisos del rol.
+     *
+     * Solo `admin_sistema` puede ejecutar esta acción: asignar permisos
+     * a un rol es una operación estructural que afecta las policies y
+     * los Gates dinámicos generados en boot.
+     */
+    public function syncPermissions(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user === null || ! $user->isSystemAdmin()) {
+            return response()->json([
+                'message' => 'Solo admin_sistema puede sincronizar permisos de un rol.',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $validated = $request->validate([
+            'permissions' => 'required|array',
+            'permissions.*' => 'integer|exists:permissions,permission_id',
+        ]);
+
+        $role = $this->roles->syncPermissions($id, $validated['permissions']);
+
+        return (new RoleResource($role->load('permissions')))->response();
+    }
+
+    /**
+     * Devuelve el catálogo de permisos disponibles, agrupados por resource.
+     *
+     * Solo lectura — los permisos son estructurales y se mantienen via seeders.
+     * Este endpoint existe para alimentar la UI de asignación de permisos
+     * a roles (ver roles.detail.component.js).
+     */
+    public function availablePermissions(Request $request): JsonResponse
+    {
+        $permissions = Permission::orderBy('resource')->orderBy('action')->get();
+
+        $grouped = $permissions->groupBy('resource')->map(function ($items, $resource) {
+            return [
+                'resource' => $resource,
+                'permissions' => $items->map(fn (Permission $p) => [
+                    'id' => $p->permission_id,
+                    'action' => $p->action,
+                    'name' => $p->name,
+                    'description' => $p->description,
+                ])->values(),
+            ];
+        })->values();
+
+        return response()->json(['data' => $grouped]);
+    }
+}
