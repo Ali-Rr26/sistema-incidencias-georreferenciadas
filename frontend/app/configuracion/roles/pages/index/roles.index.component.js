@@ -53,7 +53,9 @@ function buildRolRow(rol) {
   tdActions.className = 'text-center';
   const btnGroup = document.createElement('div');
   btnGroup.className = 'd-flex gap-1 justify-content-center';
-  btnGroup.appendChild(btnLink(`#/roles/${rol.id}`, 'fa-solid fa-key', 'Editar permisos'));
+  btnGroup.appendChild(
+    btnLink(`#/roles/${rol.id}`, 'fa-solid fa-key', 'Editar permisos'),
+  );
 
   const delBtn = document.createElement('button');
   delBtn.type = 'button';
@@ -103,7 +105,9 @@ function buildRolCard(rol) {
 
   const right = document.createElement('div');
   right.className = 'd-flex gap-1';
-  right.appendChild(btnLink(`#/roles/${rol.id}`, 'fas fa-key', 'Editar permisos'));
+  right.appendChild(
+    btnLink(`#/roles/${rol.id}`, 'fas fa-key', 'Editar permisos'),
+  );
 
   const delBtn = document.createElement('button');
   delBtn.type = 'button';
@@ -121,8 +125,7 @@ function buildRolCard(rol) {
 }
 
 export default defineComponent({
-  templateUrl:
-    'app/configuracion/roles/pages/index/roles.index.component.html',
+  templateUrl: 'app/configuracion/roles/pages/index/roles.index.component.html',
 
   async onInit() {
     let paginaActual = 1;

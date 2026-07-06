@@ -182,7 +182,9 @@ export default defineComponent({
       .getElementById('btn-guardar-permisos')
       .addEventListener('click', async () => {
         const checks = document.querySelectorAll('.perm-check:checked');
-        const permissionIds = Array.from(checks).map((c) => Number(c.dataset.id));
+        const permissionIds = Array.from(checks).map((c) =>
+          Number(c.dataset.id),
+        );
         try {
           await http.put(`/roles/${id}/permissions`, {
             permissions: permissionIds,

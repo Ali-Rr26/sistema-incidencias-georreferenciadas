@@ -36,19 +36,19 @@
           placeholder="Buscar incidencia..."
         />
       </div>
-<button
-            class="app-shell-header__icon-btn"
-            aria-label="Notificaciones"
-            id="app-shell-bell-admin"
-            data-nav-target="/notificaciones"
-          >
-            <i class="fa-regular fa-bell"></i>
-            <span
-              class="app-shell-header__notif-badge d-none"
-              id="app-shell-bell-badge-admin"
-              >0</span
-            >
-          </button>
+      <button
+        class="app-shell-header__icon-btn"
+        aria-label="Notificaciones"
+        id="app-shell-bell-admin"
+        data-nav-target="/notificaciones"
+      >
+        <i class="fa-regular fa-bell"></i>
+        <span
+          class="app-shell-header__notif-badge d-none"
+          id="app-shell-bell-badge-admin"
+          >0</span
+        >
+      </button>
       <button class="app-shell-header__icon-btn" aria-label="Configuración">
         <i class="fa-solid fa-gear"></i>
       </button>
@@ -156,15 +156,12 @@
 
   <aside class="app-shell-sidebar" id="app-shell-sidebar">
     <!-- Admin sidebar: full nav with sections (PRINCIPAL / GESTIÓN / CONFIGURACIÓN) -->
-<nav
+    <nav
       class="app-shell-sidebar__nav"
       id="app-shell-admin-sidebar"
       data-show-on-role="admin"
     >
-      <ul
-        class="app-shell-sidebar__list"
-        id="app-shell-admin-menu-list"
-      >
+      <ul class="app-shell-sidebar__list" id="app-shell-admin-menu-list">
         <!-- Renderizado dinámico desde GET /api/menus/my (ver app-shell.component.js → renderAdminMenu) -->
       </ul>
     </nav>

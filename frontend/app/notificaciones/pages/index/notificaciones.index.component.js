@@ -110,7 +110,9 @@ async function marcarLeida(id, li) {
 }
 
 function updateUnreadCounter() {
-  const visibles = document.querySelectorAll('.list-group-item.fw-semibold').length;
+  const visibles = document.querySelectorAll(
+    '.list-group-item.fw-semibold',
+  ).length;
   document.getElementById('contador-unread').textContent = String(visibles);
   document.getElementById('btn-marcar-todas').disabled = visibles === 0;
 }
@@ -159,7 +161,8 @@ export default defineComponent({
         });
         const total = meta?.total ?? data.length;
         totalPaginas = Math.ceil(total / POR_PAGINA) || 1;
-        document.getElementById('contador-unread').textContent = String(unreadCount);
+        document.getElementById('contador-unread').textContent =
+          String(unreadCount);
         if (data.length === 0) {
           mostrarEstado('vacio');
           return;

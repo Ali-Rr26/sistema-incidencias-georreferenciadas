@@ -130,17 +130,17 @@ export const appShell = {
     if (!user) user = auth.getUser();
     document.body.dataset.role = classifyRole(user);
 
-await populateHeader();
-        wireNav();
-        wireSidebarToggle();
+    await populateHeader();
+    wireNav();
+    wireSidebarToggle();
 
-        // Render admin sidebar dynamically from /api/menus/my.
-        // Falls back silently if the endpoint fails or the user is not admin.
-        if (document.body.dataset.role === 'admin') {
-          renderAdminMenu().catch(() => {
-            // No-op: empty sidebar is preferable to crashing the shell.
-          });
-        }
+    // Render admin sidebar dynamically from /api/menus/my.
+    // Falls back silently if the endpoint fails or the user is not admin.
+    if (document.body.dataset.role === 'admin') {
+      renderAdminMenu().catch(() => {
+        // No-op: empty sidebar is preferable to crashing the shell.
+      });
+    }
 
     // Re-apply role on every auth change (login / logout / role swap).
     _unsubAuth = auth.onAuthChange(async () => {
@@ -456,18 +456,21 @@ async function populateHeader() {
     }
 
     // Notifications badge (admin header bell).
-    notificationService.unreadCount().then((count) => {
-      const badge = document.getElementById('app-shell-bell-badge-admin');
-      if (!badge) return;
-      if (count > 0) {
-        badge.textContent = String(count);
-        badge.classList.remove('d-none');
-      } else {
-        badge.classList.add('d-none');
-      }
-    }).catch(() => {
-      // silent fail — badge stays hidden
-    });
+    notificationService
+      .unreadCount()
+      .then((count) => {
+        const badge = document.getElementById('app-shell-bell-badge-admin');
+        if (!badge) return;
+        if (count > 0) {
+          badge.textContent = String(count);
+          badge.classList.remove('d-none');
+        } else {
+          badge.classList.add('d-none');
+        }
+      })
+      .catch(() => {
+        // silent fail — badge stays hidden
+      });
 
     return;
   }

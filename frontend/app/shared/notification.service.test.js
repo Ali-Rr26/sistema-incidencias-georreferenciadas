@@ -25,14 +25,25 @@ describe('notificationService', () => {
 
   it('list fetches notifications and returns data shape', async () => {
     http.get.mockResolvedValue({
-      data: [{ id: 1, type: 'claim', message: 'x', read: false, data: {}, created_at: '2026-07-06' }],
+      data: [
+        {
+          id: 1,
+          type: 'claim',
+          message: 'x',
+          read: false,
+          data: {},
+          created_at: '2026-07-06',
+        },
+      ],
       meta: { total: 1 },
       unread_count: 1,
     });
 
     const result = await notificationService.list({ page: 1, perPage: 10 });
 
-    expect(http.get).toHaveBeenCalledWith(expect.stringContaining('/notifications?'));
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('/notifications?'),
+    );
     expect(result.data).toHaveLength(1);
     expect(result.unreadCount).toBe(1);
   });
@@ -42,7 +53,9 @@ describe('notificationService', () => {
 
     await notificationService.list({ unreadOnly: true });
 
-    expect(http.get).toHaveBeenCalledWith(expect.stringContaining('unread_only=1'));
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('unread_only=1'),
+    );
   });
 
   it('unreadCount caches the response', async () => {
