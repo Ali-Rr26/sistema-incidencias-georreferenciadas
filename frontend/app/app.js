@@ -25,6 +25,7 @@ import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.component.js';
 import rolesDetailComponent from './configuracion/roles/pages/detail/roles.detail.component.js';
+import notificacionesIndexComponent from './notificaciones/pages/index/notificaciones.index.component.js';
 
 // ─── Register shells ────────────────────────────────────────────────
 // PR #3 (consolidar-layout-unico) — final state: only the unified
@@ -123,6 +124,13 @@ router.addRoute(
   '/roles/:id',
   rolesDetailComponent,
   [roleGuard(['admin_sistema'])],
+  'app',
+  'admin',
+);
+router.addRoute(
+  '/notificaciones',
+  notificacionesIndexComponent,
+  [authGuard],
   'app',
   'admin',
 );

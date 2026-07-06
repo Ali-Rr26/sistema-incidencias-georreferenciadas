@@ -21,6 +21,7 @@
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
+import { notificationService } from '../shared/notification.service.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
 const STYLE_URL = 'app/app-shell/app-shell.component.css';
@@ -453,6 +454,21 @@ async function populateHeader() {
     if (avatarEl) {
       avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
     }
+
+    // Notifications badge (admin header bell).
+    notificationService.unreadCount().then((count) => {
+      const badge = document.getElementById('app-shell-bell-badge-admin');
+      if (!badge) return;
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
+    }).catch(() => {
+      // silent fail — badge stays hidden
+    });
+
     return;
   }
 

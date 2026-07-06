@@ -36,13 +36,19 @@
           placeholder="Buscar incidencia..."
         />
       </div>
-      <button
-        class="app-shell-header__icon-btn"
-        aria-label="Notificaciones"
-        id="app-shell-bell-admin"
-      >
-        <i class="fa-regular fa-bell"></i>
-      </button>
+<button
+            class="app-shell-header__icon-btn"
+            aria-label="Notificaciones"
+            id="app-shell-bell-admin"
+            data-nav-target="/notificaciones"
+          >
+            <i class="fa-regular fa-bell"></i>
+            <span
+              class="app-shell-header__notif-badge d-none"
+              id="app-shell-bell-badge-admin"
+              >0</span
+            >
+          </button>
       <button class="app-shell-header__icon-btn" aria-label="Configuración">
         <i class="fa-solid fa-gear"></i>
       </button>

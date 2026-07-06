@@ -45,9 +45,11 @@ Route::apiResource('incidents.comments', CommentController::class)->shallow();
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 
-    // Notificaciones del usuario autenticado
+// Notificaciones del usuario autenticado
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
 
     // Catálogos
     Route::get('locations/tree', [LocationController::class, 'tree']);

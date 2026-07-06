@@ -38,8 +38,10 @@ class MenuSeeder extends Seeder
         10 => ['name' => 'Catálogos',             'route' => null,                     'icon' => 'book-open',        'parent_id' => null, 'permission' => null],
         11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
         12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
-        13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-    ];
+13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
+            // Standalone
+            15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
+        ];
 
     public function run(): void
     {
