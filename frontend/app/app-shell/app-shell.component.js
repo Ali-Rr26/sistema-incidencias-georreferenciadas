@@ -19,7 +19,7 @@
  * visual QA.
  */
 import { auth } from '../auth/auth.service.js';
-import { resolveRoleName } from '../utils/role.js';
+import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
 
@@ -56,14 +56,25 @@ let _onResize = null;
 /**
  * Classify a user object into one of the three shell role buckets.
  * Public for tests + future role-guard helpers.
+ *
+ * Operational roles (admin_sistema, admin_organizacion, operador_sistema,
+ * operador_organizacion, publicador) share the back-office chrome and
+ * therefore collapse into the `admin` bucket. `usuario` keeps the
+ * citizen shell. Anything else — null/undefined user, malformed role,
+ * future roles not yet listed in OPERATIONAL_ROLES — falls into `guest`
+ * so an unrecognised role never silently inherits admin chrome.
+ *
+ * The bucket list is read from OPERATIONAL_ROLES in `utils/role.js`,
+ * which is the single source of truth shared with tests and (in the
+ * future) any role guard.
  */
 export function classifyRole(user) {
   if (!user) return 'guest';
   const roleName = resolveRoleName(user);
-  if (roleName === 'admin_sistema' || roleName === 'admin_organizacion') {
-    return 'admin';
-  }
-  return 'citizen';
+  if (roleName === null) return 'guest';
+  if (OPERATIONAL_ROLES.includes(roleName)) return 'admin';
+  if (roleName === 'usuario') return 'citizen';
+  return 'guest';
 }
 
 export const appShell = {
@@ -134,10 +145,14 @@ export const appShell = {
     wireNav();
     wireSidebarToggle();
 
-    // Render admin sidebar dynamically from /api/menus/my.
-    // Falls back silently if the endpoint fails or the user is not admin.
-    if (document.body.dataset.role === 'admin') {
-      renderAdminMenu().catch(() => {
+    // Render sidebar dynamically from /api/menus/my for ANY authenticated
+    // user (admin OR citizen). Falls back silently if the endpoint fails
+    // or the user is a guest. The target <ul> is picked from
+    // body[data-role] inside renderSidebarMenu itself.
+    if (document.body.dataset.role !== 'guest') {
+      menuService.clearCache();
+      notificationService.clearCache();
+      renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
     }
@@ -147,7 +162,18 @@ export const appShell = {
       let u = await auth.me().catch(() => null);
       if (!u) u = auth.getUser();
       document.body.dataset.role = classifyRole(u);
+      // Clear cached menu + notification state on every auth transition
+      // so the next render reads a fresh /menus/my and the bell badge
+      // reflects the new user's unread count rather than a previous
+      // session's stale data.
+      menuService.clearCache();
+      notificationService.clearCache();
       await populateHeader();
+      if (document.body.dataset.role !== 'guest') {
+        await renderSidebarMenu().catch(() => {
+          // No-op: empty sidebar is preferable to crashing the shell.
+        });
+      }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
       // chrome (e.g. switching roles changes which sidebar is visible,
       // and we want the collapsed preference to remain consistent).
@@ -379,18 +405,27 @@ function teardownSidebarToggle() {
 }
 
 /**
- * Populate the role-specific header content. Admin gets the user menu
- * (name + avatar), citizen gets a single-letter avatar, guest has no
- * header content beyond the login button (already in the template).
+ * Render the role-specific sidebar from /api/menus/my. Universal across
+ * every authenticated role (admin OR citizen); the guest role is excluded
+ * upstream and never reaches this function.
  *
- * SECURITY: Always fetches /me fresh — never uses cached user state.
+ * Target <ul> selection (mirrors production ids in app-shell.component.html):
+ *   - admin    → #app-shell-admin-menu-list
+ *   - citizen  → #app-shell-citizen-menu-list
+ *
+ * Falls back silently if the endpoint fails or the target <ul> is
+ * missing (e.g. tests that mount without the full chrome). Empty
+ * payload leaves the <ul> empty — no error, no leftover items.
  */
-async function renderAdminMenu() {
-  const listEl = document.getElementById('app-shell-admin-menu-list');
+async function renderSidebarMenu() {
+  const listEl = pickSidebarTarget();
   if (!listEl) return;
 
   const tree = await menuService.getMyMenu();
-  if (!Array.isArray(tree) || tree.length === 0) return;
+  if (!Array.isArray(tree) || tree.length === 0) {
+    listEl.replaceChildren();
+    return;
+  }
 
   const nodes = [];
   for (const item of tree) {
@@ -405,6 +440,22 @@ async function renderAdminMenu() {
   }
 
   listEl.replaceChildren(...nodes);
+}
+
+/**
+ * Resolve the target <ul> for the sidebar renderer based on the role
+ * attribute applied to <body>. Returns null when the role is unknown
+ * or the target element is absent (test fixtures, partial mounts).
+ */
+function pickSidebarTarget() {
+  const role = document.body.dataset.role;
+  if (role === 'admin') {
+    return document.getElementById('app-shell-admin-menu-list');
+  }
+  if (role === 'citizen') {
+    return document.getElementById('app-shell-citizen-menu-list');
+  }
+  return null;
 }
 
 function buildSectionHeader(name) {
