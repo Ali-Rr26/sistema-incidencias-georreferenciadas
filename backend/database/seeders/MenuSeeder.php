@@ -20,6 +20,8 @@ class MenuSeeder extends Seeder
      *                  9 era Permisos (borrado paso 05-A),
      *                  10 era Menús (sin contraparte, removido),
      *                  15 era Notificaciones (sin ruta todavía, paso 07).
+     *                  16/17/18 son entradas ciudadanas añadidas en el change
+     *                  menu-server-driven (Inicio/Reportar/Perfil).
      *
      * @var array<int, array{name: string, route: string|null, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
      */
@@ -28,7 +30,10 @@ class MenuSeeder extends Seeder
         // Incidencias group (parent header, no navegable)
         2 => ['name' => 'Incidencias',            'route' => null,                     'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
         3 => ['name' => 'Lista de Incidencias',   'route' => '/incidencias',           'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
-        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'create']],
+        // id 4 gate: incidents.manage (re-gated from incidents.create in the
+        // menu-server-driven change). incidents.create is the citizen /feed/crear
+        // policy gate and remains in usuario grants.
+        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'manage']],
         6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes', 'icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
         // Gestión group (admin area, parent header)
         7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
@@ -41,6 +46,10 @@ class MenuSeeder extends Seeder
         13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
         // Standalone
         15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
+        // Citizen entries (no parent header, flat at the root)
+        16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
+        17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
+        18 => ['name' => 'Perfil',                'route' => '/configuracion/perfil',  'icon' => 'user',             'parent_id' => null, 'permission' => ['resource' => 'profile',             'action' => 'view']],
     ];
 
     public function run(): void

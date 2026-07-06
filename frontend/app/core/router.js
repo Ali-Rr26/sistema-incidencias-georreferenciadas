@@ -266,10 +266,7 @@ class Router {
         try {
           prevShell.destroy();
         } catch (err) {
-          console.error(
-            `[Router] Error destroying shell '${name}':`,
-            err,
-          );
+          console.error(`[Router] Error destroying shell '${name}':`, err);
         }
       }
     }

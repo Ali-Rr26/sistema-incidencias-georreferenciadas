@@ -209,15 +209,12 @@ describe('router integration', () => {
       'app',
       'admin',
     );
-    router.addRoute(
-      '/login',
-      {
-        templateUrl: '/templates/login.html',
-        styleUrl: '/styles/login.css',
-        onInit: vi.fn(),
-        onDestroy: vi.fn(),
-      },
-    );
+    router.addRoute('/login', {
+      templateUrl: '/templates/login.html',
+      styleUrl: '/styles/login.css',
+      onInit: vi.fn(),
+      onDestroy: vi.fn(),
+    });
 
     // Add the login template URLs to the fetch mock; the beforeEach's
     // default only knows about dashboard.
