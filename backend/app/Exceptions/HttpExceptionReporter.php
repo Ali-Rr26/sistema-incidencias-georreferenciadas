@@ -40,7 +40,7 @@ final class HttpExceptionReporter
     public function report(Throwable $e, Request $request): void
     {
         $status = $this->statusFromThrowable($e);
-        $level = $this->levelForStatus($e);
+        $level = $this->levelForStatus($status);
         $context = $this->contextFor($e, $request, $status, $level);
 
         $channel = Log::channel('exceptions');
@@ -53,16 +53,14 @@ final class HttpExceptionReporter
     }
 
     /**
-     * Map a Throwable to a Monolog level name.
+     * Map an HTTP status to a Monolog level name.
      *
      * - 5xx or non-HTTP exceptions → 'error'
      * - 4xx → 'warning'
      * - anything else (incl. status 0) → 'error'
      */
-    private function levelForStatus(Throwable $e): string
+    private function levelForStatus(int $status): string
     {
-        $status = $this->statusFromThrowable($e);
-
         if ($status >= 400 && $status < 500) {
             return 'warning';
         }

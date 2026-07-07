@@ -159,3 +159,36 @@ it('includes all 12 schema fields in the context', function (): void {
         expect($ctx)->toHaveKey($key);
     }
 });
+
+/**
+ * R-001 — `report()` derives the HTTP status from a Throwable exactly once.
+ *
+ * The original implementation invoked `statusFromThrowable()` twice (once in
+ * `report()`, again inside `levelForStatus()`), wasting CPU on every reported
+ * exception. This spy subclasses NotFoundHttpException and counts calls to
+ * `getStatusCode()`. After the refactor that threads `$status` through helpers,
+ * the count must be 1.
+ */
+it('does not derive status more than once per report call', function (): void {
+    $spy = new class extends NotFoundHttpException
+    {
+        public int $statusCodeCalls = 0;
+
+        public function __construct()
+        {
+            parent::__construct('not found');
+        }
+
+        public function getStatusCode(): int
+        {
+            $this->statusCodeCalls++;
+
+            return parent::getStatusCode();
+        }
+    };
+
+    $reporter = app(HttpExceptionReporter::class);
+    $reporter->report($spy, request());
+
+    expect($spy->statusCodeCalls)->toBe(1);
+});
