@@ -221,6 +221,22 @@ it('menu id 4 (Nueva Incidencia) is gated by incidents.manage, not incidents.cre
         ->and($perm->action)->toBe('manage');
 });
 
+it('menu id 1 (Dashboard) stores icon = gauge-high', function (): void {
+    $dashboard = Menu::where('menu_id', 1)->first();
+    expect($dashboard)->not->toBeNull()
+        ->and($dashboard->name)->toBe('Dashboard')
+        ->and($dashboard->icon)->toBe('gauge-high');
+});
+
+it('menu id 1 (Dashboard) icon survives MenuSeeder re-run (idempotency)', function (): void {
+    // Re-run the seeder
+    $this->seed(MenuSeeder::class);
+
+    $dashboard = Menu::where('menu_id', 1)->first();
+    expect($dashboard)->not->toBeNull()
+        ->and($dashboard->icon)->toBe('gauge-high');
+});
+
 it('MenuSeeder is idempotent — re-running produces no duplicate citizen rows', function (): void {
     $firstCount = Menu::whereIn('menu_id', [16, 17, 18])->count();
     expect($firstCount)->toBe(3);

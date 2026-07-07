@@ -26,7 +26,7 @@ class MenuSeeder extends Seeder
      * @var array<int, array{name: string, route: string|null, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
      */
     private const MENUS = [
-        1 => ['name' => 'Dashboard',              'route' => '/dashboard',             'icon' => 'layout-dashboard', 'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
+        1 => ['name' => 'Dashboard',              'route' => '/dashboard',             'icon' => 'gauge-high',       'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
         // Incidencias group (parent header, no navegable)
         2 => ['name' => 'Incidencias',            'route' => null,                     'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
         3 => ['name' => 'Lista de Incidencias',   'route' => '/incidencias',           'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],

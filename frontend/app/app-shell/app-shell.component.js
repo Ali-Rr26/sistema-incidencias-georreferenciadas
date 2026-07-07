@@ -155,6 +155,10 @@ export const appShell = {
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
+      // T-3.3: Wire bottom-nav hydration alongside sidebar
+      renderBottomNavMenu().catch(() => {
+        // No-op: empty bottom-nav is preferable to crashing the shell.
+      });
     }
 
     // Re-apply role on every auth change (login / logout / role swap).
@@ -172,6 +176,10 @@ export const appShell = {
       if (document.body.dataset.role !== 'guest') {
         await renderSidebarMenu().catch(() => {
           // No-op: empty sidebar is preferable to crashing the shell.
+        });
+        // T-3.3: Wire bottom-nav hydration alongside sidebar on auth change
+        await renderBottomNavMenu().catch(() => {
+          // No-op: empty bottom-nav is preferable to crashing the shell.
         });
       }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
@@ -476,7 +484,10 @@ function buildLeafLink(item) {
 
   if (item.icon) {
     const i = document.createElement('i');
-    i.className = item.icon;
+    // R1.3: one-way contract — backend ships bare FA name;
+    // renderer prepends prefix exactly once. Do not add defensive
+    // startsWith('fa-') checks.
+    i.className = `fa-solid fa-${item.icon}`;
     a.appendChild(i);
   }
 
@@ -486,6 +497,60 @@ function buildLeafLink(item) {
 
   li.appendChild(a);
   return li;
+}
+
+/**
+ * T-3.2: renderBottomNavMenu - hydrates bottom-nav from /api/menus/my
+ * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
+ */
+const BOTTOM_NAV_WHITELIST = {
+  ADMIN_FULL: ['/dashboard', '/incidencias', '/incidencias/crear', '/configuracion/perfil'],
+  ADMIN_LIMITED: ['/incidencias', '/incidencias/pendientes', '/configuracion/perfil'],
+  CITIZEN: ['/feed', '/configuracion/perfil'],
+};
+
+function pickBottomNavTarget() {
+  const role = document.body.dataset.role;
+  if (role === 'admin') return document.getElementById('app-shell-bottom-nav-list');
+  if (role === 'citizen') return document.getElementById('app-shell-citizen-bottom-nav-list');
+  return null;
+}
+
+function pickBottomNavWhitelist(tree) {
+  // Check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
+  const hasCrear = tree.some(
+    (n) => n.route === '/incidencias/crear' || n.children?.some((c) => c.route === '/incidencias/crear'),
+  );
+  return hasCrear ? BOTTOM_NAV_WHITELIST.ADMIN_FULL : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
+}
+
+async function renderBottomNavMenu() {
+  const listEl = pickBottomNavTarget();
+  if (!listEl) return;
+
+  const tree = await menuService.getMyMenu();
+  if (!Array.isArray(tree) || tree.length === 0) {
+    listEl.replaceChildren();
+    return;
+  }
+
+  const whitelist = pickBottomNavWhitelist(tree);
+  const nodes = [];
+
+  for (const item of tree) {
+    const leaves = item.children?.length ? item.children : [item];
+    for (const leaf of leaves) {
+      if (!leaf.route || !whitelist.includes(leaf.route)) continue;
+      const li = buildLeafLink(leaf);
+      // R3.5: Add __create class to /incidencias/crear for CSS variant + updateActive skip-list
+      if (leaf.route === '/incidencias/crear') {
+        li.querySelector('a').classList.add('app-shell-bottom-nav__create');
+      }
+      nodes.push(li);
+    }
+  }
+
+  listEl.replaceChildren(...nodes);
 }
 
 async function populateHeader() {

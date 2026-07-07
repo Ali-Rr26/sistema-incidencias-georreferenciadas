@@ -186,71 +186,19 @@
   </main>
 
   <nav class="app-shell-bottom-nav" id="app-shell-bottom-nav">
-    <!-- Admin bottom nav: 5 items, 3rd slot is "Crear incidencia" -->
-    <a
-      href="#/dashboard"
-      class="app-shell-nav-item"
-      data-route="/dashboard"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-gauge-high"></i>
-      <span class="app-shell-bottom-nav__label">Dashboard</span>
-    </a>
-    <a
-      href="#/incidencias"
-      class="app-shell-nav-item"
-      data-route="/incidencias"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-clipboard-list"></i>
-      <span class="app-shell-bottom-nav__label">Incidencias</span>
-    </a>
-    <a
-      href="#/incidencias/crear"
-      class="app-shell-nav-item app-shell-bottom-nav__create"
-      data-route="/incidencias/crear"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-circle-plus"></i>
-      <span class="app-shell-bottom-nav__label">Crear</span>
-    </a>
-    <a
-      href="#/configuracion/perfil"
-      class="app-shell-nav-item"
-      data-route="/configuracion/perfil"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-user"></i>
-      <span class="app-shell-bottom-nav__label">Perfil</span>
-    </a>
+    <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
+    <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-    <!-- Citizen bottom nav: 5 items, 3rd slot is "+" plus button -->
-    <a
-      href="#/feed"
-      class="app-shell-nav-item"
-      data-route="/feed"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-house"></i>
-      <span class="app-shell-bottom-nav__label">Feed</span>
-    </a>
-    <a
-      href="javascript:void(0)"
-      class="app-shell-nav-item app-shell-bottom-nav__plus"
-      id="app-shell-bottom-plus"
-      data-show-on-role="citizen guest"
-      aria-label="Reportar incidencia"
-    >
-      <i class="fa-solid fa-circle-plus"></i>
-    </a>
-    <a
-      href="#/configuracion/perfil"
-      class="app-shell-nav-item"
-      data-route="/configuracion/perfil"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-user"></i>
-      <span class="app-shell-bottom-nav__label">Perfil</span>
-    </a>
+    <!-- T-3.4: Citizen bottom nav - DB-driven + hardcoded plus button -->
+    <ul id="app-shell-citizen-bottom-nav-list" class="app-shell-citizen-bottom-nav-list">
+      <a
+        href="javascript:void(0)"
+        class="app-shell-nav-item app-shell-bottom-nav__plus"
+        id="app-shell-bottom-plus"
+        aria-label="Reportar incidencia"
+      >
+        <i class="fa-solid fa-circle-plus"></i>
+      </a>
+    </ul>
   </nav>
 </div>
