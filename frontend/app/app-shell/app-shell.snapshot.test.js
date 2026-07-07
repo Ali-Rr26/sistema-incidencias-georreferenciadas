@@ -103,9 +103,8 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
   it('citizen-mode renders citizen chrome (bell + avatar header + citizen sidebar + plus button)', async () => {
     const { auth } = await import('../auth/auth.service.js');
     const { menuService } = await import('../shared/menu.service.js');
-    const { notificationService } = await import(
-      '../shared/notification.service.js'
-    );
+    const { notificationService } =
+      await import('../shared/notification.service.js');
     const citizenUser = {
       id: 7,
       first_name: 'Carla',
