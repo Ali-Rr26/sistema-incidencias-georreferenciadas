@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 use App\Domains\Auth\Exceptions\AuthenticationException;
 use App\Exceptions\HttpExceptionReporter;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Monolog\Handler\TestHandler;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+uses(RefreshDatabase::class);
+
 beforeEach(function (): void {
+    // User factory references role_id; seed a placeholder role.
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+
     // Ensure the 'exceptions' channel exists in config even if config/logging.php
     // does not yet define it. The reporter must always have a channel to write to.
     config([
@@ -39,7 +46,7 @@ it('logs a warning for a 404 from api/*', function (): void {
 
     $records = $this->testHandler->getRecords();
     expect($records)->toHaveCount(1)
-        ->and($records[0]->level_name)->toBe('WARNING')
+        ->and($records[0]['level_name'])->toBe('WARNING')
         ->and($records[0]->context['status'])->toBe(404)
         ->and($records[0]->context['event'])->toBe('http_exception')
         ->and($records[0]->context['level'])->toBe('warning')
@@ -58,13 +65,13 @@ it('logs a warning for a 403 with user_id', function (): void {
 
     $user = App\Domains\Users\Models\User::factory()->create();
 
-    $response = $this->actingAs($user, 'api')->getJson('/api/__access_denied__');
+    $response = $this->actingAs($user)->getJson('/api/__access_denied__');
 
     $response->assertForbidden();
 
     $records = $this->testHandler->getRecords();
     expect($records)->toHaveCount(1)
-        ->and($records[0]->level_name)->toBe('WARNING')
+        ->and($records[0]['level_name'])->toBe('WARNING')
         ->and($records[0]->context['status'])->toBe(403)
         ->and($records[0]->context['level'])->toBe('warning')
         ->and($records[0]->context['user_id'])->toBe($user->id);
@@ -82,7 +89,7 @@ it('logs an error for a RuntimeException', function (): void {
 
     $records = $this->testHandler->getRecords();
     expect($records)->toHaveCount(1)
-        ->and($records[0]->level_name)->toBe('ERROR')
+        ->and($records[0]['level_name'])->toBe('ERROR')
         ->and($records[0]->context['status'])->toBe(500)
         ->and($records[0]->context['level'])->toBe('error')
         ->and($records[0]->context['message'])->toBe('boom');
