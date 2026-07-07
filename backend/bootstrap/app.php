@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Auth\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Exceptions\HttpExceptionReporter;
 use Illuminate\Foundation\Application;
@@ -7,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -34,17 +36,17 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $exceptions->dontReport([
-            \App\Domains\Auth\Exceptions\AuthenticationException::class,
+            AuthenticationException::class,
         ]);
 
         // Laravel 13's internalDontReport suppresses HttpException (and subclasses
         // such as NotFoundHttpException). REQ-007 S7.2 requires them to be logged,
         // so we explicitly un-ignore them.
         $exceptions->stopIgnoring([
-            \Symfony\Component\HttpKernel\Exception\HttpException::class,
+            HttpException::class,
         ]);
 
-        $exceptions->report(function (\Throwable $e): void {
+        $exceptions->report(function (Throwable $e): void {
             app(HttpExceptionReporter::class)->report($e, request());
         });
 

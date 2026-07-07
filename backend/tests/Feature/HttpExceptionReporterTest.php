@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Exceptions\AuthenticationException;
+use App\Domains\Users\Models\User;
 use App\Exceptions\HttpExceptionReporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Monolog\Handler\StreamHandler;
 use Monolog\Handler\TestHandler;
+use Monolog\Processor\PsrLogMessageProcessor;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -24,9 +27,9 @@ beforeEach(function (): void {
         'logging.channels.exceptions' => [
             'driver' => 'monolog',
             'level' => 'debug',
-            'handler' => Monolog\Handler\StreamHandler::class,
+            'handler' => StreamHandler::class,
             'handler_with' => ['stream' => 'php://stderr'],
-            'processors' => [Monolog\Processor\PsrLogMessageProcessor::class],
+            'processors' => [PsrLogMessageProcessor::class],
         ],
     ]);
 
@@ -63,7 +66,7 @@ it('logs a warning for a 403 with user_id', function (): void {
         throw new AccessDeniedHttpException('nope');
     });
 
-    $user = App\Domains\Users\Models\User::factory()->create();
+    $user = User::factory()->create();
 
     $response = $this->actingAs($user)->getJson('/api/__access_denied__');
 
