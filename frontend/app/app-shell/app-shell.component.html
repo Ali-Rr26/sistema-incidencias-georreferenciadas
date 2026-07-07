@@ -189,18 +189,15 @@
     <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
     <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-    <!-- T-3.4: Citizen bottom nav - DB-driven + hardcoded plus button OUTSIDE the dynamic ul -->
+    <!-- T-3.4 + Cleanup: Citizen bottom nav - DB-driven. The "+" plus
+         button is now synthesized inside this <ul> at index 1 (between
+         Feed and Perfil) by renderBottomNavMenu. It used to be a
+         hardcoded sibling of the <ul>, but with display: contents the
+         <ul> doesn't occupy a grid cell, so the sibling landed at the
+         far-right slot 3/3 instead of the original centered slot 2/3. -->
     <ul
       id="app-shell-citizen-bottom-nav-list"
       class="app-shell-citizen-bottom-nav-list"
     ></ul>
-    <a
-      href="javascript:void(0)"
-      class="app-shell-nav-item app-shell-bottom-nav__plus"
-      id="app-shell-bottom-plus"
-      aria-label="Reportar incidencia"
-    >
-      <i class="fa-solid fa-circle-plus"></i>
-    </a>
   </nav>
 </div>

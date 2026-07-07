@@ -237,6 +237,17 @@ it('menu id 1 (Dashboard) icon survives MenuSeeder re-run (idempotency)', functi
         ->and($dashboard->icon)->toBe('gauge-high');
 });
 
+it('menu id 7 (Gestión parent header) stores icon = shield-halved (FA6 Free compliance)', function (): void {
+    // R-Cleanup: shield-check is FontAwesome Pro only — it does not exist
+    // in @fortawesome/fontawesome-free@6.5.2 (the CDN loaded by frontend/index.html)
+    // and renders as a broken/missing glyph in the sidebar. shield-halved is
+    // the FA6 Free equivalent and is the canonical replacement.
+    $gestion = Menu::where('menu_id', 7)->first();
+    expect($gestion)->not->toBeNull()
+        ->and($gestion->name)->toBe('Gestión')
+        ->and($gestion->icon)->toBe('shield-halved');
+});
+
 it('MenuSeeder is idempotent — re-running produces no duplicate citizen rows', function (): void {
     $firstCount = Menu::whereIn('menu_id', [16, 17, 18])->count();
     expect($firstCount)->toBe(3);

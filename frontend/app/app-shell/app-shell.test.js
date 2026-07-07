@@ -80,11 +80,12 @@ const TEMPLATE_HTML = `
   <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
   <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-  <!-- T-3.4: Citizen bottom nav - DB-driven + hardcoded plus button OUTSIDE the dynamic ul -->
+  <!-- T-3.4 + Cleanup: Citizen bottom nav is DB-driven and the "+" plus
+       button is now synthesized inside the <ul> at index 1 (between Feed
+       and Perfil) by renderBottomNavMenu. It used to be a hardcoded
+       sibling of the <ul>, which placed it at the far-right slot 3/3
+       because the <ul> has display: contents. -->
   <ul id="app-shell-citizen-bottom-nav-list" class="app-shell-citizen-bottom-nav-list"></ul>
-  <a href="javascript:void(0)" class="app-shell-nav-item app-shell-bottom-nav__plus" id="app-shell-bottom-plus" aria-label="Reportar incidencia">
-    <i class="fa-solid fa-circle-plus"></i>
-  </a>
 </nav>
 `;
 
@@ -661,10 +662,26 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
       ).length,
     ).toBe(0);
 
-    // Citizen bottom nav: 3 items + the "+" plus button (5th slot gone).
+    // Citizen bottom nav: 3 items total — Feed <li>, "+" <li>, Perfil <li>.
+    // Cleanup: the "+" is now synthesized inside the <ul> at index 1
+    // (was a hardcoded sibling before, which placed it at slot 3/3).
+    const citizenBottomList = document.getElementById(
+      'app-shell-citizen-bottom-nav-list',
+    );
+    expect(citizenBottomList).toBeTruthy();
+    const bottomItems = citizenBottomList.querySelectorAll(':scope > li');
+    expect(bottomItems.length).toBe(3);
+    expect(bottomItems[0].querySelector('a').dataset.route).toBe('/feed');
+    expect(bottomItems[2].querySelector('a').dataset.route).toBe(
+      '/configuracion/perfil',
+    );
+
     const plusBtn = document.getElementById('app-shell-bottom-plus');
     expect(plusBtn).toBeTruthy();
     expect(plusBtn.classList.contains('app-shell-bottom-nav__plus')).toBe(true);
+    // The "+" must be INSIDE the <ul>, not a sibling of it.
+    expect(citizenBottomList.contains(plusBtn)).toBe(true);
+    expect(bottomItems[1].contains(plusBtn)).toBe(true);
 
     if (typeof unsub === 'function') unsub();
   });
@@ -1725,7 +1742,11 @@ describe('renderBottomNavMenu (T-2.3)', () => {
     if (typeof unsub === 'function') unsub();
   });
 
-  it('citizen (usuario) renders 2 items + plus button unchanged (S3.3, S3.5)', async () => {
+  it('citizen (usuario) renders 2 nav items + synthesized "+" <li> at index 1 (S3.3, S3.5, Cleanup)', async () => {
+    // Cleanup: the "+" plus button used to be a hardcoded sibling of the
+    // <ul>, which placed it at the trailing slot 3/3 because the <ul> has
+    // display: contents. The renderer now synthesizes it inside the <ul>
+    // at index 1, restoring the original centered slot 2/3.
     vi.spyOn(auth, 'getUser').mockReturnValue({
       id: 5,
       first_name: 'Usuario',
@@ -1757,17 +1778,12 @@ describe('renderBottomNavMenu (T-2.3)', () => {
 
     const bottomNav = document.createElement('nav');
     bottomNav.className = 'app-shell-bottom-nav';
-    // Citizen outlet wraps the plus button
+    // Citizen outlet — the renderer now synthesizes the "+" <li> inside
+    // this <ul>; we deliberately do NOT pre-create a sibling <a>.
     const ul = document.createElement('ul');
     ul.id = 'app-shell-citizen-bottom-nav-list';
     ul.className = 'app-shell-citizen-bottom-nav-list';
     bottomNav.appendChild(ul);
-    // Hardcoded plus button
-    const plusBtn = document.createElement('a');
-    plusBtn.id = 'app-shell-bottom-plus';
-    plusBtn.className = 'app-shell-bottom-nav__plus';
-    plusBtn.href = '#/feed/crear';
-    bottomNav.appendChild(plusBtn);
     document.body.appendChild(bottomNav);
 
     const { appShell } = await import('./app-shell.component.js');
@@ -1778,12 +1794,27 @@ describe('renderBottomNavMenu (T-2.3)', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    const anchors = ul.querySelectorAll('a.app-shell-nav-item');
-    expect(anchors.length).toBe(2);
-    expect(anchors[0].dataset.route).toBe('/feed');
-    expect(anchors[1].dataset.route).toBe('/configuracion/perfil');
+    // Three <li> children now: Feed, "+", Perfil (in that order).
+    const items = ul.querySelectorAll(':scope > li');
+    expect(items.length).toBe(3);
+    expect(items[0].querySelector('a').dataset.route).toBe('/feed');
+    expect(items[2].querySelector('a').dataset.route).toBe(
+      '/configuracion/perfil',
+    );
 
-    // S3.5: plus button still exists and is not duplicated (check in test-created bottomNav only)
+    // The middle <li> is the synthesized "+" — it carries the same
+    // contract the hardcoded one used to: a single <a> with the right
+    // classes, id, aria-label, and circle-plus icon.
+    const plusA = items[1].querySelector('a');
+    expect(plusA).toBeTruthy();
+    expect(plusA.classList.contains('app-shell-nav-item')).toBe(true);
+    expect(plusA.classList.contains('app-shell-bottom-nav__plus')).toBe(true);
+    expect(plusA.id).toBe('app-shell-bottom-plus');
+    expect(plusA.getAttribute('aria-label')).toBe('Reportar incidencia');
+    expect(plusA.querySelector('i').className).toBe('fa-solid fa-circle-plus');
+
+    // Exactly one #app-shell-bottom-plus in the test-created bottomNav —
+    // the renderer must not duplicate it across re-renders.
     expect(bottomNav.querySelectorAll('#app-shell-bottom-plus').length).toBe(1);
 
     bottomNav.remove();

@@ -102,6 +102,10 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
 
   it('citizen-mode renders citizen chrome (bell + avatar header + citizen sidebar + plus button)', async () => {
     const { auth } = await import('../auth/auth.service.js');
+    const { menuService } = await import('../shared/menu.service.js');
+    const { notificationService } = await import(
+      '../shared/notification.service.js'
+    );
     const citizenUser = {
       id: 7,
       first_name: 'Carla',
@@ -111,11 +115,39 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
     vi.spyOn(auth, 'getUser').mockReturnValue(citizenUser);
     vi.spyOn(auth, 'me').mockResolvedValue(citizenUser);
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    // The "+" plus button is now synthesized inside the citizen <ul> by
+    // renderBottomNavMenu. Stub the menu service so the renderer returns
+    // a deterministic citizen tree (Inicio + Perfil — Reportar is dropped
+    // because the CITIZEN whitelist only includes /feed and /profile).
+    vi.spyOn(menuService, 'getMyMenu').mockResolvedValue([
+      {
+        id: 16,
+        parent_id: null,
+        name: 'Inicio',
+        route: '/feed',
+        icon: 'house',
+        children: [],
+      },
+      {
+        id: 18,
+        parent_id: null,
+        name: 'Perfil',
+        route: '/configuracion/perfil',
+        icon: 'user',
+        children: [],
+      },
+    ]);
+    vi.spyOn(notificationService, 'unreadCount').mockResolvedValue(0);
 
     const { appShell } = await import('./app-shell.component.js');
 
     await appShell.mount();
     const unsub = await appShell.init();
+
+    // Drain the renderer's async chain before asserting DOM state.
+    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(document.body.dataset.role).toBe('citizen');
 
@@ -123,6 +155,9 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
     expect(document.getElementById('app-shell-bell')).toBeTruthy();
     expect(document.getElementById('app-shell-avatar')).toBeTruthy();
     expect(document.getElementById('app-shell-citizen-sidebar')).toBeTruthy();
+    // The "+" is now synthesized by renderBottomNavMenu, so it only
+    // exists after the renderer has run — that's why we drain the
+    // microtask chain above before asserting.
     expect(document.getElementById('app-shell-bottom-plus')).toBeTruthy();
 
     // Admin regions still in DOM but tagged for hiding via CSS.

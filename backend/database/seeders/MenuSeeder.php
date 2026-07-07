@@ -36,7 +36,7 @@ class MenuSeeder extends Seeder
         4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'manage']],
         6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes', 'icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
         // Gestión group (admin area, parent header)
-        7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-check',     'parent_id' => null, 'permission' => null],
+        7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-halved',    'parent_id' => null, 'permission' => null],
         8 => ['name' => 'Usuarios',               'route' => '/usuarios',              'icon' => 'user',             'parent_id' => 7,    'permission' => ['resource' => 'users',               'action' => 'view']],
         9 => ['name' => 'Roles',                  'route' => '/roles',                 'icon' => 'shield',           'parent_id' => 7,    'permission' => ['resource' => 'roles',               'action' => 'view']],
         // Catálogos group (parent header)
