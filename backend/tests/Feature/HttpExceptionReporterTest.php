@@ -192,3 +192,73 @@ it('does not derive status more than once per report call', function (): void {
 
     expect($spy->statusCodeCalls)->toBe(1);
 });
+
+/**
+ * R-001 (S10.7 contract tightening) — every record carries the expected type
+ * and shape, not merely the presence of each schema key.
+ *
+ * The presence-only assertion in S10.7 is necessary but not sufficient: a future
+ * regression that swapped `user_id` to the string "0", or turned `message` into
+ * `null`, would pass the original test. This test pins the type/contract for
+ * every key the schema defines.
+ */
+it('enforces the S10.7 contract with type and nullability assertions', function (): void {
+    Route::get('/api/__boom_contract__', fn () => throw new RuntimeException('boom'));
+
+    $this->withHeader('X-Request-ID', 'rid-contract')
+        ->getJson('/api/__boom_contract__');
+
+    $records = $this->testHandler->getRecords();
+    $ctx = $records[0]->context;
+
+    // event — string literal, fixed value
+    expect($ctx['event'])->toBe('http_exception');
+
+    // request_id — non-empty string (header honored)
+    expect($ctx['request_id'])->toBeString()
+        ->and($ctx['request_id'])->toBe('rid-contract');
+
+    // trace_id — UUIDv4 regex
+    expect($ctx['trace_id'])->toBeString()
+        ->and($ctx['trace_id'])->toMatch(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+        );
+
+    // user_id — null OR int (anon request has no user)
+    expect($ctx['user_id'])->toBeNull();
+
+    // route — non-empty string, path-without-leading-slash (Laravel `$request->path()` contract)
+    expect($ctx['route'])->toBeString()
+        ->and($ctx['route'])->not->toBe('')
+        ->and($ctx['route'])->not->toStartWith('/');
+
+    // method — uppercase HTTP verb string
+    expect($ctx['method'])->toBeString()
+        ->and($ctx['method'])->toBe(strtoupper($ctx['method']))
+        ->and($ctx['method'])->toBeIn(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']);
+
+    // status — int in [100, 599]
+    expect($ctx['status'])->toBeInt()
+        ->and($ctx['status'])->toBeGreaterThanOrEqual(100)
+        ->and($ctx['status'])->toBeLessThan(600);
+
+    // level — string in fixed set
+    expect($ctx['level'])->toBeString()
+        ->and($ctx['level'])->toBeIn(['error', 'warning']);
+
+    // exception_class — non-empty FQCN OR namespaced class name (PHP `::class` returns without leading backslash).
+    expect($ctx['exception_class'])->toBeString()
+        ->and($ctx['exception_class'])->not->toBe('');
+
+    // message — string (NOT null), non-empty
+    expect($ctx['message'])->toBeString()
+        ->and($ctx['message'])->toBe('boom');
+
+    // file — non-empty string (absolute or project-relative path)
+    expect($ctx['file'])->toBeString()
+        ->and($ctx['file'])->not->toBe('');
+
+    // line — int > 0
+    expect($ctx['line'])->toBeInt()
+        ->and($ctx['line'])->toBeGreaterThan(0);
+});
