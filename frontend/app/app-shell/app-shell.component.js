@@ -504,24 +504,42 @@ function buildLeafLink(item) {
  * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
  */
 const BOTTOM_NAV_WHITELIST = {
-  ADMIN_FULL: ['/dashboard', '/incidencias', '/incidencias/crear', '/configuracion/perfil'],
-  ADMIN_LIMITED: ['/incidencias', '/incidencias/pendientes', '/configuracion/perfil'],
+  ADMIN_FULL: [
+    '/dashboard',
+    '/incidencias',
+    '/incidencias/crear',
+    '/configuracion/perfil',
+  ],
+  ADMIN_LIMITED: [
+    '/incidencias',
+    '/incidencias/pendientes',
+    '/configuracion/perfil',
+  ],
   CITIZEN: ['/feed', '/configuracion/perfil'],
 };
 
 function pickBottomNavTarget() {
   const role = document.body.dataset.role;
-  if (role === 'admin') return document.getElementById('app-shell-bottom-nav-list');
-  if (role === 'citizen') return document.getElementById('app-shell-citizen-bottom-nav-list');
+  if (role === 'admin')
+    return document.getElementById('app-shell-bottom-nav-list');
+  if (role === 'citizen')
+    return document.getElementById('app-shell-citizen-bottom-nav-list');
   return null;
 }
 
 function pickBottomNavWhitelist(tree) {
-  // Check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
+  const role = document.body.dataset.role;
+  // Citizen uses a separate whitelist
+  if (role === 'citizen') return BOTTOM_NAV_WHITELIST.CITIZEN;
+  // For admin role, check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
   const hasCrear = tree.some(
-    (n) => n.route === '/incidencias/crear' || n.children?.some((c) => c.route === '/incidencias/crear'),
+    (n) =>
+      n.route === '/incidencias/crear' ||
+      n.children?.some((c) => c.route === '/incidencias/crear'),
   );
-  return hasCrear ? BOTTOM_NAV_WHITELIST.ADMIN_FULL : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
+  return hasCrear
+    ? BOTTOM_NAV_WHITELIST.ADMIN_FULL
+    : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
 }
 
 async function renderBottomNavMenu() {

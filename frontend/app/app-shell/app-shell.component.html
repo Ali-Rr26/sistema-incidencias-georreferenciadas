@@ -189,16 +189,18 @@
     <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
     <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-    <!-- T-3.4: Citizen bottom nav - DB-driven + hardcoded plus button -->
-    <ul id="app-shell-citizen-bottom-nav-list" class="app-shell-citizen-bottom-nav-list">
-      <a
-        href="javascript:void(0)"
-        class="app-shell-nav-item app-shell-bottom-nav__plus"
-        id="app-shell-bottom-plus"
-        aria-label="Reportar incidencia"
-      >
-        <i class="fa-solid fa-circle-plus"></i>
-      </a>
-    </ul>
+    <!-- T-3.4: Citizen bottom nav - DB-driven + hardcoded plus button OUTSIDE the dynamic ul -->
+    <ul
+      id="app-shell-citizen-bottom-nav-list"
+      class="app-shell-citizen-bottom-nav-list"
+    ></ul>
+    <a
+      href="javascript:void(0)"
+      class="app-shell-nav-item app-shell-bottom-nav__plus"
+      id="app-shell-bottom-plus"
+      aria-label="Reportar incidencia"
+    >
+      <i class="fa-solid fa-circle-plus"></i>
+    </a>
   </nav>
 </div>
