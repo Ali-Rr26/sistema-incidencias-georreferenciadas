@@ -304,3 +304,31 @@ it('generates a UUIDv4 request_id when X-Request-ID exceeds 128 chars', function
             '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
         );
 });
+
+/**
+ * R3 R-003 + R1 R-006 — `RuntimeException` with an HTTP-like `code` must be
+ * logged with that status (and 4xx-like level), not the historical default of 500.
+ *
+ * The render callback in `bootstrap/app.php` honors `$e->getCode()` for
+ * `RuntimeException` to surface 4xx to the user. The reporter previously only
+ * consulted `HttpExceptionInterface::getStatusCode()`, so the user got 422
+ * while the log said 500 — observability drift between response and log.
+ */
+it('uses getCode() for non-HttpException Throwable when code is HTTP-like', function (): void {
+    Route::get('/api/__boom_runtime_422__', function () {
+        throw new RuntimeException('unprocessable', 422);
+    });
+
+    $response = $this->getJson('/api/__boom_runtime_422__');
+
+    // The render callback delivers 422 to the client.
+    $response->assertStatus(422);
+
+    $records = $this->testHandler->getRecords();
+    expect($records)->toHaveCount(1)
+        // The log mirrors the response — no observability drift.
+        ->and($records[0]['level_name'])->toBe('WARNING')
+        ->and($records[0]->context['status'])->toBe(422)
+        ->and($records[0]->context['level'])->toBe('warning')
+        ->and($records[0]->context['message'])->toBe('unprocessable');
+});

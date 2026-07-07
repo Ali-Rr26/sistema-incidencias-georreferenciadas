@@ -71,18 +71,30 @@ final class HttpExceptionReporter
     /**
      * Resolve the HTTP status code for a Throwable.
      *
-     * Returns the HttpExceptionInterface status code when available,
-     * otherwise defaults to 500.
+     * Returns the HttpExceptionInterface status code when available. For any
+     * other Throwable, falls back to `$e->getCode()` when it carries an
+     * HTTP-like value (100-599) — so e.g. `new RuntimeException('msg', 422)`
+     * surfaces as 422 in the log, matching the response the user saw. Anything
+     * non-HTTP defaults to 500.
      */
     private function statusFromThrowable(Throwable $e): int
     {
         if ($e instanceof HttpExceptionInterface) {
-            $code = $e->getStatusCode();
-
-            return ($code >= 100 && $code < 600) ? $code : 500;
+            return $this->normalizeHttpStatus($e->getStatusCode());
         }
 
-        return 500;
+        $code = $e->getCode();
+
+        return is_int($code) ? $this->normalizeHttpStatus($code) : 500;
+    }
+
+    /**
+     * Clamp any HTTP-ish code to the valid range; non-conforming values fall
+     * back to 500.
+     */
+    private function normalizeHttpStatus(int $code): int
+    {
+        return ($code >= 100 && $code < 600) ? $code : 500;
     }
 
     private function requestId(Request $request): string
