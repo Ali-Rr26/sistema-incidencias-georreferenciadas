@@ -41,7 +41,7 @@ final class HttpExceptionReporter
     {
         $status = $this->statusFromThrowable($e);
         $level = $this->levelForStatus($e);
-        $context = $this->contextFor($e, $request);
+        $context = $this->contextFor($e, $request, $status, $level);
 
         $channel = Log::channel('exceptions');
 
@@ -114,7 +114,7 @@ final class HttpExceptionReporter
      *
      * @return array<string,mixed>
      */
-    private function contextFor(Throwable $e, Request $request): array
+    private function contextFor(Throwable $e, Request $request, int $status, string $level): array
     {
         $user = $request->user();
 
@@ -125,8 +125,8 @@ final class HttpExceptionReporter
             'user_id' => $user !== null ? $user->getAuthIdentifier() : null,
             'route' => $request->path(),
             'method' => $request->method(),
-            'status' => $this->statusFromThrowable($e),
-            'level' => $this->levelForStatus($e),
+            'status' => $status,
+            'level' => $level,
             'exception_class' => $e::class,
             'message' => $e->getMessage(),
             'file' => $e->getFile(),
