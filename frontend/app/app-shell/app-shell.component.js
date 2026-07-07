@@ -155,6 +155,10 @@ export const appShell = {
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
+      // T-3.3: Wire bottom-nav hydration alongside sidebar
+      renderBottomNavMenu().catch(() => {
+        // No-op: empty bottom-nav is preferable to crashing the shell.
+      });
     }
 
     // Re-apply role on every auth change (login / logout / role swap).
@@ -172,6 +176,10 @@ export const appShell = {
       if (document.body.dataset.role !== 'guest') {
         await renderSidebarMenu().catch(() => {
           // No-op: empty sidebar is preferable to crashing the shell.
+        });
+        // T-3.3: Wire bottom-nav hydration alongside sidebar on auth change
+        await renderBottomNavMenu().catch(() => {
+          // No-op: empty bottom-nav is preferable to crashing the shell.
         });
       }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
@@ -476,7 +484,10 @@ function buildLeafLink(item) {
 
   if (item.icon) {
     const i = document.createElement('i');
-    i.className = item.icon;
+    // R1.3: one-way contract — backend ships bare FA name;
+    // renderer prepends prefix exactly once. Do not add defensive
+    // startsWith('fa-') checks.
+    i.className = `fa-solid fa-${item.icon}`;
     a.appendChild(i);
   }
 
@@ -486,6 +497,123 @@ function buildLeafLink(item) {
 
   li.appendChild(a);
   return li;
+}
+
+/**
+ * T-3.2: renderBottomNavMenu - hydrates bottom-nav from /api/menus/my
+ * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
+ */
+const BOTTOM_NAV_WHITELIST = {
+  ADMIN_FULL: [
+    '/dashboard',
+    '/incidencias',
+    '/incidencias/crear',
+    '/configuracion/perfil',
+  ],
+  ADMIN_LIMITED: [
+    '/incidencias',
+    '/incidencias/pendientes',
+    '/configuracion/perfil',
+  ],
+  CITIZEN: ['/feed', '/configuracion/perfil'],
+};
+
+function pickBottomNavTarget() {
+  const role = document.body.dataset.role;
+  if (role === 'admin')
+    return document.getElementById('app-shell-bottom-nav-list');
+  if (role === 'citizen')
+    return document.getElementById('app-shell-citizen-bottom-nav-list');
+  return null;
+}
+
+function pickBottomNavWhitelist(tree) {
+  const role = document.body.dataset.role;
+  // Citizen uses a separate whitelist
+  if (role === 'citizen') return BOTTOM_NAV_WHITELIST.CITIZEN;
+  // For admin role, check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
+  const hasCrear = tree.some(
+    (n) =>
+      n.route === '/incidencias/crear' ||
+      n.children?.some((c) => c.route === '/incidencias/crear'),
+  );
+  return hasCrear
+    ? BOTTOM_NAV_WHITELIST.ADMIN_FULL
+    : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
+}
+
+async function renderBottomNavMenu() {
+  const listEl = pickBottomNavTarget();
+  if (!listEl) return;
+
+  const tree = await menuService.getMyMenu();
+  if (!Array.isArray(tree) || tree.length === 0) {
+    listEl.replaceChildren();
+    return;
+  }
+
+  const whitelist = pickBottomNavWhitelist(tree);
+  const nodes = [];
+
+  for (const item of tree) {
+    const leaves = item.children?.length ? item.children : [item];
+    for (const leaf of leaves) {
+      if (!leaf.route || !whitelist.includes(leaf.route)) continue;
+      const li = buildLeafLink(leaf);
+      // R3.5: Add __create class to /incidencias/crear for CSS variant + updateActive skip-list
+      if (leaf.route === '/incidencias/crear') {
+        li.querySelector('a').classList.add('app-shell-bottom-nav__create');
+      }
+      nodes.push(li);
+    }
+  }
+
+  // Cleanup: citizen-only "+" plus button. The hardcoded sibling of the
+  // <ul> was placed at the trailing slot 3/3 because the <ul> has
+  // display: contents and doesn't occupy a grid cell. Synthesizing the
+  // "+" as an <li> inside the <ul> at index 1 restores the original
+  // centered slot 2/3 between Feed and Perfil.
+  //
+  // Admin role does NOT inject a "+" — admin already renders
+  // /incidencias/crear via the __create class, which is visually the
+  // same affordance with a different shape.
+  if (document.body.dataset.role === 'citizen' && nodes.length >= 1) {
+    const plusLi = document.createElement('li');
+    const plusA = document.createElement('a');
+    plusA.href = 'javascript:void(0)';
+    plusA.className = 'app-shell-nav-item app-shell-bottom-nav__plus';
+    plusA.id = 'app-shell-bottom-plus';
+    plusA.setAttribute('aria-label', 'Reportar incidencia');
+    const plusI = document.createElement('i');
+    plusI.className = 'fa-solid fa-circle-plus';
+    plusA.appendChild(plusI);
+    plusLi.appendChild(plusA);
+    nodes.splice(1, 0, plusLi);
+    // The synthesized <a> only exists from this point onward — wire its
+    // click handler at the same lifecycle point so auth-change re-renders
+    // get a fresh handler attached to the fresh element.
+    wirePlusButton(plusA);
+  }
+
+  listEl.replaceChildren(...nodes);
+}
+
+/**
+ * Wire the click handler on the synthesized citizen "+" plus button.
+ * Pre-Cleanup this logic lived in wireNav() against the hardcoded
+ * <a id="app-shell-bottom-plus">; post-Cleanup the element only exists
+ * once renderBottomNavMenu() has run, so the wiring must follow the
+ * same lifecycle.
+ */
+function wirePlusButton(plusA) {
+  plusA.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (auth.isAuthenticated()) {
+      window.location.hash = '#/feed/crear';
+    } else {
+      window.location.hash = '#/login';
+    }
+  });
 }
 
 async function populateHeader() {
@@ -536,27 +664,20 @@ async function populateHeader() {
 
 /**
  * Wire up dynamic navigation actions:
- *   - The citizen/guest "+" plus button: redirect to /feed/crear when
- *     authenticated, /login otherwise.
  *   - The admin user-menu trigger: opens a WAI-ARIA menu-button dropdown
  *     with "Mi perfil" (navigate) and "Cerrar sesión" (await auth.logout()
  *     then redirect). Adds Escape-to-close, focus restoration, outside-click
  *     close, and a 300 ms debounce on logout to mitigate the async race
  *     documented in proposal R2.
+ *
+ * Cleanup note: the citizen "+" plus button click handler used to live
+ * here, but the "+" is now synthesized by renderBottomNavMenu() (so it
+ * lands in the centered slot 2/3 between Feed and Perfil) and its
+ * wiring is attached right after synthesis inside the renderer. The
+ * two lifecycles now match — re-rendering on auth change yields a
+ * fresh element with a fresh handler.
  */
 function wireNav() {
-  const plusBtn = document.getElementById('app-shell-bottom-plus');
-  if (plusBtn) {
-    plusBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (auth.isAuthenticated()) {
-        window.location.hash = '#/feed/crear';
-      } else {
-        window.location.hash = '#/login';
-      }
-    });
-  }
-
   // T-1.11.6 + citizen parity: wire both user-menu instances (admin +
   // citizen) through the shared factory. We push every successfully
   // initialised menu into _userMenus so destroy() can tear them all

@@ -77,29 +77,15 @@ const TEMPLATE_HTML = `
 
 <nav class="app-shell-bottom-nav">
   <!-- Admin bottom nav: 4 items, 3rd slot is "Crear incidencia" (T-2.7: Alertas removed) -->
-  <a href="#/dashboard" class="app-shell-nav-item" data-route="/dashboard" data-show-on-role="admin">
-    <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
-  </a>
-  <a href="#/incidencias" class="app-shell-nav-item" data-route="/incidencias" data-show-on-role="admin">
-    <i class="fa-solid fa-clipboard-list"></i><span>Incidencias</span>
-  </a>
-  <a href="#/incidencias/crear" class="app-shell-nav-item app-shell-bottom-nav__create" data-route="/incidencias/crear" data-show-on-role="admin">
-    <i class="fa-solid fa-circle-plus"></i><span>Crear</span>
-  </a>
-  <a href="#/configuracion/perfil" class="app-shell-nav-item" data-route="/configuracion/perfil" data-show-on-role="admin">
-    <i class="fa-solid fa-user"></i><span>Perfil</span>
-  </a>
+  <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
+  <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-  <!-- Citizen bottom nav: 3 items + plus button (T-2.7: Mapa + Alertas removed) -->
-  <a href="#/feed" class="app-shell-nav-item" data-route="/feed" data-show-on-role="citizen,guest">
-    <i class="fa-solid fa-house"></i><span>Feed</span>
-  </a>
-  <a href="javascript:void(0)" class="app-shell-nav-item app-shell-bottom-nav__plus" id="app-shell-bottom-plus" data-show-on-role="citizen,guest">
-    <i class="fa-solid fa-circle-plus"></i>
-  </a>
-  <a href="#/configuracion/perfil" class="app-shell-nav-item" data-route="/configuracion/perfil" data-show-on-role="citizen,guest">
-    <i class="fa-solid fa-user"></i><span>Perfil</span>
-  </a>
+  <!-- T-3.4 + Cleanup: Citizen bottom nav is DB-driven and the "+" plus
+       button is now synthesized inside the <ul> at index 1 (between Feed
+       and Perfil) by renderBottomNavMenu. It used to be a hardcoded
+       sibling of the <ul>, which placed it at the far-right slot 3/3
+       because the <ul> has display: contents. -->
+  <ul id="app-shell-citizen-bottom-nav-list" class="app-shell-citizen-bottom-nav-list"></ul>
 </nav>
 `;
 
@@ -168,6 +154,33 @@ describe('appShell — lifecycle (T-1.8)', () => {
   });
 
   it('updateActive(path) toggles .active on matching data-route items', async () => {
+    // Mock auth to render nav items (admin role triggers dynamic rendering)
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 1,
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    });
+    vi.spyOn(menuService, 'getMyMenu').mockResolvedValue([
+      {
+        id: 1,
+        parent_id: null,
+        name: 'Dashboard',
+        route: '/dashboard',
+        icon: 'gauge-high',
+        children: [],
+      },
+      {
+        id: 2,
+        parent_id: null,
+        name: 'Incidencias',
+        route: '/incidencias',
+        icon: 'list',
+        children: [],
+      },
+    ]);
+
     const { appShell } = await import('./app-shell.component.js');
 
     await appShell.mount();
@@ -493,7 +506,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Dashboard',
         route: '/dashboard',
-        icon: 'fa-gauge',
+        icon: 'gauge-high',
         children: [],
       },
       {
@@ -501,7 +514,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Incidencias',
         route: '/incidencias',
-        icon: 'fa-list',
+        icon: 'list',
         children: [],
       },
       {
@@ -509,7 +522,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Nueva Incidencia',
         route: '/incidencias/crear',
-        icon: 'fa-plus',
+        icon: 'circle-plus',
         children: [],
       },
     ]);
@@ -520,21 +533,22 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
     await appShell.mount();
     const unsub = await appShell.init();
 
-    expect(document.body.dataset.role).toBe('admin');
-
-    // Admin sidebar nav must be present
-    expect(document.getElementById('app-shell-admin-sidebar')).toBeTruthy();
-    // Admin-specific bottom nav items
-    const adminBottom = document.querySelector(
-      '.app-shell-bottom-nav [data-route="/incidencias/crear"]',
-    );
-    expect(adminBottom).toBeTruthy();
-    expect(adminBottom.textContent).toMatch(/Crear/);
-
     // Drain the renderer's microtask chain.
     await new Promise((r) => setTimeout(r, 0));
     await Promise.resolve();
     await Promise.resolve();
+
+    expect(document.body.dataset.role).toBe('admin');
+
+    // Admin sidebar nav must be present
+    expect(document.getElementById('app-shell-admin-sidebar')).toBeTruthy();
+
+    // Admin-specific bottom nav items (now DB-driven)
+    const adminBottom = document.querySelector(
+      '.app-shell-bottom-nav [data-route="/incidencias/crear"]',
+    );
+    expect(adminBottom).toBeTruthy();
+    expect(adminBottom.textContent).toMatch(/Nueva Incidencia/);
 
     // Admin sidebar items now come from the mocked /menus/my payload.
     const adminList = document.getElementById('app-shell-admin-menu-list');
@@ -543,6 +557,15 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
     expect(anchors[0].dataset.route).toBe('/dashboard');
     expect(anchors[1].dataset.route).toBe('/incidencias');
     expect(anchors[2].dataset.route).toBe('/incidencias/crear');
+
+    // T-2.2: icon-className assertions (R1.4, RX.2)
+    expect(anchors[0].querySelector('i').className).toBe(
+      'fa-solid fa-gauge-high',
+    );
+    expect(anchors[1].querySelector('i').className).toBe('fa-solid fa-list');
+    expect(anchors[2].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
 
     // T-2.7: /mapa and /alertas must NOT be rendered anywhere in the bottom nav.
     expect(
@@ -571,7 +594,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Inicio',
         route: '/feed',
-        icon: 'fa-house',
+        icon: 'house',
         children: [],
       },
       {
@@ -579,7 +602,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Reportar',
         route: '/feed/crear',
-        icon: 'fa-plus',
+        icon: 'circle-plus',
         children: [],
       },
       {
@@ -587,7 +610,7 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
         parent_id: null,
         name: 'Perfil',
         route: '/configuracion/perfil',
-        icon: 'fa-user',
+        icon: 'user',
         children: [],
       },
     ]);
@@ -615,6 +638,13 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
     expect(anchors[1].dataset.route).toBe('/feed/crear');
     expect(anchors[2].dataset.route).toBe('/configuracion/perfil');
 
+    // T-2.2: icon-className assertions (R1.4, RX.2)
+    expect(anchors[0].querySelector('i').className).toBe('fa-solid fa-house');
+    expect(anchors[1].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
+    expect(anchors[2].querySelector('i').className).toBe('fa-solid fa-user');
+
     // T-2.7: /mapa and /alertas MUST NOT appear anywhere in the
     // citizen sidebar or bottom-nav. The original hardcoded citizen
     // sidebar items (Inicio/Mapa/Alertas/Perfil) are gone.
@@ -632,10 +662,26 @@ describe('appShell — role-specific rendering (T-1.10)', () => {
       ).length,
     ).toBe(0);
 
-    // Citizen bottom nav: 3 items + the "+" plus button (5th slot gone).
+    // Citizen bottom nav: 3 items total — Feed <li>, "+" <li>, Perfil <li>.
+    // Cleanup: the "+" is now synthesized inside the <ul> at index 1
+    // (was a hardcoded sibling before, which placed it at slot 3/3).
+    const citizenBottomList = document.getElementById(
+      'app-shell-citizen-bottom-nav-list',
+    );
+    expect(citizenBottomList).toBeTruthy();
+    const bottomItems = citizenBottomList.querySelectorAll(':scope > li');
+    expect(bottomItems.length).toBe(3);
+    expect(bottomItems[0].querySelector('a').dataset.route).toBe('/feed');
+    expect(bottomItems[2].querySelector('a').dataset.route).toBe(
+      '/configuracion/perfil',
+    );
+
     const plusBtn = document.getElementById('app-shell-bottom-plus');
     expect(plusBtn).toBeTruthy();
     expect(plusBtn.classList.contains('app-shell-bottom-nav__plus')).toBe(true);
+    // The "+" must be INSIDE the <ul>, not a sibling of it.
+    expect(citizenBottomList.contains(plusBtn)).toBe(true);
+    expect(bottomItems[1].contains(plusBtn)).toBe(true);
 
     if (typeof unsub === 'function') unsub();
   });
@@ -1259,7 +1305,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Inicio',
         route: '/feed',
-        icon: 'fa-house',
+        icon: 'house',
         children: [],
       },
       {
@@ -1267,7 +1313,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Reportar',
         route: '/feed/crear',
-        icon: 'fa-plus',
+        icon: 'circle-plus',
         children: [],
       },
       {
@@ -1275,7 +1321,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Perfil',
         route: '/configuracion/perfil',
-        icon: 'fa-user',
+        icon: 'user',
         children: [],
       },
     ];
@@ -1309,6 +1355,13 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
     expect(anchors[1].dataset.route).toBe('/feed/crear');
     expect(anchors[2].dataset.route).toBe('/configuracion/perfil');
 
+    // T-2.2: icon-className assertions (R1.4, RX.2)
+    expect(anchors[0].querySelector('i').className).toBe('fa-solid fa-house');
+    expect(anchors[1].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
+    expect(anchors[2].querySelector('i').className).toBe('fa-solid fa-user');
+
     // Admin sidebar must NOT be touched when the citizen renderer runs.
     const adminList = document.getElementById('app-shell-admin-menu-list');
     expect(adminList.children.length).toBe(0);
@@ -1323,7 +1376,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Dashboard',
         route: '/dashboard',
-        icon: 'fa-gauge',
+        icon: 'gauge-high',
         children: [],
       },
       {
@@ -1331,7 +1384,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Incidencias',
         route: '/incidencias',
-        icon: 'fa-list',
+        icon: 'list',
         children: [],
       },
       {
@@ -1339,7 +1392,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
         parent_id: null,
         name: 'Nueva Incidencia',
         route: '/incidencias/crear',
-        icon: 'fa-plus',
+        icon: 'circle-plus',
         children: [],
       },
     ];
@@ -1370,6 +1423,15 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
     expect(anchors[1].dataset.route).toBe('/incidencias');
     expect(anchors[2].dataset.route).toBe('/incidencias/crear');
 
+    // T-2.2: icon-className assertions (R1.4, RX.2)
+    expect(anchors[0].querySelector('i').className).toBe(
+      'fa-solid fa-gauge-high',
+    );
+    expect(anchors[1].querySelector('i').className).toBe('fa-solid fa-list');
+    expect(anchors[2].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
+
     // Citizen sidebar must NOT be touched when the admin renderer runs.
     const citizenList = document.getElementById('app-shell-citizen-menu-list');
     expect(citizenList.children.length).toBe(0);
@@ -1391,7 +1453,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
             parent_id: 1,
             name: 'Lista',
             route: '/incidencias',
-            icon: 'fa-list',
+            icon: 'list',
             children: [],
           },
           {
@@ -1399,7 +1461,7 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
             parent_id: 1,
             name: 'Nueva',
             route: '/incidencias/crear',
-            icon: 'fa-plus',
+            icon: 'circle-plus',
             children: [],
           },
         ],
@@ -1434,6 +1496,12 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
     expect(leaves.length).toBe(2);
     expect(leaves[0].dataset.route).toBe('/incidencias');
     expect(leaves[1].dataset.route).toBe('/incidencias/crear');
+
+    // T-2.2: icon-className assertions for section children (R1.4, RX.2)
+    expect(leaves[0].querySelector('i').className).toBe('fa-solid fa-list');
+    expect(leaves[1].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
 
     if (typeof unsub === 'function') unsub();
   });
@@ -1484,6 +1552,333 @@ describe('appShell — renderSidebarMenu (T-2.5 menu-server-driven)', () => {
     expect(adminList.children.length).toBe(0);
     expect(citizenList.children.length).toBe(0);
 
+    if (typeof unsub === 'function') unsub();
+    getMyMenuSpyForGuest.mockRestore();
+  });
+});
+
+/**
+ * T-2.3: renderBottomNavMenu test scenarios (R3.3, R3.4, R3.5 / S3.1-S3.6)
+ * These tests verify the bottom-nav is hydrated from /api/menus/my
+ * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
+ */
+describe('renderBottomNavMenu (T-2.3)', () => {
+  let getMyMenuSpy;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (getMyMenuSpy) getMyMenuSpy.mockRestore();
+  });
+
+  it('admin with dashboard.view renders 4 items in bottom-nav (S3.1)', async () => {
+    // Admin with full permissions: dashboard.view + incidents.view + incidents.manage + profile.view
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 1,
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    });
+    // Simulate admin with /incidencias/crear in tree (has incidents.manage)
+    const adminMenu = [
+      {
+        id: 1,
+        parent_id: null,
+        name: 'Dashboard',
+        route: '/dashboard',
+        icon: 'gauge-high',
+        children: [],
+      },
+      {
+        id: 2,
+        parent_id: null,
+        name: 'Incidencias',
+        route: '/incidencias',
+        icon: 'list',
+        children: [],
+      },
+      {
+        id: 4,
+        parent_id: null,
+        name: 'Nueva Incidencia',
+        route: '/incidencias/crear',
+        icon: 'circle-plus',
+        children: [],
+      },
+      {
+        id: 18,
+        parent_id: null,
+        name: 'Perfil',
+        route: '/configuracion/perfil',
+        icon: 'user',
+        children: [],
+      },
+    ];
+    getMyMenuSpy = vi
+      .spyOn(menuService, 'getMyMenu')
+      .mockResolvedValue(adminMenu);
+
+    // Create the outlet element
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'app-shell-bottom-nav';
+    const ul = document.createElement('ul');
+    ul.id = 'app-shell-bottom-nav-list';
+    ul.className = 'app-shell-bottom-nav-list';
+    bottomNav.appendChild(ul);
+    document.body.appendChild(bottomNav);
+
+    const { appShell } = await import('./app-shell.component.js');
+    // Call renderBottomNavMenu directly if exported, otherwise test via init()
+    await appShell.mount();
+    const unsub = await appShell.init();
+
+    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const anchors = ul.querySelectorAll('a.app-shell-nav-item');
+    expect(anchors.length).toBe(4);
+    expect(anchors[0].dataset.route).toBe('/dashboard');
+    expect(anchors[1].dataset.route).toBe('/incidencias');
+    expect(anchors[2].dataset.route).toBe('/incidencias/crear');
+    expect(anchors[3].dataset.route).toBe('/configuracion/perfil');
+
+    // Verify icon classes
+    expect(anchors[0].querySelector('i').className).toBe(
+      'fa-solid fa-gauge-high',
+    );
+    expect(anchors[1].querySelector('i').className).toBe('fa-solid fa-list');
+    expect(anchors[2].querySelector('i').className).toBe(
+      'fa-solid fa-circle-plus',
+    );
+    expect(anchors[3].querySelector('i').className).toBe('fa-solid fa-user');
+
+    // S3.6: /incidencias/crear should have __create class
+    expect(anchors[2].classList.contains('app-shell-bottom-nav__create')).toBe(
+      true,
+    );
+
+    bottomNav.remove();
+    if (typeof unsub === 'function') unsub();
+  });
+
+  it('operador_organizacion (no dashboard.view, no incidents.manage) renders 3 items (S3.2)', async () => {
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 2,
+      first_name: 'Operador',
+      last_name: 'Org',
+      email: 'operador@example.com',
+      role: { id: 3, name: 'operador_organizacion' },
+    });
+    // operador_organizacion: no dashboard.view, no incidents.manage, but has incidents.view
+    const limitedMenu = [
+      {
+        id: 2,
+        parent_id: null,
+        name: 'Lista',
+        route: '/incidencias',
+        icon: 'list',
+        children: [],
+      },
+      {
+        id: 6,
+        parent_id: null,
+        name: 'Pendientes',
+        route: '/incidencias/pendientes',
+        icon: 'clock',
+        children: [],
+      },
+      {
+        id: 18,
+        parent_id: null,
+        name: 'Perfil',
+        route: '/configuracion/perfil',
+        icon: 'user',
+        children: [],
+      },
+    ];
+    getMyMenuSpy = vi
+      .spyOn(menuService, 'getMyMenu')
+      .mockResolvedValue(limitedMenu);
+
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'app-shell-bottom-nav';
+    const ul = document.createElement('ul');
+    ul.id = 'app-shell-bottom-nav-list';
+    ul.className = 'app-shell-bottom-nav-list';
+    bottomNav.appendChild(ul);
+    document.body.appendChild(bottomNav);
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+
+    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const anchors = ul.querySelectorAll('a.app-shell-nav-item');
+    expect(anchors.length).toBe(3);
+    expect(anchors[0].dataset.route).toBe('/incidencias');
+    expect(anchors[1].dataset.route).toBe('/incidencias/pendientes');
+    expect(anchors[2].dataset.route).toBe('/configuracion/perfil');
+
+    // No Dashboard, no Crear
+    expect(ul.querySelector('[data-route="/dashboard"]')).toBeNull();
+    expect(ul.querySelector('[data-route="/incidencias/crear"]')).toBeNull();
+
+    bottomNav.remove();
+    if (typeof unsub === 'function') unsub();
+  });
+
+  it('citizen (usuario) renders 2 nav items + synthesized "+" <li> at index 1 (S3.3, S3.5, Cleanup)', async () => {
+    // Cleanup: the "+" plus button used to be a hardcoded sibling of the
+    // <ul>, which placed it at the trailing slot 3/3 because the <ul> has
+    // display: contents. The renderer now synthesizes it inside the <ul>
+    // at index 1, restoring the original centered slot 2/3.
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 5,
+      first_name: 'Usuario',
+      last_name: 'Ciudadano',
+      email: 'usuario@example.com',
+      role: { id: 5, name: 'usuario' },
+    });
+    const citizenMenu = [
+      {
+        id: 16,
+        parent_id: null,
+        name: 'Inicio',
+        route: '/feed',
+        icon: 'house',
+        children: [],
+      },
+      {
+        id: 18,
+        parent_id: null,
+        name: 'Perfil',
+        route: '/configuracion/perfil',
+        icon: 'user',
+        children: [],
+      },
+    ];
+    getMyMenuSpy = vi
+      .spyOn(menuService, 'getMyMenu')
+      .mockResolvedValue(citizenMenu);
+
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'app-shell-bottom-nav';
+    // Citizen outlet — the renderer now synthesizes the "+" <li> inside
+    // this <ul>; we deliberately do NOT pre-create a sibling <a>.
+    const ul = document.createElement('ul');
+    ul.id = 'app-shell-citizen-bottom-nav-list';
+    ul.className = 'app-shell-citizen-bottom-nav-list';
+    bottomNav.appendChild(ul);
+    document.body.appendChild(bottomNav);
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+
+    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Three <li> children now: Feed, "+", Perfil (in that order).
+    const items = ul.querySelectorAll(':scope > li');
+    expect(items.length).toBe(3);
+    expect(items[0].querySelector('a').dataset.route).toBe('/feed');
+    expect(items[2].querySelector('a').dataset.route).toBe(
+      '/configuracion/perfil',
+    );
+
+    // The middle <li> is the synthesized "+" — it carries the same
+    // contract the hardcoded one used to: a single <a> with the right
+    // classes, id, aria-label, and circle-plus icon.
+    const plusA = items[1].querySelector('a');
+    expect(plusA).toBeTruthy();
+    expect(plusA.classList.contains('app-shell-nav-item')).toBe(true);
+    expect(plusA.classList.contains('app-shell-bottom-nav__plus')).toBe(true);
+    expect(plusA.id).toBe('app-shell-bottom-plus');
+    expect(plusA.getAttribute('aria-label')).toBe('Reportar incidencia');
+    expect(plusA.querySelector('i').className).toBe('fa-solid fa-circle-plus');
+
+    // Exactly one #app-shell-bottom-plus in the test-created bottomNav —
+    // the renderer must not duplicate it across re-renders.
+    expect(bottomNav.querySelectorAll('#app-shell-bottom-plus').length).toBe(1);
+
+    bottomNav.remove();
+    if (typeof unsub === 'function') unsub();
+  });
+
+  it('empty tree renders 0 items, no crash (S3.4)', async () => {
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 1,
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    });
+    getMyMenuSpy = vi.spyOn(menuService, 'getMyMenu').mockResolvedValue([]);
+
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'app-shell-bottom-nav';
+    const ul = document.createElement('ul');
+    ul.id = 'app-shell-bottom-nav-list';
+    ul.className = 'app-shell-bottom-nav-list';
+    bottomNav.appendChild(ul);
+    document.body.appendChild(bottomNav);
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+
+    await new Promise((r) => setTimeout(r, 0));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const anchors = ul.querySelectorAll('a.app-shell-nav-item');
+    expect(anchors.length).toBe(0);
+
+    bottomNav.remove();
+    if (typeof unsub === 'function') unsub();
+  });
+
+  it('guest role does NOT call renderBottomNavMenu (S3.4-guest)', async () => {
+    document.body.dataset.role = 'guest';
+    const getMyMenuSpyForGuest = vi.spyOn(menuService, 'getMyMenu');
+
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'app-shell-bottom-nav';
+    const adminUl = document.createElement('ul');
+    adminUl.id = 'app-shell-bottom-nav-list';
+    bottomNav.appendChild(adminUl);
+    const citizenUl = document.createElement('ul');
+    citizenUl.id = 'app-shell-citizen-bottom-nav-list';
+    bottomNav.appendChild(citizenUl);
+    document.body.appendChild(bottomNav);
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(getMyMenuSpyForGuest).not.toHaveBeenCalled();
+    expect(adminUl.children.length).toBe(0);
+    expect(citizenUl.children.length).toBe(0);
+
+    bottomNav.remove();
     if (typeof unsub === 'function') unsub();
     getMyMenuSpyForGuest.mockRestore();
   });
