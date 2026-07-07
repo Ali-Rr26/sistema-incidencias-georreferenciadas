@@ -262,3 +262,45 @@ it('enforces the S10.7 contract with type and nullability assertions', function 
     expect($ctx['line'])->toBeInt()
         ->and($ctx['line'])->toBeGreaterThan(0);
 });
+
+/**
+ * R3 R-002 (REQ-005 S5.3) — empty X-Request-ID header is treated as missing,
+ * and a UUIDv4 is generated instead. Prevents log-injection with empty headers.
+ */
+it('generates a UUIDv4 request_id when X-Request-ID header is empty', function (): void {
+    Route::get('/api/__boom_empty_rid__', fn () => throw new RuntimeException('boom'));
+
+    $this->withHeader('X-Request-ID', '')
+        ->getJson('/api/__boom_empty_rid__');
+
+    $records = $this->testHandler->getRecords();
+    $requestId = $records[0]->context['request_id'];
+
+    expect($requestId)->not->toBe('')
+        ->and($requestId)->toMatch(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+        );
+});
+
+/**
+ * R3 R-002 (REQ-005 S5.4) — X-Request-ID header exceeding REQUEST_ID_MAX_LENGTH
+ * (128) is replaced by a UUIDv4 to defend against log injection. The header is
+ * NOT truncated.
+ */
+it('generates a UUIDv4 request_id when X-Request-ID exceeds 128 chars', function (): void {
+    Route::get('/api/__boom_long_rid__', fn () => throw new RuntimeException('boom'));
+
+    $oversize = str_repeat('a', 200);
+
+    $this->withHeader('X-Request-ID', $oversize)
+        ->getJson('/api/__boom_long_rid__');
+
+    $records = $this->testHandler->getRecords();
+    $requestId = $records[0]->context['request_id'];
+
+    // The raw header MUST NOT be echoed verbatim (no log injection).
+    expect($requestId)->not->toBe($oversize)
+        ->and($requestId)->toMatch(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/',
+        );
+});
