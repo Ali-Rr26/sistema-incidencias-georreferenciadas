@@ -33,6 +33,21 @@ class MenuSeeder extends Seeder
         // id 4 gate: incidents.manage (re-gated from incidents.create in the
         // menu-server-driven change). incidents.create is the citizen /feed/crear
         // policy gate and remains in usuario grants.
+        // menu_id 4 (Nueva Incidencia, admin) and menu_id 17 (Reportar, citizen)
+        // intentionally live as TWO separate rows even though both mount
+        // `incidenciaFormComponent` on the frontend. The frontend component is
+        // shared (DRY), but the DB-level separation encodes the security
+        // boundary established in commit 43e66378:
+        //   - id  4 is gated by `incidents.manage` (back-office permission).
+        //   - id 17 is gated by `feed.view`        (citizen feed permission).
+        // Collapsing them into a single row with role-based route resolution
+        // would re-introduce the leak where `usuario` (citizen) saw the admin
+        // /incidencias/crear route in their menu despite lacking back-office
+        // permissions. The routes also live in different namespaces by design
+        // (/feed/crear is the citizen public funnel — analytics-tracked
+        // separately — /incidencias/crear is the back-office create flow).
+        // Do NOT refactor this pair without first re-reading commit 43e66378
+        // and confirming the security boundary is preserved.
         4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',     'icon' => 'circle-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'manage']],
         6 => ['name' => 'Pendientes',             'route' => '/incidencias/pendientes', 'icon' => 'clock',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
         // Gestión group (admin area, parent header)
@@ -48,7 +63,7 @@ class MenuSeeder extends Seeder
         15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
         // Citizen entries (no parent header, flat at the root)
         16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
-        17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
+        17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']], // See comment on menu_id 4 above — these two are a security-split pair, not a duplication to clean up.
         18 => ['name' => 'Perfil',                'route' => '/configuracion/perfil',  'icon' => 'user',             'parent_id' => null, 'permission' => ['resource' => 'profile',             'action' => 'view']],
     ];
 

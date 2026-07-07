@@ -221,6 +221,32 @@ it('menu id 4 (Nueva Incidencia) is gated by incidents.manage, not incidents.cre
         ->and($perm->action)->toBe('manage');
 });
 
+it('citizen (usuario) never sees admin back-office create route — regression for leak 43e66378', function (): void {
+    // Regression pinning for the security fix in commit 43e66378.
+    // Before that commit, the `usuario` role (citizen) saw the admin
+    // /incidencias/crear route in their menu despite having only `feed.view`
+    // (not `incidents.manage`). The fix split the menu entry into two rows
+    // with distinct permission gates:
+    //   - menu_id 17 (Reportar)         → feed.view
+    //   - menu_id  4 (Nueva Incidencia) → incidents.manage
+    //
+    // This focused tripwire exists alongside the broader per-role assertions
+    // (lines 157 and 212) so that any future "cleanup" of the apparent
+    // duplication is caught by CI with an explicit, named failure before it
+    // ships. If this test breaks, re-read commit 43e66378 before touching
+    // MenuSeeder.
+    $user = User::factory()->create(['role_id' => 5]); // usuario = citizen
+
+    $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
+
+    $response->assertOk();
+    $routes = collectRoutes($response->json('data'));
+
+    // The back-office create route must never appear in a citizen's menu,
+    // regardless of any other permissions they hold.
+    expect($routes)->not->toContain('/incidencias/crear');
+});
+
 it('menu id 1 (Dashboard) stores icon = gauge-high', function (): void {
     $dashboard = Menu::where('menu_id', 1)->first();
     expect($dashboard)->not->toBeNull()
