@@ -243,6 +243,21 @@
           Al crear una cuenta aceptás los términos de uso.
         </p>
       </form>
+
+      <!-- Google sign-in (R12) — sibling of both forms so it's visible
+           regardless of mode. NOT inside either form so a stray Enter
+           on the password input never fires the Google flow. -->
+      <div
+        class="gr-login__divider"
+        role="separator"
+        aria-orientation="horizontal"
+      >
+        <span>o continuá con</span>
+      </div>
+      <button type="button" id="google-signin-btn" class="gr-btn-google w-100">
+        <i class="fa-brands fa-google" aria-hidden="true"></i>
+        Iniciar sesión con Google
+      </button>
     </div>
   </div>
 </div>

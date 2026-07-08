@@ -32,11 +32,37 @@ const authMock = vi.hoisted(() => ({
   login: vi.fn(),
   me: vi.fn(),
   register: vi.fn(),
+  googleLogin: vi.fn(),
   onAuthChange: vi.fn(() => () => {}),
   isAuthenticated: vi.fn(() => false),
   getUser: vi.fn(() => null),
 }));
 vi.mock('../../auth.service.js', () => ({ auth: authMock }));
+
+// ─── R12: Firebase loader mock ─────────────────────────────────────────────
+//
+// The component clicks "Iniciar sesión con Google" → calls signInWithGoogle()
+// (which lazy-loads the SDK as a side effect of its first call) → hands the
+// returned Firebase ID token to auth.googleLogin() → applies the role-based
+// redirect. Mocks the loader at the module boundary so tests can observe
+// when the SDK actually got touched AND simulate cancel / error / success.
+const firebaseMock = vi.hoisted(() => ({
+  loadFirebase: vi.fn(() =>
+    Promise.resolve({
+      auth: { _auth: true },
+      signInWithPopup: vi.fn(),
+      GoogleAuthProvider: vi.fn(),
+      signOut: vi.fn(),
+    }),
+  ),
+  signInWithGoogle: vi.fn(),
+  signOut: vi.fn(),
+}));
+vi.mock('../../firebase-loader.js', () => ({
+  loadFirebase: (...args) => firebaseMock.loadFirebase(...args),
+  signInWithGoogle: (...args) => firebaseMock.signInWithGoogle(...args),
+  signOut: (...args) => firebaseMock.signOut(...args),
+}));
 
 vi.mock('../../../core/router.js', () => ({
   router: {
@@ -298,5 +324,149 @@ describe('validateRegisterPayload (R11 pure validator)', () => {
     expect(errors.first_name).toMatch(/obligatorio/);
     expect(errors.last_name).toMatch(/obligatorio/);
     expect(errors.email).toMatch(/válido/);
+  });
+});
+
+// ─── R12: Google sign-in button + redirect-by-role ─────────────────────────
+//
+// Spec R12 scenarios (frontend):
+//   1. Lazy-load the Firebase SDK on Google button click (NOT on page load).
+//   2. Popup cancellation is tolerated silently — user stays on /login, no
+//      error in #login-error.
+//   3. On successful auth, store the token and redirect by role:
+//        role = 'usuario' → /feed
+//        other roles     → /dashboard
+//
+// We mock firebase-loader.js at the module boundary so tests can observe
+// whether the loader has been touched without performing the real network
+// import — pinning the lazy-load contract directly.
+describe('R12 — frontend Google login button', () => {
+  it('R12: lazy-loads the Firebase SDK ONLY after the Google button is clicked (not on page load)', async () => {
+    await mountComponent();
+
+    // Before any click — the loader must NOT have been touched. This is
+    // the spec's first contract: lazy-load on user interaction.
+    expect(firebaseMock.loadFirebase).not.toHaveBeenCalled();
+    expect(firebaseMock.signInWithGoogle).not.toHaveBeenCalled();
+
+    // The button must exist as a sibling of the login form (NOT inside
+    // it). The component mounts it as a separate row so submission
+    // typing doesn't accidentally fire the Google flow.
+    const googleBtn = document.getElementById('google-signin-btn');
+    expect(googleBtn).not.toBeNull();
+    expect(googleBtn.tagName).toBe('BUTTON');
+    expect(googleBtn.getAttribute('type')).toBe('button');
+    // Sits outside the login form so it never collides with email/password submit.
+    expect(googleBtn.closest('form#login-form')).toBeNull();
+
+    // Configure the loader to resolve a credential — simulates the user
+    // successfully completing the Google OAuth popup.
+    firebaseMock.signInWithGoogle.mockResolvedValueOnce({
+      user: {
+        uid: 'fb-uid-1',
+        email: 'juan@gmail.com',
+        getIdToken: vi.fn(() => Promise.resolve('firebase-id-token-xyz')),
+      },
+    });
+    authMock.googleLogin.mockResolvedValueOnce({
+      user: { id: 7, email: 'juan@gmail.com', role: { name: 'usuario' } },
+    });
+
+    googleBtn.click();
+
+    // After the click, BOTH the loader init AND the popup call have
+    // fired — but only because of the click. The assertion above
+    // (NOT called before the click) pinned that contract already.
+    await vi.waitFor(() => {
+      expect(firebaseMock.signInWithGoogle).toHaveBeenCalledTimes(1);
+    });
+    expect(authMock.googleLogin).toHaveBeenCalledTimes(1);
+    expect(authMock.googleLogin).toHaveBeenCalledWith({
+      idToken: 'firebase-id-token-xyz',
+    });
+  });
+
+  it('R12: handles popup cancellation gracefully — no error rendered, user stays on /login, no auth.googleLogin call', async () => {
+    await mountComponent();
+
+    // The loader returns `null` on `auth/popup-closed-by-user` per the
+    // contract pinned in firebase-loader.test.js. Simulate exactly that
+    // contract here — the component MUST treat null as "user cancelled,
+    // do nothing visible".
+    firebaseMock.signInWithGoogle.mockResolvedValueOnce(null);
+
+    const errorAlert = document.getElementById('login-error');
+    // Sanity: the error slot starts hidden.
+    expect(errorAlert.classList.contains('d-none')).toBe(true);
+
+    document.getElementById('google-signin-btn').click();
+
+    // Wait for the click handler to finish its async run before
+    // asserting (the handler awaits signInWithGoogle before deciding).
+    await vi.waitFor(() => {
+      expect(firebaseMock.signInWithGoogle).toHaveBeenCalledTimes(1);
+    });
+    // auth.googleLogin must NOT have been called — cancelling the popup
+    // means we never made it to /auth/google.
+    expect(authMock.googleLogin).not.toHaveBeenCalled();
+    // Error slot stays hidden — no "Cancelled" toast, no banner.
+    expect(errorAlert.classList.contains('d-none')).toBe(true);
+    // The user must STILL be on /login — no redirect fired.
+    expect(window.location.hash).not.toBe('#/feed');
+    expect(window.location.hash).not.toBe('#/dashboard');
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('R12: stores token and redirects by role — citizen (usuario) goes to /feed, others go to /dashboard', async () => {
+    // ─── Case A: citizen (role = 'usuario') → /feed ─────────────────────
+    await mountComponent();
+    firebaseMock.signInWithGoogle.mockResolvedValueOnce({
+      user: {
+        uid: 'fb-uid-A',
+        email: 'citizen@gmail.com',
+        getIdToken: vi.fn(() => Promise.resolve('fb-tok-A')),
+      },
+    });
+    authMock.googleLogin.mockResolvedValueOnce({
+      user: { id: 11, email: 'citizen@gmail.com', role: { name: 'usuario' } },
+    });
+
+    document.getElementById('google-signin-btn').click();
+
+    await vi.waitFor(() => {
+      expect(authMock.googleLogin).toHaveBeenCalledTimes(1);
+    });
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).toHaveBeenCalledWith('/feed');
+    // Token-store side-effect happens INSIDE auth.googleLogin (which is
+    // mocked here). The component's only contract is to forward the
+    // idToken — the service-level test pins the store-side contract.
+
+    // ─── Case B: non-citizen role → /dashboard ─────────────────────────
+    vi.clearAllMocks();
+    await mountComponent();
+    firebaseMock.signInWithGoogle.mockResolvedValueOnce({
+      user: {
+        uid: 'fb-uid-B',
+        email: 'admin@gmail.com',
+        getIdToken: vi.fn(() => Promise.resolve('fb-tok-B')),
+      },
+    });
+    authMock.googleLogin.mockResolvedValueOnce({
+      user: {
+        id: 12,
+        email: 'admin@gmail.com',
+        role: { name: 'admin_sistema' },
+      },
+    });
+
+    document.getElementById('google-signin-btn').click();
+
+    await vi.waitFor(() => {
+      expect(authMock.googleLogin).toHaveBeenCalledTimes(1);
+    });
+    const { router: router2 } = await import('../../../core/router.js');
+    expect(router2.navigate).toHaveBeenCalledWith('/dashboard');
   });
 });

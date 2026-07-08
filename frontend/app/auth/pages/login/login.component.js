@@ -141,6 +141,19 @@ export default {
       });
     }
 
+    // ─── R12: Google sign-in button wiring ─────────────────────────────
+    // The button is a sibling of both forms, not inside either one. The
+    // click handler's very first side effect IS the lazy-load (a
+    // dynamic `import()` of firebase-loader.js) — exactly matching the
+    // R12 contract: "the SDK loads on user interaction, not on page load".
+    const googleBtn = document.getElementById('google-signin-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        await this._handleGoogleSignIn(googleBtn, errorAlert);
+      });
+    }
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
@@ -250,6 +263,72 @@ export default {
       el.textContent = '';
       el.classList.add('d-none');
     });
+  },
+
+  /**
+   * R12 Google sign-in click handler.
+   *
+   * Sequence (per spec R12 + design #2304):
+   *   1. Dynamic `import('./firebase-loader.js')` — the lazy-load IS
+   *      the click handler's first side effect. The SDK is not loaded
+   *      until the user clicks the Google button.
+   *   2. `signInWithGoogle()` opens the Firebase popup. Returns the
+   *      UserCredential on success; null on `auth/popup-closed-by-user`
+   *      (spec contract — see firebase-loader.js).
+   *   3. On null → swallow silently, stay on /login, no error banner.
+   *   4. On credential → fetch the Firebase ID token, hand it to
+   *      `auth.googleLogin({ idToken })` (which POSTs /auth/google and
+   *      stores the app-session token via http.service).
+   *   5. `auth.googleLogin` resolves with `{ user }` from /me — branch
+   *      on `role.name` and navigate to /feed (usuario) or /dashboard.
+   *   6. On any other error → render err.message into #login-error.
+   */
+  async _handleGoogleSignIn(googleBtn, errorAlert) {
+    errorAlert.classList.add('d-none');
+
+    googleBtn.disabled = true;
+    const originalLabel = googleBtn.innerHTML;
+    googleBtn.innerHTML =
+      '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Conectando...';
+
+    try {
+      // Step 1: dynamic import — the lazy-load. In tests, vi.mock
+      // substitutes this URL with a fake module before this resolves.
+      const { signInWithGoogle } = await import('../../firebase-loader.js');
+
+      // Step 2: open the popup. Returns null when the user cancels.
+      const credential = await signInWithGoogle();
+      if (!credential) {
+        // Step 3: cancelled — swallow silently. Spec R12 mandates no
+        // error UI; the user stays on /login.
+        return;
+      }
+
+      // Step 4: forward the Firebase ID token to the backend.
+      const idToken = await credential.user.getIdToken();
+      const { user } = await auth.googleLogin({ idToken });
+
+      // Step 5: role-based redirect — reuse the same branch as the
+      // email/password login flow (PR-1). citizen (usuario) → /feed,
+      // everyone else → /dashboard.
+      const role = user?.role?.name;
+      if (role === 'usuario') {
+        router.navigate('/feed');
+      } else {
+        router.navigate('/dashboard');
+      }
+    } catch (err) {
+      // Step 6: any non-cancel error — surface the backend's spec copy
+      // (either "Token de Google inválido" or "Esta cuenta ya existe,
+      // iniciá sesión con tu contraseña") into the existing error slot.
+      errorAlert.textContent =
+        err?.message ||
+        'No pudimos iniciar sesión con Google. Intentá de nuevo.';
+      errorAlert.classList.remove('d-none');
+    } finally {
+      googleBtn.disabled = false;
+      googleBtn.innerHTML = originalLabel;
+    }
   },
 
   _renderFieldErrors(errors) {

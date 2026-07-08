@@ -120,7 +120,9 @@ describe('auth.service.googleLogin() — R12 wire contract', () => {
     // http.service attaches status+message+errors onto a thrown Error;
     // googleLogin MUST surface this so the component can branch on it
     // and render the spec copy into #login-error.
-    const backendError = new Error('Esta cuenta ya existe, iniciá sesión con tu contraseña');
+    const backendError = new Error(
+      'Esta cuenta ya existe, iniciá sesión con tu contraseña',
+    );
     backendError.status = 401;
     mockHttp.post.mockRejectedValueOnce(backendError);
 

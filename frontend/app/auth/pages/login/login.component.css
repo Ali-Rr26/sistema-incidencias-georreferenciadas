@@ -342,3 +342,66 @@
 .gr-input-wrap + .gr-input-error {
   margin-top: -12px;
 }
+
+/* ─── R12: divider + Google sign-in button ────────────────────────── */
+
+.gr-login__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 18px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.gr-login__divider::before,
+.gr-login__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.gr-btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: #fff;
+  color: #23283b;
+  font-family: var(--font-family);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.gr-btn-google:hover {
+  background: #f7f8fc;
+  border-color: #d3d7e2;
+  box-shadow: 0 4px 12px rgba(35, 40, 59, 0.06);
+}
+
+.gr-btn-google:active {
+  background: #eef0f6;
+}
+
+.gr-btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gr-btn-google i {
+  font-size: 18px;
+  color: #ea4335;
+}
