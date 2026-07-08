@@ -18,6 +18,7 @@ alcance y criterios de aceptación.
 | 06 | [Asignaciones](06-asignaciones.md) | Feature | 🟠 Media | ✅ Stack zombie borrado | ✅ N/A (no aplica) |
 | 07 | [Consolidación de shells](07-consolidacion-shells.md) | Deuda técnica | 🟡 Baja | — | ✅ Completado por PR #43 |
 | 08 | [Vista de mapa georreferenciado](08-vista-mapa.md) | **Feature** | **🟠 Media-Alta** | ✅ Datos listos | ❌ Solo captura, falta vista |
+| 09 | [Registro de usuarios + Login con Google](09-registro-y-google-auth.md) | Feature | 🟠 Media | ❌ No existe | ❌ No existe |
 
 ## Leyenda
 
