@@ -65,6 +65,8 @@ class MenuSeeder extends Seeder
         16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
         17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']], // See comment on menu_id 4 above — these two are a security-split pair, not a duplication to clean up.
         18 => ['name' => 'Perfil',                'route' => '/configuracion/perfil',  'icon' => 'user',             'parent_id' => null, 'permission' => ['resource' => 'profile',             'action' => 'view']],
+        // Mapa georreferenciado — admin-only incident map view.
+        19 => ['name' => 'Mapa',                  'route' => '/mapa',                  'icon' => 'map-location-dot', 'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
     ];
 
     public function run(): void

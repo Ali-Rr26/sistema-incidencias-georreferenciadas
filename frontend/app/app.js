@@ -23,6 +23,7 @@ import perfilComponent from './configuracion/perfil/perfil.component.js';
 import feedComponent from './feed/feed.component.js';
 import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
+import mapaComponent from './mapa/mapa.component.js';
 import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.component.js';
 import rolesDetailComponent from './configuracion/roles/pages/detail/roles.detail.component.js';
 import notificacionesIndexComponent from './notificaciones/pages/index/notificaciones.index.component.js';
@@ -87,6 +88,7 @@ router.addRoute(
   'app',
   'admin',
 );
+router.addRoute('/mapa', mapaComponent, [], 'app', 'admin');
 router.addRoute('/usuarios', usuariosComponent, [], 'app', 'admin');
 router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'app', 'admin');
 router.addRoute('/organizaciones', organizacionesComponent, [], 'app', 'admin');

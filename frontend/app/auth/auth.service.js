@@ -27,6 +27,7 @@ import {
 } from '../core/http.service.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
+import { mapaService } from '../mapa/mapa.service.js';
 
 class AuthService {
   constructor() {
@@ -58,6 +59,13 @@ class AuthService {
     // observes a clean slate.
     menuService.clearCache();
     notificationService.clearCache();
+    // mapaService is user-agnostic by default (keys on bbox/zoom/filters
+    // only). Without an explicit invalidate on logout, a stored bbox-page
+    // response for one user could be served to the next logged-in user.
+    // Defense in depth: the service also includes the user id in its
+    // cache key (see mapa.service.js → buildCacheKey), but the explicit
+    // invalidate here is the primary guarantee.
+    mapaService.invalidate();
     clearAuthState();
     this._notifyAuthChange();
   }
