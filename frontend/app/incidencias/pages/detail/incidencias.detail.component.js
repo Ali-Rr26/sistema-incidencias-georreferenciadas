@@ -422,7 +422,7 @@ async function setupComments(incidentId) {
     }
   }
 
-  await cargarComentarios();
+  cargarComentarios();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
