@@ -68,6 +68,48 @@ class AuthService {
     return data;
   }
 
+  /**
+   * Exchange a Firebase ID token for an application session (R12).
+   *
+   * The flow is: Firebase Auth SDK returns an `id_token`, we POST it
+   * to `/auth/google`, the backend verifies it via Kreait (see PR-2's
+   * GoogleAuthService + KreaitFirebaseTokenVerifier), and on success
+   * the backend issues an app session (200 with `access_token` body
+   * + refresh/mercure HttpOnly cookies). On 200 we mirror `login()`:
+   * store the access token + session id in the http.service cache,
+   * notify auth-change subscribers, then fetch `/me` once so the
+   * caller can redirect by role without a hand-rolled fetch.
+   *
+   * On 401 the backend returns one of two spec messages per R9/R10:
+   *   - "Token de Google inválido"          (invalid/expired token)
+   *   - "Esta cuenta ya existe, iniciá sesión con tu contraseña"
+   *     (existing user with email_verified_at IS NULL — R9 path)
+   * http.service attaches `err.status` and `err.message` onto a
+   * thrown Error; this method propagates it unchanged so the
+   * component can render the spec copy into `#login-error`.
+   *
+   * No auto-login for the 201 register path (R11) — locked decision
+   * from clarifications #2300. The Google path DOES auto-login because
+   * the spec explicitly says R12 ends with a session issuance and a
+   * role-based redirect (the user already authenticated with Google).
+   *
+   * @param {{ idToken: string }} args
+   * @returns {Promise<{ user: object }>}
+   * @throws  {Error} status=401 on invalid token or rejected unverified account
+   */
+  async googleLogin({ idToken }) {
+    const data = await http.post('/auth/google', { id_token: idToken });
+    setAccessToken(data.access_token);
+    setSessionId(data.session_id);
+    // Same notifyAuthChange call as login() — router guards + appShell
+    // observe the new auth state in lockstep.
+    this._notifyAuthChange();
+    // /me is always-on (no caching in auth.service by design) — fetch
+    // once here so the component can read the role for the redirect.
+    const user = await this.me();
+    return { user };
+  }
+
   async logout() {
     try {
       await http.post('/logout', { _session_id: getSessionId() });
