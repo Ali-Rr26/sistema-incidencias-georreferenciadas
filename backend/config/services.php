@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    // Firebase Authentication — server-side service-account credentials
+    // for the registration + Google auth feature (PR-2).
+    //
+    // The binding in AppServiceProvider reads `credentials_path` first;
+    // if empty it falls back to env('FIREBASE_CREDENTIALS'). Both
+    // resolve to the same value here, so the env var is the source of
+    // truth and config merely aliases it.
+    //
+    // NEVER commit the service-account JSON to git. Place it at a
+    // path covered by .gitignore (e.g. backend/storage/...) and point
+    // FIREBASE_CREDENTIALS at the absolute path. See backend/.env.example
+    // for the full documentation block.
+    'firebase' => [
+        'credentials_path' => env('FIREBASE_CREDENTIALS'),
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'leeway_seconds' => (int) env('FIREBASE_LEEWAY_SECONDS', 5),
+    ],
+
 ];
