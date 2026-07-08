@@ -17,7 +17,7 @@ class EloquentIncidentCategoryRepository extends EloquentRepository implements I
         parent::__construct(new IncidentCategory);
     }
 
-    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 20, ?int $hardCap = null): LengthAwarePaginator
     {
         $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
         unset($filters['per_page']);
@@ -25,7 +25,7 @@ class EloquentIncidentCategoryRepository extends EloquentRepository implements I
         return $this->newQuery()
             ->with('parent')
             ->when(count($filters) > 0, fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->paginate(min($perPage, 100));
+            ->paginate(min($perPage, $hardCap ?? 100));
     }
 
     public function tree(): Collection

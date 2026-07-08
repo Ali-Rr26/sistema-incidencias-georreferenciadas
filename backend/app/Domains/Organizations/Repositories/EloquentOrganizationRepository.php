@@ -20,7 +20,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         parent::__construct(new Organization);
     }
 
-    public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 20, ?int $hardCap = null): LengthAwarePaginator
     {
         $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
         unset($filters['per_page']);
@@ -30,7 +30,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
 
         $this->applyFilters($query, $filters);
 
-        return $query->paginate(min($perPage, 100));
+        return $query->paginate(min($perPage, $hardCap ?? 100));
     }
 
     public function findById(int $id): ?Organization
