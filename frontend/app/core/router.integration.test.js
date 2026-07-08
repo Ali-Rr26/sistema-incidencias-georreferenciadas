@@ -168,4 +168,94 @@ describe('router integration', () => {
     expect(window.location.hash).toBe('#/feed');
     expect(onInit).not.toHaveBeenCalled();
   });
+
+  // ──────────────────────────────────────────────────────────────
+  // Shell teardown across the shell→full→shell round trip
+  // (regression: "second login after logout throws Outlet not found")
+  // ──────────────────────────────────────────────────────────────
+
+  it('re-mounts a shell cleanly after a full-page navigation tears it down', async () => {
+    // The beforeEach's shell.mount() is a no-op mock, which would mask
+    // the bug we want to catch (the router would always throw "Outlet
+    // not found" because the page-outlet never gets recreated). Replace
+    // 'app' with a mount that ACTUALLY injects the page outlet, and
+    // track the call count so we can prove it ran again on the second
+    // shell mount.
+    router.shells.delete('app');
+    router._shellState.delete('app');
+    const shellMount = vi.fn().mockImplementation(async () => {
+      const shellOutlet = document.getElementById('shell-outlet');
+      if (shellOutlet) {
+        shellOutlet.innerHTML = '<div id="page-outlet"></div>';
+      }
+    });
+    router.registerShell('app', {
+      mount: shellMount,
+      init: vi.fn().mockResolvedValue(undefined),
+      outlet: '#page-outlet',
+      updateActive: vi.fn(),
+    });
+
+    const dashboardOnInit = vi.fn();
+    router.addRoute(
+      '/dashboard',
+      {
+        templateUrl: '/templates/dashboard.html',
+        styleUrl: '/styles/dashboard.css',
+        onInit: dashboardOnInit,
+        onDestroy: vi.fn(),
+      },
+      [],
+      'app',
+      'admin',
+    );
+    router.addRoute('/login', {
+      templateUrl: '/templates/login.html',
+      styleUrl: '/styles/login.css',
+      onInit: vi.fn(),
+      onDestroy: vi.fn(),
+    });
+
+    // Add the login template URLs to the fetch mock; the beforeEach's
+    // default only knows about dashboard.
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/templates/dashboard.html') {
+        return htmlResponse('<section id="dashboard-page">Dashboard</section>');
+      }
+      if (url === '/styles/dashboard.css') {
+        return htmlResponse('#dashboard-page {}');
+      }
+      if (url === '/templates/login.html') {
+        return htmlResponse('<form id="login-form"></form>');
+      }
+      if (url === '/styles/login.css') {
+        return htmlResponse('/* */');
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    // 1. First shell mount — sanity check that the initial mount works.
+    window.location.hash = '#/dashboard';
+    await router.resolve();
+    expect(shellMount).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('page-outlet')).toBeTruthy();
+    expect(dashboardOnInit).toHaveBeenCalledTimes(1);
+
+    // 2. Full-page navigation (logout-like). Without the fix this leaves
+    //    `_shellState['app'].mounted = true`, which makes step 3 throw
+    //    "Outlet not found" because shell.mount() is skipped and
+    //    #page-outlet stays missing.
+    window.location.hash = '#/login';
+    await router.resolve();
+    expect(document.getElementById('shell-outlet').innerHTML).toBe('');
+
+    // 3. Back to a shell route. This is the regression check.
+    window.location.hash = '#/dashboard';
+    await expect(router.resolve()).resolves.not.toThrow();
+    // shell.mount ran again — proves _shellState was reset (otherwise
+    // the `if (!state.mounted)` branch would skip it).
+    expect(shellMount).toHaveBeenCalledTimes(2);
+    expect(document.getElementById('page-outlet')).toBeTruthy();
+    expect(dashboardOnInit).toHaveBeenCalledTimes(2);
+  });
 });

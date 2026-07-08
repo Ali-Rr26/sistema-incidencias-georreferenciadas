@@ -29,6 +29,14 @@ class Router {
     this._boundResolve = () => this.resolve();
     this._shellState = new Map(); // shell name -> { mounted, initialized }
     this._activeShell = null;
+    /**
+     * Set to true while `shell.init()` is running. Used by the
+     * `auth:expired` listener in app.js to defer redirects until the
+     * shell has finished initializing — otherwise the redirect's
+     * `hashchange` would clear #shell-outlet mid-init, breaking the
+     * router's outlet lookup.
+     */
+    this._shellInitializing = false;
     // Role-tracking for the role-mismatch guard (PR #2, T-2.4).
     // Default null = no role known → role-tagged routes that require a
     // specific role will treat the visitor as a mismatch and redirect to
@@ -227,6 +235,48 @@ class Router {
     return params;
   }
 
+  /**
+   * Tear down a shell: clear its page outlet, run its `destroy()` hook
+   * (if any), clear shell-outlet, and reset the `_shellState` entry.
+   *
+   * Shared by the two paths that cross away from a mounted shell:
+   *   - `_mountInShell` when switching from one shell to another.
+   *   - `_mountFull` when navigating from a shell route to a full-page
+   *     route (login, error pages, etc.). Without this, the previous
+   *     shell's `_shellState` stays `mounted: true`, and the next time
+   *     a route for that shell runs `_mountInShell` it skips
+   *     `shell.mount()`, leaving `#page-outlet` missing — the page
+   *     mount then throws "Outlet not found". This bug surfaced as
+   *     "second login fails after first logout".
+   *
+   * Errors in `destroy()` are logged but never propagated — teardown
+   * must not block the next mount.
+   *
+   * @param {string} name
+   */
+  _teardownShell(name) {
+    if (!name) return;
+    const prevShell = this.shells.get(name);
+    if (prevShell) {
+      // Clear the page outlet before destroy in case destroy reads from
+      // it (e.g. to detach event listeners tied to page-specific nodes).
+      const outlet = document.querySelector(prevShell.outlet);
+      if (outlet) outlet.innerHTML = '';
+      if (typeof prevShell.destroy === 'function') {
+        try {
+          prevShell.destroy();
+        } catch (err) {
+          console.error(`[Router] Error destroying shell '${name}':`, err);
+        }
+      }
+    }
+    // Clear shell-outlet to remove all shell DOM (including the page
+    // outlet cleared above, plus any chrome injected by shell.mount).
+    const shellOutlet = document.getElementById('shell-outlet');
+    if (shellOutlet) shellOutlet.innerHTML = '';
+    this._shellState.set(name, { mounted: false, initialized: false });
+  }
+
   async _mountInShell(shellName, component, path) {
     const shell = this.shells.get(shellName);
     if (!shell) {
@@ -235,31 +285,11 @@ class Router {
 
     const state = this._shellState.get(shellName);
 
-    // If switching to a different shell, unmount the previous one
+    // If switching to a different shell, unmount the previous one.
+    // Shared teardown lives in _teardownShell so the shell→none path
+    // (in _mountFull) cannot drift from the shell→shell path.
     if (this._activeShell && this._activeShell !== shellName) {
-      const prevShell = this.shells.get(this._activeShell);
-      if (prevShell) {
-        const outlet = document.querySelector(prevShell.outlet);
-        if (outlet) outlet.innerHTML = '';
-        // Run shell cleanup if provided (unsub listeners, etc.)
-        if (typeof prevShell.destroy === 'function') {
-          try {
-            prevShell.destroy();
-          } catch (err) {
-            console.error(
-              `[Router] Error destroying shell '${this._activeShell}':`,
-              err,
-            );
-          }
-        }
-      }
-      // Clear shell-outlet to remove previous shell HTML
-      const shellOutlet = document.getElementById('shell-outlet');
-      if (shellOutlet) shellOutlet.innerHTML = '';
-      this._shellState.set(this._activeShell, {
-        mounted: false,
-        initialized: false,
-      });
+      this._teardownShell(this._activeShell);
     }
 
     // Toggle shell visibility on full-page outlet (login)
@@ -277,11 +307,16 @@ class Router {
 
     // Run shell init once (user info, nav wiring, etc.)
     if (!state.initialized) {
-      if (shell.init) {
-        await shell.init();
-      } else if (this._legacyShellInitFn) {
-        // Backwards compat path
-        await this._legacyShellInitFn();
+      this._shellInitializing = true;
+      try {
+        if (shell.init) {
+          await shell.init();
+        } else if (this._legacyShellInitFn) {
+          // Backwards compat path
+          await this._legacyShellInitFn();
+        }
+      } finally {
+        this._shellInitializing = false;
       }
       state.initialized = true;
     }
@@ -314,8 +349,16 @@ class Router {
   }
 
   async _mountFull(component) {
-    const shellOutlet = document.getElementById('shell-outlet');
-    if (shellOutlet) shellOutlet.innerHTML = '';
+    // Tear down any previously-active shell BEFORE clearing the DOM.
+    // Without this, the previous shell's _shellState stays
+    // `mounted: true`, and a later shell→shell navigation skips
+    // shell.mount() and the page-outlet is missing when the router
+    // tries to mount into it. Symptom: any shell→full→shell round
+    // trip (the canonical case: login → logout → login again) throws
+    // "Outlet not found for shell 'app'".
+    if (this._activeShell) {
+      this._teardownShell(this._activeShell);
+    }
 
     const authOutlet = document.getElementById('auth-outlet');
     if (authOutlet) authOutlet.style.display = 'block';
@@ -379,6 +422,16 @@ class Router {
   init() {
     window.addEventListener('hashchange', this._boundResolve);
     this.resolve();
+  }
+
+  /**
+   * Whether a shell's `init()` is currently running.
+   *
+   * Exposed so the `auth:expired` listener in app.js can defer redirects
+   * until the shell finishes initializing.
+   */
+  get isShellInitializing() {
+    return this._shellInitializing;
   }
 
   destroy() {

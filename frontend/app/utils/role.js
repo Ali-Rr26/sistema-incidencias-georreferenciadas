@@ -33,3 +33,24 @@ export const ROLE_LABELS = Object.freeze({
   usuario: 'Usuario',
   operador_sistema: 'Operador de Sistema',
 });
+
+/**
+ * Roles that share the back-office chrome (admin sidebar + admin header).
+ *
+ * Single source of truth for the `admin` bucket used by `classifyRole()` in
+ * `app-shell.component.js`. Exposing the constant (instead of hard-coding the
+ * list inside `classifyRole`) keeps the bucket definition in one place so the
+ * UI, the menu renderer, and any future role guard agree on the same five
+ * names. `usuario` is intentionally NOT in this list — citizen users get a
+ * distinct shell.
+ *
+ * Frozen array: callers must not mutate the bucket at runtime. Add or remove
+ * roles here when the underlying role catalogue changes.
+ */
+export const OPERATIONAL_ROLES = Object.freeze([
+  'admin_sistema',
+  'admin_organizacion',
+  'operador_sistema',
+  'operador_organizacion',
+  'publicador',
+]);

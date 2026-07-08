@@ -96,6 +96,14 @@
     justify-content: space-around;
     padding: 0 8px;
   }
+  /* T-4.2 + Concern A: display: contents makes the <ul> a layout-transparent
+     wrapper so children participate in parent flex layout. Without this, the
+     single <ul> becomes 1 flex child and justify-content: space-around
+     distributes ONE item instead of 3-4. */
+  .app-shell-bottom-nav-list,
+  .app-shell-citizen-bottom-nav-list {
+    display: contents;
+  }
 }
 
 /* ============================================================

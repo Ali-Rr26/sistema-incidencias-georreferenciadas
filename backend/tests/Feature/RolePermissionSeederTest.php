@@ -89,20 +89,119 @@ it('usuario has incident creation and comment creation permissions', function ()
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
 });
 
-it('publicador has incident assignment, confirmation, and status history view permissions', function (): void {
+it('publicador has incident view and status history view permissions', function (): void {
     $user = User::factory()->create([
         'role_id' => 6, // publicador
     ]);
 
-    // Has assignments management (incident assignment)
-    expect(Gate::forUser($user)->allows('assignments.create'))->toBeTrue();
-    expect(Gate::forUser($user)->allows('assignments.update'))->toBeTrue();
-    expect(Gate::forUser($user)->allows('assignments.view'))->toBeTrue();
+    // Has incidents view (needed to see pendientes)
+    expect(Gate::forUser($user)->allows('incidents.view'))->toBeTrue();
 
     // Has status history view
     expect(Gate::forUser($user)->allows('status-history.view'))->toBeTrue();
 
-    // Does NOT have users create or comments edit
+    // Does NOT have users create, comments edit, or assignments management
+    // (the assignment/confirmation flow is gated by IncidentPolicy::confirm
+    //  on UserRole::Publicador, not by catalog permissions)
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
     expect(Gate::forUser($user)->allows('comments.update'))->toBeFalse();
+    expect(Gate::forUser($user)->allows('assignments.create'))->toBeFalse();
+});
+
+// ─── Menu server-driven: new permission grants ────────────────────────
+
+it('usuario has feed.view for citizen sidebar (Inicio + Reportar)', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 5, // usuario
+    ]);
+
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeTrue();
+    // Per spec override (design Decision 1): admin_organizacion also receives feed.view.
+    // For usuario, profile.view is also expected (universal profile access).
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+    // usuario still has incidents.create for the citizen /feed/crear route.
+    expect(Gate::forUser($user)->allows('incidents.create'))->toBeTrue();
+    // usuario does NOT have incidents.manage (back-office gate).
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeFalse();
+});
+
+it('admin_organizacion has feed.view per design Decision 1 spec override', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 3, // admin_organizacion
+    ]);
+
+    // Spec override (design Decision 1): admin_organizacion receives feed.view
+    // in addition to usuario, so org admins can verify the citizen experience.
+    // This overrides the spec rule "No other role SHALL receive feed.view in this change".
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeTrue();
+    // admin_organizacion still receives incidents.create (pre-existing grant).
+    // The spec's "admin_organizacion does NOT have incidents.create" scenario
+    // is a target-state note — that grant is out of scope for this change.
+    expect(Gate::forUser($user)->allows('incidents.create'))->toBeTrue();
+});
+
+it('operador_sistema has incidents.manage for back-office Nueva Incidencia', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 2, // operador_sistema
+    ]);
+
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+    // operador_sistema does NOT have feed.view (not an org admin).
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeFalse();
+});
+
+it('operador_organizacion has notifications.view so the menu item appears', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 4, // operador_organizacion
+    ]);
+
+    // Previously: this role only had notifications.update, so the menu
+    // (gated by notifications.view) was hidden despite the role being able
+    // to act on notifications. The fix adds notifications.view.
+    expect(Gate::forUser($user)->allows('notifications.view'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('notifications.update'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+    // operador_organizacion does NOT have incidents.manage (Nueva Incidencia).
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeFalse();
+    // Does not have feed.view either.
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeFalse();
+});
+
+it('publicador has profile.view but NOT incidents.manage nor feed.view', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 6, // publicador
+    ]);
+
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+    // publicador is read-only — does NOT see Nueva Incidencia.
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeFalse();
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeFalse();
+});
+
+it('admin_sistema sees everything via the MenuService bypass branch', function (): void {
+    $user = User::factory()->create([
+        'role_id' => 1, // admin_sistema
+    ]);
+
+    // The bypass means admin_sistema receives all permissions via Gate.
+    expect(Gate::forUser($user)->allows('incidents.manage'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('feed.view'))->toBeTrue();
+    expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
+});
+
+it('warns and continues when a permission is missing from the catalog', function (): void {
+    // Drop one of the new permissions from the catalog and re-seed.
+    $userModel = User::factory()->create(['role_id' => 5]);
+    Permission::where('resource', 'feed')->where('action', 'view')->delete();
+
+    // Re-run RolePermissionSeeder — feed.view grant should warn but not throw.
+    $this->seed(RolePermissionSeeder::class);
+
+    // usuario still has incidents.create (existing grant untouched).
+    expect(Gate::forUser($userModel)->allows('incidents.create'))->toBeTrue();
+    // usuario does NOT have feed.view because the catalog row is missing.
+    expect(Gate::forUser($userModel)->allows('feed.view'))->toBeFalse();
 });

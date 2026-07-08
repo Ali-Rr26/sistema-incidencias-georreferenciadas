@@ -1,6 +1,5 @@
 <?php
 
-use App\Domains\Assignments\Http\AssignmentController;
 use App\Domains\Auth\Http\AuthController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -12,7 +11,6 @@ use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
-use App\Domains\Permissions\Http\PermissionController;
 use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
@@ -53,7 +51,6 @@ Route::middleware('jwt')->group(function () {
     Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
     Route::apiResource('incidents', IncidentController::class);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
-    Route::apiResource('incidents.assignments', AssignmentController::class)->shallow();
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
@@ -61,6 +58,8 @@ Route::middleware('jwt')->group(function () {
     // Notificaciones del usuario autenticado
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
 
     // Catálogos
     Route::get('locations/tree', [LocationController::class, 'tree']);
@@ -73,6 +72,7 @@ Route::middleware('jwt')->group(function () {
 
     // RBAC
     Route::apiResource('roles', RoleController::class);
-    Route::apiResource('permissions', PermissionController::class);
+    Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
+    Route::get('permissions', [RoleController::class, 'availablePermissions']);
     Route::get('menus/my', [MenuController::class, 'myMenus']);
 });

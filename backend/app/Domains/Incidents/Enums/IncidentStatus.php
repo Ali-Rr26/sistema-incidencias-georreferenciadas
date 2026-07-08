@@ -12,6 +12,20 @@ enum IncidentStatus: string
     case Resolved = 'resolved';
 
     /**
+     * Backing string values for every case.
+     *
+     * Native PHP enums only expose `cases()`; this helper returns the
+     * plain string values so callers (e.g. IncidentStatsController) can
+     * zero-fill aggregates without reaching into each case.
+     *
+     * @return list<string>
+     */
+    public static function values(): array
+    {
+        return array_column(self::cases(), 'value');
+    }
+
+    /**
      * Stable key exposed to the frontend map (matches the backed value).
      *
      * The frontend codegen (`incidents:generate-frontend-constants`) emits

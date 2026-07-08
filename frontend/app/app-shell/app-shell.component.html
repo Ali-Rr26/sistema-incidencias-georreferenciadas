@@ -40,8 +40,14 @@
         class="app-shell-header__icon-btn"
         aria-label="Notificaciones"
         id="app-shell-bell-admin"
+        data-nav-target="/notificaciones"
       >
         <i class="fa-regular fa-bell"></i>
+        <span
+          class="app-shell-header__notif-badge d-none"
+          id="app-shell-bell-badge-admin"
+          >0</span
+        >
       </button>
       <button class="app-shell-header__icon-btn" aria-label="Configuración">
         <i class="fa-solid fa-gear"></i>
@@ -155,120 +161,22 @@
       id="app-shell-admin-sidebar"
       data-show-on-role="admin"
     >
-      <ul class="app-shell-sidebar__list">
-        <li class="app-shell-section"><span>PRINCIPAL</span></li>
-        <li>
-          <a
-            href="#/dashboard"
-            class="app-shell-nav-item"
-            data-route="/dashboard"
-          >
-            <i class="fa-solid fa-gauge-high"></i>
-            <span>Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/incidencias"
-            class="app-shell-nav-item"
-            data-route="/incidencias"
-          >
-            <i class="fa-solid fa-clipboard-list"></i>
-            <span>Incidencias</span>
-          </a>
-        </li>
-
-        <li class="app-shell-section"><span>GESTIÓN</span></li>
-        <li>
-          <a
-            href="#/usuarios"
-            class="app-shell-nav-item"
-            data-route="/usuarios"
-          >
-            <i class="fa-solid fa-users"></i>
-            <span>Usuarios</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/organizaciones"
-            class="app-shell-nav-item"
-            data-route="/organizaciones"
-          >
-            <i class="fa-solid fa-building"></i>
-            <span>Organizaciones</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/localizaciones"
-            class="app-shell-nav-item"
-            data-route="/localizaciones"
-          >
-            <i class="fa-solid fa-map"></i>
-            <span>Localizaciones</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/categorias"
-            class="app-shell-nav-item"
-            data-route="/categorias"
-          >
-            <i class="fa-solid fa-tag"></i>
-            <span>Categorías</span>
-          </a>
-        </li>
-
-        <li class="app-shell-section"><span>CONFIGURACIÓN</span></li>
-        <li>
-          <a
-            href="#/configuracion/perfil"
-            class="app-shell-nav-item"
-            data-route="/configuracion/perfil"
-          >
-            <i class="fa-solid fa-user"></i>
-            <span>Perfil</span>
-          </a>
-        </li>
+      <ul class="app-shell-sidebar__list" id="app-shell-admin-menu-list">
+        <!-- Renderizado dinámico desde GET /api/menus/my (ver app-shell.component.js → renderAdminMenu) -->
       </ul>
     </nav>
 
-    <!-- Citizen sidebar: flat list of 4 items -->
+    <!-- Citizen sidebar: flat list, populated dynamically from /api/menus/my -->
     <nav
       class="app-shell-sidebar__nav"
       id="app-shell-citizen-sidebar"
       data-show-on-role="citizen"
     >
-      <ul class="app-shell-sidebar__list app-shell-sidebar__list--flat">
-        <li>
-          <a href="#/feed" class="app-shell-nav-item" data-route="/feed">
-            <i class="fa-solid fa-house"></i>
-            <span>Inicio</span>
-          </a>
-        </li>
-        <li>
-          <a href="#/mapa" class="app-shell-nav-item" data-route="/mapa">
-            <i class="fa-solid fa-map-location-dot"></i>
-            <span>Mapa</span>
-          </a>
-        </li>
-        <li>
-          <a href="#/alertas" class="app-shell-nav-item" data-route="/alertas">
-            <i class="fa-solid fa-bell"></i>
-            <span>Alertas</span>
-          </a>
-        </li>
-        <li>
-          <a
-            href="#/configuracion/perfil"
-            class="app-shell-nav-item"
-            data-route="/configuracion/perfil"
-          >
-            <i class="fa-solid fa-user"></i>
-            <span>Perfil</span>
-          </a>
-        </li>
+      <ul
+        class="app-shell-sidebar__list app-shell-sidebar__list--flat"
+        id="app-shell-citizen-menu-list"
+      >
+        <!-- Renderizado dinámico desde GET /api/menus/my (ver app-shell.component.js → renderSidebarMenu) -->
       </ul>
     </nav>
   </aside>
@@ -278,98 +186,18 @@
   </main>
 
   <nav class="app-shell-bottom-nav" id="app-shell-bottom-nav">
-    <!-- Admin bottom nav: 5 items, 3rd slot is "Crear incidencia" -->
-    <a
-      href="#/dashboard"
-      class="app-shell-nav-item"
-      data-route="/dashboard"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-gauge-high"></i>
-      <span class="app-shell-bottom-nav__label">Dashboard</span>
-    </a>
-    <a
-      href="#/incidencias"
-      class="app-shell-nav-item"
-      data-route="/incidencias"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-clipboard-list"></i>
-      <span class="app-shell-bottom-nav__label">Incidencias</span>
-    </a>
-    <a
-      href="#/incidencias/crear"
-      class="app-shell-nav-item app-shell-bottom-nav__create"
-      data-route="/incidencias/crear"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-circle-plus"></i>
-      <span class="app-shell-bottom-nav__label">Crear</span>
-    </a>
-    <a
-      href="#/alertas"
-      class="app-shell-nav-item"
-      data-route="/alertas"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-bell"></i>
-      <span class="app-shell-bottom-nav__label">Alertas</span>
-    </a>
-    <a
-      href="#/configuracion/perfil"
-      class="app-shell-nav-item"
-      data-route="/configuracion/perfil"
-      data-show-on-role="admin"
-    >
-      <i class="fa-solid fa-user"></i>
-      <span class="app-shell-bottom-nav__label">Perfil</span>
-    </a>
+    <!-- T-3.4: Admin bottom nav - now DB-driven via renderBottomNavMenu -->
+    <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
 
-    <!-- Citizen bottom nav: 5 items, 3rd slot is "+" plus button -->
-    <a
-      href="#/feed"
-      class="app-shell-nav-item"
-      data-route="/feed"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-house"></i>
-      <span class="app-shell-bottom-nav__label">Feed</span>
-    </a>
-    <a
-      href="#/mapa"
-      class="app-shell-nav-item"
-      data-route="/mapa"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-map-location-dot"></i>
-      <span class="app-shell-bottom-nav__label">Mapa</span>
-    </a>
-    <a
-      href="javascript:void(0)"
-      class="app-shell-nav-item app-shell-bottom-nav__plus"
-      id="app-shell-bottom-plus"
-      data-show-on-role="citizen guest"
-      aria-label="Reportar incidencia"
-    >
-      <i class="fa-solid fa-circle-plus"></i>
-    </a>
-    <a
-      href="#/alertas"
-      class="app-shell-nav-item"
-      data-route="/alertas"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-bell"></i>
-      <span class="app-shell-bottom-nav__label">Alertas</span>
-    </a>
-    <a
-      href="#/configuracion/perfil"
-      class="app-shell-nav-item"
-      data-route="/configuracion/perfil"
-      data-show-on-role="citizen guest"
-    >
-      <i class="fa-solid fa-user"></i>
-      <span class="app-shell-bottom-nav__label">Perfil</span>
-    </a>
+    <!-- T-3.4 + Cleanup: Citizen bottom nav - DB-driven. The "+" plus
+         button is now synthesized inside this <ul> at index 1 (between
+         Feed and Perfil) by renderBottomNavMenu. It used to be a
+         hardcoded sibling of the <ul>, but with display: contents the
+         <ul> doesn't occupy a grid cell, so the sibling landed at the
+         far-right slot 3/3 instead of the original centered slot 2/3. -->
+    <ul
+      id="app-shell-citizen-bottom-nav-list"
+      class="app-shell-citizen-bottom-nav-list"
+    ></ul>
   </nav>
 </div>

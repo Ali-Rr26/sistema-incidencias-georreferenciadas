@@ -19,7 +19,9 @@
  * visual QA.
  */
 import { auth } from '../auth/auth.service.js';
-import { resolveRoleName } from '../utils/role.js';
+import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
+import { menuService } from '../shared/menu.service.js';
+import { notificationService } from '../shared/notification.service.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
 const STYLE_URL = 'app/app-shell/app-shell.component.css';
@@ -54,14 +56,25 @@ let _onResize = null;
 /**
  * Classify a user object into one of the three shell role buckets.
  * Public for tests + future role-guard helpers.
+ *
+ * Operational roles (admin_sistema, admin_organizacion, operador_sistema,
+ * operador_organizacion, publicador) share the back-office chrome and
+ * therefore collapse into the `admin` bucket. `usuario` keeps the
+ * citizen shell. Anything else — null/undefined user, malformed role,
+ * future roles not yet listed in OPERATIONAL_ROLES — falls into `guest`
+ * so an unrecognised role never silently inherits admin chrome.
+ *
+ * The bucket list is read from OPERATIONAL_ROLES in `utils/role.js`,
+ * which is the single source of truth shared with tests and (in the
+ * future) any role guard.
  */
 export function classifyRole(user) {
   if (!user) return 'guest';
   const roleName = resolveRoleName(user);
-  if (roleName === 'admin_sistema' || roleName === 'admin_organizacion') {
-    return 'admin';
-  }
-  return 'citizen';
+  if (roleName === null) return 'guest';
+  if (OPERATIONAL_ROLES.includes(roleName)) return 'admin';
+  if (roleName === 'usuario') return 'citizen';
+  return 'guest';
 }
 
 export const appShell = {
@@ -132,12 +145,43 @@ export const appShell = {
     wireNav();
     wireSidebarToggle();
 
+    // Render sidebar dynamically from /api/menus/my for ANY authenticated
+    // user (admin OR citizen). Falls back silently if the endpoint fails
+    // or the user is a guest. The target <ul> is picked from
+    // body[data-role] inside renderSidebarMenu itself.
+    if (document.body.dataset.role !== 'guest') {
+      menuService.clearCache();
+      notificationService.clearCache();
+      renderSidebarMenu().catch(() => {
+        // No-op: empty sidebar is preferable to crashing the shell.
+      });
+      // T-3.3: Wire bottom-nav hydration alongside sidebar
+      renderBottomNavMenu().catch(() => {
+        // No-op: empty bottom-nav is preferable to crashing the shell.
+      });
+    }
+
     // Re-apply role on every auth change (login / logout / role swap).
     _unsubAuth = auth.onAuthChange(async () => {
       let u = await auth.me().catch(() => null);
       if (!u) u = auth.getUser();
       document.body.dataset.role = classifyRole(u);
+      // Clear cached menu + notification state on every auth transition
+      // so the next render reads a fresh /menus/my and the bell badge
+      // reflects the new user's unread count rather than a previous
+      // session's stale data.
+      menuService.clearCache();
+      notificationService.clearCache();
       await populateHeader();
+      if (document.body.dataset.role !== 'guest') {
+        await renderSidebarMenu().catch(() => {
+          // No-op: empty sidebar is preferable to crashing the shell.
+        });
+        // T-3.3: Wire bottom-nav hydration alongside sidebar on auth change
+        await renderBottomNavMenu().catch(() => {
+          // No-op: empty bottom-nav is preferable to crashing the shell.
+        });
+      }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
       // chrome (e.g. switching roles changes which sidebar is visible,
       // and we want the collapsed preference to remain consistent).
@@ -369,12 +413,209 @@ function teardownSidebarToggle() {
 }
 
 /**
- * Populate the role-specific header content. Admin gets the user menu
- * (name + avatar), citizen gets a single-letter avatar, guest has no
- * header content beyond the login button (already in the template).
+ * Render the role-specific sidebar from /api/menus/my. Universal across
+ * every authenticated role (admin OR citizen); the guest role is excluded
+ * upstream and never reaches this function.
  *
- * SECURITY: Always fetches /me fresh — never uses cached user state.
+ * Target <ul> selection (mirrors production ids in app-shell.component.html):
+ *   - admin    → #app-shell-admin-menu-list
+ *   - citizen  → #app-shell-citizen-menu-list
+ *
+ * Falls back silently if the endpoint fails or the target <ul> is
+ * missing (e.g. tests that mount without the full chrome). Empty
+ * payload leaves the <ul> empty — no error, no leftover items.
  */
+async function renderSidebarMenu() {
+  const listEl = pickSidebarTarget();
+  if (!listEl) return;
+
+  const tree = await menuService.getMyMenu();
+  if (!Array.isArray(tree) || tree.length === 0) {
+    listEl.replaceChildren();
+    return;
+  }
+
+  const nodes = [];
+  for (const item of tree) {
+    if (item.children && item.children.length > 0) {
+      nodes.push(buildSectionHeader(item.name));
+      for (const child of item.children) {
+        if (child.route) nodes.push(buildLeafLink(child));
+      }
+    } else if (item.route) {
+      nodes.push(buildLeafLink(item));
+    }
+  }
+
+  listEl.replaceChildren(...nodes);
+}
+
+/**
+ * Resolve the target <ul> for the sidebar renderer based on the role
+ * attribute applied to <body>. Returns null when the role is unknown
+ * or the target element is absent (test fixtures, partial mounts).
+ */
+function pickSidebarTarget() {
+  const role = document.body.dataset.role;
+  if (role === 'admin') {
+    return document.getElementById('app-shell-admin-menu-list');
+  }
+  if (role === 'citizen') {
+    return document.getElementById('app-shell-citizen-menu-list');
+  }
+  return null;
+}
+
+function buildSectionHeader(name) {
+  const li = document.createElement('li');
+  li.className = 'app-shell-section';
+  const span = document.createElement('span');
+  span.textContent = String(name ?? '').toUpperCase();
+  li.appendChild(span);
+  return li;
+}
+
+function buildLeafLink(item) {
+  const li = document.createElement('li');
+  const a = document.createElement('a');
+  a.href = `#${item.route}`;
+  a.className = 'app-shell-nav-item';
+  a.dataset.route = item.route;
+
+  if (item.icon) {
+    const i = document.createElement('i');
+    // R1.3: one-way contract — backend ships bare FA name;
+    // renderer prepends prefix exactly once. Do not add defensive
+    // startsWith('fa-') checks.
+    i.className = `fa-solid fa-${item.icon}`;
+    a.appendChild(i);
+  }
+
+  const label = document.createElement('span');
+  label.textContent = item.name ?? '';
+  a.appendChild(label);
+
+  li.appendChild(a);
+  return li;
+}
+
+/**
+ * T-3.2: renderBottomNavMenu - hydrates bottom-nav from /api/menus/my
+ * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
+ */
+const BOTTOM_NAV_WHITELIST = {
+  ADMIN_FULL: [
+    '/dashboard',
+    '/incidencias',
+    '/incidencias/crear',
+    '/configuracion/perfil',
+  ],
+  ADMIN_LIMITED: [
+    '/incidencias',
+    '/incidencias/pendientes',
+    '/configuracion/perfil',
+  ],
+  CITIZEN: ['/feed', '/configuracion/perfil'],
+};
+
+function pickBottomNavTarget() {
+  const role = document.body.dataset.role;
+  if (role === 'admin')
+    return document.getElementById('app-shell-bottom-nav-list');
+  if (role === 'citizen')
+    return document.getElementById('app-shell-citizen-bottom-nav-list');
+  return null;
+}
+
+function pickBottomNavWhitelist(tree) {
+  const role = document.body.dataset.role;
+  // Citizen uses a separate whitelist
+  if (role === 'citizen') return BOTTOM_NAV_WHITELIST.CITIZEN;
+  // For admin role, check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
+  const hasCrear = tree.some(
+    (n) =>
+      n.route === '/incidencias/crear' ||
+      n.children?.some((c) => c.route === '/incidencias/crear'),
+  );
+  return hasCrear
+    ? BOTTOM_NAV_WHITELIST.ADMIN_FULL
+    : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
+}
+
+async function renderBottomNavMenu() {
+  const listEl = pickBottomNavTarget();
+  if (!listEl) return;
+
+  const tree = await menuService.getMyMenu();
+  if (!Array.isArray(tree) || tree.length === 0) {
+    listEl.replaceChildren();
+    return;
+  }
+
+  const whitelist = pickBottomNavWhitelist(tree);
+  const nodes = [];
+
+  for (const item of tree) {
+    const leaves = item.children?.length ? item.children : [item];
+    for (const leaf of leaves) {
+      if (!leaf.route || !whitelist.includes(leaf.route)) continue;
+      const li = buildLeafLink(leaf);
+      // R3.5: Add __create class to /incidencias/crear for CSS variant + updateActive skip-list
+      if (leaf.route === '/incidencias/crear') {
+        li.querySelector('a').classList.add('app-shell-bottom-nav__create');
+      }
+      nodes.push(li);
+    }
+  }
+
+  // Cleanup: citizen-only "+" plus button. The hardcoded sibling of the
+  // <ul> was placed at the trailing slot 3/3 because the <ul> has
+  // display: contents and doesn't occupy a grid cell. Synthesizing the
+  // "+" as an <li> inside the <ul> at index 1 restores the original
+  // centered slot 2/3 between Feed and Perfil.
+  //
+  // Admin role does NOT inject a "+" — admin already renders
+  // /incidencias/crear via the __create class, which is visually the
+  // same affordance with a different shape.
+  if (document.body.dataset.role === 'citizen' && nodes.length >= 1) {
+    const plusLi = document.createElement('li');
+    const plusA = document.createElement('a');
+    plusA.href = 'javascript:void(0)';
+    plusA.className = 'app-shell-nav-item app-shell-bottom-nav__plus';
+    plusA.id = 'app-shell-bottom-plus';
+    plusA.setAttribute('aria-label', 'Reportar incidencia');
+    const plusI = document.createElement('i');
+    plusI.className = 'fa-solid fa-circle-plus';
+    plusA.appendChild(plusI);
+    plusLi.appendChild(plusA);
+    nodes.splice(1, 0, plusLi);
+    // The synthesized <a> only exists from this point onward — wire its
+    // click handler at the same lifecycle point so auth-change re-renders
+    // get a fresh handler attached to the fresh element.
+    wirePlusButton(plusA);
+  }
+
+  listEl.replaceChildren(...nodes);
+}
+
+/**
+ * Wire the click handler on the synthesized citizen "+" plus button.
+ * Pre-Cleanup this logic lived in wireNav() against the hardcoded
+ * <a id="app-shell-bottom-plus">; post-Cleanup the element only exists
+ * once renderBottomNavMenu() has run, so the wiring must follow the
+ * same lifecycle.
+ */
+function wirePlusButton(plusA) {
+  plusA.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (auth.isAuthenticated()) {
+      window.location.hash = '#/feed/crear';
+    } else {
+      window.location.hash = '#/login';
+    }
+  });
+}
+
 async function populateHeader() {
   const u = await auth.me().catch(() => null);
   if (!u) return;
@@ -392,6 +633,24 @@ async function populateHeader() {
     if (avatarEl) {
       avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
     }
+
+    // Notifications badge (admin header bell).
+    notificationService
+      .unreadCount()
+      .then((count) => {
+        const badge = document.getElementById('app-shell-bell-badge-admin');
+        if (!badge) return;
+        if (count > 0) {
+          badge.textContent = String(count);
+          badge.classList.remove('d-none');
+        } else {
+          badge.classList.add('d-none');
+        }
+      })
+      .catch(() => {
+        // silent fail — badge stays hidden
+      });
+
     return;
   }
 
@@ -405,27 +664,20 @@ async function populateHeader() {
 
 /**
  * Wire up dynamic navigation actions:
- *   - The citizen/guest "+" plus button: redirect to /feed/crear when
- *     authenticated, /login otherwise.
  *   - The admin user-menu trigger: opens a WAI-ARIA menu-button dropdown
  *     with "Mi perfil" (navigate) and "Cerrar sesión" (await auth.logout()
  *     then redirect). Adds Escape-to-close, focus restoration, outside-click
  *     close, and a 300 ms debounce on logout to mitigate the async race
  *     documented in proposal R2.
+ *
+ * Cleanup note: the citizen "+" plus button click handler used to live
+ * here, but the "+" is now synthesized by renderBottomNavMenu() (so it
+ * lands in the centered slot 2/3 between Feed and Perfil) and its
+ * wiring is attached right after synthesis inside the renderer. The
+ * two lifecycles now match — re-rendering on auth change yields a
+ * fresh element with a fresh handler.
  */
 function wireNav() {
-  const plusBtn = document.getElementById('app-shell-bottom-plus');
-  if (plusBtn) {
-    plusBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (auth.isAuthenticated()) {
-        window.location.hash = '#/feed/crear';
-      } else {
-        window.location.hash = '#/login';
-      }
-    });
-  }
-
   // T-1.11.6 + citizen parity: wire both user-menu instances (admin +
   // citizen) through the shared factory. We push every successfully
   // initialised menu into _userMenus so destroy() can tear them all

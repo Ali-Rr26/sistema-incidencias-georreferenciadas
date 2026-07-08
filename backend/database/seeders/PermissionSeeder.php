@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class PermissionSeeder extends Seeder
 {
@@ -20,11 +21,6 @@ class PermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'create', 'name' => 'Agregar Comentarios',         'description' => 'Comentar en incidencias'],
         ['resource' => 'comments',            'action' => 'update', 'name' => 'Editar Comentarios',          'description' => 'Editar comentarios propios'],
         ['resource' => 'comments',            'action' => 'delete', 'name' => 'Eliminar Comentarios',        'description' => 'Eliminar comentarios'],
-        // Assignments
-        ['resource' => 'assignments',         'action' => 'view',   'name' => 'Ver Asignaciones',            'description' => 'Ver asignaciones de incidencias'],
-        ['resource' => 'assignments',         'action' => 'create', 'name' => 'Crear Asignaciones',          'description' => 'Asignar incidencias a usuarios'],
-        ['resource' => 'assignments',         'action' => 'update', 'name' => 'Actualizar Asignaciones',     'description' => 'Modificar asignaciones'],
-        ['resource' => 'assignments',         'action' => 'delete', 'name' => 'Eliminar Asignaciones',       'description' => 'Eliminar asignaciones'],
         // Status history
         ['resource' => 'status-history',      'action' => 'view',   'name' => 'Ver Historial de Estados',    'description' => 'Ver historial de cambios de estado'],
         // Notifications
@@ -65,10 +61,39 @@ class PermissionSeeder extends Seeder
         ['resource' => 'menus',               'action' => 'create', 'name' => 'Crear Menús',                 'description' => 'Agregar nuevos menús'],
         ['resource' => 'menus',               'action' => 'update', 'name' => 'Actualizar Menús',            'description' => 'Modificar menús existentes'],
         ['resource' => 'menus',               'action' => 'delete', 'name' => 'Eliminar Menús',              'description' => 'Eliminar menús'],
+        // Incidents: back-office create/manage (distinto de incidents.create, que es ciudadano)
+        ['resource' => 'incidents',           'action' => 'manage', 'name' => 'Gestionar Incidencias (Back-office)', 'description' => 'Crear/gestionar incidencias desde el back-office'],
+        // Feed ciudadano (Inicio + Reportar)
+        ['resource' => 'feed',                'action' => 'view',   'name' => 'Ver Feed',                   'description' => 'Acceso al feed ciudadano de incidencias'],
+        // Perfil propio (visibilidad universal)
+        ['resource' => 'profile',             'action' => 'view',   'name' => 'Ver Perfil',                 'description' => 'Ver perfil propio'],
     ];
 
     public function run(): void
     {
+        // Idempotent: borra permisos que ya no están en el catálogo
+        // (data huérfana de seeds anteriores).
+        $keepResources = array_unique(array_map(
+            fn (array $p) => "{$p['resource']}.{$p['action']}",
+            self::PERMISSIONS,
+        ));
+        $keepPairs = array_map(
+            fn (string $slug) => ['resource' => explode('.', $slug)[0], 'action' => explode('.', $slug)[1]],
+            $keepResources,
+        );
+
+        // Borrar permisos huérfanos (los que no están en el array PERMISSIONS)
+        $existing = Permission::all();
+        foreach ($existing as $perm) {
+            $stillValid = collect($keepPairs)->contains(fn ($p) => $p['resource'] === $perm->resource && $p['action'] === $perm->action
+            );
+            if (! $stillValid) {
+                DB::table('role_permission')->where('permission_id', $perm->permission_id)->delete();
+                DB::table('menu_permission')->where('permission_id', $perm->permission_id)->delete();
+                $perm->delete();
+            }
+        }
+
         foreach (self::PERMISSIONS as $data) {
             Permission::updateOrCreate(
                 ['resource' => $data['resource'], 'action' => $data['action']],
