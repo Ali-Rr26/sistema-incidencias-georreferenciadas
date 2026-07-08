@@ -1,0 +1,110 @@
+.mpc-view {
+  overflow: hidden;
+}
+
+.mpc-layout {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - var(--shell-header-height, 60px));
+  width: 100%;
+  background: #f4f6fa;
+}
+
+.mpc-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 16px;
+  background: #fff;
+  border-right: 1px solid #e0e4ea;
+  overflow-y: auto;
+}
+
+.mpc-sidebar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #2c3e50;
+}
+
+.mpc-help {
+  font-size: 0.85rem;
+}
+
+.mpc-canvas {
+  flex: 1;
+  position: relative;
+  min-height: 400px;
+}
+
+.mpc-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 500;
+}
+
+.mpc-error {
+  margin: 12px;
+  z-index: 700;
+  position: relative;
+}
+
+.mpc-marker-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+.mpc-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.mpc-marker--secondary {
+  background: #6c757d;
+}
+.mpc-marker--primary {
+  background: #0d6efd;
+}
+.mpc-marker--success {
+  background: #198754;
+}
+.mpc-marker--warning {
+  background: #ffc107;
+}
+
+.mpc-marker-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+.mpc-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.mpc-legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+.mpc-legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .mpc-sidebar {
+    width: 100%;
+    max-width: 320px;
+  }
+}

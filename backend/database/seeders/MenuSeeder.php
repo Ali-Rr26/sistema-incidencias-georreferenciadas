@@ -67,6 +67,11 @@ class MenuSeeder extends Seeder
         18 => ['name' => 'Perfil',                'route' => '/configuracion/perfil',  'icon' => 'user',             'parent_id' => null, 'permission' => ['resource' => 'profile',             'action' => 'view']],
         // Mapa georreferenciado — admin-only incident map view.
         19 => ['name' => 'Mapa',                  'route' => '/mapa',                  'icon' => 'map-location-dot', 'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
+        // Citizen mirror of the admin mapa. Lives at the citizen sidebar
+        // root (parent_id = null) so it sits next to Inicio/Reportar/Perfil.
+        // Gated by `feed.view` because it consumes the public /incidents/feed
+        // endpoint — not the admin /incidents endpoint.
+        20 => ['name' => 'Mapa',                  'route' => '/mapa-ciudadano',        'icon' => 'map-location-dot', 'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
     ];
 
     public function run(): void
