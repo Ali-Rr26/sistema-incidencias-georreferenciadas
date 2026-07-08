@@ -8,6 +8,7 @@ import { auth } from '../auth/auth.service.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { OPERATIONAL_ROLES } from '../utils/role.js';
+import { API_URL } from '../core/config.js';
 
 const TEMPLATE_HTML = `
 <div class="app-shell">
@@ -88,6 +89,33 @@ const TEMPLATE_HTML = `
   <ul id="app-shell-citizen-bottom-nav-list" class="app-shell-citizen-bottom-nav-list"></ul>
 </nav>
 `;
+
+/**
+ * Same shell markup as TEMPLATE_HTML, but with the FULL production citizen
+ * bell markup (bell-wrapper, panel, list, badge, empty-state) instead of
+ * the trimmed-down bell button used by the rest of this file's fixtures.
+ * Scoped to the notification-bell describe block below so it doesn't
+ * change the DOM shape any other test in this file relies on.
+ */
+const TEMPLATE_HTML_WITH_BELL = TEMPLATE_HTML.replace(
+  `<div class="app-shell-header__citizen" data-show-on-role="citizen">
+    <button class="app-shell-header__bell" id="app-shell-bell">
+      <i class="fa-regular fa-bell"></i>
+    </button>`,
+  `<div class="app-shell-header__citizen" data-show-on-role="citizen">
+    <div class="app-shell-bell-wrapper">
+      <button class="app-shell-header__bell" id="app-shell-bell" type="button" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false" aria-controls="app-shell-bell-panel">
+        <i class="fa-regular fa-bell"></i>
+        <span class="app-shell-header__notif-badge d-none" id="app-shell-bell-badge">0</span>
+      </button>
+      <div class="app-shell-user-menu__panel app-shell-bell-panel" id="app-shell-bell-panel" hidden>
+        <div class="app-shell-bell-panel__header">Notificaciones</div>
+        <ul class="app-shell-bell-panel__list" id="app-shell-bell-list">
+          <li class="app-shell-bell-panel__empty" id="app-shell-bell-empty">Sin notificaciones</li>
+        </ul>
+      </div>
+    </div>`,
+);
 
 function htmlResponse(body) {
   return {
@@ -1881,5 +1909,312 @@ describe('renderBottomNavMenu (T-2.3)', () => {
     bottomNav.remove();
     if (typeof unsub === 'function') unsub();
     getMyMenuSpyForGuest.mockRestore();
+  });
+});
+
+/**
+ * Citizen notification bell — dropdown + SSE wiring (Phase 3, 33bd3210 +
+ * debf56e0). Covers:
+ *   - badge count updates when an SSE message arrives
+ *   - dropdown open/close (trigger click, outside click, Escape)
+ *   - graceful no-crash when EventSource is unsupported or errors
+ *
+ * A minimal `MockEventSource` stands in for the browser's native
+ * EventSource — the codebase has no existing convention for this (SSE is
+ * new in this phase), so the stub follows the same "assign directly on
+ * `window`" pattern already used for `window.matchMedia` in the sidebar
+ * toggle tests above, rather than introducing vi.stubGlobal for a class.
+ */
+describe('citizen notification bell — SSE + dropdown', () => {
+  class MockEventSource {
+    constructor(url, options) {
+      this.url = url;
+      this.options = options;
+      this.onmessage = null;
+      this.onerror = null;
+      this.closed = false;
+      MockEventSource.instances.push(this);
+    }
+    close() {
+      this.closed = true;
+    }
+  }
+  MockEventSource.instances = [];
+
+  let consoleErrorSpy;
+  let unreadCountSpy;
+  let listSpy;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MockEventSource.instances = [];
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate(TEMPLATE_HTML_WITH_BELL));
+    window.EventSource = MockEventSource;
+
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 9,
+      first_name: 'Nico',
+      email: 'nico@ciudadana.test',
+      role: { id: 5, name: 'usuario' },
+    });
+    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+    unreadCountSpy = vi
+      .spyOn(notificationService, 'unreadCount')
+      .mockResolvedValue(0);
+    listSpy = vi
+      .spyOn(notificationService, 'list')
+      .mockResolvedValue({ data: [], meta: null, unreadCount: 0 });
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    delete window.EventSource;
+    vi.unstubAllGlobals();
+    consoleErrorSpy.mockRestore();
+  });
+
+  async function mountCitizen() {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    return { appShell, unsub };
+  }
+
+  function bellRefs() {
+    return {
+      btn: document.getElementById('app-shell-bell'),
+      panel: document.getElementById('app-shell-bell-panel'),
+      list: document.getElementById('app-shell-bell-list'),
+      badge: document.getElementById('app-shell-bell-badge'),
+    };
+  }
+
+  it('opens an EventSource connection to /notifications/stream with withCredentials for the citizen role', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      expect(MockEventSource.instances).toHaveLength(1);
+      const instance = MockEventSource.instances[0];
+      expect(instance.url).toBe(`${API_URL}/notifications/stream`);
+      expect(instance.options).toEqual({ withCredentials: true });
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('updates the bell badge when an SSE message arrives', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { badge } = bellRefs();
+      expect(badge.classList.contains('d-none')).toBe(true);
+
+      unreadCountSpy.mockResolvedValue(3);
+      const instance = MockEventSource.instances[0];
+      instance.onmessage({
+        data: JSON.stringify({
+          id: 1,
+          message: 'Nueva notificación',
+          read: false,
+          created_at: '2026-07-08T10:00:00Z',
+        }),
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(badge.textContent).toBe('3');
+      expect(badge.classList.contains('d-none')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('caps the badge display at "99+" for large unread counts', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { badge } = bellRefs();
+      unreadCountSpy.mockResolvedValue(150);
+      const instance = MockEventSource.instances[0];
+      instance.onmessage({ data: JSON.stringify({ id: 2, message: 'x', read: false }) });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(badge.textContent).toBe('99+');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('prepends the new notification into an already-open bell panel', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { btn, list } = bellRefs();
+      btn.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(list.querySelector('#app-shell-bell-empty')).toBeTruthy();
+
+      const instance = MockEventSource.instances[0];
+      instance.onmessage({
+        data: JSON.stringify({
+          id: 3,
+          message: 'Incidencia actualizada',
+          read: false,
+          created_at: '2026-07-08T10:05:00Z',
+        }),
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(list.querySelector('#app-shell-bell-empty')).toBeFalsy();
+      expect(list.children).toHaveLength(1);
+      expect(list.textContent).toContain('Incidencia actualizada');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('ignores a malformed SSE payload instead of crashing', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const instance = MockEventSource.instances[0];
+      expect(() => instance.onmessage({ data: 'not-json{{{' })).not.toThrow();
+      await Promise.resolve();
+
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('opens the panel on trigger click and fetches the latest notifications', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { btn, panel } = bellRefs();
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+
+      btn.click();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(panel.hasAttribute('hidden')).toBe(false);
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+      expect(listSpy).toHaveBeenCalledWith({ page: 1, perPage: 8 });
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('closes the panel on a second trigger click', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { btn, panel } = bellRefs();
+      btn.click();
+      await Promise.resolve();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      btn.click();
+      expect(panel.hasAttribute('hidden')).toBe(true);
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('closes the panel on outside click', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { btn, panel } = bellRefs();
+      btn.click();
+      await Promise.resolve();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('closes the panel when Escape is pressed', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const { btn, panel } = bellRefs();
+      btn.click();
+      await Promise.resolve();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+
+      expect(panel.hasAttribute('hidden')).toBe(true);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('does not crash init() when EventSource is unsupported, and does not open a connection', async () => {
+    delete window.EventSource;
+
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      expect(MockEventSource.instances).toHaveLength(0);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      // The dropdown itself must keep working even without SSE.
+      const { btn, panel } = bellRefs();
+      btn.click();
+      await Promise.resolve();
+      expect(panel.hasAttribute('hidden')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('does not crash when the SSE connection errors, and closes the stream', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    try {
+      const instance = MockEventSource.instances[0];
+      expect(() => instance.onerror()).not.toThrow();
+      expect(instance.closed).toBe(true);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('destroy() closes the SSE stream and removes bell listeners (no crash on later outside-click)', async () => {
+    const { appShell, unsub } = await mountCitizen();
+    const instance = MockEventSource.instances[0];
+    const { btn, panel } = bellRefs();
+    btn.click();
+    await Promise.resolve();
+    expect(panel.hasAttribute('hidden')).toBe(false);
+
+    appShell.destroy();
+    if (typeof unsub === 'function') unsub();
+
+    expect(instance.closed).toBe(true);
+    expect(() => {
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }).not.toThrow();
   });
 });
