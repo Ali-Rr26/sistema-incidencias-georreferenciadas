@@ -1,4 +1,4 @@
-<div class="gr-login">
+<div class="gr-login" data-mode="login">
   <!-- Left panel -->
   <div class="gr-login__hero">
     <div class="gr-login__hero-logo">
@@ -43,9 +43,43 @@
       <h2 class="gr-login__form-title">Bienvenido de nuevo</h2>
       <p class="gr-login__form-sub">Ingresa tus credenciales para continuar</p>
 
+      <!-- Mode toggle (R11) -->
+      <div class="gr-login__mode-toggle" role="tablist" aria-label="Modo de autenticación">
+        <button
+          type="button"
+          class="gr-login__mode-btn gr-login__mode-btn--active"
+          data-mode-btn="login"
+          role="tab"
+          aria-selected="true"
+        >
+          Iniciar sesión
+        </button>
+        <button
+          type="button"
+          class="gr-login__mode-btn"
+          data-mode-btn="register"
+          role="tab"
+          aria-selected="false"
+        >
+          Registrarse
+        </button>
+      </div>
+
+      <!-- Post-201 success banner (R11) -->
+      <div
+        id="register-banner"
+        class="gr-login__banner d-none"
+        role="status"
+        aria-live="polite"
+      >
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        Cuenta creada, iniciá sesión
+      </div>
+
       <div id="login-error" class="gr-login__error d-none" role="alert"></div>
 
-      <form id="login-form" novalidate>
+      <!-- Login form -->
+      <form id="login-form" data-form="login" novalidate>
         <label class="gr-form-label" for="email">Correo electrónico</label>
         <div class="gr-input-wrap">
           <i class="fa-regular fa-envelope gr-input-icon"></i>
@@ -96,6 +130,111 @@
         <p class="gr-login__support">
           ¿Problemas para acceder?
           <a href="javascript:void(0)">Contacta a soporte</a>
+        </p>
+      </form>
+
+      <!-- Register form (R11) -->
+      <form id="register-form" data-form="register" class="d-none" novalidate>
+        <label class="gr-form-label" for="first_name">Nombre</label>
+        <div class="gr-input-wrap">
+          <i class="fa-regular fa-user gr-input-icon"></i>
+          <input
+            type="text"
+            id="first_name"
+            class="gr-input"
+            placeholder="Tu nombre"
+            required
+            autocomplete="given-name"
+          />
+        </div>
+        <div class="gr-input-error d-none" data-error-for="first_name"></div>
+
+        <label class="gr-form-label" for="last_name">Apellido</label>
+        <div class="gr-input-wrap">
+          <i class="fa-regular fa-user gr-input-icon"></i>
+          <input
+            type="text"
+            id="last_name"
+            class="gr-input"
+            placeholder="Tu apellido"
+            required
+            autocomplete="family-name"
+          />
+        </div>
+        <div class="gr-input-error d-none" data-error-for="last_name"></div>
+
+        <label class="gr-form-label" for="register-email">Correo electrónico</label>
+        <div class="gr-input-wrap">
+          <i class="fa-regular fa-envelope gr-input-icon"></i>
+          <input
+            type="email"
+            id="register-email"
+            class="gr-input"
+            placeholder="tu@email.com"
+            required
+            autocomplete="email"
+          />
+        </div>
+        <div class="gr-input-error d-none" data-error-for="email"></div>
+
+        <label class="gr-form-label" for="phone">Teléfono (opcional)</label>
+        <div class="gr-input-wrap">
+          <i class="fa-solid fa-phone gr-input-icon"></i>
+          <input
+            type="tel"
+            id="phone"
+            class="gr-input"
+            placeholder="0991234567"
+            autocomplete="tel"
+          />
+        </div>
+
+        <label class="gr-form-label" for="register-password">Contraseña</label>
+        <div class="gr-input-wrap">
+          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <input
+            type="password"
+            id="register-password"
+            class="gr-input gr-input--pad-right"
+            placeholder="••••••••"
+            required
+            autocomplete="new-password"
+            minlength="8"
+          />
+          <button
+            type="button"
+            class="gr-input-eye"
+            aria-label="Mostrar contraseña"
+          >
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div class="gr-input-error d-none" data-error-for="password"></div>
+
+        <label class="gr-form-label" for="password_confirmation">Confirmar contraseña</label>
+        <div class="gr-input-wrap">
+          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <input
+            type="password"
+            id="password_confirmation"
+            class="gr-input"
+            placeholder="••••••••"
+            required
+            autocomplete="new-password"
+            minlength="8"
+          />
+        </div>
+        <div
+          class="gr-input-error d-none"
+          data-error-for="password_confirmation"
+        ></div>
+
+        <button type="submit" class="gr-btn-primary w-100">
+          Crear cuenta
+        </button>
+
+        <p class="gr-login__support">
+          Al crear una cuenta aceptás los términos de uso.
         </p>
       </form>
     </div>

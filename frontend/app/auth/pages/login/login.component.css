@@ -270,3 +270,75 @@
   font-weight: 600;
   text-decoration: none;
 }
+
+/* ─── R11: mode toggle (login ↔ register) ─────────────────────────── */
+
+.gr-login__mode-toggle {
+  display: flex;
+  background: #f4f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 22px;
+}
+
+.gr-login__mode-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  color: #5b6172;
+  padding: 10px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.gr-login__mode-btn--active {
+  background: #fff;
+  color: var(--color-primary);
+  box-shadow: 0 2px 6px rgba(35, 40, 59, 0.08);
+}
+
+.gr-login__mode-btn:not(.gr-login__mode-btn--active):hover {
+  color: #23283b;
+}
+
+/* ─── R11: success banner (post-201) ─────────────────────────────── */
+
+.gr-login__banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fbf6;
+  color: #1e7a4d;
+  border: 1px solid #b9e7cf;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.gr-login__banner i {
+  font-size: 16px;
+}
+
+/* ─── R11: field-level validation errors ─────────────────────────── */
+
+.gr-input-error {
+  color: #c0394f;
+  font-size: 12.5px;
+  font-weight: 500;
+  margin: -12px 0 16px;
+  padding-left: 4px;
+}
+
+/* Tighten the margin between the last field above an error so the
+   layout doesn't breathe awkwardly. */
+.gr-input-wrap + .gr-input-error {
+  margin-top: -12px;
+}
