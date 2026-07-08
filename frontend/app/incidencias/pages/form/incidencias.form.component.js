@@ -390,7 +390,7 @@ export default {
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
         }
 
-setTimeout(() => {
+        setTimeout(() => {
           router.navigate(newId ? `/incidencias/${newId}` : '/incidencias');
         }, 2000);
       } catch (err) {
@@ -414,7 +414,7 @@ setTimeout(() => {
             errorBanner.textContent = err.message;
             errorBanner.classList.remove('d-none');
           }
-} else if (err.status === 401) {
+        } else if (err.status === 401) {
           router.navigate('/login');
         } else {
           console.error('Error al crear incidencia:', err);

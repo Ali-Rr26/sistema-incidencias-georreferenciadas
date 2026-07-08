@@ -22,12 +22,12 @@ import { initPage } from '../utils/layout.js';
 
 class Router {
   constructor() {
-    this.routes = [];            // [{ pattern, component, guards, role }]
-    this.shell = null;            // { mount, init, destroy?, outlet, updateActive?, styleUrl }
+    this.routes = []; // [{ pattern, component, guards, role }]
+    this.shell = null; // { mount, init, destroy?, outlet, updateActive?, styleUrl }
     this.currentComponent = null; // the active page component (has onInit/onDestroy)
     this.routeParams = {};
     this.queryParams = new URLSearchParams();
-    this._shellMounted = false;   // first-time mount only
+    this._shellMounted = false; // first-time mount only
   }
 
   // ─── Public API ──────────────────────────────────────────────────────
@@ -193,12 +193,15 @@ class Router {
   _cleanupStyles() {
     // Remove the previous component's <style> tag(s). The shell's
     // 'shell-style' tag is left alone — it must persist across navigations.
-    document.querySelectorAll('style[id^="style-"]').forEach((el) => el.remove());
+    document
+      .querySelectorAll('style[id^="style-"]')
+      .forEach((el) => el.remove());
   }
 
   async _fetchText(url) {
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Router: failed to load ${url} (${res.status})`);
+    if (!res.ok)
+      throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();
   }
 }

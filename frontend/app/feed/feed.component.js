@@ -204,26 +204,26 @@ export default {
       } else {
         composerBar.classList.add('d-none');
       }
-composerBar.addEventListener('click', () => {
+      composerBar.addEventListener('click', () => {
         router.navigate('/feed/crear');
       });
     }
 
-        const feedList = document.getElementById(LIST);
-        const feedFilters = document.getElementById(FILTERS);
-        if (!feedFilters || !feedList) return;
+    const feedList = document.getElementById(LIST);
+    const feedFilters = document.getElementById(FILTERS);
+    if (!feedFilters || !feedList) return;
 
-        // Event delegation: any click on an element with [data-route]
-        // (cards, "Ver detalle" buttons) navigates via the router. The
-        // onclick="window.location.hash=..." inline handlers were removed
-        // in favor of this single delegated listener — it works for any
-        // card appended later by infinite scroll without re-binding.
-        feedList.addEventListener('click', (e) => {
-          const target = e.target.closest('[data-route]');
-          if (!target) return;
-          e.preventDefault();
-          router.navigate(target.dataset.route);
-        });
+    // Event delegation: any click on an element with [data-route]
+    // (cards, "Ver detalle" buttons) navigates via the router. The
+    // onclick="window.location.hash=..." inline handlers were removed
+    // in favor of this single delegated listener — it works for any
+    // card appended later by infinite scroll without re-binding.
+    feedList.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-route]');
+      if (!target) return;
+      e.preventDefault();
+      router.navigate(target.dataset.route);
+    });
 
     // ── Fetch ───────────────────────────────────────────────
 

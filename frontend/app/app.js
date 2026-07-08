@@ -54,13 +54,28 @@ router.addRoute('/incidencias/crear', incidenciaFormComponent, [], 'admin');
 router.addRoute('/incidencias/:id', incidenciasDetailComponent, [], 'admin');
 router.addRoute('/incidencias/pendientes', pendientesComponent, [], 'admin');
 router.addRoute('/mapa', mapaComponent, [], 'admin');
-router.addRoute('/mapa-ciudadano', mapaCiudadanoComponent, [authGuard], 'citizen');
+router.addRoute(
+  '/mapa-ciudadano',
+  mapaCiudadanoComponent,
+  [authGuard],
+  'citizen',
+);
 router.addRoute('/usuarios', usuariosComponent, [], 'admin');
 router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'admin');
 router.addRoute('/organizaciones', organizacionesComponent, [], 'admin');
-router.addRoute('/organizaciones/crear', organizacionesFormComponent, [], 'admin');
+router.addRoute(
+  '/organizaciones/crear',
+  organizacionesFormComponent,
+  [],
+  'admin',
+);
 router.addRoute('/localizaciones', localizacionesComponent, [], 'admin');
-router.addRoute('/localizaciones/crear', localizacionesFormComponent, [], 'admin');
+router.addRoute(
+  '/localizaciones/crear',
+  localizacionesFormComponent,
+  [],
+  'admin',
+);
 router.addRoute('/categorias', categoriasComponent, [], 'admin');
 router.addRoute('/categorias/crear', categoriasFormComponent, [], 'admin');
 router.addRoute(
@@ -75,7 +90,12 @@ router.addRoute(
   [roleGuard(['admin_sistema'])],
   'admin',
 );
-router.addRoute('/notificaciones', notificacionesIndexComponent, [authGuard], 'admin');
+router.addRoute(
+  '/notificaciones',
+  notificacionesIndexComponent,
+  [authGuard],
+  'admin',
+);
 
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
