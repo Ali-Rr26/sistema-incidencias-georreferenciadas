@@ -9,7 +9,7 @@ describe('resolveRoleName', () => {
   });
 
   it('returns the string when role is a plain string', () => {
-    expect(resolveRoleName({ role: 'publicador' })).toBe('publicador');
+    expect(resolveRoleName({ role: 'operador_organizacion' })).toBe('operador_organizacion');
   });
 
   it('returns null when user is missing', () => {
@@ -40,7 +40,6 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
         'admin_sistema',
         'operador_organizacion',
         'operador_sistema',
-        'publicador',
         'usuario',
       ].sort(),
     );
@@ -53,7 +52,6 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
     );
     expect(ROLE_LABELS.operador_organizacion).toBe('Operador de Organización');
     expect(ROLE_LABELS.operador_sistema).toBe('Operador de Sistema');
-    expect(ROLE_LABELS.publicador).toBe('Publicador');
     expect(ROLE_LABELS.usuario).toBe('Usuario');
   });
 

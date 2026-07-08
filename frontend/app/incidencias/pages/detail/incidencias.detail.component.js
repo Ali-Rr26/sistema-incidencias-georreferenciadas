@@ -8,7 +8,6 @@ import { bindView } from '../../../utils/dom.js';
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
   pending: ['in_progress'],
-  pending_operator: ['in_progress'],
   in_progress: ['resolved'],
   resolved: [],
 };
