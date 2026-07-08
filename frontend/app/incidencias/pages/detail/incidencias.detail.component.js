@@ -1,8 +1,8 @@
-import { defineComponent } from '../../../utils/component.js';
 import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
+import { bindView } from '../../../utils/dom.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -20,7 +20,7 @@ const DROPDOWN_STATUSES = [
   { value: 'closed', label: 'Cerrado' },
 ];
 
-export default defineComponent({
+export default {
   templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
 
   async onInit() {
@@ -32,7 +32,16 @@ export default defineComponent({
     }
 
     this._incidentId = id;
-    const inc = await cargarIncidencia(id);
+    let inc;
+    try {
+      inc = await cargarIncidencia(id);
+    } catch {
+      // 404 (or any other load failure) — bounce to not-found so the
+      // user doesn't sit on a blank page. The carga() helper has already
+      // logged the error and rendered the inline alert.
+      window.location.hash = '#/not-found';
+      return;
+    }
     renderizarIncidencia(inc);
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
@@ -43,20 +52,20 @@ export default defineComponent({
 
   onDestroy() {
     const mapEl = document.getElementById('detalle-coords');
-    if (mapEl) {
-      // Prefer the helper's disposer (also clears the underlying L.Map).
-      // Fall back to the legacy map reference in case the helper was bypassed.
-      if (typeof mapEl._leaflet_dispose === 'function') {
-        mapEl._leaflet_dispose();
-        delete mapEl._leaflet_dispose;
-      }
-      if (mapEl._leaflet_map) {
-        mapEl._leaflet_map.remove();
-        delete mapEl._leaflet_map;
-      }
+    if (!mapEl) return;
+    // The disposer returned by initMapView() captures the L.Map in its
+    // closure and also disconnects the ResizeObserver. Calling
+    // `map.remove()` again on the same map (via `mapEl._leaflet_map`)
+    // throws "Map container is being reused by another instance" from
+    // Leaflet, because the second call sees a container that has
+    // already been detached by the first. The disposer is the single
+    // source of truth for teardown.
+    if (typeof mapEl._leaflet_dispose === 'function') {
+      mapEl._leaflet_dispose();
+      delete mapEl._leaflet_dispose;
     }
   },
-});
+};
 
 async function cargarIncidencia(id) {
   document.getElementById('detalle-loading').classList.remove('d-none');
@@ -78,30 +87,9 @@ async function cargarIncidencia(id) {
 }
 
 function renderizarIncidencia(inc) {
-  document.getElementById('detalle-loading').classList.add('d-none');
-  document.getElementById('detalle-content').classList.remove('d-none');
+  const view = bindView(document);
 
-  document.getElementById('detalle-titulo').textContent =
-    inc.title ?? 'Sin título';
-  document.getElementById('detalle-breadcrumb').textContent =
-    inc.title ?? 'Detalle';
-
-  // Thumbnail del incidente (proxy URL)
-  const thumbnailContainer = document.getElementById('detalle-thumbnail');
-  if (inc.thumbnail_url) {
-    thumbnailContainer.innerHTML = `
-      <img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />
-    `;
-    thumbnailContainer.classList.remove('d-none');
-  }
-
-  const statusEl = document.getElementById('detalle-status');
-  statusEl.textContent = STATUS_LABEL[inc.status] ?? inc.status;
-  statusEl.className = `ig-status-badge ig-status-${inc.status}`;
-
-  document.getElementById('detalle-priority').textContent =
-    PRIORITY_LABEL[inc.priority] ?? inc.priority;
-  document.getElementById('detalle-fecha').textContent = inc.created_at
+  const fechaTexto = inc.created_at
     ? new Date(inc.created_at).toLocaleDateString('es-EC', {
         year: 'numeric',
         month: 'long',
@@ -110,17 +98,41 @@ function renderizarIncidencia(inc) {
         minute: '2-digit',
       })
     : '';
-  document.getElementById('detalle-descripcion').textContent =
-    inc.description ?? 'Sin descripción';
-  document.getElementById('detalle-categoria').textContent =
-    inc.category?.name ?? '—';
-  document.getElementById('detalle-ubicacion').textContent =
-    inc.location?.name ?? '—';
-  document.getElementById('detalle-usuario').textContent = inc.user
+
+  const usuarioTexto = inc.user
     ? [inc.user.first_name, inc.user.last_name].filter(Boolean).join(' ')
     : '—';
-  document.getElementById('detalle-organizacion').textContent =
-    inc.organization?.name ?? '—';
+
+  view.set({
+    // Toggle loading vs content in one shot.
+    'detalle-loading': { d_none: true },
+    'detalle-content': { d_none: false },
+
+    // Plain text fields.
+    'detalle-titulo': inc.title ?? 'Sin título',
+    'detalle-breadcrumb': inc.title ?? 'Detalle',
+    'detalle-priority': PRIORITY_LABEL[inc.priority] ?? inc.priority,
+    'detalle-fecha': fechaTexto,
+    'detalle-descripcion': inc.description ?? 'Sin descripción',
+    'detalle-categoria': inc.category?.name ?? '—',
+    'detalle-ubicacion': inc.location?.name ?? '—',
+    'detalle-usuario': usuarioTexto,
+    'detalle-organizacion': inc.organization?.name ?? '—',
+
+    // Status badge: text + dynamic className based on the status.
+    'detalle-status': {
+      text: STATUS_LABEL[inc.status] ?? inc.status,
+      className: `ig-status-badge ig-status-${inc.status}`,
+    },
+
+    // Thumbnail: shown only when the backend provides a URL.
+    'detalle-thumbnail': inc.thumbnail_url
+      ? {
+          html: `<img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />`,
+          d_none: false,
+        }
+      : { d_none: true },
+  });
 
   renderMap(inc);
 }
