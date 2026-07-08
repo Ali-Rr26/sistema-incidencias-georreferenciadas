@@ -105,14 +105,25 @@ export default {
       // Reset transient state when switching modes.
       errorAlert.classList.add('d-none');
       this._clearFieldErrors();
-      if (newMode === 'login') {
-        registerBanner.classList.add('d-none');
-      }
+      // The banner is a separate concern (post-201 success); the
+      // toggle-button click handler hides it explicitly so a fresh
+      // user-driven mode switch clears it without the post-201 path
+      // getting clobbered.
     };
+
+    /** Hide the post-201 banner. Called on explicit user-driven mode
+     *  switches and login submissions so it doesn't linger into the
+     *  next interaction. */
+    const hideBanner = () => registerBanner.classList.add('d-none');
 
     // Wire toggle buttons.
     document.querySelectorAll('[data-mode-btn]').forEach((btn) => {
-      btn.addEventListener('click', () => setMode(btn.dataset.modeBtn));
+      btn.addEventListener('click', () => {
+        setMode(btn.dataset.modeBtn);
+        // Toggling mode is a user-initiated action: clear the banner
+        // so a fresh registration event has the spotlight.
+        hideBanner();
+      });
     });
 
     // If the URL carries ?registered=1, switch to login mode with the
@@ -186,8 +197,9 @@ export default {
       email: registerForm.querySelector('#register-email').value.trim(),
       phone: registerForm.querySelector('#phone').value.trim(),
       password: registerForm.querySelector('#register-password').value,
-      password_confirmation:
-        registerForm.querySelector('#password_confirmation').value,
+      password_confirmation: registerForm.querySelector(
+        '#password_confirmation',
+      ).value,
     };
 
     this._clearFieldErrors();

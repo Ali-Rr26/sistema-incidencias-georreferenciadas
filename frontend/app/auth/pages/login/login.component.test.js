@@ -106,7 +106,9 @@ describe('R11 — frontend registration form', () => {
     expect(container.getAttribute('data-mode')).toBe('login');
     expect(loginForm.classList.contains('d-none')).toBe(false);
     expect(registerForm.classList.contains('d-none')).toBe(true);
-    expect(loginBtn.classList.contains('gr-login__mode-btn--active')).toBe(true);
+    expect(loginBtn.classList.contains('gr-login__mode-btn--active')).toBe(
+      true,
+    );
     expect(registerBtn.classList.contains('gr-login__mode-btn--active')).toBe(
       false,
     );
@@ -156,7 +158,8 @@ describe('R11 — frontend registration form', () => {
     expect(passwordErr.classList.contains('d-none')).toBe(false);
     expect(passwordErr.textContent).toMatch(/dígito/i);
     expect(
-      document.querySelector('[data-error-for="password_confirmation"]')
+      document
+        .querySelector('[data-error-for="password_confirmation"]')
         .classList.contains('d-none'),
     ).toBe(true);
 
@@ -173,15 +176,79 @@ describe('R11 — frontend registration form', () => {
     // error now visible.
     expect(authMock.register).not.toHaveBeenCalled();
     expect(
-      document.querySelector('[data-error-for="password"]').classList.contains(
-        'd-none',
-      ),
+      document
+        .querySelector('[data-error-for="password"]')
+        .classList.contains('d-none'),
     ).toBe(true);
     const confirmErr = document.querySelector(
       '[data-error-for="password_confirmation"]',
     );
     expect(confirmErr.classList.contains('d-none')).toBe(false);
     expect(confirmErr.textContent).toMatch(/no coinciden/i);
+  });
+
+  it('handles a 201 from /register by staying on /login, showing the banner, switching back to login mode, and storing no token', async () => {
+    // Backend contract: 201 with { message }, no session — locked decision.
+    authMock.register.mockResolvedValue({
+      message: 'Usuario creado correctamente',
+    });
+
+    await mountComponent();
+    // Switch to register mode so the form is interactable.
+    document.querySelector('[data-mode-btn="register"]').click();
+
+    document.getElementById('first_name').value = 'Ada';
+    document.getElementById('last_name').value = 'Lovelace';
+    document.getElementById('register-email').value = 'ada@example.com';
+    document.getElementById('phone').value = '';
+    document.getElementById('register-password').value = 'ValidPass1';
+    document.getElementById('password_confirmation').value = 'ValidPass1';
+
+    document
+      .getElementById('register-form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    // auth.register must have been called exactly once with the payload
+    // (phone stripped when empty so the backend receives the spec'd shape).
+    await vi.waitFor(() => {
+      expect(authMock.register).toHaveBeenCalledTimes(1);
+    });
+    const callArg = authMock.register.mock.calls[0][0];
+    expect(callArg).toEqual({
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      email: 'ada@example.com',
+      password: 'ValidPass1',
+      password_confirmation: 'ValidPass1',
+    });
+    expect('phone' in callArg).toBe(false);
+
+    // The post-201 banner must be visible AND carry the spec copy.
+    const banner = document.getElementById('register-banner');
+    expect(banner.classList.contains('d-none')).toBe(false);
+    expect(banner.textContent).toMatch(/Cuenta creada, iniciá sesión/);
+
+    // The component switched back to login mode so the user can type
+    // credentials immediately (locked UX from clarifications #2300).
+    const container = document.querySelector('.gr-login');
+    expect(container.getAttribute('data-mode')).toBe('login');
+    expect(
+      document.getElementById('login-form').classList.contains('d-none'),
+    ).toBe(false);
+    expect(
+      document.getElementById('register-form').classList.contains('d-none'),
+    ).toBe(true);
+
+    // The login redirect NEVER fires for register — user stays on /login.
+    // (router.navigate is mocked; importing from the mocked module here.)
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    // No token storage anywhere — the wire contract that
+    // auth.service.register.test.js pins at the service layer must
+    // remain true end-to-end through the component.
+    expect(sessionStorage.getItem('auth_token')).toBeNull();
+    expect(sessionStorage.getItem('auth_session_id')).toBeNull();
   });
 });
 
@@ -206,14 +273,18 @@ describe('validateRegisterPayload (R11 pure validator)', () => {
   });
 
   it('flags each password rule failure independently (length, upper, lower, digit)', () => {
-    expect(validateRegisterPayload({ ...valid, password: 'Aa1!aa' }).password)
-      .toMatch(/8 caracteres/);
-    expect(validateRegisterPayload({ ...valid, password: 'password1' }).password)
-      .toMatch(/mayúscula/);
-    expect(validateRegisterPayload({ ...valid, password: 'PASSWORD1' }).password)
-      .toMatch(/minúscula/);
-    expect(validateRegisterPayload({ ...valid, password: 'Password!' }).password)
-      .toMatch(/dígito/);
+    expect(
+      validateRegisterPayload({ ...valid, password: 'Aa1!aa' }).password,
+    ).toMatch(/8 caracteres/);
+    expect(
+      validateRegisterPayload({ ...valid, password: 'password1' }).password,
+    ).toMatch(/mayúscula/);
+    expect(
+      validateRegisterPayload({ ...valid, password: 'PASSWORD1' }).password,
+    ).toMatch(/minúscula/);
+    expect(
+      validateRegisterPayload({ ...valid, password: 'Password!' }).password,
+    ).toMatch(/dígito/);
   });
 
   it('flags missing required fields and email format', () => {
