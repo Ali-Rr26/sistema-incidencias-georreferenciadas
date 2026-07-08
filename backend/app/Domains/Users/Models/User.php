@@ -90,10 +90,7 @@ class User extends Authenticatable
             ->exists() ?? false;
     }
 
-    public function isPublicador(): bool
-    {
-        return $this->role?->name === UserRole::Publicador->value;
-    }
+
 
     public function belongsToOrganization(Organization $org): bool
     {

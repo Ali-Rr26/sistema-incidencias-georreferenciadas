@@ -5,7 +5,6 @@
 export const STATUS_LABEL = Object.freeze({
   "in_progress": "En proceso",
   "pending": "Pendiente",
-  "pending_operator": "Pendiente de operador",
   "resolved": "Resuelto",
 });
 

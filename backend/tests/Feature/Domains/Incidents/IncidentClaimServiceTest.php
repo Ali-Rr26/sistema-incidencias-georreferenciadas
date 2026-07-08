@@ -136,7 +136,7 @@ it('allows an operator to release their own claimed incident', function (): void
 
     expect($result->claimed_by)->toBeNull();
     expect($result->claimed_at)->toBeNull();
-    expect($result->status->value)->toBe('pending_operator');
+    expect($result->status->value)->toBe('pending');
 });
 
 // ──────────────────────────────────────────────────────────────

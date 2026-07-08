@@ -54,7 +54,7 @@ class AuthService
             refreshHash: Hash::make($refreshToken),
             ip: $ip,
             ua: $ua,
-            expiresAt: Carbon::now()->addDays(30),
+            expiresAt: Carbon::instance($this->jwtService->refreshTokenExpiresAt()),
             id: $sessionId,
         );
 
@@ -121,7 +121,7 @@ class AuthService
             newHash: Hash::make($newRefresh),
             ip: $ip,
             ua: $ua,
-            expiresAt: Carbon::now()->addDays(30),
+            expiresAt: Carbon::instance($this->jwtService->refreshTokenExpiresAt()),
         );
 
         return [

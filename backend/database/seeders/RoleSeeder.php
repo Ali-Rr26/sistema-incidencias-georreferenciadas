@@ -14,7 +14,6 @@ class RoleSeeder extends Seeder
         ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
         ['id' => 4, 'name' => UserRole::OperadorOrganizacion->value],
         ['id' => 5, 'name' => UserRole::Usuario->value],
-        ['id' => 6, 'name' => UserRole::Publicador->value],
     ];
 
     public function run(): void

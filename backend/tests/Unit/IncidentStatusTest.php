@@ -23,7 +23,6 @@ it('returns the canonical Spanish label for every case', function (IncidentStatu
     expect($status->label())->toBe($expected);
 })->with([
     'pending' => [IncidentStatus::Pending, 'Pendiente'],
-    'pending_operator' => [IncidentStatus::PendingOperator, 'Pendiente de operador'],
     'in_progress' => [IncidentStatus::InProgress, 'En proceso'],
     'resolved' => [IncidentStatus::Resolved, 'Resuelto'],
 ]);
@@ -41,7 +40,6 @@ it('uses every case in the label map roundtrip', function (): void {
     }
     expect($labels)->toEqualCanonicalizing([
         'pending' => 'Pendiente',
-        'pending_operator' => 'Pendiente de operador',
         'in_progress' => 'En proceso',
         'resolved' => 'Resuelto',
     ]);

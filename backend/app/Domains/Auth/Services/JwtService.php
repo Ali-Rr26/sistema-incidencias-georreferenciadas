@@ -84,6 +84,11 @@ class JwtService
         return $this->validate($tokenString, $this->refreshConfig);
     }
 
+    public function refreshTokenExpiresAt(): DateTimeImmutable
+    {
+        return (new DateTimeImmutable)->modify($this->parseTtl($this->refreshExpiresIn));
+    }
+
     private function validate(string $tokenString, Configuration $config): ?array
     {
         try {

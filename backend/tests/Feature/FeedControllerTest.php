@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // No alias setup
+    if (! class_exists('Redis')) {
+        $this->markTestSkipped('Redis extension is required for this test.');
+    }
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {

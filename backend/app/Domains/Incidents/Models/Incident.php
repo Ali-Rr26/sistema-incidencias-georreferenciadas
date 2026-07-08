@@ -13,6 +13,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -21,6 +22,15 @@ use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
 class Incident extends Model
 {
     use HasSpatial, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::updating(function (Incident $incident) {
+            if ($incident->isDirty('status') && $incident->status === IncidentStatus::Resolved) {
+                $incident->resolution_date = now();
+            }
+        });
+    }
 
     public const STATUS_PENDING = 'pending';
 
@@ -89,5 +99,12 @@ class Incident extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function assignedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'assignments')
+            ->withPivot('assignment_role')
+            ->withTimestamps();
     }
 }

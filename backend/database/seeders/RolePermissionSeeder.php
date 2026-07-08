@@ -61,6 +61,7 @@ class RolePermissionSeeder extends Seeder
 
     private const OPERADOR_ORGANIZACION_PERMISSIONS = [
         ['resource' => 'incidents',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'update'],
         // Previously missing: the menu item Notificaciones was gated by
         // notifications.view, which this role never had. Granting it here
         // fixes the leak where the menu was hidden despite the role being
@@ -79,22 +80,15 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'profile',       'action' => 'view'],
     ];
 
-    private const PUBLICADOR_PERMISSIONS = [
-        ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'status-history',      'action' => 'view'],
-        ['resource' => 'profile',             'action' => 'view'],
-    ];
-
     public function run(): void
     {
         // Limpiar relaciones previas para evitar duplicados
-        DB::table('role_permission')->whereIn('role_id', [2, 3, 4, 5, 6])->delete();
+        DB::table('role_permission')->whereIn('role_id', [2, 3, 4, 5])->delete();
 
         $this->assignPermissions(2, self::OPERADOR_SISTEMA_PERMISSIONS);
         $this->assignPermissions(3, self::ADMIN_ORGANIZACION_PERMISSIONS);
         $this->assignPermissions(4, self::OPERADOR_ORGANIZACION_PERMISSIONS);
         $this->assignPermissions(5, self::USUARIO_PERMISSIONS);
-        $this->assignPermissions(6, self::PUBLICADOR_PERMISSIONS);
 
         $this->command?->info('Permisos asignados a todos los roles exitosamente.');
     }

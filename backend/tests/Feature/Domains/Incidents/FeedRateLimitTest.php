@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\RateLimiter;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
+    if (! class_exists('Redis')) {
+        $this->markTestSkipped('Redis extension is required for this test.');
+    }
     DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'admin_sistema'],

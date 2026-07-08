@@ -95,7 +95,7 @@ it('allows an operator to release their claimed incident', function (): void {
 
     $response->assertOk();
     $response->assertJsonPath('data.claimed_by', null);
-    $response->assertJsonPath('data.status', 'pending_operator');
+    $response->assertJsonPath('data.status', 'pending');
 });
 
 // ──────────────────────────────────────────────────────────────

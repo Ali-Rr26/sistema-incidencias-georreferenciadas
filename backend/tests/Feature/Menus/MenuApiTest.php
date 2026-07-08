@@ -132,29 +132,9 @@ it('admin_organizacion sees back-office plus citizen entries (spec override)', f
         ->and($routes)->toContain('/configuracion/perfil');
 });
 
-it('publicador sees Lista + Pendientes + Perfil only', function (): void {
-    $user = User::factory()->create(['role_id' => 6]);
 
-    $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
 
-    $response->assertOk();
-    $routes = collectRoutes($response->json('data'));
-
-    expect($routes)->toContain('/incidencias')
-        ->and($routes)->toContain('/incidencias/pendientes')
-        ->and($routes)->toContain('/configuracion/perfil')
-        // publicador is read-only — no incidents.manage.
-        ->and($routes)->not->toContain('/incidencias/crear')
-        // no citizen feed (no feed.view).
-        ->and($routes)->not->toContain('/feed')
-        ->and($routes)->not->toContain('/feed/crear')
-        // No admin chrome
-        ->and($routes)->not->toContain('/dashboard')
-        ->and($routes)->not->toContain('/usuarios')
-        ->and($routes)->not->toContain('/notificaciones');
-});
-
-it('usuario sees only the three citizen entries — no back-office, no /incidencias', function (): void {
+it('usuario sees only the four citizen entries — no back-office, no /incidencias', function (): void {
     $user = User::factory()->create(['role_id' => 5]);
 
     $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
@@ -165,7 +145,8 @@ it('usuario sees only the three citizen entries — no back-office, no /incidenc
 
     expect($routes)->toContain('/feed')
         ->and($routes)->toContain('/feed/crear')
-        ->and($routes)->toContain('/configuracion/perfil');
+        ->and($routes)->toContain('/configuracion/perfil')
+        ->and($routes)->toContain('/mapa-ciudadano');
 
     // No back-office at all
     expect($routes)->not->toContain('/dashboard')
@@ -179,10 +160,10 @@ it('usuario sees only the three citizen entries — no back-office, no /incidenc
         ->and($routes)->not->toContain('/organizaciones')
         ->and($routes)->not->toContain('/notificaciones');
 
-    // The 3 entries are exactly the citizen ones, with no parent header
-    expect(count($data))->toBe(3);
+    // The 4 entries are exactly the citizen ones, with no parent header
+    expect(count($data))->toBe(4);
     $names = array_map(fn (array $n): string => $n['name'], $data);
-    expect($names)->toEqualCanonicalizing(['Inicio', 'Reportar', 'Perfil']);
+    expect($names)->toEqualCanonicalizing(['Inicio', 'Reportar', 'Perfil', 'Mapa']);
 });
 
 it('creates the three new citizen menu rows (16, 17, 18) with the expected gates', function (): void {

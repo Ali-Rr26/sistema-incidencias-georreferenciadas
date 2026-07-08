@@ -30,6 +30,18 @@ class UpdateIncidentRequest extends FormRequest
             return false;
         }
 
+        // Verify status transitions require the user to be 'responsable'
+        if ($this->has('status') && $this->input('status') !== $incident->status->value) {
+            $isResponsable = $incident->assignedUsers()
+                ->where('user_id', $user->id)
+                ->where('assignment_role', 'responsable')
+                ->exists();
+
+            if (! $isResponsable) {
+                abort(403, 'No estás asignado como responsable de esta incidencia.');
+            }
+        }
+
         if ($user->isOperator()) {
             $lockedFields = ['title', 'priority', 'incident_category_id', 'location_id'];
             foreach ($lockedFields as $field) {

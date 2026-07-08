@@ -21,8 +21,7 @@ beforeEach(function (): void {
         ['id' => 2, 'name' => 'admin_sistema'],
         ['id' => 3, 'name' => 'admin_organizacion'],
         ['id' => 4, 'name' => 'operador_organizacion'],
-        ['id' => 5, 'name' => 'publicador'],
-        ['id' => 6, 'name' => 'usuario'],
+        ['id' => 5, 'name' => 'usuario'],
     ]);
 
     // ── Locations ─────────────────────────────────────────────
@@ -145,29 +144,12 @@ it('OperadorOrg sees only incidents from their own organization', function (): v
 });
 
 // ──────────────────────────────────────────────────────────────
-// REQ-RBAC-03: Publicador NO ve incidencias en index() → 0
-// ──────────────────────────────────────────────────────────────
-
-it('Publicador sees zero incidents in index', function (): void {
-    $publicador = User::factory()->create([
-        'role_id' => 5, // publicador
-        'organization_id' => $this->orgA->id,
-    ]);
-    $this->actingAs($publicador);
-
-    $response = $this->getJson('/api/incidents');
-
-    $response->assertOk();
-    $response->assertJsonPath('meta.total', 0);
-});
-
-// ──────────────────────────────────────────────────────────────
 // REQ-RBAC-03: Usuario NO ve incidencias en index() → 0
 // ──────────────────────────────────────────────────────────────
 
 it('Usuario sees zero incidents in index', function (): void {
     $usuario = User::factory()->create([
-        'role_id' => 6, // usuario
+        'role_id' => 5, // usuario
     ]);
     $this->actingAs($usuario);
 

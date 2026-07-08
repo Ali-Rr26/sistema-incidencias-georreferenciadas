@@ -51,7 +51,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             if ($user->isOrganizationAdmin() || $user->isOperator()) {
                 $query->where('organization_id', $user->organization_id);
             }
-            if ($user->isPublicador() || $user->isRegularUser()) {
+            if ($user->isRegularUser()) {
                 $query->whereRaw('1 = 0'); // no ven nada en index()
             }
         }
@@ -133,7 +133,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             $incident->update([
                 'claimed_by' => null,
                 'claimed_at' => null,
-                'status' => IncidentStatus::PendingOperator,
+                'status' => IncidentStatus::Pending,
             ]);
 
             return $incident->fresh();

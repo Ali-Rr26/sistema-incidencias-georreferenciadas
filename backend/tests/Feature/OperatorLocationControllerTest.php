@@ -49,10 +49,7 @@ beforeEach(function (): void {
         'role_id' => $lookupRoleId(UserRole::Usuario),
         'organization_id' => null,
     ]);
-    $this->publicador = User::factory()->create([
-        'role_id' => $lookupRoleId(UserRole::Publicador),
-        'organization_id' => $this->org->id,
-    ]);
+
 });
 
 // SCEN-3.1 — the controller must allow all three operator-tier enum roles
@@ -98,12 +95,7 @@ it('SCEN-3.2: Usuario is rejected with 403 on /api/operator/locations', function
         ->assertStatus(403);
 });
 
-it('SCEN-3.2: Publicador is rejected with 403 on /api/operator/locations', function (): void {
-    $this->withoutMiddleware([JwtAuthenticate::class])
-        ->actingAs($this->publicador)
-        ->getJson('/api/operator/locations')
-        ->assertStatus(403);
-});
+
 
 // SCEN-3.1 (companion) — the active-operators payload is filtered to
 // OperadorOrganizacion by the enum-driven whereHas clause, not by role_id.
