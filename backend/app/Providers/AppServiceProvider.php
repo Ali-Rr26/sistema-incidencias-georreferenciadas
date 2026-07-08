@@ -140,6 +140,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->ip());
         });
 
+        // /auth/google — defense in depth even though the Google ID token
+        // is already a credential. PR-2 of registro-y-google-auth. 20/min
+        // per IP covers a legit user who clicks the button, gets a popup,
+        // retries after closing it; the brute-force surface is much smaller
+        // than /register because each attempt = one Google API call from
+        // the SDK, not from our backend.
+        RateLimiter::for('google', function (Request $request): Limit {
+            return Limit::perMinute(20)->by($request->ip());
+        });
+
         // Admins bypass all gate/policy checks
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->isAdmin() ? true : null;

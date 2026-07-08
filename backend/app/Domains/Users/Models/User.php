@@ -35,6 +35,7 @@ class User extends Authenticatable
         'last_name',
         'phone',
         'avatar',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -89,8 +90,6 @@ class User extends Authenticatable
             ->where('action', $action)
             ->exists() ?? false;
     }
-
-
 
     public function belongsToOrganization(Organization $org): bool
     {

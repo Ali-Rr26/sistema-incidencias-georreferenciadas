@@ -32,7 +32,7 @@ use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
 final class FakeFirebaseTokenVerifier implements FirebaseTokenVerifier
 {
     /**
-     * @param array<string, array<string, mixed>> $tokensById
+     * @param  array<string, array<string, mixed>>  $tokensById
      */
     public function __construct(
         private readonly array $tokensById = [],
@@ -41,9 +41,10 @@ final class FakeFirebaseTokenVerifier implements FirebaseTokenVerifier
     public function verify(string $idToken): VerifiedFirebaseToken
     {
         if (! array_key_exists($idToken, $this->tokensById)) {
-            throw new InvalidFirebaseTokenException(
-                'Token de Google inválido (fake)',
-            );
+            // Use the default spec copy — the controller maps this
+            // exception to HTTP 401 and the message is part of the
+            // wire contract (R10).
+            throw new InvalidFirebaseTokenException;
         }
 
         $claims = $this->tokensById[$idToken];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Auth\Http\AuthController;
+use App\Domains\Auth\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Http\Controllers\RegisterController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -25,6 +26,11 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 // no auth middleware, only the per-IP throttle. Server hardcodes the
 // `usuario` role; client-supplied role_id is ignored (R1, R5, R13a).
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
+// Google ID-token login (PR-2 of registro-y-google-auth). Public —
+// only the per-IP throttle. The Firebase verifier already gates
+// forgery with a Google-signed JWT; throttle:google is
+// defense-in-depth for brute-force / token-spray (R7-R10, R13b).
+Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 Route::get('/incidents/feed', FeedController::class)->middleware('throttle:feed');
 

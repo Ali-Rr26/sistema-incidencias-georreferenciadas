@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
-use App\Domains\Auth\Services\VerifiedFirebaseToken;
+use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
 use App\Domains\Auth\Services\FakeFirebaseTokenVerifier;
+use App\Domains\Auth\Services\VerifiedFirebaseToken;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 /**
  * The fake is the test seam for the entire /auth/google flow. Every
@@ -46,7 +48,7 @@ it('throws InvalidFirebaseTokenException for any token that was not registered',
     $fake = new FakeFirebaseTokenVerifier([]);
 
     expect(fn () => $fake->verify('not-registered-token'))
-        ->toThrow(\App\Domains\Auth\Exceptions\InvalidFirebaseTokenException::class);
+        ->toThrow(InvalidFirebaseTokenException::class);
 });
 
 it('implements the FirebaseTokenVerifier contract', function (): void {
