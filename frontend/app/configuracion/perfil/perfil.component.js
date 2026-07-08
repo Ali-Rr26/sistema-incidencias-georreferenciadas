@@ -1,4 +1,3 @@
-import { defineComponent } from '../../utils/component.js';
 import { http } from '../../core/http.service.js';
 
 function mostrarToast(mensaje, tipo) {
@@ -8,7 +7,7 @@ function mostrarToast(mensaje, tipo) {
   new bootstrap.Toast(el, { delay: 3000 }).show();
 }
 
-export default defineComponent({
+export default {
   templateUrl: 'app/configuracion/perfil/perfil.component.html',
 
   async onInit() {
@@ -77,4 +76,4 @@ export default defineComponent({
   onDestroy() {
     // No special cleanup needed
   },
-});
+};

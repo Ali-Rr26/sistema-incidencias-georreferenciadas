@@ -1,9 +1,8 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { initSelect, destroyAll } from '../../../../shared/select-search.js';
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/categorias/pages/form/categorias.form.component.html',
 
@@ -111,4 +110,4 @@ export default defineComponent({
   onDestroy() {
     destroyAll();
   },
-});
+};

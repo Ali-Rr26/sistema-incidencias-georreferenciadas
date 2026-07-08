@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
@@ -124,7 +123,7 @@ function buildRolCard(rol) {
   return card;
 }
 
-export default defineComponent({
+export default {
   templateUrl: 'app/configuracion/roles/pages/index/roles.index.component.html',
 
   async onInit() {
@@ -263,4 +262,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

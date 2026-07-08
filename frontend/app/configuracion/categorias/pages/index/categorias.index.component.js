@@ -1,11 +1,10 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 
 const POR_PAGINA = 15;
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/categorias/pages/index/categorias.index.component.html',
 
@@ -210,4 +209,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../utils/component.js';
 import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
@@ -10,7 +9,7 @@ import {
 
 const POR_PAGINA = 10;
 
-export default defineComponent({
+export default {
   templateUrl: 'app/incidencias/pages/index/incidencias.index.component.html',
 
   async onInit() {
@@ -270,4 +269,4 @@ export default defineComponent({
   onDestroy() {
     destroyAll();
   },
-});
+};

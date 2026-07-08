@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 
 // ─────────────────────────────────────────────
@@ -135,7 +134,7 @@ function buildActivityFeed(items) {
 // ─────────────────────────────────────────────
 // Componente
 // ─────────────────────────────────────────────
-export default defineComponent({
+export default {
   templateUrl: 'app/dashboard/pages/dashboard/dashboard.component.html',
   styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
 
@@ -197,4 +196,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

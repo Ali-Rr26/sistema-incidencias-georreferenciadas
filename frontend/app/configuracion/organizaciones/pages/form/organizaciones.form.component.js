@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import {
@@ -8,7 +7,7 @@ import {
   destroyAll,
 } from '../../../../shared/select-search.js';
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/organizaciones/pages/form/organizaciones.form.component.html',
 
@@ -333,4 +332,4 @@ export default defineComponent({
   onDestroy() {
     destroyAll();
   },
-});
+};

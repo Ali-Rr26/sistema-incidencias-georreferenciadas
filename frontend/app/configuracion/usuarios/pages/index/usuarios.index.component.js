@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
@@ -15,7 +14,7 @@ const ROLE_BADGES = {
   usuario: '<span class="badge bg-secondary">Ciudadano</span>',
 };
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/usuarios/pages/index/usuarios.index.component.html',
 
@@ -243,4 +242,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

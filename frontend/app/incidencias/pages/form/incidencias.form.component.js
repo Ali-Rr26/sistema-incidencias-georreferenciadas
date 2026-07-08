@@ -5,7 +5,6 @@
  * No shell-based context detection; all elements use the `ici-` prefix.
  */
 
-import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
@@ -23,7 +22,7 @@ const ERROR_MAP = {
 const P = 'ici-';
 const $ = (suffix) => document.getElementById(P + suffix);
 
-export default defineComponent({
+export default {
   templateUrl: 'app/incidencias/pages/form/incidencias.form.component.html',
   styleUrl: 'app/incidencias/pages/form/incidencias.form.component.css',
 
@@ -444,4 +443,4 @@ export default defineComponent({
     this._mapRemove?.();
     this._mapRemove = null;
   },
-});
+};

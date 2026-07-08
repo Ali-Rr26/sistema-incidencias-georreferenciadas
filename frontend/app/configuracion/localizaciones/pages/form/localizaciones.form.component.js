@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import {
@@ -20,7 +19,7 @@ const PARENT_LEVEL_MAP = {
   neighborhood: 'city',
 };
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/localizaciones/pages/form/localizaciones.form.component.html',
 
@@ -135,4 +134,4 @@ export default defineComponent({
   onDestroy() {
     destroyAll();
   },
-});
+};

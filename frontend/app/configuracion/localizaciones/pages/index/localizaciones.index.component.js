@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../../utils/component.js';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
@@ -11,7 +10,7 @@ const NIVEL_LABELS = {
   neighborhood: 'Barrio',
 };
 
-export default defineComponent({
+export default {
   templateUrl:
     'app/configuracion/localizaciones/pages/index/localizaciones.index.component.html',
 
@@ -383,4 +382,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

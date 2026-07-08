@@ -1,4 +1,3 @@
-import { defineComponent } from '../utils/component.js';
 import {
   escapeHtml,
   timeAgo,
@@ -177,7 +176,7 @@ const CHIP_SELECTOR = '.feed-chip';
 
 // ── Component ──────────────────────────────────────────────
 
-export default defineComponent({
+export default {
   templateUrl: 'app/feed/feed.component.html',
   styleUrl: 'app/feed/feed.component.css',
 
@@ -388,4 +387,4 @@ export default defineComponent({
   onDestroy() {
     document.body.classList.remove('feed-view');
   },
-});
+};

@@ -1,12 +1,11 @@
 /**
  * Login Component — lógica del formulario de inicio de sesión.
  */
-import { defineComponent } from '../../../utils/component.js';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
 
-export default defineComponent({
+export default {
   templateUrl: 'app/auth/pages/login/login.component.html',
   styleUrl: 'app/auth/pages/login/login.component.css',
 
@@ -78,4 +77,4 @@ export default defineComponent({
   onDestroy() {
     // Sin cleanup necesario por ahora
   },
-});
+};
