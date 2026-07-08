@@ -161,10 +161,15 @@ class Router {
 
   async _mountPage(component, isFullPage) {
     const authOutlet = document.getElementById('auth-outlet');
+    const shellOutlet = document.getElementById('shell-outlet');
 
-    // Toggle visibility between the shell container and the auth outlet so
-    // they don't render on top of each other. Shell stays mounted; only the
-    // #page-outlet inside it is rewritten.
+    // Full-page routes (login, not-found) must hide the shell so the
+    // auth-outlet isn't visually covered by the shell chrome sitting at
+    // y=0..720. The shell stays mounted in the DOM (no re-mount cost on
+    // the next shell route) — only its display flips.
+    if (shellOutlet) {
+      shellOutlet.style.display = isFullPage ? 'none' : '';
+    }
     if (authOutlet) {
       authOutlet.style.display = isFullPage ? 'block' : 'none';
       authOutlet.innerHTML = '';
