@@ -8,7 +8,7 @@
 import { defineComponent } from '../../../utils/component.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
-import loadLeaflet from '../../../shared/leaflet.js';
+import initMapView from '../../../shared/init-map-view.js';
 
 // ── Error field mapping: backend field → error ID suffix ──
 const ERROR_MAP = {
@@ -31,7 +31,6 @@ export default defineComponent({
     document.body.classList.add('ici-create-view');
 
     // ── State ──
-    let map = null;
     let marker = null;
     let geomValue = null; // GeoJSON Point
     let imagenesSeleccionadas = [];
@@ -81,20 +80,14 @@ export default defineComponent({
     }
 
     // ── Leaflet map ──
-    await loadLeaflet();
-
-    const mapContainer = document.getElementById(P + 'map');
-    if (!mapContainer) return;
-
     const mapaInicial = { lat: -0.9537, lng: -80.7286, zoom: 13 };
-    map = L.map(P + 'map').setView(
-      [mapaInicial.lat, mapaInicial.lng],
-      mapaInicial.zoom,
-    );
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+    const { map, remove } = await initMapView({
+      container: P + 'map',
+      center: { lat: mapaInicial.lat, lng: mapaInicial.lng },
+      zoom: mapaInicial.zoom,
+    });
+    this._mapRemove = remove;
+    if (!map) return;
 
     function setMarker(lat, lng) {
       if (marker) {
@@ -115,37 +108,6 @@ export default defineComponent({
     }
 
     map.on('click', (e) => setMarker(e.latlng.lat, e.latlng.lng));
-
-    // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
-    const latInput = document.getElementById('lat');
-    const lngInput = document.getElementById('lng');
-    const mapStatus = document.getElementById('map-status');
-
-    function updateMapA11y() {
-      const c = map.getCenter();
-      const lat = c.lat.toFixed(6);
-      const lng = c.lng.toFixed(6);
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
-      if (mapStatus) {
-        mapStatus.textContent = `Coordenadas actuales: ${lat}, ${lng}.`;
-      }
-    }
-
-    map.on('moveend', updateMapA11y);
-    updateMapA11y();
-
-    setTimeout(() => map.invalidateSize(), 100);
-
-    // Re-invalidate when the map container is resized (e.g. viewport change
-    // reflows the grid). Without this, tiles can render with grey/empty bands
-    // after crossing a CSS breakpoint.
-    if (typeof ResizeObserver !== 'undefined') {
-      const resizeObserver = new ResizeObserver(() => {
-        map.invalidateSize();
-      });
-      resizeObserver.observe(mapContainer);
-    }
 
     // ── Geolocation ──
     document
@@ -478,11 +440,8 @@ export default defineComponent({
   onDestroy() {
     document.body.classList.remove('ici-create-view');
 
-    // Clean up Leaflet map
-    const mapEl = document.getElementById('ici-map');
-    if (mapEl && mapEl._leaflet_id) {
-      const map = window.L?.DomUtil?.get(mapEl);
-      if (map) map.remove();
-    }
+    // Clean up Leaflet map via the helper's returned disposer
+    this._mapRemove?.();
+    this._mapRemove = null;
   },
 });

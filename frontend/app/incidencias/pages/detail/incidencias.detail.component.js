@@ -2,7 +2,7 @@ import { defineComponent } from '../../../utils/component.js';
 import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { auth } from '../../../auth/auth.service.js';
-import loadLeaflet from '../../../shared/leaflet.js';
+import initMapView from '../../../shared/init-map-view.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -43,9 +43,17 @@ export default defineComponent({
 
   onDestroy() {
     const mapEl = document.getElementById('detalle-coords');
-    if (mapEl && mapEl._leaflet_map) {
-      mapEl._leaflet_map.remove();
-      delete mapEl._leaflet_map;
+    if (mapEl) {
+      // Prefer the helper's disposer (also clears the underlying L.Map).
+      // Fall back to the legacy map reference in case the helper was bypassed.
+      if (typeof mapEl._leaflet_dispose === 'function') {
+        mapEl._leaflet_dispose();
+        delete mapEl._leaflet_dispose;
+      }
+      if (mapEl._leaflet_map) {
+        mapEl._leaflet_map.remove();
+        delete mapEl._leaflet_map;
+      }
     }
   },
 });
@@ -127,50 +135,22 @@ async function renderMap(inc) {
 
   const [lng, lat] = inc.geom.coordinates;
 
-  try {
-    await loadLeaflet();
-  } catch {
-    mapEl.innerHTML =
-      '<div class="text-center py-4 text-danger">No se pudo cargar el mapa</div>';
-    return;
-  }
-
   mapEl.innerHTML =
     '<div id="detalle-mapa" class="incid-detail__map-canvas"></div>';
 
-  const map = L.map('detalle-mapa').setView([lat, lng], 15);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
+  const { map, remove } = await initMapView({
+    container: 'detalle-mapa',
+    center: { lat, lng },
+    zoom: 15,
+    errorClass: 'incid-detail__map-error',
+  });
+  if (!map) return;
 
   L.marker([lat, lng]).addTo(map);
 
-  // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
-  const latInput = document.getElementById('lat');
-  const lngInput = document.getElementById('lng');
-  const mapStatus = document.getElementById('map-status');
-
-  function updateMapA11y() {
-    const c = map.getCenter();
-    const curLat = c.lat.toFixed(6);
-    const curLng = c.lng.toFixed(6);
-    if (latInput) latInput.value = curLat;
-    if (lngInput) lngInput.value = curLng;
-    if (mapStatus) {
-      mapStatus.textContent = `Coordenadas actuales: ${curLat}, ${curLng}.`;
-    }
-  }
-
-  map.on('moveend', updateMapA11y);
-  updateMapA11y();
-
-  // Invalidate size after render
-  setTimeout(() => map.invalidateSize(), 100);
-
-  // Store map reference for cleanup
+  // Store map reference and disposer for cleanup
   mapEl._leaflet_map = map;
+  mapEl._leaflet_dispose = remove;
 }
 
 function renderizarImagenes(images) {

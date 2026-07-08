@@ -17,7 +17,7 @@ import {
 import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
-import loadLeaflet from '../../../shared/leaflet.js';
+import initMapView from '../../../shared/init-map-view.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -153,57 +153,29 @@ export default defineComponent({
   },
 
   async _renderMap(_inc) {
-    const mapEl = document.getElementById('fd-map');
-    if (!mapEl || !this._mapCoords) return;
-
-    try {
-      await loadLeaflet();
-    } catch {
-      mapEl.innerHTML =
-        '<div class="fd-map-error">No se pudo cargar el mapa</div>';
-      return;
-    }
+    if (!this._mapCoords) return;
 
     const { lat, lng } = this._mapCoords;
-    const map = L.map('fd-map').setView([lat, lng], 15);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+    const { map, remove } = await initMapView({
+      container: 'fd-map',
+      center: { lat, lng },
+      zoom: 15,
+      errorClass: 'fd-map-error',
+    });
+    if (!map) return;
 
     L.marker([lat, lng]).addTo(map);
 
-    // ── A11y: keep labelled lat/lng inputs + status region in sync with the map ──
-    const latInput = document.getElementById('lat');
-    const lngInput = document.getElementById('lng');
-    const mapStatus = document.getElementById('map-status');
-
-    function updateMapA11y() {
-      const c = map.getCenter();
-      const curLat = c.lat.toFixed(6);
-      const curLng = c.lng.toFixed(6);
-      if (latInput) latInput.value = curLat;
-      if (lngInput) lngInput.value = curLng;
-      if (mapStatus) {
-        mapStatus.textContent = `Coordenadas actuales: ${curLat}, ${curLng}.`;
-      }
-    }
-
-    map.on('moveend', updateMapA11y);
-    updateMapA11y();
-
-    // Invalidate size after mount
-    setTimeout(() => map.invalidateSize(), 150);
-
     // Store map reference for cleanup
     this._detailMap = map;
+    this._detailMapRemove = remove;
   },
 
   onDestroy() {
-    // Cleanup Leaflet map
-    if (this._detailMap) {
-      this._detailMap.remove();
+    // Cleanup Leaflet map via the helper's returned disposer
+    if (this._detailMapRemove) {
+      this._detailMapRemove();
+      this._detailMapRemove = null;
       this._detailMap = null;
     }
   },
