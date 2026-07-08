@@ -46,6 +46,28 @@ class AuthService {
     return data;
   }
 
+  /**
+   * Register a new citizen account (R11).
+   *
+   * POSTs the validated payload to /register and returns the 201 envelope
+   * unchanged so the caller can read `message` for the success banner.
+   *
+   * **No auto-login.** Locked product decision from clarifications #2300:
+   * a successful registration does NOT issue a session — the user stays on
+   * /login and types their credentials. This method therefore intentionally
+   * does NOT call setAccessToken / setSessionId and does NOT touch
+   * sessionStorage. The component is responsible for showing the banner and
+   * switching back to the login form.
+   *
+   * The 422 path falls through to the caller's catch block; http.service
+   * attaches `err.status` and `err.errors` to the thrown Error so the
+   * component can render field-level errors without re-parsing.
+   */
+  async register(payload) {
+    const data = await http.post('/register', payload);
+    return data;
+  }
+
   async logout() {
     try {
       await http.post('/logout', { _session_id: getSessionId() });
