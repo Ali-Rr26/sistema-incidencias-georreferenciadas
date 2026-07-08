@@ -9,7 +9,9 @@ describe('resolveRoleName', () => {
   });
 
   it('returns the string when role is a plain string', () => {
-    expect(resolveRoleName({ role: 'operador_organizacion' })).toBe('operador_organizacion');
+    expect(resolveRoleName({ role: 'operador_organizacion' })).toBe(
+      'operador_organizacion',
+    );
   });
 
   it('returns null when user is missing', () => {
