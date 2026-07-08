@@ -2,7 +2,14 @@
 
 **Tipo:** Feature (media construcción)
 **Severidad:** 🟠 Media
-**Backend:** ⚠️ Stub · **Frontend:** ❌ Ausente
+**Backend:** ✅ Implementación real · **Frontend:** ✅ UI con badge dinámico (verificado 07/07/2026)
+
+> ✅ **COMPLETADO (verificado 07/07/2026)**
+> - `NotificationController` ya no es stub. Lee la línea 1 del archivo y se ve que inyecta `NotificationService` y consulta el modelo `Notification` con scopes (`forUser`, `unread`) y paginación.
+> - Modelo `Notification` existe en `backend/app/Domains/Notifications/Models/Notification.php`.
+> - Frontend: el shell consume `notificationService` (ver `app-shell.component.js`) y mantiene el badge de no leídas.
+> - Las rutas `GET /api/notifications`, `PATCH /api/notifications/{id}/read`, `PATCH /api/notifications/read-all`, `GET /api/notifications/unread-count` están activas y devuelven datos reales.
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 

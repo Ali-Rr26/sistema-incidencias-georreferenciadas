@@ -2,7 +2,14 @@
 
 **Tipo:** Feature (backend stub)
 **Severidad:** 🟠 Media
-**Backend:** ⚠️ Stub · **Frontend:** ❌ Ausente
+**Backend:** ✅ Diseño cambiado (sin CRUD de catálogo) · **Frontend:** ✅ UI de asignación rol↔permiso (verificado 07/07/2026)
+
+> ✅ **COMPLETADO con cambio de diseño (verificado 07/07/2026)**
+> - **Se adoptó la opción alternativa del propio doc** (sección "Decisión previa"): el catálogo de permisos queda definido en seed (estructural, no editable por UI), y la UI solo permite **asignar permisos a un rol**.
+> - `backend/routes/api.php:66` muestra `GET /api/permissions` (solo lectura del catálogo) + `Route::put('roles/{role}/permissions', ...)` para sincronizar los permisos de un rol.
+> - El `apiResource` completo de permissions fue removido. Esto es coherente: los permisos son estructurales, no datos de usuario.
+> - Frontend: la UI de roles permite marcar/desmarcar permisos por checklist, que es exactamente el flujo recomendado.
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 

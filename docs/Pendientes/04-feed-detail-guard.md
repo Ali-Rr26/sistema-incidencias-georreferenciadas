@@ -2,7 +2,14 @@
 
 **Tipo:** Seguridad / decisión de diseño
 **Severidad:** 🟡 Revisar (puede ser intencional)
-**Backend:** — · **Frontend:** ⚠️ Única ruta con shell sin guard
+**Backend:** — · **Frontend:** ✅ `authGuard` aplicado a `/feed/:id` (verificado 07/07/2026)
+
+> ✅ **COMPLETADO (verificado 07/07/2026)**
+> - `frontend/app/app.js` línea 52 muestra el array `[authGuard]` aplicado a la ruta `/feed/:id`. La inconsistencia detectada originalmente está resuelta.
+> - Coherente con backend: `GET /api/incidents/{id}` está dentro del grupo `jwt` (línea 25-67 de `backend/routes/api.php`), por lo que el guard del frontend y el JWT del backend coinciden.
+> - El feed de listado (`/feed`, `/feed/crear`) y el detalle (`/feed/:id`) tienen la misma política de auth: requieren usuario autenticado.
+> - **Nota:** el **feed público** existe a nivel de API en `GET /api/incidents/feed` (sin JWT, throttled) — eso es para consumo externo (transparencia ciudadana, integrable desde sitios de terceros). La UI del shell no lo consume; usa el listado autenticado.
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 

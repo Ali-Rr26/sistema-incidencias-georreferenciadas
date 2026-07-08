@@ -2,7 +2,16 @@
 
 **Tipo:** Bug UX
 **Severidad:** 🔴 Alta (visible al usuario final)
-**Backend:** — · **Frontend:** ❌ Links que caen en `/not-found`
+**Backend:** — · **Frontend:** ✅ Rutas fantasma eliminadas tras PR #43 (verificado 07/07/2026)
+
+> ✅ **COMPLETADO (verificado 07/07/2026)**
+> - Las rutas `/mapa`, `/alertas` y `/reportes` **no existen** como rutas activas en `frontend/app/app.js` (búsqueda vacía con `grep -nE "/mapa|/alertas|/reportes" app.js`).
+> - El problema se resolvió **de raíz**: tras la consolidación de shells (PR #43), los sidebars estáticos con `data-ln` se reemplazaron por menú dinámico. Ya no hay links "muertos" servidos al usuario.
+>
+> ⚠️ **FEATURE PENDIENTE separada (no es bug):**
+> La **vista de mapa georreferenciado** sigue sin existir. El sistema se llama "incidencias georreferenciadas" y PostGIS ya está habilitado (`incidents.geom` Point), pero no hay componente que renderice el `geom` en un mapa. Esto no es una "ruta fantasma" — es un feature futuro que merece su propio doc. Sugerido: [`08-vista-mapa.md`](./08-vista-mapa.md) cuando se aborde.
+>
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 

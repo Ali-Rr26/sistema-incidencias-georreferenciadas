@@ -2,7 +2,16 @@
 
 **Tipo:** Feature (backend stub)
 **Severidad:** 🟠 Media
-**Backend:** ⚠️ Stub · **Frontend:** ❌ Ausente
+**Backend:** ✅ Stub y dominio eliminados · **Frontend:** N/A (no aplica) (verificado 07/07/2026)
+
+> ✅ **COMPLETADO (verificado 07/07/2026)**
+> - **Se adoptó la opción B del propio doc** (sección "Decisión previa crítica"): el flujo `claim` / `release` / `confirm` ya cubre la necesidad. No se construyen dos mecanismos paralelos para lo mismo.
+> - `backend/app/Domains/Assignments/` fue **eliminado** del código (no existe el directorio).
+> - La ruta `incidents.assignments` no aparece en `backend/routes/api.php` (búsqueda `grep -n "assignments"` retorna vacío).
+> - La tabla `assignments` se dropeó vía migración `2026_07_05_000001_drop_assignments_table.php` (parte del stack zombie cleanup).
+> - Frontend: el detalle de incidencia usa los botones `claim` / `release` / `confirmar`, no el `apiResource` anidado.
+> - Si en el futuro se requiere asignación múltiple o historial formal, se puede revertir creando el modelo `Assignment` y haciendo que `claim`/`release` operen sobre él. Hoy no hace falta.
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 

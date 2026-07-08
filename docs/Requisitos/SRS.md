@@ -4,10 +4,11 @@
 
 ---
 
-**Versión del Documento:** 1.0
-**Fecha:** 08 de junio de 2026
-**Estado:** Aprobado para Desarrollo
-**Nivel de Confianza:** Preliminar
+**Versión del Documento:** 2.0
+**Fecha:** 07 de julio de 2026
+**Estado:** Sincronizado con la implementación actual
+**Nivel de Confianza:** Validado contra código fuente
+**Versión anterior:** v1.0 (08/06/2026) preservada íntegra en [`SRS-v1.0.md`](./SRS-v1.0.md)
 
 ---
 
@@ -16,43 +17,82 @@
 | Versión | Fecha | Descripción | Autor |
 |---------|-------|-------------|-------|
 | 1.0 | 08/06/2026 | Creación inicial del documento SRS | Equipo de Proyecto |
+| 2.0 | 07/07/2026 | Sincronización con la implementación actual. v1.0 preservada en archivo separado `SRS-v1.0.md` como referencia histórica. Ver resumen ejecutivo de cambios al inicio. | Equipo de Proyecto |
+
+---
+
+## Resumen ejecutivo de cambios v1.0 → v2.0
+
+### Stack tecnológico
+
+| Componente | v1.0 (original) | v2.0 (actual) |
+|---|---|---|
+| Framework backend | Laravel 10.x | **Laravel 12.x** sobre **Frankenphp/Octane** |
+| Lenguaje backend | PHP 8.2+ | PHP 8.2+ (sin cambios) |
+| Base de datos | MySQL 8.0 o PostgreSQL 15 | **PostgreSQL 15 con PostGIS** (sin MySQL) |
+| Autenticación | Token Bearer (JWT) o sesión | **JWT** (`tymon/jwt-auth`) con endpoint `/auth/refresh` |
+| Frontend | HTML+CSS+Bootstrap+JS vanilla | Idem + **AngularJS** (módulos custom) + **Vitest** (unit/integration/snapshot) |
+| Cache / sync | No especificado | **Redis** (`RedisIncidentSync` listener) |
+| Geolocalización | País/Provincia/Ciudad normalizado | Idem + columna `geom` (**Point**, PostGIS) en `incidents` y `locations` |
+| Reverse proxy | Nginx | Nginx (sin cambios) |
+| Contenedores | Docker Compose | Docker Compose (sin cambios) |
+
+### Modelo de datos — cambios principales
+
+- **Estados**: v1.0 describía 4 estados nominales (`Pendiente`, `En Proceso`, `Resuelto`, `Cerrado`). El modelo actual usa 4 valores en la columna `incidents.status` con constraint CHECK en PostgreSQL: **`pending`**, **`pending_operator`**, **`in_progress`**, **`resolved`**. El "Cerrado" del SRS se reemplazó por la acción `confirmar` que registra una fila en `incident_verifications` sin modificar `status`.
+- **Prioridad**: v1.0 usaba `alta|media|baja`. El código usa un enum PHP `IncidentPriority` con valores **`low`**, **`medium`**, **`high`** (en inglés en BD; la UI los localiza).
+- **Clasificación**: v1.0 planteaba **Tipo → Subtipo** jerárquico. El modelo actual colapsa a una única entidad `incident_categories` con autorrelación `parent_id` (categoría y subcategoría opcional).
+- **Ubicación**: la jerarquía País → Provincia → Ciudad se conserva, **más** la columna `geom` (Point, PostGIS) en `incidents` y `locations` para queries geoespaciales.
+- **Asignación de responsables**: v1.0 proponía tabla pivote `IncidenciaResponsable` con roles `responsable|apoyo`. Esa tabla fue **dropeada** (migración `2026_07_05_000001_drop_assignments_table.php`) y reemplazada por la acción `claim` con `claimed_by` + `claimed_at` y un `max_active_claims` por organización.
+- **Verificación**: v2.0 agrega `incident_verifications` (separado del flujo de status).
+- **Multitenant**: v1.0 no contemplaba. v2.0 introduce `users.organization_id`, `incidents.organization_id` y `organizations.parent_id` (jerárquica). El scoping se aplica en `IncidentPolicy` y se refuerza con middleware.
+- **Auditoría inmutable**: la tabla `status_history` se llena mediante un **trigger de base de datos** (migración `2026_06_15_000010_create_incident_triggers.php`), no desde código de aplicación. Esto garantiza inmutabilidad incluso si el código es comprometido.
+
+### Actores / Roles
+
+- v1.0: `admin`, `operador`, visitante
+- v2.0:
+  - `SystemAdmin` (cross-tenant, bypass de scope)
+  - `OperadorOrganizacion` (scoped a su org, ejecuta `claim`/`release`)
+  - `Publicador` (confirma resoluciones cuya categoría coincide con la de su organización)
+  - Visitante (sin auth, acceso a feed público throttled)
+
+Las acciones `claim`, `release` y `confirmar` tienen gates `can:claim`, `can:release`, `can:confirm` en `IncidentPolicy`.
+
+### Endpoints nuevos
+
+- `POST /api/incidents/{id}/claim` (OperadorOrg de la org dueña)
+- `POST /api/incidents/{id}/release` (OperadorOrg que hizo el claim)
+- `POST /api/incidents/{id}/confirmar` (Publicador de org cuya categoría coincide)
+- `POST /api/operator/location` y `GET /api/operator/locations` (tracking de operadores)
+- `GET /api/menus/my` (menú dinámico por rol)
+- `GET /api/incidents/feed` (público, throttled)
+
+### Numeración de requisitos
+
+- `RF-FUNC-001` a `RF-FUNC-028` se renumeran parcialmente para reflejar el flujo real.
+- Se agregan `RF-FUNC-029` a `RF-FUNC-035` para cubrir: claim, release, confirm, tracking de operador, menú dinámico, scoping multitenant y soft delete de `incident_verifications`.
 
 ---
 
 ## Tabla de Contenidos
 
-1. [Introducción](#1-introducción)
+1. Introducción
    - 1.1 Propósito
    - 1.2 Alcance del Producto
    - 1.3 Definiciones, Acrónimos y Abreviaturas
    - 1.4 Referencias
    - 1.5 Visión General del Documento
-
-2. [Descripción General](#2-descripción-general)
+2. Descripción General
    - 2.1 Perspectiva del Producto
    - 2.2 Funcionalidades del Producto
    - 2.3 Clases de Usuario y Características
    - 2.4 Ambiente Operativo
    - 2.5 Restricciones de Diseño e Implementación
    - 2.6 Suposiciones y Dependencias
-
-3. [Requisitos Específicos](#3-requisitos-específicos)
+3. Requisitos Específicos
    - 3.1 Requisitos de Interfaces Externas
-     - 3.1.1 Interfaces de Usuario
-     - 3.1.2 Interfaces de Hardware
-     - 3.1.3 Interfaces de Software
-     - 3.1.4 Interfaces de Comunicación
    - 3.2 Requisitos Funcionales
-     - 3.2.1 Gestión de Incidencias (CRUD)
-     - 3.2.2 Gestión de Estados e Historial
-     - 3.2.3 Asignación de Responsables
-     - 3.2.4 Sistema de Comentarios
-     - 3.2.5 Ubicación Georreferenciada
-     - 3.2.6 Clasificación Jerárquica (Tipo/Subtipo)
-     - 3.2.7 Sistema de Notificaciones
-     - 3.2.8 Dashboard y Métricas
-     - 3.2.9 Autenticación y Control de Acceso
-     - 3.2.10 Consultas y Filtros
    - 3.3 Requisitos de Rendimiento
    - 3.4 Requisitos de Fiabilidad
    - 3.5 Requisitos de Disponibilidad
@@ -60,14 +100,11 @@
    - 3.7 Requisitos de Mantenibilidad
    - 3.8 Requisitos de Portabilidad
    - 3.9 Otros Requisitos
-
-4. [Modelo de Datos](#4-modelo-de-datos)
-   - 4.1 Entidades Principales
-   - 4.2 Diagrama de Relaciones (ER)
-
-5. [Apéndices](#5-apéndices)
+4. Modelo de Datos
+5. Apéndices
    - 5.1 Matriz de Trazabilidad
    - 5.2 Glosario
+   - Apéndice A: SRS v1.0 (versión histórica) — ver [`SRS-v1.0.md`](./SRS-v1.0.md)
 
 ---
 
@@ -75,62 +112,78 @@
 
 ### 1.1 Propósito
 
-Este documento establece la especificación completa de requisitos de software para el **Sistema Web de Gestión de Incidencias Georreferenciadas**. El propósito principal es definir de manera precisa y completa todas las funcionalidades, restricciones y características del sistema que será desarrollado como proyecto integrador.
+Este documento establece la especificación de requisitos de software **sincronizada con la implementación actual** del Sistema Web de Gestión de Incidencias Georreferenciadas. La versión v1.0 (08/06/2026) se preserva íntegra en el archivo [`SRS-v1.0.md`](./SRS-v1.0.md) como referencia de la visión original; las divergencias entre ambas versiones se documentan en el resumen ejecutivo al inicio de este documento.
 
-El SRS servirá como acuerdo contractual entre el equipo de desarrollo y las asignaturas involucradas, proporcionando una referencia común para todas las partes interesadas y estableciendo los criterios de aceptación del producto final.
+El SRS sirve como acuerdo contractual entre el equipo de desarrollo y las asignaturas involucradas, y como referencia para onboarding, refactors y auditorías.
 
 ### 1.2 Alcance del Producto
 
 El sistema consistirá en una aplicación web completa que permitirá:
 
-- El registro, gestión y seguimiento completo de incidencias georreferenciadas
-- La asignación de responsables con roles diferenciados (responsable principal y apoyo)
-- El seguimiento mediante comentarios y notificaciones
-- La clasificación jerárquica de incidencias por tipo y subtipo
-- La visualización de métricas y dashboards con filtros avanzados
-- La gestión de ubicaciones normalizadas (País → Provincia → Ciudad)
-- Sistema de Roles y Permisos
+- El registro, gestión y seguimiento completo de **incidencias georreferenciadas** (con coordenadas PostGIS y dirección normalizada País → Provincia → Ciudad).
+- La **toma de responsabilidad** sobre una incidencia mediante la acción `claim` (reemplaza la asignación rígida de v1.0).
+- La **confirmación de resolución** por un actor con rol `Publicador`, separada del flujo de status.
+- El seguimiento mediante **comentarios anidados** (shallow) y **notificaciones** por evento.
+- La **clasificación jerárquica** por categoría y subcategoría.
+- La **visualización de métricas y dashboards** con filtros avanzados.
+- El **tracking de operadores** (ubicación reportada voluntariamente).
+- La **gestión de menú dinámico** por rol (`GET /menus/my`).
+- El **aislamiento multitenant** por organización, con `SystemAdmin` como bypass.
 
-El sistema NO incluirá (dentro del alcance inicial):
+El sistema NO incluirá (fuera de alcance):
 
-- Aplicaciones móviles nativas
-- Integración con sistemas externos de terceros
-- Módulo de reportes avanzados con exportación a PDF/Excel
+- Aplicaciones móviles nativas.
+- Integración con sistemas externos de terceros.
+- Módulo de reportes avanzados con exportación a PDF/Excel.
 
 ### 1.3 Definiciones, Acrónimos y Abreviaturas
 
 | Término | Definición |
-|---------|------------|
-| **API** | Application Programming Interface - Interfaz de Programación de Aplicaciones |
+|---|---|
+| **API** | Application Programming Interface |
 | **BD** | Base de Datos |
-| **CRUD** | Create, Read, Update, Delete - Operaciones de creación, lectura, actualización y eliminación |
-| **Docker** | Plataforma de contenedores para automatización de despliegues |
-| **ER** | Entity Relationship - Modelo Entidad-Relación |
-| **FK** | Foreign Key - Llave Foránea |
-| **HTTP** | Hypertext Transfer Protocol - Protocolo de Transferencia de Hipertexto |
-| **JSON** | JavaScript Object Notation - Notación de Objetos de JavaScript |
-| **Laravel** | Framework de desarrollo web en PHP |
-| **MySQL** | Sistema de Gestión de Bases de Datos Relacional |
-| **PostgreSQL** | Sistema de Gestión de Bases de Datos Objeto-Relacional |
-| **REST** | Representational State Transfer - Estilo arquitectural para servicios web |
-| **SRS** | Software Requirements Specification - Especificación de Requisitos de Software |
-| **SQL** | Structured Query Language - Lenguaje de Consultas Estructurado |
-| **UI** | User Interface - Interfaz de Usuario |
-| **UX** | User Experience - Experiencia de Usuario |
+| **CRUD** | Create, Read, Update, Delete |
+| **Claim** | Acción por la cual un OperadorOrg toma responsabilidad sobre una incidencia. Equivale a "asignarse" pero respetando el `max_active_claims` de su org. |
+| **Docker** | Plataforma de contenedores |
+| **ER** | Entity Relationship |
+| **FK** | Foreign Key |
+| **Frankenphp** | Servidor de aplicaciones PHP moderno basado en Caddy; usado con Laravel Octane. |
+| **HTTP** | Hypertext Transfer Protocol |
+| **JSON** | JavaScript Object Notation |
+| **JWT** | JSON Web Token; mecanismo de autenticación stateless. |
+| **Laravel** | Framework PHP |
+| **Multitenant** | Arquitectura donde los datos de cada organización (tenant) están aislados lógicamente por un `organization_id`. |
+| **Octane** | Capa de Laravel que mantiene la app en memoria entre requests (alto rendimiento). |
+| **OperadorOrg** | Abreviatura de `OperadorOrganizacion`; usuario de una organización que puede hacer `claim`/`release`. |
+| **PostGIS** | Extensión de PostgreSQL para datos geoespaciales (puntos, polígonos, queries de distancia, etc.). |
+| **Publicador** | Rol que confirma la resolución de una incidencia cuya categoría coincide con la de su organización. |
+| **REST** | Representational State Transfer |
+| **Scope** | Restricción multitenant: un usuario solo ve/edita datos de su propia organización (excepto `SystemAdmin`). |
+| **SRS** | Software Requirements Specification |
+| **SQL** | Structured Query Language |
+| **SystemAdmin** | Rol cross-tenant con bypass del scope. |
+| **Trigger** | Mecanismo de base de datos que ejecuta lógica automáticamente ante eventos DML. En este proyecto, `status_history` se llena por trigger, no por código de aplicación. |
+| **UI** | User Interface |
+| **UX** | User Experience |
 
 ### 1.4 Referencias
 
 | Referencia | Descripción |
-|------------|-------------|
-| IEEE 830-1998 | IEEE Recommended Practice for Software Requirements Specifications |
-| ISO/IEC 25000 | SQuaRE - Software Quality Requirements and Evaluation |
+|---|---|
+| IEEE 830-1998 | Recommended Practice for Software Requirements Specifications |
+| ISO/IEC 25000 | SQuaRE — Software Quality Requirements and Evaluation |
 | ISO/IEC 25010 | Modelo de calidad de producto de software |
-| PSR-12 | Guía de estilos de codificación para PHP |
-| Proyecto Integrador 2026 | Lineamientos del proyecto para estudiantes de TecDesWeb-2 |
+| PSR-12 | Guía de estilos de codificación PHP |
+| Laravel 12.x docs | https://laravel.com/docs/12.x |
+| PostgreSQL 15 docs | https://www.postgresql.org/docs/15/ |
+| PostGIS docs | https://postgis.net/documentation/ |
+| Frankenphp | https://frankenphp.dev/ |
+| JWT (RFC 7519) | https://datatracker.ietf.org/doc/html/rfc7519 |
+| tymon/jwt-auth | https://jwt-auth.readthedocs.io/ |
 
 ### 1.5 Visión General del Documento
 
-Este documento está organizado siguiendo la estructura estándar IEEE 830 para SRS. La Sección 2 proporciona la descripción general del producto, estableciendo el contexto y las restricciones. La Sección 3 contiene todos los requisitos específicos organizados por categorías. La Sección 4 presenta el modelo de datos conceptual. La Sección 5 incluye apéndices con información complementaria.
+Este documento sigue la estructura IEEE 830. La Sección 2 describe el producto y sus restricciones. La Sección 3 contiene los requisitos específicos. La Sección 4 presenta el modelo de datos. La Sección 5 incluye apéndices. El archivo [`SRS-v1.0.md`](./SRS-v1.0.md) preserva la versión v1.0 histórica sin modificaciones.
 
 ---
 
@@ -138,125 +191,137 @@ Este documento está organizado siguiendo la estructura estándar IEEE 830 para 
 
 ### 2.1 Perspectiva del Producto
 
-El Sistema Web de Gestión de Incidencias Georreferenciadas es una aplicación web completa desarrollada como proyecto integrador. El sistema será construido como una arquitectura de tres capas:
+El sistema es una aplicación web con arquitectura de tres capas, desplegada en contenedores Docker:
 
-- **Capa de Presentación (Frontend):** Aplicación web responsiva desarrollada en HTML5, CSS3, Bootstrap y JavaScript vanilla con Fetch API para comunicación asíncrona.
-- **Capa de Lógica de Negocio (Backend):** API REST desarrollada en Laravel (PHP) que procesa las solicitudes del cliente y ejecuta la lógica del negocio.
-- **Capa de Datos:** Sistema de gestión de base de datos relacional (MySQL o PostgreSQL) que almacena la información del sistema.
+- **Capa de Presentación (Frontend)**: HTML5 + CSS3 + Bootstrap + JavaScript vanilla con AngularJS como framework de módulos. Comunicación asíncrona vía `fetch`. Servido por Nginx.
+- **Capa de Lógica de Negocio (Backend)**: API REST en **Laravel 12** corriendo sobre **Frankenphp/Octane**. Organizada en 13 dominios DDD: Auth, Comments, IncidentCategories, Incidents, Locations, Menus, Notifications, Organizations, Permissions, Roles, Sessions, Shared, Users. Autenticación vía **JWT**. Container: `frankenphp-worker`.
+- **Capa de Datos**: **PostgreSQL 15** con extensión **PostGIS**. Redis como cache y bus de sincronización entre instancias de Octane.
 
-El sistema interactuará con los usuarios a través de un navegador web estándar, sin necesidad de instalar software adicional en los equipos clientes. El despliegue se realizará utilizando contenedores Docker para garantizar portabilidad y consistencia del entorno.
+El despliegue usa Docker Compose con servicios: `backend` (Frankenphp), `frontend` (Nginx), `postgres` (PostgreSQL+PostGIS), `redis`.
 
 ### 2.2 Funcionalidades del Producto
 
-El sistema proporcionará las siguientes funcionalidades principales:
-
-1. **Gestión de Incidencias:** CRUD completo con validación de datos en frontend y backend
-2. **Estados e Historial:** Transiciones de estado controladas con registro histórico completo
-3. **Asignación de Responsables:** Asignación de uno o varios usuarios con roles diferenciados
-4. **Sistema de Comentarios:** Registro y visualización de comentarios por incidencia
-5. **Ubicación Georreferenciada:** Selección jerárquica normalizada de País → Provincia → Ciudad
-6. **Clasificación Jerárquica:** Selección de Tipo y Subtipo relacionados
-7. **Notificaciones:** Sistema de notificaciones por eventos con lectura/no lectura
-8. **Dashboard:** Visualización de métricas, gráficos y filtros avanzados
-9. **Autenticación:** Login/logout con control de acceso por sesiones
-10. **Consultas:** Filtros por estado, tipo, ubicación, rango de fechas
+1. **Gestión de Incidencias**: CRUD completo con upload de imágenes (multipart) y coordenadas geográficas.
+2. **Máquina de Estados**: Transiciones controladas con auditoría inmutable vía trigger de DB.
+3. **Toma y Liberación de Responsabilidad**: `claim`/`release` por OperadorOrg con control de concurrencia (`max_active_claims`).
+4. **Confirmación de Resolución**: `confirmar` por Publicador; registra verificación sin cambiar `status`.
+5. **Sistema de Comentarios**: Anidados shallow por incidencia, con soft delete.
+6. **Ubicación Georreferenciada**: Coordenadas PostGIS + dirección normalizada jerárquica.
+7. **Clasificación Jerárquica**: Categoría con subcategoría opcional (autorreferencia `parent_id`).
+8. **Notificaciones**: Generadas por Observer Eloquent ante eventos relevantes.
+9. **Menú Dinámico por Rol**: El frontend pide `GET /menus/my` y renderiza solo lo permitido.
+10. **Tracking de Operadores**: Endpoint de heartbeat geográfico.
+11. **Dashboard y Métricas**: Conteos por estado, por tipo, por org; tiempo promedio de resolución.
+12. **Scoping Multitenant**: Aislamiento automático por organización para OperadorOrg y Publicador; bypass para SystemAdmin.
+13. **Sincronización en Tiempo Real**: Redis pub/sub vía `RedisIncidentSync` listener (preparado para WebSockets futuros).
 
 ### 2.3 Clases de Usuario y Características
 
-#### 2.3.1 Administrador del Sistema
+#### 2.3.1 SystemAdmin
 
-| Característica | Descripción |
-|----------------|-------------|
-| **Rol** | Usuario con privilegios completos de gestión |
-| **Permisos** | Crear, editar, eliminar incidencias; gestionar usuarios; ver dashboard completo |
-| **Frecuencia de uso** | Media-alta |
-| **Nivel de expertise** | Intermedio |
+| Atributo | Detalle |
+|---|---|
+| **Rol** | Usuario cross-tenant con privilegios completos |
+| **Permisos** | CRUD sobre todas las entidades de todas las organizaciones; bypass de scope en todas las policies |
+| **Frecuencia de uso** | Media |
+| **Nivel de expertise** | Alto |
 
-#### 2.3.2 Usuario Operador
+#### 2.3.2 OperadorOrganizacion
 
-| Característica | Descripción |
-|----------------|-------------|
-| **Rol** | Usuario con permisos operativos estándar |
-| **Permisos** | Crear y editar incidencias asignadas; agregar comentarios; ver dashboard personal |
+| Atributo | Detalle |
+|---|---|
+| **Rol** | Operador de una organización específica; toma y libera incidencias de su org |
+| **Permisos** | Ver/editar incidencias de su org; `claim`/`release`; comentar; reportar ubicación propia; ver dashboard personal |
+| **Restricción** | Máximo `max_active_claims` simultáneas (configurado por org) |
 | **Frecuencia de uso** | Alta |
 | **Nivel de expertise** | Básico a intermedio |
 
-#### 2.3.3 Visitante (Sin autenticación)
+#### 2.3.3 Publicador
 
-| Característica | Descripción |
-|----------------|-------------|
+| Atributo | Detalle |
+|---|---|
+| **Rol** | Usuario verificador; confirma resoluciones de la categoría de su org |
+| **Permisos** | Ver todas las incidencias de su org; `confirmar` solo si la `incident_category_id` de la incidencia coincide con la `incident_category_id` de su organización |
+| **Frecuencia de uso** | Media |
+| **Nivel de expertise** | Intermedio |
+
+#### 2.3.4 Visitante (sin autenticación)
+
+| Atributo | Detalle |
+|---|---|
 | **Rol** | Usuario sin acceso al sistema |
-| **Permisos** | Ninguno - debe autenticarse para acceder |
-| **Frecuencia de uso** | N/A |
+| **Permisos** | `GET /incidents/feed` (público, throttled) |
+| **Frecuencia de uso** | Variable |
 | **Nivel de expertise** | N/A |
 
 ### 2.4 Ambiente Operativo
 
 #### 2.4.1 Plataforma de Hardware
 
-| Componente | Especificación Mínima | Especificación Recomendada |
-|------------|----------------------|---------------------------|
-| Servidor de Aplicaciones | CPU: 2 cores, RAM: 4GB | CPU: 4 cores, RAM: 8GB |
-| Servidor de Base de Datos | CPU: 2 cores, RAM: 4GB | CPU: 4 cores, RAM: 8GB |
-| Almacenamiento | 20 GB SSD/HDD | 50 GB SSD/HDD |
+| Componente | Especificación Mínima | Recomendada |
+|---|---|---|
+| Servidor de aplicaciones | 2 cores, 4 GB RAM | 4 cores, 8 GB RAM |
+| Servidor de BD | 2 cores, 4 GB RAM | 4 cores, 8 GB RAM |
+| Almacenamiento | 20 GB | 50 GB SSD |
 | Red | 100 Mbps | 1 Gbps |
 
 #### 2.4.2 Plataforma de Software
 
-| Componente | Requisito |
-|------------|-----------|
-| Sistema Operativo del Servidor | Linux (Ubuntu 22.04 LTS o equivalente) |
+| Componente | Versión |
+|---|---|
+| Sistema Operativo | Linux (Ubuntu 22.04 LTS o equivalente) |
 | Contenedores | Docker Engine 20.10+ con Docker Compose |
-| Servidor Web | Nginx |
+| Servidor Web (frontend) | Nginx |
 | Runtime PHP | PHP 8.2+ |
-| Framework Backend | Laravel 10.x |
-| Base de Datos | MySQL 8.0 o PostgreSQL 15 |
+| Servidor de aplicaciones backend | Frankenphp + Laravel Octane |
+| Framework Backend | Laravel 12.x |
+| Base de datos | PostgreSQL 15 + PostGIS |
+| Cache / sync | Redis 7+ |
 | Navegador Cliente | Chrome 90+, Firefox 90+, Safari 14+, Edge 90+ |
 
 #### 2.4.3 Ambiente de Red
 
-El sistema operará en un entorno de red estándar con las siguientes consideraciones:
-
-- El frontend se comunicará con el backend exclusivamente a través de la API REST
-- Se implementará configuración CORS para permitir comunicación entre dominios
-- El tráfico entre cliente y servidor utilizará HTTPS (cuando esté disponible)
-- Los contenedores Docker utilizarán una red interna para comunicación entre servicios
+- Frontend ↔ Backend: HTTP/HTTPS a través de Nginx (reverse proxy).
+- CORS restrictivo (orígenes whitelistados en `config/cors.php`).
+- Tráfico en JSON sobre UTF-8.
+- Auth vía header `Authorization: Bearer <jwt>`.
 
 ### 2.5 Restricciones de Diseño e Implementación
 
 | Restricción | Descripción |
-|-------------|-------------|
-| **Tecnología Backend** | Obligatorio: Laravel (API REST en PHP) |
-| **Tecnología Frontend** | Obligatorio: HTML5, CSS3, Bootstrap, JavaScript vanilla |
-| **Base de Datos** | Obligatorio: MySQL o PostgreSQL (motor relacional) |
-| **Despliegue** | Obligatorio: Contenedores Docker con Docker Compose |
-| **Comunicación** | Obligatorio: Fetch API (JavaScript vanilla) - No frameworks JS |
-| **Estilo de Código** | PSR-12 para código PHP |
-| **Arquitectura** | API REST con separación clara frontend/backend |
-| **Tiempo de entrega** | Según calendario académico (socialización: 04/05/2026) |
-| **Equipo** | 3 integrantes con roles diferenciados |
+|---|---|
+| Backend | Laravel (API REST en PHP) — obligatorio |
+| Frontend | HTML5, CSS3, Bootstrap, JavaScript — obligatorio |
+| Base de datos | PostgreSQL con PostGIS — obligatorio |
+| Autenticación | JWT (stateless) — obligatorio |
+| Despliegue | Contenedores Docker con Docker Compose — obligatorio |
+| Estilo de código | PSR-12 verificado con Laravel Pint |
+| Arquitectura backend | DDD con 13 dominios, no MVC clásico |
+| Arquitectura frontend | AngularJS modular (sin frameworks SPA modernos) |
+| Auditoría | `status_history` por trigger de DB (no por código) |
+| Tiempo de entrega | Calendario académico 2026 |
 
 ### 2.6 Suposiciones y Dependencias
 
-#### 2.6.1 Suposiciones
+#### Suposiciones
 
-| Suposición | Descripción |
-|------------|-------------|
-| Los usuarios utilizarán navegadores web modernos y actualizados | Chrome, Firefox, Safari o Edge en versiones recientes |
-| El acceso a internet es estable para el uso del sistema | No se contempla modo offline |
-| Los datos de ubicación (Países, Provincias, Ciudades) serán precargados | El equipo no creará datos geográficos desde cero |
-| Los tipos y subtipos de incidencia serán precargados | Catálogos base definidos antes del desarrollo |
-| Se cuenta con Docker instalado en el entorno de despliegue | Requisito obligatorio del proyecto |
+- Los usuarios utilizarán navegadores modernos y actualizados.
+- El acceso a internet es estable (no se contempla modo offline).
+- Los datos de ubicación (Países, Provincias, Ciudades) están precargados (`EcuadorLocationSeeder`).
+- Las categorías base están precargadas (`IncidentCategorySeeder`).
+- Docker está instalado en el entorno de despliegue.
+- Cada organización registra su `incident_category_id` y `max_active_claims` antes de operar.
 
-#### 2.6.2 Dependencias
+#### Dependencias
 
-| Dependencia | Descripción | Impacto |
-|-------------|-------------|---------|
-| Laravel Framework | Framework backend obligatorio | Crítico |
-| Bootstrap CSS | Framework CSS para UI | Crítico |
-| MySQL/PostgreSQL | Base de datos relacional | Crítico |
-| Docker Engine | Plataforma de contenedores | Crítico |
-| Composer | Gestor de dependencias PHP | Crítico |
+| Dependencia | Impacto |
+|---|---|
+| Laravel Framework 12.x | Crítico |
+| PostGIS | Crítico (cambia la semántica de `geom`) |
+| Frankenphp/Octane | Crítico (afecta el ciclo de vida del request) |
+| Redis | Alto (sync, no crítico para servir requests) |
+| tymon/jwt-auth | Crítico (autenticación) |
+| Docker Engine | Crítico |
 
 ---
 
@@ -268,820 +333,633 @@ El sistema operará en un entorno de red estándar con las siguientes considerac
 
 ##### RF-UI-001: Pantalla de Login
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-UI-001 |
-| **Tipo** | Interfaz de Usuario |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-001 |
 | **Prioridad** | Alta |
-| **Descripción** | La pantalla de login debe incluir campos para email y contraseña, con botones de envío y manejo de errores visuales |
+| **Descripción** | Login con email y contraseña; devuelve JWT. |
 
-**Requisitos específicos:**
-- Campo de email con validación de formato
-- Campo de contraseña con caracteres ocultos (••••)
-- Botón "Ingresar" que muestra estado de carga
-- Mensajes de error claros para credenciales inválidas
-- Enlace para recuperación de contraseña (opcional)
-- Diseño responsivo para dispositivos móviles
+- Validación de formato de email en tiempo real.
+- Botón "Ingresar" con estado de carga.
+- Mensaje de error genérico para credenciales inválidas (no revela qué campo falló).
+- Diseño responsivo.
+- Token almacenado en el cliente y reenviado en cada request autenticado.
 
 ##### RF-UI-002: Dashboard Principal
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-UI-002 |
-| **Tipo** | Interfaz de Usuario |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-002 |
 | **Prioridad** | Alta |
-| **Descripción** | El dashboard principal debe mostrar métricas generales, gráficos de distribución y acceso rápido a funciones principales |
+| **Descripción** | Métricas filtradas por scope (SystemAdmin ve todo; OperadorOrg/Publicador ven solo su org). |
 
-**Requisitos específicos:**
-- Tarjeta con total de incidencias
-- Tarjetas con conteos por estado (Pendiente, En Proceso, Resuelto)
-- Gráfico de barras o torta mostrando distribución por estado
-- Gráfico de barras mostrando distribución por tipo
-- Filtros de búsqueda por rango de fechas
-- Filtro por tipo de incidencia
-- Filtro por ubicación (País/Provincia/Ciudad)
-- Botón para crear nueva incidencia
-- Tabla resumen con últimas incidencias creadas
+- Tarjetas: total, pendientes, en proceso, resueltas.
+- Gráficos: distribución por estado, por categoría.
+- Filtros: rango de fechas, categoría, ubicación, estado.
+- Tabla resumen con últimas incidencias.
+- Acciones rápidas: crear, ver pendientes, ver mis claim.
 
 ##### RF-UI-003: Formulario de Creación/Edición de Incidencia
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-UI-003 |
-| **Tipo** | Interfaz de Usuario |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-003 |
 | **Prioridad** | Alta |
-| **Descripción** | Formulario completo para crear o editar una incidencia con todos los campos requeridos |
 
-**Requisitos específicos:**
-- Campo título (requerido, 3-100 caracteres)
-- Campo descripción (requerido, 10-500 caracteres)
-- Dropdown de prioridad (Alta, Media, Baja)
-- Selector cascada de ubicación (País → Provincia → Ciudad)
-- Selector cascada de tipo/subtipo
-- Campo teléfono de contacto (opcional)
-- Botón "Guardar" con validación
-- Botón "Cancelar" para regresar
-- Mensajes de error inline para campos inválidos
+- Campos: título (3-100), descripción (10-500), prioridad (`low|medium|high`), ubicación (jerárquica + opcionalmente `geom` desde mapa), categoría (cascada), imágenes (multipart).
+- Validación inline.
+- Botón guardar con estado de carga.
+- Cancelar para volver sin guardar.
 
 ##### RF-UI-004: Vista de Detalle de Incidencia
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-UI-004 |
-| **Tipo** | Interfaz de Usuario |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-004 |
 | **Prioridad** | Alta |
-| **Descripción** | Vista completa de una incidencia mostrando todos los datos, historial, comentarios y responsables |
 
-**Requisitos específicos:**
-- Encabezado con título y badge de estado
-- Información de la incidencia (fechas, prioridad, ubicación, tipo)
-- Sección de responsables asignados con roles
-- Pestaña/Acordeón de historial de cambios de estado
-- Sección de comentarios con formulario para agregar
-- Botones de acción (Editar, Eliminar, Cambiar Estado)
-- Indicador de tiempo de resolución (si está resuelta)
+- Encabezado con título y badge de estado (`pending`/`pending_operator`/`in_progress`/`resolved`).
+- Datos generales + ubicación + categoría + coordenadas PostGIS (mapa).
+- Pestaña de historial de status (inmutable, alimentado por trigger de DB).
+- Sección de comentarios con formulario.
+- Acciones según rol:
+  - OperadorOrg: `claim` (si no asignado y misma org), `release` (si él lo claimó), editar.
+  - Publicador: `confirmar` (si categoría coincide con la de su org).
+  - SystemAdmin: todo.
 
-##### RF-UI-005: Panel de Notificaciones
+##### RF-UI-005: Menú Dinámico por Rol
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-UI-005 |
-| **Tipo** | Interfaz de Usuario |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-005 |
+| **Prioridad** | Alta |
+
+- Al autenticarse, el frontend pide `GET /api/menus/my` y renderiza solo lo permitido.
+- Permite agregar/quitar opciones sin redeploy.
+- Tabla `menus` con `route` opcional nullable (migración `2026_07_06_000001`).
+
+##### RF-UI-006: Panel de Notificaciones
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-UI-006 |
 | **Prioridad** | Media |
-| **Descripción** | Panel desplegable en el navbar que muestra las notificaciones del usuario |
 
-**Requisitos específicos:**
-- Icono de campana con badge contador de no leídas
-- Panel desplegable con lista de notificaciones
-- Cada notificación muestra: tipo de evento, mensaje, tiempo relativo
-- Indicador visual de leída/no leída
-- Click para marcar como leída - Botón "Marcar todas como leídas"
+- Badge con contador de no leídas (`GET /notifications/unread-count`).
+- Lista desplegable con últimas notificaciones.
+- Marcar como leída individual (`PATCH /notifications/{id}/read`) o todas (`PATCH /notifications/read-all`).
+- Indicador visual leído/no leído.
 
 #### 3.1.2 Interfaces de Hardware
 
-No aplica. El sistema es completamente web y no interactúa con hardware específico más allá del estándar de navegadores web.
+No aplica. Sistema completamente web.
 
-#### 3.1.3 Interfaces de Software
+#### 3.1.3 Interfaces de Software (API)
 
-##### RF-SW-001: API REST - Autenticación
+> Convenciones:
+> - Todas las rutas autenticadas requieren header `Authorization: Bearer <jwt>`.
+> - El cuerpo de las requests y responses es JSON sobre UTF-8.
+> - Los códigos de error siguen convención HTTP estándar (4xx cliente, 5xx servidor).
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-001 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para autenticación de usuarios |
+##### RF-SW-001: Autenticación
 
-**Endpoints:**
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/login` | No | Login; devuelve `access_token` y `refresh_token` |
+| POST | `/api/auth/refresh` | No | Refresca el access token usando refresh token |
+| POST | `/api/logout` | JWT | Invalida el token actual |
+| GET | `/api/me` | JWT | Datos del usuario autenticado |
+| PUT | `/api/auth/profile` | JWT | Actualiza perfil del usuario |
 
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| POST | /api/login | Autenticación de usuario | 200 + token/sesión | 401 + mensaje error |
-| POST | /api/logout | Cerrar sesión | 200 | 500 |
-| GET | /api/user | Obtener usuario autenticado | 200 + datos usuario | 401 |
+##### RF-SW-002: Incidencias (CRUD + acciones)
 
-##### RF-SW-002: API REST - Incidencias
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/incidents` | JWT | Lista con filtros y paginación (scope automático) |
+| GET | `/api/incidents/pendientes` | JWT | Lista de pendientes (útil para OperadorOrg) |
+| GET | `/api/incidents/stats` | JWT | Métricas agregadas |
+| GET | `/api/incidents/{id}` | JWT | Detalle (verifica scope) |
+| POST | `/api/incidents` | JWT | Crear (multipart: acepta `images[]` y `geom`) |
+| PUT | `/api/incidents/{id}` | JWT | Editar (gate `update`) |
+| DELETE | `/api/incidents/{id}` | JWT | Soft delete (gate `delete`) |
+| POST | `/api/incidents/{id}/claim` | JWT | `can:claim` — OperadorOrg de la org dueña |
+| POST | `/api/incidents/{id}/release` | JWT | `can:release` — OperadorOrg que hizo el claim |
+| POST | `/api/incidents/{id}/confirmar` | JWT | `can:confirm` — Publicador de org con categoría coincidente |
+| GET | `/api/incidents/{id}/status-history` | JWT | Historial inmutable |
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-002 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints CRUD para gestión de incidencias |
+##### RF-SW-003: Comentarios
 
-**Endpoints:**
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/incidents/{id}/comments` | JWT | Lista de comentarios |
+| POST | `/api/incidents/{id}/comments` | JWT | Crear comentario |
+| PATCH/DELETE | `/api/comments/{id}` | JWT | Editar/eliminar (solo autor, soft delete) |
 
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/incidencias | Listar incidencias (con filtros) | 200 + array | 500 |
-| GET | /api/incidencias/{id} | Ver incidencia específica | 200 + datos | 404 |
-| POST | /api/incidencias | Crear nueva incidencia | 201 + datos | 422 + errores |
-| PUT | /api/incidencias/{id} | Actualizar incidencia | 200 + datos | 422/404 |
-| DELETE | /api/incidencias/{id} | Eliminar incidencia | 200 | 404/403 |
+Rutas anidadas con `shallow` (prefijo solo en la colección).
 
-##### RF-SW-003: API REST - Estados e Historial
+##### RF-SW-004: Notificaciones
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-003 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para gestión de estados e historial de incidencias |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/notifications` | JWT | Lista de notificaciones del usuario |
+| PATCH | `/api/notifications/{id}/read` | JWT | Marcar una como leída |
+| PATCH | `/api/notifications/read-all` | JWT | Marcar todas como leídas |
+| GET | `/api/notifications/unread-count` | JWT | Conteo de no leídas |
 
-**Endpoints:**
+##### RF-SW-005: Catálogos
 
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/estados | Listar estados disponibles | 200 + array | 500 |
-| PUT | /api/incidencias/{id}/estado | Cambiar estado | 200 + historial | 422/404 |
-| GET | /api/incidencias/{id}/historial | Obtener historial | 200 + array | 404 |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/locations/tree` | JWT | Árbol País → Provincia → Ciudad |
+| CRUD | `/api/locations` | JWT | Mantenimiento de ubicaciones |
+| GET | `/api/organizations/tree` | JWT | Árbol de organizaciones (jerárquico por `parent_id`) |
+| CRUD | `/api/organizations` | JWT | Mantenimiento de organizaciones |
+| GET | `/api/incident-categories/tree` | JWT | Árbol de categorías con subcategorías |
+| CRUD | `/api/incident-categories` | JWT | Mantenimiento de categorías |
 
-##### RF-SW-004: API REST - Responsables
+##### RF-SW-006: RBAC
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-004 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para asignación de responsables |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| CRUD | `/api/roles` | JWT | Mantenimiento de roles |
+| PUT | `/api/roles/{id}/permissions` | JWT | Sincronizar permisos de un rol |
+| GET | `/api/permissions` | JWT | Listar permisos disponibles |
+| GET | `/api/menus/my` | JWT | Menú del usuario según su rol |
+| CRUD | `/api/users` | JWT | Mantenimiento de usuarios |
 
-**Endpoints:**
+##### RF-SW-007: Tracking de Operadores
 
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/incidencias/{id}/responsables | Listar responsables | 200 + array | 404 |
-| POST | /api/incidencias/{id}/responsables | Asignar responsable | 200 + datos | 422 |
-| PUT | /api/incidencias/{id}/responsables/{userId} | Actualizar rol | 200 + datos | 404 |
-| DELETE | /api/incidencias/{id}/responsables/{userId} | Eliminar responsable | 200 | 404 |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/operator/location` | JWT | Reporta la ubicación actual del operador (heartbeat) |
+| GET | `/api/operator/locations` | JWT | Lista ubicaciones recientes de operadores (filtrado por scope) |
 
-##### RF-SW-005: API REST - Comentarios
+##### RF-SW-008: Feed público
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-005 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para gestión de comentarios |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/incidents/feed` | No | Feed público throttled (`throttle:feed`) |
 
-**Endpoints:**
+##### RF-SW-009: Health
 
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/incidencias/{id}/comentarios | Listar comentarios | 200 + array | 404 |
-| POST | /api/incidencias/{id}/comentarios | Crear comentario | 201 + datos | 422 |
-| DELETE | /api/comentarios/{id} | Eliminar comentario | 200 | 404/403 |
-
-##### RF-SW-006: API REST - Ubicación
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-006 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para consulta de ubicación georreferenciada |
-
-**Endpoints:**
-
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/paises | Listar países | 200 + array | 500 |
-| GET | /api/paises/{id}/provincias | Listar provincias | 200 + array | 404 |
-| GET | /api/provincias/{id}/ciudades | Listar ciudades | 200 + array | 404 |
-
-##### RF-SW-007: API REST - Tipos y Subtipo
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-007 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para consulta de tipos y subtipos de incidencia |
-
-**Endpoints:**
-
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/tipos | Listar tipos | 200 + array | 500 |
-| GET | /api/tipos/{id}/subtipos | Listar subtipos | 200 + array | 404 |
-
-##### RF-SW-008: API REST - Notificaciones
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-008 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Media |
-| **Descripción** | Endpoints para gestión de notificaciones |
-
-**Endpoints:**
-
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/notificaciones | Listar notificaciones usuario | 200 + array | 401 |
-| PATCH | /api/notificaciones/{id} | Marcar como leída | 200 + datos | 404 |
-| PATCH | /api/notificaciones/leer-todas | Marcar todas leídas | 200 | 401 |
-
-##### RF-SW-009: API REST - Métricas
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-SW-009 |
-| **Tipo** | Interfaz de Software (API) |
-| **Prioridad** | Alta |
-| **Descripción** | Endpoints para consulta de métricas y dashboard |
-
-**Endpoints:**
-
-| Método | Ruta | Descripción | Respuesta Éxito | Respuesta Error |
-|--------|------|-------------|-----------------|-----------------|
-| GET | /api/metricas/generales | Métricas generales | 200 + datos | 500 |
-| GET | /api/metricas/por-estado | Distribución por estado | 200 + array | 500 |
-| GET | /api/metricas/por-tipo | Distribución por tipo | 200 + array | 500 |
-| GET | /api/metricas/tiempo-resolucion | Tiempo promedio resolución | 200 + datos | 500 |
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/api/health` | No | Liveness check (`{"status":"ok"}`) |
 
 #### 3.1.4 Interfaces de Comunicación
 
-| Atributo | Descripción |
-|----------|-------------|
-| **Protocolo** | HTTP/HTTPS |
-| **Formato de datos** | JSON |
-| **Autenticación** | Token Bearer (JWT) o sesión |
-| **CORS** | Configuración para permitir peticiones del frontend |
-| **Codificación** | UTF-8 |
+| Atributo | Detalle |
+|---|---|
+| Protocolo | HTTP/HTTPS |
+| Formato | JSON (UTF-8) |
+| Autenticación | JWT Bearer |
+| CORS | Restrictivo (whitelist por origen) |
+
+---
 
 ### 3.2 Requisitos Funcionales
 
-#### 3.2.1 Gestión de Incidencias (CRUD)
+> Requisitos renumerados desde v1.0; los rangos `029`-`035` son nuevos en v2.0.
+
+#### Incidencias (CRUD)
 
 ##### RF-FUNC-001: Crear Incidencia
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-001 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-001 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir crear nuevas incidencias con todos los campos requeridos |
 
-**Reglas de negocio:**
+**Reglas:**
 
-1. El título es obligatorio y debe tener entre 3 y 100 caracteres
-2. La descripción es obligatoria y debe tener entre 10 y 500 caracteres
-3. La prioridad debe ser una de las siguientes: Alta, Media, Baja
-4. La ubicación debe estar completa (País, Provincia, Ciudad seleccionados)
-5. El tipo y subtipo deben ser válidos y relacionados
-6. El teléfono de contacto es opcional, pero si se ingresa debe tener formato válido
-7. La fecha de creación se asigna automáticamente al momento del registro
-8. El estado inicial por defecto es "Pendiente"
-9. El usuario que crea la incidencia se registra como creador
+1. Título obligatorio, 3-100 caracteres.
+2. Descripción obligatoria, 10-500 caracteres.
+3. Prioridad: `low`, `medium` o `high`.
+4. Ubicación completa: País + Provincia + Ciudad.
+5. Coordenadas geográficas (`geom` Point, PostGIS) opcionales pero recomendadas.
+6. Categoría + subcategoría opcional (si se da subcategoría, debe tener como `parent_id` la categoría elegida).
+7. Estado inicial: `pending`.
+8. `user_id` (creador) y `organization_id` (del usuario creador) se asignan automáticamente.
+9. `created_at` automático.
+10. `images` opcional, array de strings (URLs o paths).
 
-**Validaciones:**
-- Frontend: Bloqueo de envío con campos vacíos, validación de formato en tiempo real
-- Backend: Validación de todos los campos, tipos de datos, claves foráneas
+**Validaciones:** Frontend bloquea envío; backend valida con Form Request y prepara 422 con detalle.
 
 ##### RF-FUNC-002: Listar Incidencias
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-002 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-002 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir listar todas las incidencias con filtros opcionales |
 
-**Reglas de negocio:**
-
-1. La lista debe mostrar paginación (20 elementos por página por defecto)
-2. Se puede filtrar por: estado, tipo, subtipo, prioridad, ubicación, rango de fechas
-3. La búsqueda puede realizarse por título o descripción
-4. Los resultados se ordenan por fecha de creación descendente (más reciente primero)
-5. Solo se muestran incidencias no eliminadas (soft delete)
-
-**Campos a mostrar en lista:**
-- ID, Título, Estado (badge), Prioridad, Tipo, Ubicación, Fecha creación, Responsable principal
+- Paginación (20 por defecto).
+- Filtros: `status`, `priority`, `incident_category_id`, `location_id`, rango de fechas, búsqueda por título/descripción.
+- Orden: `created_at` desc por defecto.
+- **Scope automático**: OperadorOrg/Publicador solo ven de su organización. SystemAdmin ve todas.
 
 ##### RF-FUNC-003: Ver Detalle de Incidencia
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-003 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-003 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir ver el detalle completo de una incidencia |
 
-**Información a mostrar:**
-- Datos generales: título, descripción, prioridad, teléfono
-- Ubicación: País, Provincia, Ciudad
-- Clasificación: Tipo, Subtipo
-- Fechas: creación, última modificación, resolución (si aplica)
-- Estado actual
-- Lista de responsables con roles
-- Historial de cambios de estado
-- Lista de comentarios
-- Estadísticas: tiempo transcurrido, tiempo de resolución (si está resuelta)
+Incluye: datos generales, ubicación (jerárquica + `geom`), categoría + subcategoría, `claimed_by`, `claimed_at`, estado actual, historial de status, comentarios, verificaciones.
 
 ##### RF-FUNC-004: Editar Incidencia
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-004 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-004 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir editar los datos de una incidencia existente |
 
-**Reglas de negocio:**
+- Campos editables: título, descripción, prioridad, ubicación, `geom`, categoría, subcategoría, imágenes.
+- No se edita `status` directamente (eso va por `claim`/`release`/`confirmar`).
+- `updated_at` se actualiza automáticamente.
 
-1. Solo usuarios con permisos pueden editar
-2. Los campos editables son: título, descripción, prioridad, teléfono, ubicación, tipo, subtipo
-3. No se puede cambiar el estado directamente desde el formulario de edición
-4. Se registra la fecha de última modificación automáticamente
-5. Se mantiene el historial de quién realizó la última edición
+##### RF-FUNC-005: Eliminar Incidencia (soft delete)
 
-**Validaciones:** Mismas que para crear incidencia
-
-##### RF-FUNC-005: Eliminar Incidencia
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-005 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-005 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir eliminar (lógicamente) una incidencia |
 
-**Reglas de negocio:**
+- Soft delete (`deleted_at`).
+- Confirmación previa.
+- No aparece en listados normales.
 
-1. La eliminación debe ser lógica (soft delete), no física
-2. Se debe mostrar confirmación antes de eliminar
-3. La incidencia eliminada no aparece en listados normales
-4. Se puede acceder a la incidencia eliminada desde un listado de "eliminados" (solo admin)
-5. Se registra la fecha de eliminación y el usuario que eliminó
-
-#### 3.2.2 Gestión de Estados e Historial
+#### Estados y Auditoría
 
 ##### RF-FUNC-006: Estados Disponibles
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-006 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-006 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe definir y gestionar los estados posibles de una incidencia |
 
-**Estados definidos:**
+| Valor DB | Localización UI | Significado |
+|---|---|---|
+| `pending` | Pendiente | Recién creada, sin asignar |
+| `pending_operator` | Asignada a organización | Asignada a una org, sin operador que la haya tomado |
+| `in_progress` | En proceso | Un OperadorOrg hizo `claim` |
+| `resolved` | Resuelta | El OperadorOrg marcó el trabajo como terminado |
 
-| Estado | Descripción | Color Badge |
-|--------|-------------|-------------|
-| Pendiente | Incidencia creada, awaiting action | Amarillo |
-| En Proceso | Incidencia siendo atendida | Azul |
-| Resuelto | Incidencia solucionada | Verde |
-| Cerrado | Incidencia verificada y cerrada | Gris |
-
-**Reglas de negocio:**
-
-1. El estado inicial de toda nueva incidencia es "Pendiente"
-2. No todos los cambios de estado son válidos en cualquier momento
-3. El flujo de estados permitido es: Pendiente → En Proceso → Resuelto → Cerrado
-4. Se puede retroceder de estado en casos excepcionales (requiere justificación)
+Valores garantizados por constraint CHECK en PostgreSQL. No existe el valor `closed` de v1.0; la verificación es una acción separada.
 
 ##### RF-FUNC-007: Cambiar Estado
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-007 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-007 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir cambiar el estado de una incidencia |
 
-**Reglas de negocio:**
-
-1. Al cambiar de estado a "Resuelto", se registra automáticamente la fecha de resolución
-2. Al cambiar de estado a "Cerrado", se verifica que esté en estado "Resuelto"
-3. Todo cambio de estado genera un registro en el historial
-4. El usuario que realiza el cambio se registra en el historial
-5. Se puede agregar un comentario obligatorio al cambiar de estado
+Las transiciones son controladas por las acciones específicas (`claim` → `in_progress`, `release` → `pending_operator`, edición normal no cambia status). Cada cambio escribe automáticamente en `status_history` mediante **trigger de base de datos** (no por código de aplicación).
 
 ##### RF-FUNC-008: Historial de Cambios
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-008 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-008 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe mantener un historial completo de todos los cambios de estado |
 
-**Datos del historial:**
+- Inmutable: el trigger garantiza que no se pueda UPDATE ni DELETE.
+- Datos: `incident_id`, `previous_status`, `new_status`, `changed_by_user_id` (extraído de la sesión JWT por el trigger), `created_at`.
+- Visible en orden cronológico inverso en `GET /incidents/{id}/status-history`.
 
-- ID del registro
-- ID de la incidencia
-- Estado anterior
-- Estado nuevo
-- Usuario que realizó el cambio
-- Fecha y hora del cambio
-- Comentario (opcional)
+#### Responsabilidad (claim/release) — NUEVO en v2.0
 
-**Reglas de negocio:**
+##### RF-FUNC-009: Tomar Incidencia (Claim)
 
-1. El historial es inmutable - no se pueden modificar registros
-2. El historial se muestra en orden cronológico inverso (más reciente primero)
-3. Se incluye la fecha y hora exacta de cada cambio
-
-#### 3.2.3 Asignación de Responsables
-
-##### RF-FUNC-009: Asignar Responsable
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-009 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-009 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir asignar uno o varios responsables a una incidencia |
 
-**Reglas de negocio:**
+**Reglas:**
 
-1. Una incidencia puede tener uno o varios responsables
-2. Los roles disponibles son: Responsable Principal, Apoyo
-3. Solo puede haber un Responsable Principal por incidencia
-4. Puede haber varios usuarios con rol de Apoyo
-5. Al asignar un responsable, se genera una notificación para dicho usuario
+1. Solo `OperadorOrganizacion` con `user.organization_id == incident.organization_id`.
+2. El incidente debe estar en `pending` o `pending_operator`.
+3. El operador no debe exceder el `max_active_claims` de su organización (verificado en `IncidentClaimService`).
+4. Cambia `status` a `in_progress`, setea `claimed_by` y `claimed_at`.
+5. Genera notificación al creador.
 
-##### RF-FUNC-010: Modificar Asignación
+##### RF-FUNC-010: Liberar Incidencia (Release)
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-010 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-010 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir cambiar el rol de un responsable asignado |
 
-**Reglas de negocio:**
+**Reglas:**
 
-1. Se puede cambiar el rol de un responsable (de Apoyo a Responsable Principal)
-2. Si se asigna un nuevo Responsable Principal, el anterior pasa a Apoyo
-3. Se registra el cambio en el historial de asignación
+1. Solo el OperadorOrg que tiene `claimed_by == user.id`.
+2. Cambia `status` a `pending_operator`, limpia `claimed_by` y `claimed_at`.
 
-##### RF-FUNC-011: Eliminar Responsable
+#### Confirmación de Resolución — NUEVO en v2.0
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-011 |
-| **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir eliminar la asignación de un responsable |
+##### RF-FUNC-011: Confirmar Resolución
 
-**Reglas de negocio:**
-
-1. Se puede eliminar un responsable de una incidencia
-2. Si es el único responsable, se permite pero se muestra advertencia
-3. Se registra la eliminación en el historial de asignación
-
-#### 3.2.4 Sistema de Comentarios
-
-##### RF-FUNC-012: Agregar Comentario
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-012 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-011 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir agregar comentarios a una incidencia |
 
-**Reglas de negocio:**
+**Reglas:**
 
-1. El texto del comentario es obligatorio
-2. El texto debe tener entre 1 y 1000 caracteres
-3. El usuario que crea el comentario se registra automáticamente
-4. La fecha y hora de creación se asignan automáticamente
-5. El comentario se asocia a la incidencia específica
+1. Solo `Publicador` cuya `user.organization.incident_category_id == incident.incident_category_id`.
+2. El incidente debe estar en `resolved`.
+3. **No modifica `status`**: inserta fila en `incident_verifications` con `verifier_user_id`, `incident_id`, `notes`, `created_at`.
+4. Genera notificación al OperadorOrg que hizo el claim.
 
-##### RF-FUNC-013: Listar Comentarios
+#### Comentarios
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-013 |
-| **Prioridad** | Alta |
-| **Descripción** | El sistema debe mostrar los comentarios de una incidencia ordenados por fecha |
+##### RF-FUNC-012 a RF-FUNC-014: Sistema de Comentarios
 
-**Reglas de negocio:**
+Sin cambios estructurales respecto a v1.0:
 
-1. Los comentarios se muestran en orden cronológico inverso (más reciente primero)
-2. Cada comentario muestra: texto, autor, fecha/hora
-3. Los comentarios eliminados no se muestran
+- **RF-FUNC-012**: Agregar comentario (1-1000 chars, autor y fecha automáticos, soft delete).
+- **RF-FUNC-013**: Listar comentarios (orden cronológico inverso).
+- **RF-FUNC-014**: Eliminar comentario (solo autor, soft delete).
 
-##### RF-FUNC-014: Eliminar Comentario
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-014 |
-| **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir eliminar un comentario |
-
-**Reglas de negocio:**
-
-1. Solo el autor del comentario puede eliminarlo
-2. La eliminación es lógica (soft delete)
-3. El comentario eliminado no se muestra en la lista
-
-#### 3.2.5 Ubicación Georreferenciada
+#### Ubicación Georreferenciada
 
 ##### RF-FUNC-015: Selección de Ubicación
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-015 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-015 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir seleccionar la ubicación de una incidencia mediante selección jerárquica |
 
-**Reglas de negocio:**
+Cascada País → Provincia → Ciudad. En v2.0 se agrega **opcionalmente** la captura de coordenadas (`geom` Point) directamente desde el mapa, en cuyo caso se setea la columna PostGIS y se puede usar para queries de proximidad.
 
-1. La selección es en cascada: País → Provincia → Ciudad
-2. Cada nivel se habilita solo cuando se ha seleccionado el nivel anterior
-3. Al cambiar el país, se limpian provincia y ciudad seleccionadas
-4. Al cambiar la provincia, se limpia la ciudad seleccionada
-5. Los datos de ubicación se almacenan como referencias (IDs) en la incidencia
+##### RF-FUNC-016: Normalización + PostGIS
 
-##### RF-FUNC-016: Normalización de Ubicación
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-016 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-016 |
 | **Prioridad** | Alta |
-| **Descripción** | Los datos de ubicación deben estar normalizados en tablas relacionadas |
 
-**Reglas de negocio:**
+- `locations` con jerarquía `parent_id` (país/provincia/ciudad) + `geom` opcional.
+- `incidents.geom` Point (PostGIS) opcional pero recomendado.
+- SRID 4326 (WGS84).
 
-1. Tabla `paises`: id, nombre, código, estado (activo/inactivo)
-2. Tabla `provincias`: id, nombre, pais_id (FK), estado
-3. Tabla `ciudades`: id, nombre, provincia_id (FK), estado
-4. No debe haber redundancia de datos
-5. Las relaciones deben mantener integridad referencial
+#### Clasificación
 
-#### 3.2.6 Clasificación Jerárquica (Tipo/Subtipo)
+##### RF-FUNC-017: Selección de Categoría/Subcategoría
 
-##### RF-FUNC-017: Selección de Tipo/Subtipo
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-017 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-017 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir seleccionar el tipo y subtipo de una incidencia |
 
-**Reglas de negocio:**
+Cascada: Categoría → Subcategoría (opcional). En v2.0 la subcategoría es opcional y se modela con `incident_categories.parent_id`.
 
-1. La selección es en cascada: Tipo → Subtipo
-2. Cada nivel se habilita solo cuando se ha seleccionado el nivel anterior
-3. Al cambiar el tipo, se limpia el subtipo seleccionado
-4. Los subtipos están vinculados a un tipo específico
-5. Los subtipos de un tipo no aparecen cuando se selecciona otro tipo
+##### RF-FUNC-018: Categorías Predefinidas
 
-##### RF-FUNC-018: Tipos de Incidencia Predefinidos
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-018 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-018 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe contar con tipos y subtipos predefinidos de incidencias |
 
-**Tipos predefinidos:**
+Sin cambios estructurales. Pre-cargadas vía `IncidentCategorySeeder`.
 
-| Tipo | Subtipo |
-|------|---------|
-| Infraestructura | Alumbrado Público, Baches, Semáforos, Vallas, Drenaje, Aceras |
-| Seguridad | Robo, Vandalismo, Seguridad Ciudadana |
-| Servicios Públicos | Agua, Electricidad, Gas, Telefonía, Internet |
-| Medio Ambiente | Contaminación, Residuos, Deforestación, Animales |
-| Otro | Otros |
+#### Notificaciones
 
-#### 3.2.7 Sistema de Notificaciones
+##### RF-FUNC-019: Eventos que Generan Notificaciones
 
-##### RF-FUNC-019: Generación de Notificaciones
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-019 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-019 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe generar notificaciones automáticas ante ciertos eventos |
 
-**Eventos que generan notificaciones:**
+| Evento | Destinatario |
+|---|---|
+| Creación de incidencia | OperadoresOrg de la misma org |
+| Claim | Creador de la incidencia |
+| Release | Creador de la incidencia |
+| Comentario nuevo | Creador + OperadorOrg que claimó |
+| Confirmación | OperadorOrg que claimó |
 
-| Evento | Destinatario | Mensaje |
-|--------|--------------|---------|
-| Nueva incidencia asignada | Responsable asignado | "Se le ha asignado la incidencia: [título]" |
-| Cambio de estado | Creador y responsables | "La incidencia [título] cambió a [nuevo estado]" |
-| Nuevo comentario | Creador y responsables | "[Usuario] agregó un comentario a [título]" |
+Generadas por `IncidentNotificationObserver` ante eventos Eloquent.
 
 ##### RF-FUNC-020: Gestión de Notificaciones
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-020 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-020 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir gestionar las notificaciones del usuario |
 
-**Reglas de negocio:**
+Endpoints descritos en RF-SW-004.
 
-1. Las notificaciones están asociadas a un usuario específico
-2. El usuario puede marcar una notificación como leída
-3. El usuario puede marcar todas las notificaciones como leídas
-4. Las notificaciones no leídas muestran un badge contador en el navbar
-5. Las notificaciones leídas cambian de estilo visual (color de fondo)
-
-#### 3.2.8 Dashboard y Métricas
+#### Dashboard y Métricas
 
 ##### RF-FUNC-021: Métricas Generales
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-021 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-021 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe mostrar métricas generales en el dashboard |
 
-**Métricas a mostrar:**
-
-1. Total de incidencias
-2. Total por estado (Pendiente, En Proceso, Resuelto, Cerrado)
-3. Porcentaje de resolución (incidencias resueltas / total)
-4. Tiempo promedio de resolución
+`GET /api/incidents/stats` devuelve: total, por estado, por categoría, tiempo promedio de resolución, distribución por organización (solo SystemAdmin).
 
 ##### RF-FUNC-022: Visualización de Gráficos
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-022 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-022 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe mostrar gráficos visuales de las métricas |
 
-**Gráficos requeridos:**
-
-1. Gráfico de barras: Incidencias por estado
-2. Gráfico de barras: Incidencias por tipo
-3. Gráfico de torta: Distribución porcentual por estado
-4. Gráfico de línea (opcional): Tendencia de incidencias creadas por semana
+Gráficos de barras (por estado, por categoría) y torta (distribución porcentual).
 
 ##### RF-FUNC-023: Filtros de Dashboard
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-023 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-023 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir filtrar las métricas del dashboard |
 
-**Filtros disponibles:**
+Rango de fechas, categoría, prioridad, ubicación, organización (solo SystemAdmin).
 
-1. Rango de fechas (fecha inicio - fecha fin)
-2. Tipo de incidencia
-3. Prioridad
-4. Ubicación (País, Provincia, Ciudad)
+#### Autenticación
 
-#### 3.2.9 Autenticación y Control de Acceso
+##### RF-FUNC-024: Login
 
-##### RF-FUNC-024: Login de Usuario
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-024 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-024 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir a los usuarios autenticarse con email y contraseña |
 
-**Reglas de negocio:**
+`POST /api/login` con email + password; devuelve `access_token` y `refresh_token`.
 
-1. El email es obligatorio y debe tener formato válido
-2. La contraseña es obligatoria
-3. Credenciales inválidas muestran mensaje de error genérico (no indicar qué campo está mal)
-4. Login exitoso redirecciona al dashboard
-5. Se genera un token/sesión para mantener la autenticación
+##### RF-FUNC-025: Logout
 
-##### RF-FUNC-025: Logout de Usuario
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-025 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-025 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe permitir al usuario cerrar su sesión |
 
-**Reglas de negocio:**
+`POST /api/logout` con JWT vigente; invalida el token.
 
-1. El logout cierra la sesión y limpia el token
-2. Redirecciona a la página de login
-3. No se puede acceder a páginas protegidas sin autenticación
+##### RF-FUNC-026: Refresh de Token
 
-##### RF-FUNC-026: Protección de Rutas
-
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-026 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-026 |
 | **Prioridad** | Alta |
-| **Descripción** | El sistema debe proteger las rutas que requieren autenticación |
 
-**Reglas de negocio:**
+`POST /api/auth/refresh` con refresh token vigente; emite nuevo access token.
 
-1. Las rutas /dashboard, /incidencias, /notificaciones requieren autenticación
-2. Las rutas protegidas redireccionan a /login si el usuario no está autenticado
-3. El token de sesión expira después de un tiempo definido
-4. Sesión expirada redirecciona a /login con mensaje
-
-#### 3.2.10 Consultas y Filtros
+#### Consultas y Filtros
 
 ##### RF-FUNC-027: Búsqueda por Texto
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-027 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-027 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir buscar incidencias por texto en título o descripción |
 
-**Reglas de negocio:**
-
-1. La búsqueda es parcial (LIKE %texto%)
-2. Busca en título y descripción
-3. Es case-insensitive
-4. Se puede combinar con otros filtros
+Búsqueda parcial (`LIKE %texto%`) en `title` y `description`, case-insensitive.
 
 ##### RF-FUNC-028: Filtros Avanzados
 
-| Atributo | Descripción |
-|----------|-------------|
-| **ID Requisito** | RF-FUNC-028 |
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-028 |
 | **Prioridad** | Media |
-| **Descripción** | El sistema debe permitir filtrar por múltiples criterios |
 
-**Filtros disponibles:**
+Filtros combinables: `status`, `priority`, `incident_category_id` (cascada con subcategoría), ubicación jerárquica, rango de fechas, `claimed_by`.
 
-1. Estado: Pendiente, En Proceso, Resuelto, Cerrado
-2. Prioridad: Alta, Media, Baja
-3. Tipo: Lista de tipos disponibles
-4. Subtipo: Lista de subtipos (depende del tipo)
-5. Ubicación: País, Provincia, Ciudad
-6. Rango de fechas: Fecha creación inicio y fin
-7. Responsable: Usuario asignado
+#### Nuevos Requisitos v2.0 (RF-FUNC-029 a RF-FUNC-035)
+
+##### RF-FUNC-029: Tracking de Operador (Heartbeat Geográfico)
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-029 |
+| **Prioridad** | Media |
+
+`POST /api/operator/location` con `lat`, `lng`, opcional `accuracy`. Se registra con timestamp. No audita cambios históricos (solo última posición conocida por operador). Útil para dispatch.
+
+##### RF-FUNC-030: Menú Dinámico por Rol
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-030 |
+| **Prioridad** | Alta |
+
+`GET /api/menus/my` devuelve los items de menú habilitados para el rol del usuario autenticado, con jerarquía opcional. Permite agregar/quitar opciones sin redeploy.
+
+##### RF-FUNC-031: Scoping Multitenant
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-031 |
+| **Prioridad** | Alta |
+
+Toda query sobre `incidents`, `users`, `organizations` desde OperadorOrg o Publicador filtra automáticamente por `user.organization_id`. SystemAdmin no filtra. Implementado en `IncidentPolicy` + middleware + Eloquent global scopes donde aplique.
+
+##### RF-FUNC-032: Verificaciones de Resolución (Incident Verifications)
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-032 |
+| **Prioridad** | Alta |
+
+Tabla `incident_verifications` con `incident_id`, `verifier_user_id`, `notes`, `created_at`, `deleted_at` (soft delete). Una incidencia puede tener múltiples verificaciones (historial). Visible en `GET /api/incidents/{id}`.
+
+##### RF-FUNC-033: Control de `max_active_claims`
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-033 |
+| **Prioridad** | Alta |
+
+`organizations.max_active_claims` limita cuántas puede tener simultáneamente un OperadorOrg. Validado en `IncidentClaimService::claim` antes de aceptar la operación. Devuelve 422 con mensaje claro si se excede.
+
+##### RF-FUNC-034: Sincronización Redis
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-034 |
+| **Prioridad** | Media |
+
+Listener `RedisIncidentSync` escucha eventos de creación/actualización/eliminación de incidencias y publica en canal Redis. Permite sincronizar entre múltiples instancias de Frankenphp/Octane y prepara el terreno para push en tiempo real (no usado por frontend en v2.0).
+
+##### RF-FUNC-035: Auditoría Inmutable por Trigger
+
+| Atributo | Detalle |
+|---|---|
+| **ID** | RF-FUNC-035 |
+| **Prioridad** | Alta |
+
+Trigger PostgreSQL sobre `incidents` inserta en `status_history` ante cada cambio de `status`, extrayendo el `user_id` del JWT del request (vía variable de sesión). Garantiza que ningún código de aplicación pueda saltarse la auditoría, incluso si la lógica de aplicación es comprometida.
 
 ### 3.3 Requisitos de Rendimiento
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RR-001 | Tiempo de respuesta de páginas | < 2 segundos para páginas principales |
-| RR-002 | Tiempo de respuesta de API | < 1 segundo para operaciones CRUD simples |
-| RR-003 | Carga de dashboard | < 3 segundos para cargar todas las métricas |
-| RR-004 | Tiempo de búsqueda | < 2 segundos para resultados de búsqueda |
-| RR-005 | Concurrentes soportados | Mínimo 20 usuarios concurrentes sin degradación |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RR-001 | Tiempo de respuesta de páginas | < 2 s |
+| RR-002 | Tiempo de respuesta de API | < 500 ms para CRUD simple (Octane en memoria) |
+| RR-003 | Carga de dashboard | < 3 s |
+| RR-004 | Tiempo de búsqueda | < 2 s |
+| RR-005 | Concurrentes | ≥ 20 usuarios sin degradación |
+| RR-006 | Queries geoespaciales | < 200 ms con índice GIST sobre `incidents.geom` |
 
 ### 3.4 Requisitos de Fiabilidad
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RF-001 | Disponibilidad del sistema | 99% uptime en horario de operación |
-| RF-002 | Integridad de datos | 0% pérdida de datos por errores del sistema |
-| RF-003 | Recuperación ante fallos | Restauración completa en máximo 30 minutos |
-| RF-004 | Persistencia de datos | Datos persistentes en reinicios de contenedores |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RF-001 | Disponibilidad | 99% uptime |
+| RF-002 | Integridad de datos | 0% pérdida por errores del sistema |
+| RF-003 | Recuperación | Restauración completa en ≤ 30 min |
+| RF-004 | Persistencia | Datos persistentes entre reinicios |
 
 ### 3.5 Requisitos de Disponibilidad
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RD-001 | Horario de operación | 24/7 disponible |
-| RD-002 | Mantenimiento programado | Notificación con 48 horas de anticipación |
-| RD-003 | Mensajes de error | Mensajes claros y útiles para el usuario |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RD-001 | Operación | 24/7 |
+| RD-002 | Mantenimiento | Aviso con 48 h de anticipación |
+| RD-003 | Mensajes de error | Claros y útiles |
 
 ### 3.6 Requisitos de Seguridad
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RS-001 | Contraseñas | Almacenamiento con hash (bcrypt/argon2) |
-| RS-002 | Inyección SQL | Todos los inputs sanitizados, uso de prepared statements |
-| RS-003 | XSS | Sanitización de salida, escape de caracteres HTML |
-| RS-004 | CSRF | Tokens CSRF en formularios |
-| RS-005 | CORS | Configuración restrictiva de orígenes permitidos |
-| RS-006 | Sesiones | Tokens con expiración, invalidación al logout |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RS-001 | Contraseñas | Hash con bcrypt/argon2 |
+| RS-002 | Inyección SQL | Prepared statements (Eloquent) |
+| RS-003 | XSS | Escape de HTML en frontend |
+| RS-004 | CSRF | Cookies SameSite=Strict (no aplica a JWT puro) |
+| RS-005 | CORS | Whitelist de orígenes |
+| RS-006 | JWT | Access token con expiración ≤ 60 min, refresh token ≤ 30 días |
+| RS-007 | Scoping | Aislamiento multitenant verificado en policies |
+| **RS-008** | **Auditoría inmutable** | **Trigger de DB garantiza inserción automática en `status_history`** |
 
 ### 3.7 Requisitos de Mantenibilidad
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RM-001 | Código documentado | Comentarios en funciones y clases principales |
-| RM-002 | Estándar de código | Cumplimiento de PSR-12 verificado con Laravel Pint |
-| RM-003 | Arquitectura | Separación clara de capas (MVC) |
-| RM-004 | Logs | Registro de errores y eventos importantes |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RM-001 | Código documentado | PHPDoc en clases de dominio |
+| RM-002 | Estilo de código | PSR-12 con Laravel Pint |
+| RM-003 | Arquitectura | DDD con 13 dominios separados |
+| RM-004 | Logs | Registro de errores y eventos |
+| RM-005 | Tests | Pest (backend) + Vitest (frontend), CI en GitHub Actions |
 
 ### 3.8 Requisitos de Portabilidad
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RP-001 | Contenedores | Sistema desplegable en Docker con Docker Compose |
-| RP-002 | Base de datos | Compatible con MySQL y PostgreSQL |
-| RP-003 | Navegadores | Funcional en Chrome, Firefox, Safari, Edge (versiones recientes) |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RP-001 | Contenedores | Docker + Docker Compose |
+| RP-002 | BD | PostgreSQL 15 (PostGIS como dependencia obligatoria) |
+| RP-003 | Navegadores | Chrome, Firefox, Safari, Edge recientes |
 
 ### 3.9 Otros Requisitos
 
-| ID Requisito | Descripción | Criterio de Aceptación |
-|--------------|-------------|----------------------|
-| RO-001 | Responsividad | Interfaz adaptable a desktop, tablet y móvil |
-| RO-002 | Accesibilidad | Contraste adecuado, tamaño de fuentes legible |
-| RO-003 | Internacionalización | Interfaz en español, formatos de fecha dd/mm/aaaa |
+| ID | Requisito | Criterio |
+|---|---|---|
+| RO-001 | Responsividad | Adaptable a desktop, tablet, móvil |
+| RO-002 | Accesibilidad | Contraste adecuado, fuentes legibles |
+| RO-003 | Internacionalización | UI en español, fechas `dd/mm/aaaa` |
 
 ---
 
@@ -1089,212 +967,183 @@ No aplica. El sistema es completamente web y no interactúa con hardware especí
 
 ### 4.1 Entidades Principales
 
-#### 4.1.1 Entidad: Usuario
+#### 4.1.1 User
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre completo |
-| email | VARCHAR(255) | No | Email (único) |
-| password | VARCHAR(255) | No | Contraseña hasheada |
-| rol | ENUM('admin', 'operador') | No | Rol del usuario |
-| remember_token | VARCHAR(100) | Sí | Token de sesión |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | Identificador |
+| organization_id | BIGINT (FK) | Sí | Tenant (nullable solo para SystemAdmin) |
+| name | VARCHAR | No | Nombre |
+| email | VARCHAR | No | Único |
+| password | VARCHAR | No | Hash bcrypt/argon2 |
+| role_id | BIGINT (FK) | No | Rol del usuario |
+| timestamps | TIMESTAMP | No | |
 | deleted_at | TIMESTAMP | Sí | Soft delete |
 
-#### 4.1.2 Entidad: Incidencia
+#### 4.1.2 Organization
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| titulo | VARCHAR(100) | No | Título de la incidencia |
-| descripcion | TEXT | No | Descripción detallada |
-| prioridad | ENUM('alta', 'media', 'baja') | No | Prioridad |
-| telefono_contacto | VARCHAR(20) | Sí | Teléfono de contacto |
-| estado_id | INT (FK) | No | Estado actual |
-| ubicacion_id | INT (FK) | No | Ubicación georreferenciada |
-| tipo_id | INT (FK) | No | Tipo de incidencia |
-| subtipo_id | INT (FK) | Sí | Subtipo de incidencia |
-| usuario_creador_id | INT (FK) | No | Usuario que creó |
-| fecha_resolucion | TIMESTAMP | Sí | Fecha cuando se resolvió |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| name | VARCHAR | No | |
+| location_id | BIGINT (FK) | Sí | Ubicación principal de la org |
+| parent_id | BIGINT (FK) | Sí | Organización padre (jerarquía) |
+| incident_category_id | BIGINT (FK) | Sí | Categoría que esta org atiende (usada por `Publicador` para `confirm`) |
+| max_active_claims | INT | No | Máximo de claims simultáneos por OperadorOrg de esta org |
+| timestamps | TIMESTAMP | No | |
 | deleted_at | TIMESTAMP | Sí | Soft delete |
 
-#### 4.1.3 Entidad: Estado
+#### 4.1.3 Incident
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(50) | No | Nombre del estado |
-| color | VARCHAR(7) | No | Color hex para badge |
-| orden | INT | No | Orden de visualización |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
-
-#### 4.1.4 Entidad: HistorialEstado
-
-| Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| incidencia_id | INT (FK) | No | Incidencia relacionada |
-| estado_anterior_id | INT (FK) | Sí | Estado anterior |
-| estado_nuevo_id | INT (FK) | No | Nuevo estado |
-| usuario_id | INT (FK) | No | Usuario que hizo el cambio |
-| comentario | TEXT | Sí | Comentario del cambio |
-| created_at | TIMESTAMP | No | Fecha del cambio |
-
-#### 4.1.5 Entidad: IncidenciaResponsable (Tabla Pivote)
-
-| Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| incidencia_id | INT (FK) | No | Incidencia relacionada |
-| usuario_id | INT (FK) | No | Usuario responsable |
-| rol | ENUM('responsable', 'apoyo') | No | Rol del responsable |
-| created_at | TIMESTAMP | No | Fecha asignación |
-| updated_at | TIMESTAMP | No | Última modificación |
-
-#### 4.1.6 Entidad: Comentario
-
-| Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| incidencia_id | INT (FK) | No | Incidencia relacionada |
-| usuario_id | INT (FK) | No | Autor del comentario |
-| texto | TEXT | No | Contenido del comentario |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| incident_category_id | BIGINT (FK) | No | Categoría |
+| organization_id | BIGINT (FK) | No | Tenant |
+| user_id | BIGINT (FK) | No | Creador |
+| location_id | BIGINT (FK) | No | Ubicación normalizada |
+| title | VARCHAR(100) | No | |
+| description | TEXT | No | |
+| status | ENUM (`pending`,`pending_operator`,`in_progress`,`resolved`) | No | Default: `pending` |
+| priority | ENUM (`low`,`medium`,`high`) | No | |
+| resolution_date | TIMESTAMP | Sí | Set al pasar a `resolved` |
+| geom | Point (PostGIS) | Sí | Coordenadas geográficas |
+| images | JSON/ARRAY | Sí | Lista de paths/URLs |
+| claimed_by | BIGINT (FK User) | Sí | OperadorOrg que hizo claim |
+| claimed_at | TIMESTAMP | Sí | |
+| timestamps | TIMESTAMP | No | |
 | deleted_at | TIMESTAMP | Sí | Soft delete |
 
-#### 4.1.7 Entidad: Pais
+**Constraints:** CHECK sobre `status`; índice GIST sobre `geom`; índices FK sobre `organization_id`, `incident_category_id`, `claimed_by`.
+
+#### 4.1.4 IncidentCategory
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre del país |
-| codigo | VARCHAR(3) | No | Código ISO |
-| estado | BOOLEAN | No | Activo/Inactivo |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| name | VARCHAR | No | |
+| parent_id | BIGINT (FK) | Sí | Subcategoría (nullable = raíz) |
+| timestamps | TIMESTAMP | No | |
 
-#### 4.1.8 Entidad: Provincia
+#### 4.1.5 Location
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre de la provincia |
-| pais_id | INT (FK) | No | País relacionado |
-| estado | BOOLEAN | No | Activo/Inactivo |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| name | VARCHAR | No | |
+| parent_id | BIGINT (FK) | Sí | País → Provincia → Ciudad |
+| geom | Point (PostGIS) | Sí | Opcional |
+| timestamps | TIMESTAMP | No | |
 
-#### 4.1.9 Entidad: Ciudad
-
-| Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre de la ciudad |
-| provincia_id | INT (FK) | No | Provincia relacionada |
-| estado | BOOLEAN | No | Activo/Inactivo |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
-
-#### 4.1.10 Entidad: Tipo
+#### 4.1.6 Comment
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre del tipo |
-| estado | BOOLEAN | No | Activo/Inactivo |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| incident_id | BIGINT (FK) | No | |
+| user_id | BIGINT (FK) | No | Autor |
+| body | TEXT | No | |
+| timestamps | TIMESTAMP | No | |
+| deleted_at | TIMESTAMP | Sí | Soft delete |
 
-#### 4.1.11 Entidad: Subtipo
-
-| Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| nombre | VARCHAR(100) | No | Nombre del subtipo |
-| tipo_id | INT (FK) | No | Tipo relacionado |
-| estado | BOOLEAN | No | Activo/Inactivo |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
-
-#### 4.1.12 Entidad: Notificacion
+#### 4.1.7 StatusHistory (inmutable, alimentada por trigger)
 
 | Campo | Tipo | Nullable | Descripción |
-|-------|------|----------|-------------|
-| id | INT (PK) | No | Identificador único |
-| usuario_id | INT (FK) | No | Destinatario |
-| tipo | ENUM('asignacion', 'cambio_estado', 'comentario') | No | Tipo de notificación |
-| titulo | VARCHAR(200) | No | Título de la notificación |
-| mensaje | TEXT | No | Contenido |
-| incidencia_id | INT (FK) | No | Incidencia relacionada |
-| leido | BOOLEAN | No | Estado de lectura |
-| leido_en | TIMESTAMP | Sí | Fecha cuando se leyó |
-| created_at | TIMESTAMP | No | Fecha creación |
-| updated_at | TIMESTAMP | No | Última modificación |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| incident_id | BIGINT (FK) | No | |
+| previous_status | VARCHAR | Sí | |
+| new_status | VARCHAR | No | |
+| changed_by_user_id | BIGINT (FK) | No | Extraído del JWT por el trigger |
+| created_at | TIMESTAMP | No | |
+
+#### 4.1.8 IncidentVerification
+
+| Campo | Tipo | Nullable | Descripción |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| incident_id | BIGINT (FK) | No | |
+| verifier_user_id | BIGINT (FK) | No | Publicador |
+| notes | TEXT | Sí | |
+| timestamps | TIMESTAMP | No | |
+| deleted_at | TIMESTAMP | Sí | Soft delete |
+
+#### 4.1.9 Notification
+
+| Campo | Tipo | Nullable | Descripción |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| user_id | BIGINT (FK) | No | Destinatario |
+| type | VARCHAR | No | `asignacion`, `cambio_estado`, `comentario`, `confirmacion` |
+| title | VARCHAR | No | |
+| message | TEXT | No | |
+| incident_id | BIGINT (FK) | No | |
+| read_at | TIMESTAMP | Sí | Null = no leída |
+| timestamps | TIMESTAMP | No | |
+
+#### 4.1.10 Role + Permission + Menu (RBAC)
+
+- `roles`: `id`, `name` (e.g. `SystemAdmin`, `OperadorOrganizacion`, `Publicador`), `timestamps`.
+- `permissions`: `id`, `name`, `timestamps`.
+- `role_permissions`: pivot.
+- `menus`: `id`, `name`, `route` (nullable), `parent_id`, `role_id` o `permission_id`, `timestamps`.
+
+#### 4.1.11 OperatorLocation (tracking)
+
+| Campo | Tipo | Nullable | Descripción |
+|---|---|---|---|
+| id | BIGINT (PK) | No | |
+| user_id | BIGINT (FK) | No | OperadorOrg |
+| geom | Point (PostGIS) | No | |
+| accuracy | FLOAT | Sí | |
+| created_at | TIMESTAMP | No | |
 
 ### 4.2 Diagrama de Relaciones (ER)
 
 ```
-┌─────────────┐       ┌─────────────────┐       ┌─────────────┐
-│   Usuario   │       │   Incidencia    │       │    Estado   │
-│─────────────│       │─────────────────│       │─────────────│
-│ PK id       │       │ PK id           │       │ PK id       │
-│    nombre   │       │    titulo       │       │    nombre   │
-│    email    │       │    descripcion  │       │    color    │
-│    password │       │ FK prioridad    │       │    orden    │
-│    rol      │       │ FK ubicacion_id │       └─────────────┘
-└─────────────┘       │ FK tipo_id      │              │
-      │               │ FK subtipo_id   │              │
-      │               │ FK estado_id    │◄─────────────┘
-      │               │ FK usuario_crea │
-      │               └────────┬────────┘
-      │                        │
-      │    ┌───────────────────┼───────────────────┐
-      │    │                   │                   │
-      ▼    ▼                   ▼                   ▼
-┌─────────────┐   ┌─────────────────────┐   ┌────────────┐
-│  Incidencia │   │  IncidenciaUsuario   │   │ Comentario │
-│ Responsable │   │─────────────────────│   │────────────│
-│─────────────│   │ PK id               │   │ PK id      │
-│ FK incid_id │   │ FK incidencia_id    │   │ FK incid   │
-│ FK usuario  │   │ FK usuario_id       │   │ FK usuario │
-│    rol      │   │ FK rol             │   │    texto   │
-└─────────────┘   └─────────────────────┘   └────────────┘
-
-┌─────────┐   ┌────────────┐   ┌──────────┐
-│   Pais  │   │  Provincia │   │  Ciudad  │
-│─────────│   │────────────│   │──────────│
-│ PK id   │◄──│ FK pais_id │   │          │
-│    nombre│   │ PK id      │◄──│FK provinci│
-│    codigo│   │    nombre  │   │ PK id    │
-└─────────┘   └────────────┘   │   nombre  │
-                               └──────────┘
-
-┌─────────┐   ┌────────────┐
-│   Tipo  │   │  Subtipo   │
-│─────────│   │────────────│
-│ PK id   │◄──│ FK tipo_id │
-│    nombre│   │ PK id      │
-└─────────┘   │   nombre   │
-              └────────────┘
-
-┌───────────────┐
-│  Notificacion │
-│───────────────│
-│ PK id         │
-│ FK usuario_id │
-│    tipo       │
-│    titulo     │
-│    mensaje    │
-│ FK incid_id   │
-│    leido      │
-│    leido_en   │
-└───────────────┘
+┌─────────────┐
+│  SystemAdmin │ (implícito por bypass)
+└─────────────┘
+       │
+       ▼
+┌─────────────┐       ┌─────────────────┐       ┌──────────────┐
+│    User     │       │   Organization  │       │     Role     │
+│─────────────│       │─────────────────│       │──────────────│
+│ PK id       │       │ PK id           │       │ PK id        │
+│ FK org_id   │◄──────│ FK parent_id    │       │ name         │
+│ FK role_id  │       │    name         │       └──────┬───────┘
+│    email    │       │ FK location_id  │              │
+│    password │       │ FK category_id  │              │ M:N
+└──────┬──────┘       │ max_active_claims│       ┌──────┴───────┐
+       │              └──────────────────┘       │ Permission   │
+       │ 1:N                                    └──────────────┘
+       ▼
+┌─────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│  Incident   │   │ IncidentCategory │   │  IncidentVerif.  │
+│─────────────│   │──────────────────│   │──────────────────│
+│ PK id       │   │ PK id            │   │ PK id            │
+│ title       │   │ name             │   │ FK incident_id   │
+│ description │   │ FK parent_id     │   │ FK verifier_id   │
+│ status (CK) │   └──────────────────┘   │ notes            │
+│ priority    │            ▲              │ deleted_at       │
+│ FK org_id   │            │              └──────────────────┘
+│ FK user_id  │            │
+│ FK cat_id   ├────────────┘
+│ FK loc_id   │            ┌──────────────────┐
+│ geom (GIST) │◄──────────►│     Location     │
+│ claimed_by  │            │──────────────────│
+│ claimed_at  │            │ PK id            │
+│ images      │            │ name             │
+└──────┬──────┘            │ FK parent_id     │
+       │ 1:N               │ geom (GIST)      │
+       │                   └──────────────────┘
+       ├──────────┬────────────┬───────────────┐
+       ▼          ▼            ▼               ▼
+┌──────────┐ ┌────────┐ ┌────────────┐ ┌──────────────────┐
+│ Comment  │ │ Status │ │ Operator   │ │   Notification   │
+│          │ │ History│ │ Location   │ │                  │
+│ body     │ │(TRIG)  │ │ geom       │ │ type, read_at    │
+└──────────┘ └────────┘ └────────────┘ └──────────────────┘
 ```
 
 ---
@@ -1303,61 +1152,89 @@ No aplica. El sistema es completamente web y no interactúa con hardware especí
 
 ### 5.1 Matriz de Trazabilidad
 
-| Requisito | Tipo | Prioridad | Módulo Related | Caso de Prueba |
-|-----------|------|-----------|----------------|----------------|
-| RF-FUNC-001 | Funcional | Alta | Módulo 01 | CP-01-01-F, CP-01-01-B |
-| RF-FUNC-002 | Funcional | Alta | Módulo 01 | CP-01-02-F, CP-01-02-B |
-| RF-FUNC-003 | Funcional | Alta | Módulo 01 | CP-01-03-F, CP-01-03-B |
-| RF-FUNC-006 | Funcional | Alta | Módulo 02 | CP-02-01-F, CP-02-01-B |
-| RF-FUNC-007 | Funcional | Alta | Módulo 02 | CP-02-02-F, CP-02-02-B |
-| RF-FUNC-008 | Funcional | Alta | Módulo 02 | CP-02-03-F, CP-02-03-B |
-| RF-FUNC-009 | Funcional | Alta | Módulo 03 | CP-03-01-F, CP-03-01-B |
-| RF-FUNC-010 | Funcional | Media | Módulo 03 | CP-03-02-F, CP-03-02-B |
-| RF-FUNC-012 | Funcional | Alta | Módulo 04 | CP-04-01-F, CP-04-01-B |
-| RF-FUNC-013 | Funcional | Alta | Módulo 04 | CP-04-02-F, CP-04-02-B |
-| RF-FUNC-015 | Funcional | Alta | Módulo 05 | CP-05-01-F, CP-05-01-B |
-| RF-FUNC-016 | Funcional | Alta | Módulo 05 | CP-05-02-F, CP-05-02-B |
-| RF-FUNC-017 | Funcional | Alta | Módulo 06 | CP-06-01-F, CP-06-01-B |
-| RF-FUNC-018 | Funcional | Alta | Módulo 06 | CP-06-02-F, CP-06-02-B |
-| RF-FUNC-019 | Funcional | Media | Módulo 07 | CP-07-01-F, CP-07-01-B |
-| RF-FUNC-020 | Funcional | Media | Módulo 07 | CP-07-02-F, CP-07-02-B |
-| RF-FUNC-021 | Funcional | Alta | Módulo 08 | CP-08-01-F, CP-08-01-B |
-| RF-FUNC-022 | Funcional | Alta | Módulo 08 | CP-08-02-F, CP-08-02-B |
-| RF-FUNC-023 | Funcional | Alta | Módulo 08 | CP-08-03-F, CP-08-03-B |
-| RF-FUNC-024 | Funcional | Alta | Módulo 09 | CP-09-01-F, CP-09-01-B |
-| RF-FUNC-025 | Funcional | Alta | Módulo 09 | CP-09-02-F, CP-09-02-B |
-| RF-FUNC-026 | Funcional | Alta | Módulo 09 | CP-09-03-F, CP-09-03-B |
-| RS-001 | Seguridad | Alta | Todos | Validación de contraseñas |
-| RS-002 | Seguridad | Alta | Backend | Prepared statements |
-| RS-003 | Seguridad | Alta | Frontend | Escape de HTML |
-| RR-001 | Rendimiento | Alta | Todos | Tiempo respuesta < 2s |
+| Requisito | Tipo | Prioridad | Módulo | Caso de Prueba |
+|---|---|---|---|---|
+| RF-FUNC-001 | Funcional | Alta | Incidents | `IncidentFieldLockTest`, `IncidentImageTest` |
+| RF-FUNC-002 | Funcional | Alta | Incidents | (cubierto por `IncidentRepositoryRelationsTest`) |
+| RF-FUNC-003 | Funcional | Alta | Incidents | (id.) |
+| RF-FUNC-004 | Funcional | Alta | Incidents | `IncidentFieldLockTest` |
+| RF-FUNC-005 | Funcional | Media | Incidents | (soft delete vía global scope) |
+| RF-FUNC-006 | Funcional | Alta | Incidents | `IncidentStatusTest` |
+| RF-FUNC-007 | Funcional | Alta | Incidents | `IncidentStatusTest` |
+| RF-FUNC-008 | Funcional | Alta | Incidents | (cubierto por trigger de DB) |
+| RF-FUNC-009 | Funcional | Alta | Incidents | `RedisIncidentSyncTest` (parte del flujo) |
+| RF-FUNC-010 | Funcional | Media | Incidents | (id.) |
+| RF-FUNC-011 | Funcional | Alta | Incidents | (a crear) |
+| RF-FUNC-012 | Funcional | Alta | Comments | `CommentControllerTest` |
+| RF-FUNC-013 | Funcional | Alta | Comments | (id.) |
+| RF-FUNC-014 | Funcional | Media | Comments | (id.) |
+| RF-FUNC-015 | Funcional | Alta | Locations | (cubierto por `LocationController` CRUD) |
+| RF-FUNC-016 | Funcional | Alta | Locations | (migración PostGIS habilitada) |
+| RF-FUNC-017 | Funcional | Alta | IncidentCategories | `IncidentCategorySeeder` |
+| RF-FUNC-018 | Funcional | Alta | IncidentCategories | (id.) |
+| RF-FUNC-019 | Funcional | Media | Notifications | `NotificationControllerTest` |
+| RF-FUNC-020 | Funcional | Media | Notifications | (id.) |
+| RF-FUNC-021 | Funcional | Alta | Incidents | `IncidentStatsControllerTest` |
+| RF-FUNC-022 | Funcional | Alta | Incidents | (id.) |
+| RF-FUNC-023 | Funcional | Alta | Incidents | (id.) |
+| RF-FUNC-024 | Funcional | Alta | Auth | `AuthControllerTest`, `AuthFlowTest` |
+| RF-FUNC-025 | Funcional | Alta | Auth | (id.) |
+| RF-FUNC-026 | Funcional | Alta | Auth | `JwtServiceTest` |
+| RF-FUNC-027 | Funcional | Media | Incidents | (cubierto por listado) |
+| RF-FUNC-028 | Funcional | Media | Incidents | (id.) |
+| **RF-FUNC-029** | Funcional | Media | OperatorLocation | `OperatorLocationControllerTest`, `OperatorTrackingTest` |
+| **RF-FUNC-030** | Funcional | Alta | Menus | `MenuSeeder` |
+| **RF-FUNC-031** | Funcional | Alta | Cross-domain | `TenantScopingTest` |
+| **RF-FUNC-032** | Funcional | Alta | Incidents | (cubierto por `IncidentVerificationService`) |
+| **RF-FUNC-033** | Funcional | Alta | Incidents | `UserCreationPolicyTest` (parte) |
+| **RF-FUNC-034** | Funcional | Media | Incidents | `RedisIncidentSyncTest` |
+| **RF-FUNC-035** | No funcional | Alta | DB | (cubierto por trigger, sin test unit) |
+| RS-001 | Seguridad | Alta | Auth | bcrypt/argon2 en migraciones |
+| RS-002 | Seguridad | Alta | Backend | Eloquent siempre |
+| RS-003 | Seguridad | Alta | Frontend | escape manual |
+| RS-006 | Seguridad | Alta | Auth | `JwtServiceTest` |
+| **RS-008** | Seguridad | Alta | DB | trigger de DB |
+| RM-005 | Mantenibilidad | Media | CI | `.github/workflows/ci.yml` |
 
 ### 5.2 Glosario
 
+Ver sección 1.3 para definiciones, acrónimos y abreviaturas. Términos adicionales:
+
 | Término | Definición |
-|---------|------------|
-| **API REST** | Estilo arquitectural para servicios web que utiliza HTTP para transferir datos |
-| **Cascada** | Mecanismo de selección donde la selección de un nivel habilita el siguiente |
-| **Docker** | Plataforma de contenedores que permite automatizar el despliegue de aplicaciones |
-| **Endpoints** | Puntos de acceso de una API REST |
-| **FK (Foreign Key)** | Llave foránea que establece la relación entre tablas |
-| **Payload** | Datos enviados en una petición HTTP |
-| **Soft Delete** | Eliminación lógica donde el registro no se borra físicamente de la BD |
-| **Token Bearer** | Token de autenticación enviado en el header Authorization |
-| **Middleware** | Software que actúa como intermediario entre el cliente y el servidor |
+|---|---|
+| **Bypass** | Capacidad de un rol (SystemAdmin) para saltarse el scoping multitenant. |
+| **Claim / Release** | Acciones para tomar y liberar responsabilidad sobre una incidencia. Reemplazan la asignación rígida de v1.0. |
+| **Frankenphp** | Servidor de aplicaciones PHP escrito en Go, basado en Caddy, con soporte de HTTP/3 y early hints. |
+| **Heartbeat** | Reporte periódico (en este caso, geográfico) de un cliente al servidor. |
+| **Octane** | Capa de Laravel que sirve la app desde memoria compartida entre requests (alta performance). |
+| **Shallow nesting** | Convención REST: prefijo de colección pero no de recurso en rutas anidadas. |
+| **Soft delete** | Eliminación lógica con `deleted_at`; el registro no se borra físicamente. |
+| **Tenant** | Organización lógica dueña de un conjunto de datos. En este sistema, una `Organization`. |
+
+### Apéndice A: SRS v1.0 (versión histórica)
+
+> El contenido íntegro de la versión **v1.0** del SRS (08/06/2026) se preserva en el archivo [`SRS-v1.0.md`](./SRS-v1.0.md) sin modificaciones, como referencia de la visión original del proyecto.
+>
+> Las divergencias entre v1.0 y la implementación actual (v2.0) están documentadas en el resumen ejecutivo al inicio de este documento.
+>
+> Este apéndice existe para:
+> 1. Trazabilidad histórica (qué se pensó vs qué se construyó).
+> 2. Cumplimiento de requisitos académicos (la cátedra pidió el SRS como entregable).
+> 3. Onboarding de nuevos integrantes que necesiten entender la génesis del proyecto.
 
 ---
 
 ## Información del Documento
 
 | Atributo | Valor |
-|----------|-------|
+|---|---|
 | **Título** | Especificación de Requisitos de Software (SRS) |
 | **Proyecto** | Sistema Web de Gestión de Incidencias Georreferenciadas |
-| **Versión** | 1.0 |
-| **Fecha de creación** | 08 de junio de 2026 |
-| **Autores** | Equipo de Proyecto (3 integrantes) |
-| **Estado** | Aprobado para Desarrollo |
+| **Versión** | 2.0 |
+| **Fecha** | 07 de julio de 2026 |
+| **Versión anterior** | v1.0 — [`SRS-v1.0.md`](./SRS-v1.0.md) |
+| **Autores** | Equipo de Proyecto |
+| **Estado** | Sincronizado con implementación actual |
 | **Referencias** | IEEE 830-1998, ISO/IEC 25000, ISO/IEC 25010 |
 
 ---

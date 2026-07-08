@@ -11,12 +11,13 @@ alcance y criterios de aceptación.
 | # | Documento | Tipo | Severidad | Estado backend | Estado frontend |
 | --- | ----------- | ------ | ----------- | ---------------- | ----------------- |
 | 01 | [Menú dinámico](01-menu-dinamico.md) | Integración | 🔴 Alta | ✅ Implementado | ✅ Migrado a `/menus/my` |
-| 02 | [Rutas fantasma (reportes / mapa)](02-rutas-fantasma.md) | Bug UX | 🔴 Alta | — | ⚠️ Parcial (Notificaciones OK) |
-| 03 | [Notificaciones](03-notificaciones.md) | Feature | 🟠 Media | ✅ Modelo + controller + observer | ✅ UI con badge dinámico |
+| 02 | [Rutas fantasma (reportes / mapa)](02-rutas-fantasma.md) | Bug UX | 🔴 Alta | — | ✅ Resuelto por PR #43 |
+| 03 | [Notificaciones](03-notificaciones.md) | Feature | 🟠 Media | ✅ Real (service + scopes) | ✅ UI con badge dinámico |
 | 04 | [Guard de `/feed/:id`](04-feed-detail-guard.md) | Seguridad | 🟡 Revisar | — | ✅ `authGuard` aplicado |
-| 05 | [Permisos (CRUD)](05-permisos.md) | Feature | 🟠 Media | ✅ CRUD borrado + `role_permission` sync | ✅ UI de roles con checklist |
-| 06 | [Asignaciones](06-asignaciones.md) | Feature | 🟠 Media | ✅ Stack zombie borrado + drop migration | ✅ N/A (no aplica) |
-| 07 | [Consolidación de shells](07-consolidacion-shells.md) | Deuda técnica | 🟡 Baja | — | ✅ **Completado por PR #43** |
+| 05 | [Permisos (CRUD)](05-permisos.md) | Feature | 🟠 Media | ✅ Diseño cambiado | ✅ UI de roles con checklist |
+| 06 | [Asignaciones](06-asignaciones.md) | Feature | 🟠 Media | ✅ Stack zombie borrado | ✅ N/A (no aplica) |
+| 07 | [Consolidación de shells](07-consolidacion-shells.md) | Deuda técnica | 🟡 Baja | — | ✅ Completado por PR #43 |
+| 08 | [Vista de mapa georreferenciado](08-vista-mapa.md) | **Feature** | **🟠 Media-Alta** | ✅ Datos listos | ❌ Solo captura, falta vista |
 
 ## Leyenda
 
@@ -43,7 +44,19 @@ Los 7 ítems del backlog original fueron trabajados en una sola sesión. Estado:
 
 ## Próximas iteraciones sugeridas
 
-1. Limpiar las rutas fantasma del sidebar citizen (`/mapa`, `/alertas`).
-2. Implementar la vista de mapa georreferenciado (mención histórica del doc 02).
-3. Revisar si el sidebar citizen debe migrar al menú dinámico (hoy sigue
-   estático).
+1. ~~Limpiar las rutas fantasma del sidebar citizen (`/mapa`, `/alertas`).~~ ✅
+   Resuelto por la consolidación a `app-shell` (PR #43): las rutas no se sirven.
+2. **Implementar la vista de mapa georreferenciado** (mención histórica del
+   doc 02). PostGIS ya está habilitado (`incidents.geom` Point) y el
+   `RedisIncidentSync` guarda el `geom` como GeoJSON — falta el componente
+   de UI que renderice esto en un mapa interactivo. Sugerido crear
+   `08-vista-mapa.md` cuando se aborde.
+3. ~~Revisar si el sidebar citizen debe migrar al menú dinámico (hoy sigue
+   estático).~~ ✅ El sidebar citizen ya usa el mismo `app-shell` con modo
+   `'citizen'` (`body[data-role="citizen"]`). El menú dinámico aplica a
+   ambos roles.
+
+## Pendiente genuino (al 07/07/2026)
+
+- **Vista de mapa georreferenciado** — feature, no bug. Es el único ítem que
+  rescato del backlog original que sigue vigente. Todo lo demás está cerrado.

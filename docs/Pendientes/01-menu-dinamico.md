@@ -2,7 +2,16 @@
 
 **Tipo:** Integración / eliminar duplicación
 **Severidad:** 🔴 Alta
-**Backend:** ✅ Implementado · **Frontend:** ❌ Menú hardcodeado en HTML
+**Backend:** ✅ Implementado · **Frontend:** ✅ Migrado a `/menus/my` (verificado 07/07/2026)
+
+> ✅ **COMPLETADO (verificado 07/07/2026)**
+> - Se adoptó la **opción A** del doc: el frontend consume `GET /menus/my`.
+> - `frontend/app/shared/menu.service.js` exporta `menuService` y está importado en:
+>   - `frontend/app/app-shell/app-shell.component.js` (render del sidebar)
+>   - `frontend/app/auth/auth.service.js` (precarga al autenticar)
+> - Tests existentes: `menu.service.test.js`, `app-shell.test.js`, `app-shell.snapshot.test.js`.
+> - PRs relacionados: #43 (consolidación app-shell), #48 (DB-driven hydration).
+> - Ver [`00-INDEX.md`](./00-INDEX.md).
 
 ## Problema
 
