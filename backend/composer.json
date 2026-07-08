@@ -12,6 +12,7 @@
         "php": "^8.3",
         "clickbar/laravel-magellan": "^2.2",
         "dedoc/scramble": "^0.13.28",
+        "kreait/firebase-php": "^8.0",
         "laravel/framework": "^13.8",
         "laravel/octane": "*",
         "laravel/tinker": "^3.0",
