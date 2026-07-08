@@ -97,14 +97,36 @@
 
     <!-- Citizen header: notification bell + user menu dropdown -->
     <div class="app-shell-header__citizen" data-show-on-role="citizen">
-      <button
-        class="app-shell-header__bell"
-        id="app-shell-bell"
-        type="button"
-        aria-label="Notificaciones"
-      >
-        <i class="fa-regular fa-bell"></i>
-      </button>
+      <div class="app-shell-bell-wrapper">
+        <button
+          class="app-shell-header__bell"
+          id="app-shell-bell"
+          type="button"
+          aria-label="Notificaciones"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="app-shell-bell-panel"
+        >
+          <i class="fa-regular fa-bell"></i>
+          <span
+            class="app-shell-header__notif-badge d-none"
+            id="app-shell-bell-badge"
+            >0</span
+          >
+        </button>
+        <div
+          class="app-shell-user-menu__panel app-shell-bell-panel"
+          id="app-shell-bell-panel"
+          hidden
+        >
+          <div class="app-shell-bell-panel__header">Notificaciones</div>
+          <ul class="app-shell-bell-panel__list" id="app-shell-bell-list">
+            <li class="app-shell-bell-panel__empty" id="app-shell-bell-empty">
+              Sin notificaciones
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="app-shell-user-menu app-shell-user-menu--compact">
         <button
           class="app-shell-user-menu__trigger app-shell-user-menu__trigger--avatar"

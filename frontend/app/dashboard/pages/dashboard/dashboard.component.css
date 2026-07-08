@@ -109,6 +109,10 @@
   background: linear-gradient(135deg, #fb6a85, #fa5a7d);
   box-shadow: 0 14px 26px -14px rgba(250, 90, 125, 0.65);
 }
+.gr-stat-card--purple {
+  background: linear-gradient(135deg, #a06bf5, #8a5cf0);
+  box-shadow: 0 14px 26px -14px rgba(138, 92, 240, 0.65);
+}
 
 .gr-stat-card__left {
   display: flex;

@@ -365,6 +365,89 @@ body[data-role='guest']
   color: #5b6172;
 }
 
+/* Bell dropdown wrapper — provides the positioned ancestor for the
+   notifications panel, same anchoring pattern as .app-shell-user-menu. */
+.app-shell-bell-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-shell-header__notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.app-shell-bell-panel {
+  right: 0;
+  width: 320px;
+  max-width: 90vw;
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-shell-bell-panel__header {
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #23283b;
+  border-bottom: 1px solid #eef0f5;
+}
+
+.app-shell-bell-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.app-shell-bell-panel__item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f6fb;
+  font-size: 0.85rem;
+  color: #23283b;
+}
+
+.app-shell-bell-panel__item:hover {
+  background: #f5f6fb;
+}
+
+.app-shell-bell-panel__item--unread {
+  background: #f0edff;
+  font-weight: 600;
+}
+
+.app-shell-bell-panel__item-time {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #8a90a0;
+}
+
+.app-shell-bell-panel__empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #8a90a0;
+  font-size: 0.85rem;
+}
+
 .app-shell-avatar {
   display: inline-flex;
   text-decoration: none;

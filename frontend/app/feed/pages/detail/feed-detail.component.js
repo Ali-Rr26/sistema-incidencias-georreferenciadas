@@ -17,6 +17,7 @@ import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
 import initMapView from '../../../shared/init-map-view.js';
+import { commentService } from '../../../shared/comment.service.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -66,6 +67,9 @@ export default {
 
       // Load and render Leaflet map
       await this._renderMap(inc);
+
+      // Comments — public, visible/postable by both citizens and operators
+      this._setupComments(incidentId);
 
       // Show detail, hide loading
       if (loadingEl) loadingEl.classList.add('d-none');
@@ -169,6 +173,99 @@ export default {
     this._detailMapRemove = remove;
   },
 
+  _buildCommentLi(comment) {
+    const li = document.createElement('li');
+    li.className = 'fd-comment';
+
+    const userName = comment.user
+      ? getUserDisplayName(comment.user)
+      : 'Usuario';
+
+    li.innerHTML = `
+      <div class="fd-comment-header">
+        <span class="fd-comment-author">${escapeHtml(userName)}</span>
+        <span class="fd-comment-time">${timeAgo(comment.created_at)}</span>
+      </div>
+      <p class="fd-comment-message">${escapeHtml(comment.message)}</p>`;
+
+    return li;
+  },
+
+  _renderComments(items) {
+    const listEl = document.getElementById('fd-comments-list');
+    const emptyEl = document.getElementById('fd-comments-empty');
+    if (!listEl) return;
+
+    if (!items || items.length === 0) {
+      listEl.replaceChildren();
+      emptyEl?.classList.remove('d-none');
+      return;
+    }
+
+    emptyEl?.classList.add('d-none');
+    listEl.replaceChildren(...items.map((c) => this._buildCommentLi(c)));
+  },
+
+  /**
+   * Comments are public — both citizens and operators can view and post
+   * them on the same `/incidents/{id}/comments` endpoint (R: "Public
+   * Comments on Detail View").
+   */
+  _setupComments(incidentId) {
+    const loadingEl = document.getElementById('fd-comments-loading');
+    const form = document.getElementById('fd-comment-form');
+    const input = document.getElementById('fd-comment-input');
+    const errorEl = document.getElementById('fd-comment-error');
+    const submitBtn = document.getElementById('fd-comment-submit');
+
+    if (!form || !input) return;
+
+    const cargarComentarios = async () => {
+      loadingEl?.classList.remove('d-none');
+      try {
+        const { data } = await commentService.list(incidentId, {
+          perPage: 50,
+        });
+        this._renderComments(data);
+      } catch (err) {
+        console.error('Error al cargar comentarios:', err);
+      } finally {
+        loadingEl?.classList.add('d-none');
+      }
+    };
+
+    cargarComentarios();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl?.classList.add('d-none');
+
+      const message = input.value.trim();
+      if (!message) {
+        if (errorEl) {
+          errorEl.textContent = 'El comentario no puede estar vacío.';
+          errorEl.classList.remove('d-none');
+        }
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        await commentService.create(incidentId, message);
+        input.value = '';
+        await cargarComentarios();
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent =
+            err.message || 'No se pudo publicar el comentario.';
+          errorEl.classList.remove('d-none');
+        }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  },
+
   onDestroy() {
     // Cleanup Leaflet map via the helper's returned disposer
     if (this._detailMapRemove) {
@@ -242,6 +339,35 @@ export default {
             aria-live="polite"
           ></div>
         </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="fd-section">
+        <h3 class="fd-section-title">Comentarios</h3>
+        <form id="fd-comment-form" class="fd-comment-form">
+          <textarea
+            id="fd-comment-input"
+            class="fd-comment-input"
+            rows="2"
+            maxlength="5000"
+            placeholder="Escribe un comentario público..."
+          ></textarea>
+          <div id="fd-comment-error" class="fd-comment-error d-none"></div>
+          <button
+            type="submit"
+            id="fd-comment-submit"
+            class="fd-comment-submit"
+          >
+            Publicar
+          </button>
+        </form>
+        <div id="fd-comments-loading" class="fd-comments-loading">
+          <div class="fd-spinner fd-spinner--sm"></div>
+        </div>
+        <ul id="fd-comments-list" class="fd-comments-list"></ul>
+        <p id="fd-comments-empty" class="fd-comments-empty d-none">
+          Sin comentarios todavía.
+        </p>
       </div>
     </div>
   `,

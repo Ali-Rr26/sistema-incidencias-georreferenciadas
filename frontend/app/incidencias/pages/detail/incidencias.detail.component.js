@@ -1,9 +1,10 @@
-import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
+import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { bindView } from '../../../utils/dom.js';
+import { commentService } from '../../../shared/comment.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -47,6 +48,7 @@ export default {
     setupActionButtons(id, inc);
     setupEstado(id, inc);
     cargarHistorial(id);
+    setupComments(id);
   },
 
   onDestroy() {
@@ -360,6 +362,96 @@ async function cargarHistorial(incidentId) {
     vacioEl.textContent = 'Error al cargar historial.';
     vacioEl.classList.remove('d-none');
   }
+}
+
+// ── Comentarios públicos ────────────────────────────────────
+
+function buildCommentLi(comment) {
+  const li = document.createElement('li');
+  li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
+
+  const userName = comment.user
+    ? [comment.user.first_name, comment.user.last_name]
+        .filter(Boolean)
+        .join(' ') || comment.user.email
+    : 'Usuario';
+
+  li.innerHTML = `
+    <div class="d-flex justify-content-between">
+      <span class="fw-semibold small">${escapeHtml(userName)}</span>
+      <small class="text-muted">${timeAgo(comment.created_at)}</small>
+    </div>
+    <div class="small">${escapeHtml(comment.message)}</div>`;
+
+  return li;
+}
+
+function renderComments(items) {
+  const listEl = document.getElementById('detalle-comments-list');
+  const vacioEl = document.getElementById('detalle-comments-vacio');
+  if (!listEl) return;
+
+  if (!items || items.length === 0) {
+    listEl.replaceChildren();
+    vacioEl?.classList.remove('d-none');
+    return;
+  }
+
+  vacioEl?.classList.add('d-none');
+  listEl.replaceChildren(...items.map(buildCommentLi));
+}
+
+async function setupComments(incidentId) {
+  const loadingEl = document.getElementById('detalle-comments-loading');
+  const form = document.getElementById('detalle-comment-form');
+  const input = document.getElementById('detalle-comment-input');
+  const errorEl = document.getElementById('detalle-comment-error');
+  const submitBtn = document.getElementById('detalle-comment-submit');
+
+  if (!form || !input) return;
+
+  async function cargarComentarios() {
+    loadingEl?.classList.remove('d-none');
+    try {
+      const { data } = await commentService.list(incidentId, { perPage: 50 });
+      renderComments(data);
+    } catch (err) {
+      console.error('Error al cargar comentarios:', err);
+    } finally {
+      loadingEl?.classList.add('d-none');
+    }
+  }
+
+  await cargarComentarios();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl?.classList.add('d-none');
+
+    const message = input.value.trim();
+    if (!message) {
+      if (errorEl) {
+        errorEl.textContent = 'El comentario no puede estar vacío.';
+        errorEl.classList.remove('d-none');
+      }
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      await commentService.create(incidentId, message);
+      input.value = '';
+      await cargarComentarios();
+    } catch (err) {
+      if (errorEl) {
+        errorEl.textContent =
+          err.message || 'No se pudo publicar el comentario.';
+        errorEl.classList.remove('d-none');
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
 }
 
 // ── Claim / Release / Confirmar ────────────────────────────

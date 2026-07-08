@@ -33,7 +33,7 @@ export default {
     let marker = null;
     let geomValue = null; // GeoJSON Point
     let imagenesSeleccionadas = [];
-    let categories = [];
+    let categoryTree = [];
     let locationsTree = [];
 
     // ── Helpers ──
@@ -144,20 +144,69 @@ export default {
         );
       });
 
-    // ── Load categories (flat) ──
+    // ── Load categories (parent → child tree) ──
+    const catSelect = document.getElementById('ici-category');
+    const subcatSelect = document.getElementById('ici-subcategory');
+
+    function findCategoryNode(nodes, id) {
+      for (const node of nodes) {
+        if (String(node.id) === String(id)) return { node, isRoot: true };
+        const children = node.children || [];
+        const child = children.find((c) => String(c.id) === String(id));
+        if (child) return { node: child, parent: node, isRoot: false };
+      }
+      return null;
+    }
+
+    function populateSubcategories(parentId) {
+      subcatSelect.innerHTML = '';
+      const parent = categoryTree.find(
+        (c) => String(c.id) === String(parentId),
+      );
+      const children = parent?.children ?? [];
+
+      if (!parent || children.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = parent
+          ? '-- Sin subcategorías --'
+          : '-- Seleccione una categoría primero --';
+        subcatSelect.appendChild(opt);
+        subcatSelect.disabled = true;
+        return;
+      }
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Seleccione subcategoría (opcional) --';
+      subcatSelect.appendChild(placeholder);
+
+      children.forEach((child) => {
+        const opt = document.createElement('option');
+        opt.value = child.id;
+        opt.textContent = child.name;
+        subcatSelect.appendChild(opt);
+      });
+      subcatSelect.disabled = false;
+    }
+
     try {
-      const resp = await http.get('/incident-categories?per_page=500');
-      categories = resp.data || resp;
-      const catSelect = document.getElementById('ici-category');
-      categories.forEach((cat) => {
+      const resp = await http.get('/incident-categories/tree');
+      categoryTree = resp.data ?? resp ?? [];
+      categoryTree.forEach((cat) => {
         const opt = document.createElement('option');
         opt.value = cat.id;
         opt.textContent = cat.name;
         catSelect.appendChild(opt);
       });
     } catch {
-      categories = [];
+      categoryTree = [];
     }
+
+    catSelect.addEventListener('change', function () {
+      populateSubcategories(this.value);
+      resetFieldError(P + 'error-category');
+    });
 
     // ── Load locations (flat, with indentation preserved) ──
     try {
@@ -278,8 +327,20 @@ export default {
           priorityEl.value = inc.priority ?? '';
         }
 
-        const catSelect = document.getElementById('ici-category');
-        if (catSelect) catSelect.value = inc.incident_category_id ?? '';
+        const currentCategoryId = inc.incident_category_id ?? null;
+        if (currentCategoryId) {
+          const match = findCategoryNode(categoryTree, currentCategoryId);
+          if (match) {
+            if (match.isRoot) {
+              catSelect.value = String(match.node.id);
+              populateSubcategories(match.node.id);
+            } else {
+              catSelect.value = String(match.parent.id);
+              populateSubcategories(match.parent.id);
+              subcatSelect.value = String(match.node.id);
+            }
+          }
+        }
 
         const locSelect = document.getElementById('ici-location');
         if (locSelect) locSelect.value = inc.location_id ?? '';
@@ -322,10 +383,13 @@ export default {
         valid = false;
       }
 
-      const categoryId = parseInt(
-        document.getElementById('ici-category').value || '',
-        10,
-      );
+      const parentCategoryVal = document.getElementById('ici-category').value;
+      const subCategoryVal = document.getElementById('ici-subcategory').value;
+      // The subcategory (child), when selected, is the actual category
+      // sent to the backend — it's the more specific classification.
+      // Falls back to the parent category when no subcategory was chosen
+      // (e.g. the parent has no children, or the citizen left it blank).
+      const categoryId = parseInt(subCategoryVal || parentCategoryVal || '', 10);
       if (!categoryId) {
         showFieldError(P + 'error-category', 'Seleccione una categoría');
         valid = false;

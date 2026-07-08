@@ -132,6 +132,19 @@ function buildActivityFeed(items) {
 }
 
 // ─────────────────────────────────────────────
+// Tiempo promedio de resolución (R: "Average Resolution Time Format")
+// El backend devuelve { days, hours, seconds, formatted } o null cuando
+// no hay incidencias resueltas todavía.
+// ─────────────────────────────────────────────
+function formatResolutionTime(avg) {
+  if (!avg) return 'Sin datos';
+  const { days, hours } = avg;
+  if (days > 0 && hours > 0) return `${days}d ${hours}h`;
+  if (days > 0) return `${days}d`;
+  return `${hours}h`;
+}
+
+// ─────────────────────────────────────────────
 // Componente
 // ─────────────────────────────────────────────
 export default {
@@ -154,12 +167,20 @@ export default {
     const en_proceso = byStatus.in_progress ?? 0;
     const resueltas = byStatus.resolved ?? 0;
     const ubicaciones = stats.locations_count ?? 0;
+    const tiempoResolucion = stats.average_resolution_time ?? null;
 
     // Counters animados
     animateCounter(document.getElementById('stat-incidencias'), total);
     animateCounter(document.getElementById('stat-pendientes'), pendientes);
     animateCounter(document.getElementById('stat-resueltas'), resueltas);
     animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
+
+    // Tiempo promedio de resolución — no es un contador (no tiene sentido
+    // animar "días/horas" numéricamente), se renderiza directo como texto.
+    const resolucionEl = document.getElementById('stat-tiempo-resolucion');
+    if (resolucionEl) {
+      resolucionEl.textContent = formatResolutionTime(tiempoResolucion);
+    }
 
     // Badges de porcentaje (pendientes / total)
     if (total > 0) {
