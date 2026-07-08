@@ -119,4 +119,27 @@ return [
 
     'max_execution_time' => 30,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mercure Hub
+    |--------------------------------------------------------------------------
+    |
+    | Real-time notification push (the bell dropdown) is delivered via
+    | FrankenPHP's built-in Mercure hub instead of a manual SSE loop —
+    | Octane's FrankenPHP driver has no StreamedResponse support (confirmed
+    | via source: FrankenPhpClient::respond() vs RoadRunnerClient's
+    | resolveStreamResponseCallback()), and a hand-rolled while(true) loop
+    | never holds the connection open (github.com/laravel/octane#903 — the
+    | same buffering issue also reproduces under RoadRunner, so switching
+    | driver isn't a reliable fix either). Mercure sidesteps this entirely:
+    | a dedicated Go process holds subscriber connections, PHP just POSTs.
+    |
+    */
+
+    'mercure' => [
+        'anonymous' => false,
+        'publisher_jwt' => env('MERCURE_PUBLISHER_JWT_SECRET'),
+        'subscriber_jwt' => env('MERCURE_SUBSCRIBER_JWT_SECRET'),
+    ],
+
 ];

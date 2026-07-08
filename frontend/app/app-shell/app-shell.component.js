@@ -23,7 +23,6 @@ import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { router } from '../core/router.js';
-import { API_URL } from '../core/config.js';
 import { timeAgo } from '../utils/format.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
@@ -177,7 +176,7 @@ export const appShell = {
       renderBottomNavMenu().catch(() => {
         // No-op: empty bottom-nav is preferable to crashing the shell.
       });
-      connectNotificationStream();
+      connectNotificationStream(user?.id);
     }
 
     // Re-apply role on every auth change (login / logout / role swap).
@@ -201,7 +200,7 @@ export const appShell = {
         await renderBottomNavMenu().catch(() => {
           // No-op: empty bottom-nav is preferable to crashing the shell.
         });
-        connectNotificationStream();
+        connectNotificationStream(u?.id);
       }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
       // chrome (e.g. switching roles changes which sidebar is visible,
@@ -1046,25 +1045,33 @@ function buildBellItem(notif) {
 }
 
 /**
- * Establish the SSE connection to /api/notifications/stream for real-time
- * bell updates.
+ * Establish the SSE connection to the Mercure hub for real-time bell
+ * updates. Laravel Octane's FrankenPHP driver has no StreamedResponse
+ * support (github.com/laravel/octane#903 — reproduces under RoadRunner
+ * too, so it isn't a driver-specific quirk), so a hand-rolled SSE loop in
+ * the backend never holds the connection open. Mercure sidesteps this: a
+ * dedicated Go hub process holds the connection, not a PHP worker.
  *
- * The native `EventSource` API cannot set the `Authorization` header, so
- * auth for this endpoint relies on the httpOnly `access_token` cookie set
- * at login (scoped to /api/notifications only — every other request still
- * uses the Bearer header). `withCredentials: true` is required for the
- * cross-origin cookie to be sent.
+ * The topic (`user:{id}:notifications`) must match
+ * `NotificationService::topicFor()` on the backend exactly. Auth is the
+ * httpOnly `mercureAuthorization` cookie set at login, containing a JWT
+ * scoped to subscribe to only this user's topic — the hub itself enforces
+ * that, not this code. `withCredentials: true` is required for the cookie
+ * to be sent to the hub's origin.
  */
-function connectNotificationStream() {
-  if (typeof window.EventSource !== 'function') {
-    // SSE unsupported in this browser/environment — skip silently.
+function connectNotificationStream(userId) {
+  if (typeof window.EventSource !== 'function' || !userId) {
+    // SSE unsupported in this browser/environment, or no user to scope
+    // the topic to — skip silently.
     return;
   }
 
   try {
-    _notifStream = new EventSource(`${API_URL}/notifications/stream`, {
-      withCredentials: true,
-    });
+    const topic = `user:${userId}:notifications`;
+    _notifStream = new EventSource(
+      `/.well-known/mercure?topic=${encodeURIComponent(topic)}`,
+      { withCredentials: true },
+    );
 
     _notifStream.onmessage = (event) => {
       if (!event.data) return;

@@ -67,7 +67,7 @@ class AuthService
     }
 
     /**
-     * @return array{accessToken: string, refreshToken: string, expiresIn: int}
+     * @return array{accessToken: string, refreshToken: string, expiresIn: int, user: User}
      *
      * @throws AuthenticationException
      */
@@ -128,6 +128,7 @@ class AuthService
             'accessToken' => $newAccess,
             'refreshToken' => $newRefresh,
             'expiresIn' => 900,
+            'user' => $user,
         ];
     }
 

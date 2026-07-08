@@ -15,13 +15,14 @@
         "laravel/framework": "^13.8",
         "laravel/octane": "*",
         "laravel/tinker": "^3.0",
-        "lcobucci/jwt": "6.0.x-dev",
+        "lcobucci/jwt": "^5.6",
         "league/flysystem-aws-s3-v3": "^3.35",
         "matanyadaev/laravel-eloquent-spatial": "^4.8",
         "paragonie/sodium_compat": "^2.5",
         "spiral/roadrunner-cli": "^2.7",
         "spiral/roadrunner-http": "^4.1",
-        "staudenmeir/laravel-adjacency-list": "^1.26"
+        "staudenmeir/laravel-adjacency-list": "^1.26",
+        "symfony/mercure": "^0.7.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

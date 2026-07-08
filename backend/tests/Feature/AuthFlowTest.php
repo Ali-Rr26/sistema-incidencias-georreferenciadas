@@ -40,6 +40,7 @@ it('keeps the cookie-based auth contract working end to end', function (): void 
             ->andReturn([
                 'accessToken' => 'access-token-2',
                 'refreshToken' => 'refresh-token-2',
+                'user' => $user,
             ]);
 
         $mock->shouldReceive('revokeSession')

@@ -11,7 +11,6 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class NotificationController extends Controller
 {
@@ -101,74 +100,5 @@ class NotificationController extends Controller
         $count = Notification::query()->forUser($user)->unread()->count();
 
         return response()->json(['unread_count' => $count]);
-    }
-
-    /**
-     * Streams notifications for the authenticated user using Server-Sent Events (SSE).
-     */
-    public function stream(Request $request): StreamedResponse
-    {
-        $user = $request->user();
-        if ($user === null) {
-            abort(401, 'Unauthenticated.');
-        }
-
-        $response = new StreamedResponse(function () use ($user) {
-            if (function_exists('apache_setenv')) {
-                @apache_setenv('no-gzip', '1');
-            }
-            @ini_set('zlib.output_compression', '0');
-            @ini_set('implicit_flush', '1');
-            ob_implicit_flush(true);
-
-            $lastId = 0;
-            $loopCount = 0;
-
-            while (true) {
-                if (!app()->environment('testing') && connection_aborted()) {
-                    break;
-                }
-
-                $newNotifications = Notification::query()
-                    ->forUser($user)
-                    ->where('id', '>', $lastId)
-                    ->with('incident')
-                    ->get();
-
-                if ($newNotifications->isNotEmpty()) {
-                    foreach ($newNotifications as $notification) {
-                        $data = json_encode(new NotificationResource($notification));
-                        echo "data: {$data}\n\n";
-                        $lastId = max($lastId, $notification->id);
-                    }
-                    if (!app()->environment('testing')) {
-                        ob_flush();
-                        flush();
-                    }
-                } else {
-                    echo ": heartbeat\n\n";
-                    if (!app()->environment('testing')) {
-                        ob_flush();
-                        flush();
-                    }
-                }
-
-                if (app()->environment('testing')) {
-                    $loopCount++;
-                    if ($loopCount >= 2) {
-                        break;
-                    }
-                }
-
-                sleep(1);
-            }
-        });
-
-        $response->headers->set('Content-Type', 'text/event-stream');
-        $response->headers->set('Cache-Control', 'no-cache');
-        $response->headers->set('Connection', 'keep-alive');
-        $response->headers->set('X-Accel-Buffering', 'no');
-
-        return $response;
     }
 }

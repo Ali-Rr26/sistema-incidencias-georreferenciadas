@@ -36,6 +36,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mercure\Hub;
+use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Jwt\FactoryTokenProvider;
+use Symfony\Component\Mercure\Jwt\LcobucciFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +53,29 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IncidentCategoryRepository::class, EloquentIncidentCategoryRepository::class);
         $this->app->bind(IncidentRepository::class, EloquentIncidentRepository::class);
         $this->app->bind(CommentRepository::class, EloquentCommentRepository::class);
+
+        // Mercure hub — see config/octane.php for why this replaced the
+        // manual SSE loop. Same FrankenPHP process serves the hub, so we
+        // publish to it over loopback.
+        $this->app->singleton(HubInterface::class, function () {
+            // LcobucciFactory's Key\InMemory rejects an empty secret at
+            // construction time — fall back to a placeholder so
+            // environments without MERCURE_PUBLISHER_JWT_SECRET set (local
+            // dev without a real hub, CI, tests that never mocked
+            // HubInterface) can still construct the container. Publishing
+            // will fail at request time instead, which
+            // NotificationService::publish() already swallows.
+            $secret = (string) config('octane.mercure.publisher_jwt');
+            $jwtFactory = new LcobucciFactory(
+                $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
+            );
+            $provider = new FactoryTokenProvider($jwtFactory, publish: ['*']);
+
+            return new Hub(
+                rtrim((string) env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000'), '/').'/.well-known/mercure',
+                $provider,
+            );
+        });
     }
 
     public function boot(): void

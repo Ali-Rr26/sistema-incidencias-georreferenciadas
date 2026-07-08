@@ -34,6 +34,12 @@ services:
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      # Mercure hub JWT secrets (see config/octane.php) — set these in the
+      # shell/CI environment, not committed here. Empty in dev falls back
+      # to an insecure placeholder (AppServiceProvider/AuthController);
+      # real deployments must set them.
+      MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+      MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
     volumes:
       - ./backend/app:/var/www/backend/app
       - ./backend/routes:/var/www/backend/routes

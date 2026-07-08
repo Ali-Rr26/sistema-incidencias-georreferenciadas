@@ -7,11 +7,17 @@ namespace App\Domains\Auth\Http;
 use App\Domains\Auth\Exceptions\AuthenticationException;
 use App\Domains\Auth\Http\Requests\LoginRequest;
 use App\Domains\Auth\Services\AuthService;
+use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Http\Resources\UserResource;
+use App\Domains\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,9 +31,12 @@ class AuthController
 
     private const ACCESS_TTL = 900;
 
-    private const ACCESS_COOKIE = 'access_token';
-
-    private const ACCESS_COOKIE_PATH = '/api/notifications';
+    /**
+     * Standard cookie name from the Mercure protocol spec — the hub reads
+     * this itself to authorize private-topic subscriptions, so the name
+     * isn't arbitrary.
+     */
+    private const MERCURE_COOKIE = 'mercureAuthorization';
 
     public function __construct(
         private readonly AuthService $authService,
@@ -56,7 +65,7 @@ class AuthController
             'user' => new UserResource($result['user']),
         ])
             ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->accessCookie($result['accessToken']));
+            ->withCookie($this->mercureAuthCookie($result['user']));
     }
 
     /**
@@ -83,7 +92,7 @@ class AuthController
             'expires_in' => self::ACCESS_TTL,
         ])
             ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->accessCookie($result['accessToken']));
+            ->withCookie($this->mercureAuthCookie($result['user']));
     }
 
     /**
@@ -101,7 +110,7 @@ class AuthController
             'message' => 'Sesión cerrada exitosamente.',
         ])
             ->withCookie($this->expiredCookie())
-            ->withCookie($this->expiredAccessCookie());
+            ->withCookie($this->expiredMercureAuthCookie());
     }
 
     /**
@@ -195,19 +204,45 @@ class AuthController
     }
 
     /**
-     * Build HttpOnly cookie with the access token.
+     * Build the Mercure subscriber authorization cookie for this user.
      *
-     * Scoped to /api/notifications only — a fallback for EventSource (which
-     * cannot set the Authorization header), not a replacement for the Bearer
-     * header used everywhere else.
+     * The JWT carries the Mercure-spec `mercure.subscribe` claim scoped to
+     * exactly this user's private notification topic — the hub itself
+     * enforces that a subscriber can only listen to topics listed here, so
+     * this is the actual authorization boundary, not the app's own JWT.
+     * Signed with a separate secret (`MERCURE_SUBSCRIBER_JWT_SECRET`) from
+     * the publisher key so a leaked subscriber token can't be used to
+     * publish. Path is root — the hub lives at /.well-known/mercure, not
+     * under /api, so it must be sent on that request regardless of prefix.
      */
-    private function accessCookie(string $token): Cookie
+    private function mercureAuthCookie(User $user): Cookie
     {
+        // Key\InMemory rejects an empty secret at construction — never let
+        // a missing MERCURE_SUBSCRIBER_JWT_SECRET break login/refresh over
+        // a real-time feature that degrades gracefully on the frontend.
+        $secret = (string) config('octane.mercure.subscriber_jwt');
+        if ($secret === '') {
+            Log::warning('MERCURE_SUBSCRIBER_JWT_SECRET is not configured — issuing a placeholder Mercure cookie that the hub will reject.');
+            $secret = 'insecure-placeholder-configure-MERCURE_SUBSCRIBER_JWT_SECRET';
+        }
+
+        $config = Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText($secret),
+        );
+        $now = new \DateTimeImmutable();
+
+        $token = $config->builder()
+            ->issuedAt($now)
+            ->expiresAt($now->modify('+'.self::ACCESS_TTL.' seconds'))
+            ->withClaim('mercure', ['subscribe' => [NotificationService::topicFor($user->id)]])
+            ->getToken($config->signer(), $config->signingKey());
+
         return cookie(
-            self::ACCESS_COOKIE,
-            $token,
+            self::MERCURE_COOKIE,
+            $token->toString(),
             (int) (self::ACCESS_TTL / 60),
-            self::ACCESS_COOKIE_PATH,
+            '/',
             null,
             app()->isProduction(),
             true,
@@ -217,15 +252,15 @@ class AuthController
     }
 
     /**
-     * Build access-token cookie that expires immediately (for logout).
+     * Build Mercure authorization cookie that expires immediately (logout).
      */
-    private function expiredAccessCookie(): Cookie
+    private function expiredMercureAuthCookie(): Cookie
     {
         return cookie(
-            self::ACCESS_COOKIE,
+            self::MERCURE_COOKIE,
             '',
             -60,
-            self::ACCESS_COOKIE_PATH,
+            '/',
             null,
             app()->isProduction(),
             true,

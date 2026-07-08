@@ -54,7 +54,7 @@ it('logs in and returns access tokens plus the user payload', function (): void 
             ],
         ])
         ->assertCookie('refresh_token')
-        ->assertCookie('access_token');
+        ->assertCookie('mercureAuthorization');
 });
 
 it('validates login payload before touching the auth service', function (): void {
@@ -65,7 +65,10 @@ it('validates login payload before touching the auth service', function (): void
 });
 
 it('refreshes the access token from the refresh cookie', function (): void {
-    $this->mock(AuthService::class, function (MockInterface $mock): void {
+    $user = User::factory()->make(['email' => 'admin@example.com']);
+    $user->forceFill(['id' => 15]);
+
+    $this->mock(AuthService::class, function (MockInterface $mock) use ($user): void {
         $mock->shouldReceive('refresh')
             ->once()
             ->withArgs(function (string $refreshToken, ?string $ip, ?string $ua): bool {
@@ -74,6 +77,7 @@ it('refreshes the access token from the refresh cookie', function (): void {
             ->andReturn([
                 'accessToken' => 'access-token-2',
                 'refreshToken' => 'refresh-token-2',
+                'user' => $user,
             ]);
     });
 
@@ -88,7 +92,7 @@ it('refreshes the access token from the refresh cookie', function (): void {
             'expires_in' => 900,
         ])
         ->assertCookie('refresh_token')
-        ->assertCookie('access_token');
+        ->assertCookie('mercureAuthorization');
 });
 
 it('logs out and revokes the current session when provided', function (): void {
@@ -107,7 +111,7 @@ it('logs out and revokes the current session when provided', function (): void {
             'message' => 'Sesión cerrada exitosamente.',
         ])
         ->assertCookieExpired('refresh_token')
-        ->assertCookieExpired('access_token');
+        ->assertCookieExpired('mercureAuthorization');
 });
 
 // ─── updateProfile: avatar validator (REQ-7 / H7 / SCEN-7.1..7.4) ────

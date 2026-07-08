@@ -8,7 +8,6 @@ import { auth } from '../auth/auth.service.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { OPERATIONAL_ROLES } from '../utils/role.js';
-import { API_URL } from '../core/config.js';
 
 const TEMPLATE_HTML = `
 <div class="app-shell">
@@ -1996,12 +1995,14 @@ describe('citizen notification bell — SSE + dropdown', () => {
     };
   }
 
-  it('opens an EventSource connection to /notifications/stream with withCredentials for the citizen role', async () => {
+  it('opens an EventSource connection to the Mercure hub with withCredentials for the citizen role', async () => {
     const { appShell, unsub } = await mountCitizen();
     try {
       expect(MockEventSource.instances).toHaveLength(1);
       const instance = MockEventSource.instances[0];
-      expect(instance.url).toBe(`${API_URL}/notifications/stream`);
+      expect(instance.url).toBe(
+        '/.well-known/mercure?topic=user%3A9%3Anotifications',
+      );
       expect(instance.options).toEqual({ withCredentials: true });
     } finally {
       appShell.destroy();

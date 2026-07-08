@@ -49,8 +49,9 @@ Route::middleware('jwt')->group(function () {
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 
-    // Notificaciones del usuario autenticado
-    Route::get('notifications/stream', [NotificationController::class, 'stream']);
+    // Notificaciones del usuario autenticado — real-time push vía Mercure
+    // (ver AppServiceProvider::HubInterface + NotificationService::publish),
+    // no un endpoint propio de streaming.
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
