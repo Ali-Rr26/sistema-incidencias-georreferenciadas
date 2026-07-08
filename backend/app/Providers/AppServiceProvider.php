@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
+use App\Domains\Auth\Services\KreaitFirebaseTokenVerifier;
 use App\Domains\Comments\Listeners\RedisCommentSync;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Comments\Repositories\CommentRepository;
@@ -36,6 +38,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
+use Kreait\Firebase\Factory as KreaitFirebaseFactory;
 use Symfony\Component\Mercure\Hub;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Jwt\FactoryTokenProvider;
@@ -53,6 +56,37 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IncidentCategoryRepository::class, EloquentIncidentCategoryRepository::class);
         $this->app->bind(IncidentRepository::class, EloquentIncidentRepository::class);
         $this->app->bind(CommentRepository::class, EloquentCommentRepository::class);
+
+        // Firebase ID-token verifier — PR-2 of registro-y-google-auth.
+        // The concrete is built lazily so test suites that bind the
+        // FakeFirebaseTokenVerifier never trigger the Kreait Factory
+        // (which would fail without FIREBASE_CREDENTIALS configured).
+        // The closure also resolves `services.firebase.leeway_seconds`
+        // (default 5s) per the Kreait SDK's clock-skew tolerance.
+        $this->app->singleton(FirebaseTokenVerifier::class, function () {
+            $credentialsPath = (string) (config('services.firebase.credentials_path')
+                ?: env('FIREBASE_CREDENTIALS', ''));
+
+            if ($credentialsPath === '') {
+                // Fail loud at first resolution (not at boot) so test
+                // suites that bind the FakeFirebaseTokenVerifier never
+                // hit this. Production must have FIREBASE_CREDENTIALS
+                // set before /auth/google is reachable.
+                throw new \RuntimeException(
+                    'Firebase credentials not configured — set FIREBASE_CREDENTIALS or services.firebase.credentials_path.'
+                );
+            }
+
+            $factory = KreaitFirebaseFactory::withServiceAccount($credentialsPath)
+                ->withProjectId((string) (config('services.firebase.project_id')
+                    ?: env('FIREBASE_PROJECT_ID', '')));
+
+            return new KreaitFirebaseTokenVerifier(
+                $factory->createAuth(),
+                leewayInSeconds: (int) (config('services.firebase.leeway_seconds')
+                    ?: env('FIREBASE_TOKEN_LEEWAY_SECONDS', 5)),
+            );
+        });
 
         // Mercure hub — see config/octane.php for why this replaced the
         // manual SSE loop. Same FrankenPHP process serves the hub, so we
