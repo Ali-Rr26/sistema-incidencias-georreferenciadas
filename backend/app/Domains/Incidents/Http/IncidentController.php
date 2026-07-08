@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Http\Requests\MapBoundsRequest;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
@@ -44,12 +45,21 @@ class IncidentController extends Controller
      */
     private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location'];
 
-    public function index(Request $request): JsonResponse
+    public function index(MapBoundsRequest $request): JsonResponse
     {
+        $validated = $request->validated() + ['relations' => self::INDEX_RELATIONS];
+
+        // The map frontend asks for 500 per page because a single bbox
+        // viewport can legitimately hold >100 incidents in dense urban
+        // areas. The default repo cap (100) is too tight here, so we
+        // raise it only when a bbox is present. Other callers keep the
+        // safe 100 cap.
+        $hardCap = isset($validated['bbox']) ? 500 : null;
+
         $incidents = $this->incidents->paginate(
-            $request->only([
-                'status', 'priority', 'location_id', 'incident_category_id', 'user_id', 'title', 'per_page',
-            ]) + ['relations' => self::INDEX_RELATIONS],
+            $validated,
+            perPage: 20,
+            hardCap: $hardCap,
         );
 
         return (new IncidentCollection($incidents))->response();

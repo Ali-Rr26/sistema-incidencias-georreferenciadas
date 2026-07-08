@@ -79,7 +79,19 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
                 }
             })
             ->when($filters['incident_category_id'] ?? null, fn (Builder $q, string $v) => $q->where('incident_category_id', $v))
-            ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v));
+            ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v))
+            ->when($filters['bbox'] ?? null, function (Builder $q, string $v): void {
+                // bbox=minLng,minLat,maxLng,maxLat — PostGIS ST_MakeEnvelope
+                // takes (xmin, ymin, xmax, ymax, srid), so the order maps
+                // directly. The geom column is `geometry` (SRID 4326),
+                // and ST_MakeEnvelope returns a geometry — no type cast
+                // required.
+                [$minLng, $minLat, $maxLng, $maxLat] = array_map('floatval', explode(',', $v));
+                $q->whereRaw(
+                    'ST_Within(geom, ST_MakeEnvelope(?, ?, ?, ?, 4326))',
+                    [$minLng, $minLat, $maxLng, $maxLat]
+                );
+            });
     }
 
     public function claim(int $id, int $userId): Incident
