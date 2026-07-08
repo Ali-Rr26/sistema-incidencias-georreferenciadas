@@ -1,5 +1,5 @@
 import { router } from './core/router.js';
-import { appShell, classifyRole } from './app-shell/app-shell.component.js';
+import { appShell } from './app-shell/app-shell.component.js';
 
 import loginComponent from './auth/pages/login/login.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
@@ -34,6 +34,9 @@ import notificacionesIndexComponent from './notificaciones/pages/index/notificac
 router.setShell(appShell);
 
 // ─── Public routes (no shell) ───────────────────────────────────────
+// Routes WITHOUT a role tag are full-page (rendered into #auth-outlet).
+// Routes WITH a role tag (admin/citizen/both) are mounted into the shell
+// and the role is passed to the component's onInit({ role, params, query }).
 router.addRoute('/login', loginComponent);
 
 // ─── Citizen routes (authGuard only) ────────────────────────────────
@@ -51,28 +54,13 @@ router.addRoute('/incidencias/crear', incidenciaFormComponent, [], 'admin');
 router.addRoute('/incidencias/:id', incidenciasDetailComponent, [], 'admin');
 router.addRoute('/incidencias/pendientes', pendientesComponent, [], 'admin');
 router.addRoute('/mapa', mapaComponent, [], 'admin');
-router.addRoute(
-  '/mapa-ciudadano',
-  mapaCiudadanoComponent,
-  [authGuard],
-  'citizen',
-);
+router.addRoute('/mapa-ciudadano', mapaCiudadanoComponent, [authGuard], 'citizen');
 router.addRoute('/usuarios', usuariosComponent, [], 'admin');
 router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'admin');
 router.addRoute('/organizaciones', organizacionesComponent, [], 'admin');
-router.addRoute(
-  '/organizaciones/crear',
-  organizacionesFormComponent,
-  [],
-  'admin',
-);
+router.addRoute('/organizaciones/crear', organizacionesFormComponent, [], 'admin');
 router.addRoute('/localizaciones', localizacionesComponent, [], 'admin');
-router.addRoute(
-  '/localizaciones/crear',
-  localizacionesFormComponent,
-  [],
-  'admin',
-);
+router.addRoute('/localizaciones/crear', localizacionesFormComponent, [], 'admin');
 router.addRoute('/categorias', categoriasComponent, [], 'admin');
 router.addRoute('/categorias/crear', categoriasFormComponent, [], 'admin');
 router.addRoute(
@@ -87,60 +75,36 @@ router.addRoute(
   [roleGuard(['admin_sistema'])],
   'admin',
 );
-router.addRoute(
-  '/notificaciones',
-  notificacionesIndexComponent,
-  [authGuard],
-  'admin',
-);
+router.addRoute('/notificaciones', notificacionesIndexComponent, [authGuard], 'admin');
 
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
-let _pendingRoleSync = Promise.resolve();
-export function pendingRoleSync() {
-  return _pendingRoleSync;
-}
-async function syncCurrentUserRole() {
-  const user = await auth.me().catch(() => null);
-  router.setCurrentUserRole(classifyRole(user));
-}
-auth.onAuthChange(() => {
-  // Track the in-flight sync so callers can await it via
-  // pendingRoleSync() when they need a deterministic role pre-navigation.
-  _pendingRoleSync = syncCurrentUserRole();
-});
-syncCurrentUserRole();
+// ─── Global listeners (cleaned up if app is ever re-booted in tests) ──
+// AbortController: every listener is registered with the controller's signal,
+// so a single .abort() detaches all of them. The app module is loaded once
+// per page load, so this controller lives for the lifetime of the page.
+const appAbort = new AbortController();
 
-// ─── Boot: restore session, then start router. Router mounts shells on demand. ───
+document.addEventListener(
+  'change',
+  (e) => {
+    // "Select all" checkbox in admin tables — flips every row in the same
+    // table. Kept here (not in a component) because the event delegates from
+    // the document; only one handler is needed for the whole app.
+    if (e.target.classList.contains('check-select-all')) {
+      const table = e.target.closest('table');
+      if (table) {
+        table.querySelectorAll('.check-row').forEach((cb) => {
+          cb.checked = e.target.checked;
+        });
+      }
+    }
+  },
+  { signal: appAbort.signal },
+);
+
+// ─── Boot: restore session, then start router. ─────────────────────
 (async () => {
   await auth.tryRestoreSession();
-  // Re-sync after the session restore (token may now be set).
-  await syncCurrentUserRole();
   router.init();
 })();
-
-document.addEventListener('change', (e) => {
-  if (e.target.classList.contains('check-select-all')) {
-    const table = e.target.closest('table');
-    if (table) {
-      table.querySelectorAll('.check-row').forEach((cb) => {
-        cb.checked = e.target.checked;
-      });
-    }
-  }
-});
-
-// ─── auth:expired listener ──────────────────────────────────────────────────
-// http.service.js dispatches this event when a 401 cannot be recovered via
-// refresh. We translate that into a redirect to /login — but only AFTER the
-// router's shell has finished initializing. Redirecting during shell init
-// would clear #shell-outlet mid-mount and break the router's outlet lookup.
-window.addEventListener('auth:expired', () => {
-  // http.service.js dispatches this event when a 401 cannot be recovered via
-  // refresh. We translate that into a redirect to /login.
-  if (window.location.hash !== '#/login') {
-    window.location.hash = '#/login';
-  }
-});
-
-window.__router = router;

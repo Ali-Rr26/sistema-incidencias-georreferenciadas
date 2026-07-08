@@ -22,6 +22,7 @@ import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
+import { router } from '../core/router.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
 const STYLE_URL = 'app/app-shell/app-shell.component.css';
@@ -609,9 +610,9 @@ function wirePlusButton(plusA) {
   plusA.addEventListener('click', (e) => {
     e.preventDefault();
     if (auth.isAuthenticated()) {
-      window.location.hash = '#/feed/crear';
+      router.navigate('/feed/crear');
     } else {
-      window.location.hash = '#/login';
+      router.navigate('/login');
     }
   });
 }
@@ -715,7 +716,7 @@ function wireNav() {
  * after the shell is torn down.
  *
  * Item semantics:
- *   - "Mi perfil" — set window.location.hash to '#/configuracion/perfil'
+ *   - "Mi perfil" — navigate to /configuracion/perfil
  *     and close the panel.
  *   - "Cerrar sesión" — set aria-disabled + pointer-events for a 300 ms
  *     debounce window (proposal R2 race mitigation), await auth.logout(),
@@ -765,7 +766,7 @@ function createUserMenu({ triggerId, panelId, profileItemId, logoutItemId }) {
   async function handleItem(item) {
     if (!item) return;
     if (item === profileItem) {
-      window.location.hash = '#/configuracion/perfil';
+      router.navigate('/configuracion/perfil');
       hidePanel();
       return;
     }
@@ -781,7 +782,7 @@ function createUserMenu({ triggerId, panelId, profileItemId, logoutItemId }) {
         logoutDebounceTimer = null;
       }, 300);
       await auth.logout();
-      window.location.hash = '#/login';
+      router.navigate('/login');
       hidePanel();
     }
   }

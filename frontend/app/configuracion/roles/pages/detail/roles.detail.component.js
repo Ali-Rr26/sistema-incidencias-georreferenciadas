@@ -1,4 +1,5 @@
 import { http } from '../../../../core/http.service.js';
+import { router } from '../../../../core/router.js';
 
 /**
  * Construye un checkbox accesible con label y descripción opcional.
@@ -180,11 +181,10 @@ export default {
       </div>
     </div>
   `,
-  async onInit() {
-    const params = window.__router.routeParams ?? {};
-    const id = params.id;
+  async onInit({ params } = {}) {
+    const id = params?.id;
     if (!id) {
-      window.location.hash = '#/roles';
+      router.navigate('/roles');
       return;
     }
 

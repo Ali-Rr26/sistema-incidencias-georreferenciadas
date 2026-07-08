@@ -3,7 +3,6 @@
  */
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
-import { classifyRole } from '../../../app-shell/app-shell.component.js';
 
 export default {
   templateUrl: 'app/auth/pages/login/login.component.html',
@@ -46,22 +45,14 @@ export default {
         // role. The login response's `user` field lacks `role` and is for
         // UI display only.
         const user = await auth.me();
-        // Set the router's role bucket synchronously BEFORE changing the
-        // hash. The boot-time `syncCurrentUserRole()` in app.js runs
-        // fire-and-forget on `auth.onAuthChange`, so without this call the
-        // bucket is still 'guest' (or whatever the boot read) when
-        // resolve() runs the role-mismatch guard. If the guard then
-        // navigates to the SAME hash (e.g. /feed → /feed because the
-        // bucket says 'citizen' but the target is /feed for citizen),
-        // the browser does NOT fire `hashchange` and resolve() returns
-        // without mounting anything → blank page.
-        router.setCurrentUserRole(classifyRole(user));
         const role = user?.role?.name;
-        // citizen-style users land on /feed; everyone else on /dashboard
+        // citizen-style users land on /feed; everyone else on /dashboard.
+        // Using router.navigate() (not window.location.hash) so the router
+        // re-resolves and the role-based guards run with the fresh token.
         if (role === 'usuario') {
-          window.location.hash = '#/feed';
+          router.navigate('/feed');
         } else {
-          window.location.hash = '#/dashboard';
+          router.navigate('/dashboard');
         }
       } catch (err) {
         errorAlert.textContent =

@@ -20,12 +20,11 @@ import initMapView from '../../../shared/init-map-view.js';
 
 // ── Detect context: admin vs citizen ──
 //
-// PR #3 (T-3.7): the role is now read from the matched route's role
-// tag (router.currentRoute?.role) rather than probing the DOM. The role
-// tag is the single source of truth and survives any DOM shape changes
-// introduced by the unified appShell.
-function getFeedUrl() {
-  const role = router.currentRoute?.role;
+// The role is passed in via onInit({ role }) by the router. This keeps
+// the component decoupled from router internals — it doesn't even need
+// to import the router. If the role is missing (legacy call site), we
+// default to citizen since /feed is the citizen-facing route.
+function getFeedUrl(role) {
   return role === 'admin' ? '/incidencias/feed' : '/feed';
 }
 
@@ -35,14 +34,14 @@ export default {
   templateUrl: 'app/feed/pages/detail/feed-detail.component.html',
   styleUrl: 'app/feed/pages/detail/feed-detail.component.css',
 
-  async onInit() {
+  async onInit({ params, role } = {}) {
     const detailEl = document.getElementById('fd-detail');
     const loadingEl = document.getElementById('fd-loading');
     const emptyEl = document.getElementById('fd-empty');
     const errorEl = document.getElementById('fd-error');
 
-    const incidentId = router.routeParams?.id;
-    const feedUrl = getFeedUrl();
+    const incidentId = params?.id;
+    const feedUrl = getFeedUrl(role);
 
     // Fix back-to-feed links based on context
     document.querySelectorAll('.fd-back-feed').forEach((link) => {
@@ -114,7 +113,7 @@ export default {
     const backBtn = document.getElementById('fd-back-btn');
     if (backBtn) {
       backBtn.addEventListener('click', () => {
-        router.navigate(getFeedUrl());
+        router.navigate(getFeedUrl(role));
       });
     }
   },

@@ -4,31 +4,30 @@
  * Responsibilities:
  *   - Match the current hash against registered patterns (`:param` supported).
  *   - Run per-route guards (auth, role) before mounting.
- *   - Apply the role-mismatch policy (admin/citizen/both) when a route is tagged.
  *   - Tear down the previous component's `onDestroy` + injected CSS, then
  *     mount the next component's template into either the shell's page outlet
  *     or the full-page auth outlet.
- *   - Expose `navigate`, `queryParams`, `routeParams`, `currentRoute` so page
- *     components can read what they need without re-implementing hash parsing.
+ *   - Pass `{ params, query, role }` to the component's `onInit` so the
+ *     component never has to read router state directly.
  *
  * Shell handling is intentionally minimal: with a single shell registered via
  * `setShell()`, the shell is mounted ONCE on the first navigation that needs
- * it and stays in the DOM. Routes that opt out of the shell (e.g. /login) are
- * rendered into `#auth-outlet`. Routes that opt in are rendered into
- * `shell.outlet` (typically `#page-outlet`).
+ * it and stays in the DOM. Routes that opt out of the shell (i.e. routes
+ * WITHOUT a role tag, like /login) are rendered into `#auth-outlet`. Routes
+ * WITH a role tag (admin/citizen/both) are rendered into the shell's page
+ * outlet — the role tag is also passed to the component as part of the
+ * `onInit` context.
  */
 import { initPage } from '../utils/layout.js';
 
 class Router {
   constructor() {
-    this.routes = []; // [{ pattern, component, guards, role }]
-    this.shell = null; // { mount, init, destroy?, outlet, updateActive?, styleUrl }
+    this.routes = [];            // [{ pattern, component, guards, role }]
+    this.shell = null;            // { mount, init, destroy?, outlet, updateActive?, styleUrl }
     this.currentComponent = null; // the active page component (has onInit/onDestroy)
-    this.currentRoute = null; // { pattern, role }
-    this.routeParams = {}; // populated on every resolve()
+    this.routeParams = {};
     this.queryParams = new URLSearchParams();
-    this._currentUserRole = null; // 'admin' | 'citizen' | 'guest' | null
-    this._shellMounted = false; // first-time mount only
+    this._shellMounted = false;   // first-time mount only
   }
 
   // ─── Public API ──────────────────────────────────────────────────────
@@ -39,10 +38,6 @@ class Router {
 
   addRoute(pattern, component, guards = [], role = undefined) {
     this.routes.push({ pattern, component, guards, role });
-  }
-
-  setCurrentUserRole(role) {
-    this._currentUserRole = role;
   }
 
   navigate(path) {
@@ -58,7 +53,6 @@ class Router {
     if (this.currentComponent?.onDestroy) this.currentComponent.onDestroy();
     this._cleanupStyles();
     this.currentComponent = null;
-    this.currentRoute = null;
   }
 
   // ─── Resolve: the heart of the router ────────────────────────────────
@@ -88,23 +82,12 @@ class Router {
       return;
     }
 
-    this.currentRoute = { pattern: route.pattern, role: route.role };
-
     // Per-route guards (auth, role, etc.) — short-circuit on first refusal.
+    // Each guard receives the same context the component will receive,
+    // so role-based checks can run with the matched route info.
+    const ctx = { params, query: this.queryParams, role: route.role };
     for (const guard of route.guards) {
-      if ((await guard.canActivate()) === false) return;
-    }
-
-    // Role-mismatch: a route tagged 'admin' blocks citizens and vice versa.
-    // 'both' is always allowed; untagged routes are public.
-    if (
-      route.role !== undefined &&
-      route.role !== 'both' &&
-      this._currentUserRole &&
-      route.role !== this._currentUserRole
-    ) {
-      this.navigate(this._currentUserRole === 'admin' ? '/dashboard' : '/feed');
-      return;
+      if ((await guard.canActivate(ctx)) === false) return;
     }
 
     // Tear down the previous component BEFORE mounting the new one. This is
@@ -118,12 +101,9 @@ class Router {
     this._cleanupStyles();
 
     this.currentComponent = route.component;
-    // Routes WITHOUT a role tag are full-page (e.g. /login). They render
-    // into #auth-outlet and hide the shell. Routes WITH a role tag (admin,
-    // citizen, both) render into the shell's page outlet.
     const isFullPage = route.role === undefined;
     await this._mountPage(route.component, isFullPage);
-    await route.component.onInit?.();
+    await route.component.onInit?.(ctx);
   }
 
   // ─── Internal helpers ────────────────────────────────────────────────
@@ -213,15 +193,12 @@ class Router {
   _cleanupStyles() {
     // Remove the previous component's <style> tag(s). The shell's
     // 'shell-style' tag is left alone — it must persist across navigations.
-    document
-      .querySelectorAll('style[id^="style-"]')
-      .forEach((el) => el.remove());
+    document.querySelectorAll('style[id^="style-"]').forEach((el) => el.remove());
   }
 
   async _fetchText(url) {
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok)
-      throw new Error(`Router: failed to load ${url} (${res.status})`);
+    if (!res.ok) throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();
   }
 }

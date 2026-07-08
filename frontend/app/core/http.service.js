@@ -4,26 +4,38 @@
  * - Inyecta automáticamente el Bearer token en cada request
  * - Maneja errores 401: intenta refresh con cookie HttpOnly, luego redirige a login
  * - Parsea respuestas JSON
- * - Tokens almacenados en memoria (module-level variables), no en localStorage
+ * - Tokens persistidos en sessionStorage: sobreviven a F5 / navegación interna,
+ *   mueren al cerrar la pestaña (esa es la semántica que queremos: un F5 no
+ *   debería deslogear al usuario, pero cerrar el browser sí).
  */
 import { API_URL } from './config.js';
 
-// Module-level auth state (single source of truth)
-let access_token = null;
-let session_id = null;
+const TOKEN_KEY = 'auth_token';
+const SESSION_KEY = 'auth_session_id';
+
+// Cached in module scope to avoid a sessionStorage read on every request.
+// sessionStorage is the source of truth — this cache is invalidated on logout.
+let access_token = sessionStorage.getItem(TOKEN_KEY);
+let session_id = sessionStorage.getItem(SESSION_KEY);
 let refreshPromise = null;
 let queue = [];
 
 // Exported auth state functions (used by auth.service.js)
 export function setAccessToken(token) {
   access_token = token;
+  if (token) sessionStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.removeItem(TOKEN_KEY);
 }
 export function setSessionId(id) {
   session_id = id;
+  if (id) sessionStorage.setItem(SESSION_KEY, id);
+  else sessionStorage.removeItem(SESSION_KEY);
 }
 export function clearAuthState() {
   access_token = null;
   session_id = null;
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 export function getSessionId() {
   return session_id;
@@ -112,16 +124,18 @@ class HttpService {
       );
       return result;
     } catch (err) {
-      // Refresh failed. Clear state and notify, but do NOT redirect
-      // directly — redirecting mid-shell-init would clear #shell-outlet
-      // while the router is still waiting to find #page-outlet, causing
-      // "Outlet not found for shell 'app'".
-      //
-      // Instead, we dispatch a custom event. The router (see app.js)
-      // listens for it and redirects only when the shell has finished
-      // initializing — see the `auth:expired` listener below.
+      // Refresh failed. Clear state and redirect to login. We redirect
+      // directly here instead of dispatching a custom event: there's exactly
+      // one consumer (the login redirect), and the indirection was hiding
+      // a memory leak (listener registered on every app boot, never
+      // removed). If a future feature needs to react to "session expired",
+      // it can subscribe to router's `currentRoute` change.
       clearAuthState();
-      window.dispatchEvent(new CustomEvent('auth:expired'));
+      // Use history.replaceState to avoid a hashchange loop with the router.
+      const target = '/login';
+      if (window.location.hash !== `#${target}`) {
+        window.location.hash = `#${target}`;
+      }
       // Reject all queued requests
       queue.forEach(({ reject }) =>
         reject(new Error('Sesión expirada. Inicia sesión nuevamente.')),

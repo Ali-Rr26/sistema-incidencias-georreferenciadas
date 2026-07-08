@@ -1,5 +1,6 @@
 import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
+import { router } from '../../../core/router.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 import {
   initSelect,
@@ -198,7 +199,7 @@ export default {
     function manejarClicks(e) {
       const editar = e.target.closest('.btn-editar');
       if (editar) {
-        window.location.hash = '#/incidencias/crear?id=' + editar.dataset.id;
+        router.navigate('/incidencias/crear?id=' + editar.dataset.id);
         return;
       }
       const eliminar = e.target.closest('.btn-eliminar');

@@ -1,5 +1,6 @@
 import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
+import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { bindView } from '../../../utils/dom.js';
@@ -23,11 +24,10 @@ const DROPDOWN_STATUSES = [
 export default {
   templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
 
-  async onInit() {
-    const params = window.__router.routeParams ?? {};
-    const id = params.id;
+  async onInit({ params } = {}) {
+    const id = params?.id;
     if (!id) {
-      window.location.hash = '#/incidencias';
+      router.navigate('/incidencias');
       return;
     }
 
@@ -39,7 +39,7 @@ export default {
       // 404 (or any other load failure) — bounce to not-found so the
       // user doesn't sit on a blank page. The carga() helper has already
       // logged the error and rendered the inline alert.
-      window.location.hash = '#/not-found';
+      router.navigate('/not-found');
       return;
     }
     renderizarIncidencia(inc);

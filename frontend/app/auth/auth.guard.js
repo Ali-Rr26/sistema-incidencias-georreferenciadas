@@ -3,12 +3,13 @@
  *
  * Si no hay token, redirige a /login.
  */
-import { auth } from './auth.service.js';
+import { router } from '../core/router.js';
+import { getAccessToken } from '../core/http.service.js';
 
 export const authGuard = {
   async canActivate() {
-    if (!auth.isAuthenticated()) {
-      window.location.hash = '#/login';
+    if (!getAccessToken()) {
+      router.navigate('/login');
       return false;
     }
     return true;

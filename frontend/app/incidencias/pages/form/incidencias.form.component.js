@@ -390,10 +390,8 @@ export default {
           new bootstrap.Toast(toastEl, { delay: 2000 }).show();
         }
 
-        setTimeout(() => {
-          window.location.hash = newId
-            ? `#/incidencias/${newId}`
-            : '#/incidencias';
+setTimeout(() => {
+          router.navigate(newId ? `/incidencias/${newId}` : '/incidencias');
         }, 2000);
       } catch (err) {
         // 422 — validation errors
@@ -416,8 +414,8 @@ export default {
             errorBanner.textContent = err.message;
             errorBanner.classList.remove('d-none');
           }
-        } else if (err.status === 401) {
-          window.location.hash = '#/login';
+} else if (err.status === 401) {
+          router.navigate('/login');
         } else {
           console.error('Error al crear incidencia:', err);
           const errorBanner = document.getElementById(P + 'error');

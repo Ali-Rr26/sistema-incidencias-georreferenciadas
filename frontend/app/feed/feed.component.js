@@ -10,6 +10,7 @@ import {
   resolveAvatar,
 } from '../utils/avatar.js';
 import { http } from '../core/http.service.js';
+import { router } from '../core/router.js';
 import { auth } from '../auth/auth.service.js';
 
 const POR_PAGINA = 10;
@@ -114,7 +115,7 @@ function renderCard(inc) {
   const commentCount = inc.comments_count ?? 0;
 
   return `
-    <div class="feed-card feed-priority-${priorityClass}" onclick="window.location.hash='#/feed/${inc.id}'" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(20,20,50,.04);border:1px solid #eef0f5;margin-bottom:16px;cursor:pointer">
+    <div class="feed-card feed-priority-${priorityClass}" data-route="/feed/${inc.id}" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(20,20,50,.04);border:1px solid #eef0f5;margin-bottom:16px;cursor:pointer">
       <div class="feed-card-head" style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px">
         ${avatarHtml}
         <div class="feed-card-user" style="flex:1">
@@ -156,7 +157,7 @@ function renderCard(inc) {
             Yo también reporto
           </button>
         </div>
-        <button class="feed-action-btn" title="Ver detalle" style="height:36px;border-radius:22px;border:none;background:linear-gradient(118deg,#6a5cf3,#a06bf5);padding:0 18px;font-size:13px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 6px 14px -6px rgba(106,92,243,.55)" onclick="event.stopPropagation();window.location.hash='#/feed/${inc.id}'">
+        <button class="feed-action-btn" data-route="/feed/${inc.id}" title="Ver detalle" style="height:36px;border-radius:22px;border:none;background:linear-gradient(118deg,#6a5cf3,#a06bf5);padding:0 18px;font-size:13px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 6px 14px -6px rgba(106,92,243,.55)">
           <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px"></i>
           Ver detalle
         </button>
@@ -203,14 +204,26 @@ export default {
       } else {
         composerBar.classList.add('d-none');
       }
-      composerBar.addEventListener('click', () => {
-        window.location.hash = '#/feed/crear';
+composerBar.addEventListener('click', () => {
+        router.navigate('/feed/crear');
       });
     }
 
-    const feedList = document.getElementById(LIST);
-    const feedFilters = document.getElementById(FILTERS);
-    if (!feedFilters || !feedList) return;
+        const feedList = document.getElementById(LIST);
+        const feedFilters = document.getElementById(FILTERS);
+        if (!feedFilters || !feedList) return;
+
+        // Event delegation: any click on an element with [data-route]
+        // (cards, "Ver detalle" buttons) navigates via the router. The
+        // onclick="window.location.hash=..." inline handlers were removed
+        // in favor of this single delegated listener — it works for any
+        // card appended later by infinite scroll without re-binding.
+        feedList.addEventListener('click', (e) => {
+          const target = e.target.closest('[data-route]');
+          if (!target) return;
+          e.preventDefault();
+          router.navigate(target.dataset.route);
+        });
 
     // ── Fetch ───────────────────────────────────────────────
 
