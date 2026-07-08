@@ -86,7 +86,8 @@ describe('login flow — router role bucket race (regression)', () => {
     // Reset router state between tests (matches router.integration.test.js).
     router.routes = [];
     router.currentComponent = null;
-    router.resetShell();
+    router.currentRoute = null;
+    router._shellMounted = false;
     router.setCurrentUserRole(null);
 
     // DOM scaffolding required by router.resolve() and login.component.js.
@@ -97,18 +98,11 @@ describe('login flow — router role bucket race (regression)', () => {
       <div id="auth-outlet"></div>
     `;
 
-    // Register the 'app' shell — the real shell used by role-tagged
-    // routes. Mimic real appShell.mount: re-create the page outlet on
-    // each mount so that the login → /feed transition (which clears
-    // #shell-outlet during the full-page mount) still has somewhere to
-    // inject the page template.
-    router.registerShell('app', {
-      mount: vi.fn().mockImplementation(async () => {
-        const shellOutlet = document.getElementById('shell-outlet');
-        if (shellOutlet) {
-          shellOutlet.innerHTML = '<div id="page-outlet"></div>';
-        }
-      }),
+    // Register the single 'app' shell. Mount is called once by the
+    // router; the page-outlet exists from the beforeEach DOM, so the
+    // shell mount can be a no-op.
+    router.setShell({
+      mount: vi.fn().mockResolvedValue(undefined),
       init: vi.fn().mockResolvedValue(undefined),
       outlet: '#page-outlet',
       updateActive: vi.fn(),
@@ -126,7 +120,6 @@ describe('login flow — router role bucket race (regression)', () => {
         onDestroy: vi.fn(),
       },
       [],
-      'app',
       'citizen',
     );
 

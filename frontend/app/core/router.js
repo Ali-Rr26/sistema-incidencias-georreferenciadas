@@ -1,446 +1,223 @@
 /**
- * Hash-based SPA Router with persistent app shell.
+ * Hash-based SPA Router (simplified, single-shell).
  *
- * Routes can mount inside one of several registered shells:
- *   - 'admin' — navbar + sidebar layout for back-office users
- *   - 'user'  — Instagram-style layout (top bar + sidebar desktop, bottom nav mobile)
- *   - 'app'   — unified responsive shell (consolidar-layout-unico, PR #1/3 + PR #2/3)
+ * Responsibilities:
+ *   - Match the current hash against registered patterns (`:param` supported).
+ *   - Run per-route guards (auth, role) before mounting.
+ *   - Apply the role-mismatch policy (admin/citizen/both) when a route is tagged.
+ *   - Tear down the previous component's `onDestroy` + injected CSS, then
+ *     mount the next component's template into either the shell's page outlet
+ *     or the full-page auth outlet.
+ *   - Expose `navigate`, `queryParams`, `routeParams`, `currentRoute` so page
+ *     components can read what they need without re-implementing hash parsing.
  *
- * Each shell is registered via registerShell() with:
- *   - mount:    fetches and injects the shell template into #shell-outlet
- *   - init:     runs once after the shell is first shown (wires nav, user data, etc.)
- *   - outlet:   CSS selector for the per-page outlet inside the shell
- *
- * Routes that don't pass a shell name render full-page into #auth-outlet (login, etc.).
- *
- * Role-based gating (PR #2 — transitional, full migration in PR #3):
- *   - addRoute(..., shell, role) tags a route with a role bucket.
- *   - setCurrentUserRole(role) tells the router which bucket the visitor is in.
- *   - resolve() redirects mismatched visitors to /dashboard (admins) or /feed (others).
+ * Shell handling is intentionally minimal: with a single shell registered via
+ * `setShell()`, the shell is mounted ONCE on the first navigation that needs
+ * it and stays in the DOM. Routes that opt out of the shell (e.g. /login) are
+ * rendered into `#auth-outlet`. Routes that opt in are rendered into
+ * `shell.outlet` (typically `#page-outlet`).
  */
 import { initPage } from '../utils/layout.js';
 
 class Router {
   constructor() {
-    this.routes = [];
-    this.shells = new Map();
-    this._shellStyleUrls = {}; // shellName → CSS path (avoids stale module cache issues)
-    this.currentComponent = null;
-    this._boundResolve = () => this.resolve();
-    this._shellState = new Map(); // shell name -> { mounted, initialized }
-    this._activeShell = null;
-    /**
-     * Set to true while `shell.init()` is running. Used by the
-     * `auth:expired` listener in app.js to defer redirects until the
-     * shell has finished initializing — otherwise the redirect's
-     * `hashchange` would clear #shell-outlet mid-init, breaking the
-     * router's outlet lookup.
-     */
-    this._shellInitializing = false;
-    // Role-tracking for the role-mismatch guard (PR #2, T-2.4).
-    // Default null = no role known → role-tagged routes that require a
-    // specific role will treat the visitor as a mismatch and redirect to
-    // the public fallback (citizen's home: /feed).
-    this._currentUserRole = null;
-    // PR #3 (T-3.7): expose the matched route so page components can
-    // read their own role tag without re-matching. Settled at the top
-    // of resolve() before guards run; cleared on teardown.
-    this.currentRoute = null;
+    this.routes = []; // [{ pattern, component, guards, role }]
+    this.shell = null; // { mount, init, destroy?, outlet, updateActive?, styleUrl }
+    this.currentComponent = null; // the active page component (has onInit/onDestroy)
+    this.currentRoute = null; // { pattern, role }
+    this.routeParams = {}; // populated on every resolve()
+    this.queryParams = new URLSearchParams();
+    this._currentUserRole = null; // 'admin' | 'citizen' | 'guest' | null
+    this._shellMounted = false; // first-time mount only
   }
 
-  /**
-   * Set the role bucket the current visitor belongs to. Consumed by the
-   * role-mismatch guard in resolve() when a route declares a `role` tag.
-   *
-   * Role buckets (see app-shell/app-shell.component.js → classifyRole):
-   *   - 'admin'   : admin_sistema | admin_organizacion
-   *   - 'citizen' : all other authenticated roles
-   *   - 'guest'   : unauthenticated
-   *   - 'both'    : reserved as a route tag only — never a current role
-   *
-   * Pass `null` to clear (e.g. on logout) so no role enforcement applies.
-   *
-   * @param {string|null} role
-   */
+  // ─── Public API ──────────────────────────────────────────────────────
+
+  setShell(shell) {
+    this.shell = shell;
+  }
+
+  addRoute(pattern, component, guards = [], role = undefined) {
+    this.routes.push({ pattern, component, guards, role });
+  }
+
   setCurrentUserRole(role) {
     this._currentUserRole = role;
   }
 
-  /**
-   * @param {string}   pattern  - hash path, e.g. '/login'
-   * @param {object}   component
-   * @param {Array}    guards   - optional canActivate guards
-   * @param {string|boolean|null} shell
-   *     - shell name (string, e.g. 'admin' | 'user' | 'app')
-   *     - true (legacy 'admin' shortcut)
-   *     - null/undefined → render full-page (login, error pages)
-   * @param {string|undefined} role
-   *     NEW (PR #2, T-2.1) — optional role tag for the role-mismatch guard:
-   *     - 'admin'   : only admin visitors may proceed
-   *     - 'citizen' : only citizen visitors may proceed
-   *     - 'both'    : any authenticated visitor may proceed
-   *     - undefined : no role enforcement (public)
-   */
-  addRoute(pattern, component, guards = [], shell = null, role = undefined) {
-    if (shell === true) shell = 'admin';
-    this.routes.push({ pattern, component, guards, shell, role });
-  }
-
-  /**
-   * Register a shell that can host routes.
-   *
-   * @param {string}   name
-   * @param {object}   config
-   * @param {Function} config.mount        - async () => void. Injects shell HTML.
-   * @param {Function} config.init         - async () => void. Runs once when shell is first shown.
-   * @param {string}   config.outlet       - CSS selector for the per-page outlet.
-   * @param {Function} config.updateActive - (path: string) => void. Updates nav active state.
-   */
-  registerShell(name, { mount, init, outlet, updateActive, styleUrl }) {
-    if (!mount || !outlet) {
-      throw new Error(`registerShell(${name}): mount and outlet are required`);
-    }
-    this.shells.set(name, { mount, init, outlet, updateActive });
-    this._shellState.set(name, { mounted: false, initialized: false });
-    // Only register a CSS path when the shell explicitly provides one.
-    // We do NOT auto-fallback to a guessed path: that approach broke tests
-    // that mock shells without `styleUrl`, and was a leaky way to handle
-    // the ES6 module cache stale-shell scenario (browser only).
-    if (styleUrl) {
-      this._shellStyleUrls[name] = styleUrl;
-    }
-  }
-
-  /**
-   * @deprecated Use registerShell() instead. Kept for backwards compatibility —
-   * registers an 'admin' shell using the legacy setShellInitFn() callback.
-   */
-  setShellInitFn(fn) {
-    this._legacyShellInitFn = fn;
-  }
-
-  /** Reset shell init state — call on logout so next login re-runs shell init. */
-  resetShell() {
-    for (const [name] of this._shellState) {
-      this._shellState.set(name, { mounted: false, initialized: false });
-    }
-  }
-
   navigate(path) {
-    window.location.hash = `#${path}`;
+    window.location.hash = '#' + path;
   }
+
+  init() {
+    window.addEventListener('hashchange', () => this.resolve());
+    this.resolve();
+  }
+
+  destroy() {
+    if (this.currentComponent?.onDestroy) this.currentComponent.onDestroy();
+    this._cleanupStyles();
+    this.currentComponent = null;
+    this.currentRoute = null;
+  }
+
+  // ─── Resolve: the heart of the router ────────────────────────────────
 
   async resolve() {
-    const fullPath = window.location.hash.slice(1) || '/';
+    // Lazy-mount the shell on the first route that needs it.
+    if (this.shell && !this._shellMounted) {
+      await this._mountShell();
+      this._shellMounted = true;
+    }
 
+    const fullPath = window.location.hash.slice(1) || '/';
     if (fullPath === '/') {
       this.navigate('/login');
       return;
     }
 
-    // Split query params from path for matching
-    const qsIndex = fullPath.indexOf('?');
-    const path = qsIndex >= 0 ? fullPath.substring(0, qsIndex) : fullPath;
-    this.queryParams =
-      qsIndex >= 0
-        ? new URLSearchParams(fullPath.substring(qsIndex + 1))
-        : new URLSearchParams();
-
-    // Match exact or parameterized route
-    let route = this.routes.find((r) => r.pattern === path);
+    const [path, qs = ''] = fullPath.split('?');
+    this.queryParams = new URLSearchParams(qs);
     this.routeParams = {};
 
-    if (!route) {
-      // Try to match parameterized routes
-      for (const r of this.routes) {
-        const params = this._matchRoute(r.pattern, path);
-        if (params !== null) {
-          route = r;
-          this.routeParams = params;
-          break;
-        }
-      }
-    }
+    const { route, params } = this._match(path);
+    this.routeParams = params;
 
     if (!route) {
       this.navigate('/not-found');
       return;
     }
 
-    // PR #3 (T-3.7): expose the matched route so page components can
-    // read their own role/shell metadata directly. Set BEFORE guards
-    // run so guards can also consult it.
-    this.currentRoute = {
-      pattern: route.pattern,
-      role: route.role,
-      shell: route.shell,
-    };
+    this.currentRoute = { pattern: route.pattern, role: route.role };
 
-    const { component, guards, shell, role } = route;
-
-    for (const guard of guards) {
-      const canProceed = await guard.canActivate();
-      if (canProceed === false) return;
+    // Per-route guards (auth, role, etc.) — short-circuit on first refusal.
+    for (const guard of route.guards) {
+      if ((await guard.canActivate()) === false) return;
     }
 
-    // Role-mismatch guard (PR #2, T-2.2).
-    // Only fires for routes that opt in via the `role` tag. Public routes
-    // (role undefined) and 'both' routes are never blocked.
+    // Role-mismatch: a route tagged 'admin' blocks citizens and vice versa.
+    // 'both' is always allowed; untagged routes are public.
     if (
-      role !== undefined &&
-      role !== 'both' &&
+      route.role !== undefined &&
+      route.role !== 'both' &&
       this._currentUserRole &&
-      role !== this._currentUserRole
+      route.role !== this._currentUserRole
     ) {
-      const home = this._currentUserRole === 'admin' ? '/dashboard' : '/feed';
-      this.navigate(home);
+      this.navigate(this._currentUserRole === 'admin' ? '/dashboard' : '/feed');
       return;
     }
 
-    if (this.currentComponent) {
+    // Tear down the previous component BEFORE mounting the new one. This is
+    // critical for resources that hold DOM nodes or external library handles
+    // (e.g. Leaflet maps, polling timers) — their onDestroy must run while
+    // their elements are still in the DOM, not after the new template has
+    // replaced them.
+    if (this.currentComponent?.onDestroy) {
       this.currentComponent.onDestroy();
-      this._cleanupStyles(this.currentComponent);
     }
+    this._cleanupStyles();
 
-    this.currentComponent = component;
-
-    if (shell) {
-      await this._mountInShell(shell, component, path);
-    } else {
-      await this._mountFull(component);
-    }
-
-    await component.onInit();
+    this.currentComponent = route.component;
+    // Routes WITHOUT a role tag are full-page (e.g. /login). They render
+    // into #auth-outlet and hide the shell. Routes WITH a role tag (admin,
+    // citizen, both) render into the shell's page outlet.
+    const isFullPage = route.role === undefined;
+    await this._mountPage(route.component, isFullPage);
+    await route.component.onInit?.();
   }
 
-  /**
-   * Match a route pattern against a path.
-   * @param {string} pattern - e.g. '/incidencias/:id'
-   * @param {string} path    - e.g. '/incidencias/42'
-   * @returns {object|null} params object or null if no match
-   */
-  _matchRoute(pattern, path) {
-    const parts = pattern.split('/');
-    const pathParts = path.split('/');
-    if (parts.length !== pathParts.length) return null;
+  // ─── Internal helpers ────────────────────────────────────────────────
 
+  _match(path) {
+    for (const route of this.routes) {
+      const params = this._matchPattern(route.pattern, path);
+      if (params) return { route, params };
+    }
+    return { route: null, params: {} };
+  }
+
+  _matchPattern(pattern, path) {
+    const pp = pattern.split('/');
+    const ap = path.split('/');
+    if (pp.length !== ap.length) return null;
     const params = {};
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i].startsWith(':')) {
-        params[parts[i].slice(1)] = pathParts[i];
-      } else if (parts[i] !== pathParts[i]) {
+    for (let i = 0; i < pp.length; i++) {
+      if (pp[i].startsWith(':')) {
+        params[pp[i].slice(1)] = ap[i];
+      } else if (pp[i] !== ap[i]) {
         return null;
       }
     }
     return params;
   }
 
-  /**
-   * Tear down a shell: clear its page outlet, run its `destroy()` hook
-   * (if any), clear shell-outlet, and reset the `_shellState` entry.
-   *
-   * Shared by the two paths that cross away from a mounted shell:
-   *   - `_mountInShell` when switching from one shell to another.
-   *   - `_mountFull` when navigating from a shell route to a full-page
-   *     route (login, error pages, etc.). Without this, the previous
-   *     shell's `_shellState` stays `mounted: true`, and the next time
-   *     a route for that shell runs `_mountInShell` it skips
-   *     `shell.mount()`, leaving `#page-outlet` missing — the page
-   *     mount then throws "Outlet not found". This bug surfaced as
-   *     "second login fails after first logout".
-   *
-   * Errors in `destroy()` are logged but never propagated — teardown
-   * must not block the next mount.
-   *
-   * @param {string} name
-   */
-  _teardownShell(name) {
-    if (!name) return;
-    const prevShell = this.shells.get(name);
-    if (prevShell) {
-      // Clear the page outlet before destroy in case destroy reads from
-      // it (e.g. to detach event listeners tied to page-specific nodes).
-      const outlet = document.querySelector(prevShell.outlet);
-      if (outlet) outlet.innerHTML = '';
-      if (typeof prevShell.destroy === 'function') {
-        try {
-          prevShell.destroy();
-        } catch (err) {
-          console.error(`[Router] Error destroying shell '${name}':`, err);
-        }
-      }
+  async _mountShell() {
+    if (this.shell.mount) await this.shell.mount();
+    if (this.shell.init) await this.shell.init();
+    if (this.shell.styleUrl) {
+      await this._injectStyle(this.shell.styleUrl, 'shell-style');
     }
-    // Clear shell-outlet to remove all shell DOM (including the page
-    // outlet cleared above, plus any chrome injected by shell.mount).
-    const shellOutlet = document.getElementById('shell-outlet');
-    if (shellOutlet) shellOutlet.innerHTML = '';
-    this._shellState.set(name, { mounted: false, initialized: false });
   }
 
-  async _mountInShell(shellName, component, path) {
-    const shell = this.shells.get(shellName);
-    if (!shell) {
-      throw new Error(`Shell not registered: ${shellName}`);
-    }
-
-    const state = this._shellState.get(shellName);
-
-    // If switching to a different shell, unmount the previous one.
-    // Shared teardown lives in _teardownShell so the shell→none path
-    // (in _mountFull) cannot drift from the shell→shell path.
-    if (this._activeShell && this._activeShell !== shellName) {
-      this._teardownShell(this._activeShell);
-    }
-
-    // Toggle shell visibility on full-page outlet (login)
+  async _mountPage(component, isFullPage) {
     const authOutlet = document.getElementById('auth-outlet');
+
+    // Toggle visibility between the shell container and the auth outlet so
+    // they don't render on top of each other. Shell stays mounted; only the
+    // #page-outlet inside it is rewritten.
     if (authOutlet) {
+      authOutlet.style.display = isFullPage ? 'block' : 'none';
       authOutlet.innerHTML = '';
-      authOutlet.style.display = 'none';
     }
 
-    // Mount shell template if not mounted yet
-    if (!state.mounted) {
-      await shell.mount();
-      state.mounted = true;
-    }
+    const outlet = isFullPage
+      ? authOutlet
+      : document.querySelector(this.shell?.outlet || '#page-outlet');
 
-    // Run shell init once (user info, nav wiring, etc.)
-    if (!state.initialized) {
-      this._shellInitializing = true;
-      try {
-        if (shell.init) {
-          await shell.init();
-        } else if (this._legacyShellInitFn) {
-          // Backwards compat path
-          await this._legacyShellInitFn();
-        }
-      } finally {
-        this._shellInitializing = false;
-      }
-      state.initialized = true;
-    }
-
-    // Mount page content into the shell's outlet
-    const outlet = document.querySelector(shell.outlet);
     if (!outlet) {
-      throw new Error(
-        `Outlet not found for shell '${shellName}': ${shell.outlet}`,
-      );
+      throw new Error('Router: page outlet not found');
     }
 
-    const html = await this._fetchTemplate(component.templateUrl);
+    const html = component.template
+      ? component.template
+      : await this._fetchText(component.templateUrl);
     outlet.innerHTML = html;
 
-    // Inject shell styles (e.g., grid layout, role-based visibility) before
-    // component styles so component rules can reference shell chrome.
-    // We resolve the URL through an explicit shellName → styleUrl map so
-    // this works even when the shell module was loaded with a stale cache
-    // and lacks `styleUrl`.
-    const shellStyleUrl = this._shellStyleUrls?.[shellName] || shell.styleUrl;
-    if (shellStyleUrl && !document.getElementById(`shell-style-${shellName}`)) {
-      await this._injectShellStyles(shellName, shellStyleUrl);
+    if (component.styleUrl) {
+      const id = `style-${Date.now()}`;
+      await this._injectStyle(component.styleUrl, id);
+      component._styleId = id;
     }
-    await this._injectStyles(component);
+
+    // initPage wires per-route Bootstrap widgets (tooltips, popovers).
     initPage();
 
-    this._activeShell = shellName;
-    this._updateNavActive(shellName, path);
-  }
-
-  async _mountFull(component) {
-    // Tear down any previously-active shell BEFORE clearing the DOM.
-    // Without this, the previous shell's _shellState stays
-    // `mounted: true`, and a later shell→shell navigation skips
-    // shell.mount() and the page-outlet is missing when the router
-    // tries to mount into it. Symptom: any shell→full→shell round
-    // trip (the canonical case: login → logout → login again) throws
-    // "Outlet not found for shell 'app'".
-    if (this._activeShell) {
-      this._teardownShell(this._activeShell);
+    if (this.shell?.updateActive && !isFullPage) {
+      this.shell.updateActive(window.location.hash.slice(1));
     }
-
-    const authOutlet = document.getElementById('auth-outlet');
-    if (authOutlet) authOutlet.style.display = 'block';
-
-    const html = await this._fetchTemplate(component.templateUrl);
-    if (authOutlet) authOutlet.innerHTML = html;
-
-    await this._injectStyles(component);
-    this._activeShell = null;
   }
 
-  async _injectStyles(component) {
-    if (!component.styleUrl) return;
-    const css = await this._fetchTemplate(component.styleUrl);
+  async _injectStyle(url, id) {
+    const css = await this._fetchText(url);
     const style = document.createElement('style');
-    const id = `style-${Date.now()}`;
-    style.id = id;
-    style.textContent = css;
-    document.head.appendChild(style);
-    component._styleId = id;
-  }
-
-  /**
-   * Inject the shell's CSS once. The CSS path is resolved through
-   * `_shellStyleUrls` (set by `registerShell()`) so it works even when
-   * the shell module was cached without `styleUrl`.
-   */
-  async _injectShellStyles(shellName, styleUrl) {
-    if (!styleUrl) return;
-    const css = await this._fetchTemplate(styleUrl);
-    const style = document.createElement('style');
-    const id = `shell-style-${shellName}`;
     style.id = id;
     style.textContent = css;
     document.head.appendChild(style);
   }
 
-  _cleanupStyles(component) {
-    if (component._styleId) {
-      document.getElementById(component._styleId)?.remove();
-      delete component._styleId;
-    }
+  _cleanupStyles() {
+    // Remove the previous component's <style> tag(s). The shell's
+    // 'shell-style' tag is left alone — it must persist across navigations.
+    document
+      .querySelectorAll('style[id^="style-"]')
+      .forEach((el) => el.remove());
   }
 
-  /**
-   * Update active state on the current shell's navigation (sidebar, bottom nav, top nav).
-   */
-  _updateNavActive(shellName, path) {
-    const shell = this.shells.get(shellName);
-    if (shell?.updateActive) {
-      shell.updateActive(path);
-    }
-  }
-
-  async _fetchTemplate(url) {
+  async _fetchText(url) {
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`Error loading ${url}: ${res.status}`);
+    if (!res.ok)
+      throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();
-  }
-
-  init() {
-    window.addEventListener('hashchange', this._boundResolve);
-    this.resolve();
-  }
-
-  /**
-   * Whether a shell's `init()` is currently running.
-   *
-   * Exposed so the `auth:expired` listener in app.js can defer redirects
-   * until the shell finishes initializing.
-   */
-  get isShellInitializing() {
-    return this._shellInitializing;
-  }
-
-  destroy() {
-    window.removeEventListener('hashchange', this._boundResolve);
-    if (this.currentComponent) {
-      this.currentComponent.onDestroy();
-      this._cleanupStyles(this.currentComponent);
-    }
-    this.currentRoute = null;
   }
 }
 

@@ -29,123 +29,72 @@ import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.c
 import rolesDetailComponent from './configuracion/roles/pages/detail/roles.detail.component.js';
 import notificacionesIndexComponent from './notificaciones/pages/index/notificaciones.index.component.js';
 
-// ─── Register shells ────────────────────────────────────────────────
-// PR #3 (consolidar-layout-unico) — final state: only the unified
-// 'app' shell is registered. The legacy 'admin' and 'user' shells
-// have been deleted (see app/layout/ and app/layout-usuario/ being
-// removed in this PR).
-router.registerShell('app', appShell);
+// ─── Register shell (single, unified) ───────────────────────────────
+// Only the unified 'app' shell exists post-consolidar-layout-unico.
+router.setShell(appShell);
 
 // ─── Public routes (no shell) ───────────────────────────────────────
 router.addRoute('/login', loginComponent);
 
-// ─── Citizen routes (unified app shell, authGuard only) ─────────────
-router.addRoute('/feed', feedComponent, [authGuard], 'app', 'citizen');
-router.addRoute(
-  '/feed/crear',
-  incidenciaFormComponent,
-  [authGuard],
-  'app',
-  'citizen',
-);
-router.addRoute(
-  '/feed/:id',
-  feedDetailComponent,
-  [authGuard],
-  'app',
-  'citizen',
-);
+// ─── Citizen routes (authGuard only) ────────────────────────────────
+router.addRoute('/feed', feedComponent, [authGuard], 'citizen');
+router.addRoute('/feed/crear', incidenciaFormComponent, [authGuard], 'citizen');
+router.addRoute('/feed/:id', feedDetailComponent, [authGuard], 'citizen');
 
-// /perfil is reachable from both admin and citizen shells (T-3.1)
-router.addRoute(
-  '/configuracion/perfil',
-  perfilComponent,
-  [authGuard],
-  'app',
-  'both',
-);
+// /perfil is reachable from both admin and citizen roles (T-3.1)
+router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'both');
 
-// ─── Admin routes (unified app shell, role-guarded) ─────────────────
-router.addRoute('/dashboard', dashboardComponent, [], 'app', 'admin');
-router.addRoute('/incidencias', incidenciasIndexComponent, [], 'app', 'admin');
-router.addRoute(
-  '/incidencias/crear',
-  incidenciaFormComponent,
-  [],
-  'app',
-  'admin',
-);
-router.addRoute(
-  '/incidencias/:id',
-  incidenciasDetailComponent,
-  [],
-  'app',
-  'admin',
-);
-router.addRoute(
-  '/incidencias/pendientes',
-  pendientesComponent,
-  [],
-  'app',
-  'admin',
-);
-router.addRoute('/mapa', mapaComponent, [], 'app', 'admin');
+// ─── Admin routes ───────────────────────────────────────────────────
+router.addRoute('/dashboard', dashboardComponent, [], 'admin');
+router.addRoute('/incidencias', incidenciasIndexComponent, [], 'admin');
+router.addRoute('/incidencias/crear', incidenciaFormComponent, [], 'admin');
+router.addRoute('/incidencias/:id', incidenciasDetailComponent, [], 'admin');
+router.addRoute('/incidencias/pendientes', pendientesComponent, [], 'admin');
+router.addRoute('/mapa', mapaComponent, [], 'admin');
 router.addRoute(
   '/mapa-ciudadano',
   mapaCiudadanoComponent,
   [authGuard],
-  'app',
   'citizen',
 );
-router.addRoute('/usuarios', usuariosComponent, [], 'app', 'admin');
-router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'app', 'admin');
-router.addRoute('/organizaciones', organizacionesComponent, [], 'app', 'admin');
+router.addRoute('/usuarios', usuariosComponent, [], 'admin');
+router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'admin');
+router.addRoute('/organizaciones', organizacionesComponent, [], 'admin');
 router.addRoute(
   '/organizaciones/crear',
   organizacionesFormComponent,
   [],
-  'app',
   'admin',
 );
-router.addRoute('/localizaciones', localizacionesComponent, [], 'app', 'admin');
+router.addRoute('/localizaciones', localizacionesComponent, [], 'admin');
 router.addRoute(
   '/localizaciones/crear',
   localizacionesFormComponent,
   [],
-  'app',
   'admin',
 );
-router.addRoute('/categorias', categoriasComponent, [], 'app', 'admin');
-router.addRoute(
-  '/categorias/crear',
-  categoriasFormComponent,
-  [],
-  'app',
-  'admin',
-);
+router.addRoute('/categorias', categoriasComponent, [], 'admin');
+router.addRoute('/categorias/crear', categoriasFormComponent, [], 'admin');
 router.addRoute(
   '/roles',
   rolesIndexComponent,
   [roleGuard(['admin_sistema'])],
-  'app',
   'admin',
 );
 router.addRoute(
   '/roles/:id',
   rolesDetailComponent,
   [roleGuard(['admin_sistema'])],
-  'app',
   'admin',
 );
 router.addRoute(
   '/notificaciones',
   notificacionesIndexComponent,
   [authGuard],
-  'app',
   'admin',
 );
 
-router.addRoute('/not-found', notFoundComponent, [authGuard], 'app', 'citizen');
+router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
 let _pendingRoleSync = Promise.resolve();
 export function pendingRoleSync() {
@@ -187,14 +136,8 @@ document.addEventListener('change', (e) => {
 // router's shell has finished initializing. Redirecting during shell init
 // would clear #shell-outlet mid-mount and break the router's outlet lookup.
 window.addEventListener('auth:expired', () => {
-  if (router.isShellInitializing) {
-    // Defer until the shell finishes initializing. Re-dispatch the same
-    // event on the next tick; the listener will run again.
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('auth:expired'));
-    }, 0);
-    return;
-  }
+  // http.service.js dispatches this event when a 401 cannot be recovered via
+  // refresh. We translate that into a redirect to /login.
   if (window.location.hash !== '#/login') {
     window.location.hash = '#/login';
   }
