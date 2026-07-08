@@ -24,6 +24,32 @@ class IncidentStatsController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            $averageSeconds = DB::table('incidents')
+                ->where('status', IncidentStatus::Resolved->value)
+                ->whereNotNull('resolution_date')
+                ->value(DB::raw('AVG(EXTRACT(EPOCH FROM (resolution_date - created_at)))'));
+        } else { // sqlite
+            $averageSeconds = DB::table('incidents')
+                ->where('status', IncidentStatus::Resolved->value)
+                ->whereNotNull('resolution_date')
+                ->value(DB::raw("AVG(strftime('%s', resolution_date) - strftime('%s', created_at))"));
+        }
+
+        $averageResolutionTime = null;
+        if ($averageSeconds !== null) {
+            $averageSeconds = (float) $averageSeconds;
+            $days = (int) floor($averageSeconds / 86400);
+            $hours = (int) floor(($averageSeconds % 86400) / 3600);
+            $averageResolutionTime = [
+                'formatted' => "{$days} days, {$hours} hours",
+                'days' => $days,
+                'hours' => $hours,
+                'seconds' => (int) round($averageSeconds),
+            ];
+        }
+
         return response()->json([
             'total' => Incident::query()->count(),
             'by_status' => $this->groupCounts('status', IncidentStatus::values()),
@@ -35,6 +61,7 @@ class IncidentStatsController extends Controller
                 ->whereNotNull('location_id')
                 ->distinct()
                 ->count('location_id'),
+            'average_resolution_time' => $averageResolutionTime,
         ]);
     }
 

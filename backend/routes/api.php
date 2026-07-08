@@ -50,6 +50,7 @@ Route::middleware('jwt')->group(function () {
     // Legacy endpoint kept for now — remove after frontend migration
 
     // Notificaciones del usuario autenticado
+    Route::get('notifications/stream', [NotificationController::class, 'stream']);
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
