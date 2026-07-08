@@ -1,4 +1,3 @@
-import { defineComponent } from '../../../utils/component.js';
 import { notificationService } from '../../../shared/notification.service.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 
@@ -117,9 +116,52 @@ function updateUnreadCounter() {
   document.getElementById('btn-marcar-todas').disabled = visibles === 0;
 }
 
-export default defineComponent({
-  templateUrl:
-    'app/notificaciones/pages/index/notificaciones.index.component.html',
+export default {
+  template: `
+    <div class="container-fluid py-4">
+      <div
+        class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2"
+      >
+        <div>
+          <h2 class="mb-0">Notificaciones</h2>
+          <small class="text-muted">
+            <span id="contador-unread">0</span> sin leer
+          </small>
+        </div>
+        <button id="btn-marcar-todas" class="btn btn-outline-primary" disabled>
+          <i class="fa-solid fa-check-double me-1"></i> Marcar todas como leídas
+        </button>
+      </div>
+
+      <div id="estado-cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2 mb-0">Cargando notificaciones…</p>
+      </div>
+
+      <div id="estado-vacio" class="text-center py-5 d-none">
+        <i class="fa-solid fa-bell-slash fa-3x text-muted mb-3"></i>
+        <p class="text-muted mb-0">No tenés notificaciones.</p>
+      </div>
+
+      <div id="estado-error" class="alert alert-danger d-none" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i>
+        No se pudieron cargar las notificaciones.
+        <button id="btn-reintentar" class="btn btn-sm btn-outline-danger ms-2">
+          Reintentar
+        </button>
+      </div>
+
+      <div id="contenedor-lista" class="card d-none">
+        <ul id="lista-notificaciones" class="list-group list-group-flush"></ul>
+        <div
+          class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2"
+        >
+          <small id="info-resultados" class="text-muted"></small>
+          <nav><ul id="paginacion" class="pagination pagination-sm mb-0"></ul></nav>
+        </div>
+      </div>
+    </div>
+  `,
 
   async onInit() {
     let paginaActual = 1;
@@ -192,4 +234,4 @@ export default defineComponent({
   },
 
   onDestroy() {},
-});
+};

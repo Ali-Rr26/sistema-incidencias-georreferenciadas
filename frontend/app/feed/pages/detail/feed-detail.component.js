@@ -7,7 +7,6 @@
  *
  * Uses router.routeParams.id from the param-matching router.
  */
-import { defineComponent } from '../../../utils/component.js';
 import {
   escapeHtml,
   timeAgo,
@@ -32,7 +31,7 @@ function getFeedUrl() {
 
 // ── Component ───────────────────────────────────────────────
 
-export default defineComponent({
+export default {
   templateUrl: 'app/feed/pages/detail/feed-detail.component.html',
   styleUrl: 'app/feed/pages/detail/feed-detail.component.css',
 
@@ -179,4 +178,72 @@ export default defineComponent({
       this._detailMap = null;
     }
   },
-});
+
+  template: `
+    <div id="fd-loading" class="fd-loading">
+      <div class="fd-spinner"></div>
+      <p>Cargando incidencia...</p>
+    </div>
+
+    <div id="fd-empty" class="fd-empty d-none">
+      <div class="fd-empty-icon">🔍</div>
+      <h2>Incidencia no encontrada</h2>
+      <p>La incidencia que buscas no existe o fue eliminada.</p>
+      <a href="#" class="fd-back-link-btn fd-back-feed"
+        ><i class="fas fa-arrow-left"></i> Volver al feed</a
+      >
+    </div>
+
+    <div id="fd-error" class="fd-empty d-none">
+      <div class="fd-empty-icon">⚠️</div>
+      <h2>Error al cargar</h2>
+      <p>No se pudo cargar la incidencia. Intente de nuevo más tarde.</p>
+      <a href="#" class="fd-back-link-btn fd-back-feed"
+        ><i class="fas fa-arrow-left"></i> Volver al feed</a
+      >
+    </div>
+
+    <div id="fd-detail" class="fd-detail d-none">
+      <!-- Header -->
+      <div class="fd-header" id="fd-header-content"></div>
+
+      <!-- Meta information -->
+      <div class="fd-section">
+        <div class="fd-meta-grid" id="fd-meta"></div>
+      </div>
+
+      <!-- Description -->
+      <div class="fd-section">
+        <h3 class="fd-section-title">Descripción</h3>
+        <p class="fd-description" id="fd-description"></p>
+      </div>
+
+      <!-- Map -->
+      <div class="fd-section">
+        <h3 class="fd-section-title">Ubicación</h3>
+        <div
+          class="feed-detail__map-region"
+          role="region"
+          aria-label="Mapa de ubicación de la incidencia"
+        >
+          <div id="fd-map" class="fd-map-container feed-detail__map-canvas"></div>
+          <div class="feed-detail__map-coords visually-hidden">
+            <div class="feed-detail__map-field">
+              <label for="lat">Latitud</label>
+              <input id="lat" name="lat" type="text" readonly aria-live="off" />
+            </div>
+            <div class="feed-detail__map-field">
+              <label for="lng">Longitud</label>
+              <input id="lng" name="lng" type="text" readonly aria-live="off" />
+            </div>
+          </div>
+          <div
+            class="feed-detail__map-status visually-hidden"
+            id="map-status"
+            aria-live="polite"
+          ></div>
+        </div>
+      </div>
+    </div>
+  `,
+};

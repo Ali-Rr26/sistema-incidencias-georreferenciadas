@@ -1,11 +1,10 @@
-import { defineComponent } from '../../utils/component.js';
 import {
   STATUS_LABEL,
   PRIORITY_LABEL,
   timeAgo,
   escapeHtml,
-} from '../../utils/format.js';
-import initMapView from '../../shared/init-map-view.js';
+} from '../utils/format.js';
+import initMapView from '../shared/init-map-view.js';
 import { mapaCiudadanoService } from './mapa-ciudadano.service.js';
 
 // STATUS_COLOR / PRIORITY_COLOR duplicated verbatim from mapa.component.js
@@ -47,8 +46,76 @@ const MARKERCLUSTER_JS = {
     'sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr',
 };
 
-export default defineComponent({
-  templateUrl: 'app/mapa/mapa-ciudadano.component.html',
+export default {
+  template: `
+    <div class="mpc-layout">
+      <div id="mpc-loading" class="mpc-loading d-none">
+        <div class="spinner-border text-light"></div>
+        <span class="ms-2 text-light">Cargando mapa...</span>
+      </div>
+
+      <div
+        id="mpc-error"
+        class="alert alert-danger mpc-error d-none"
+        role="alert"
+      ></div>
+
+      <aside class="mpc-sidebar">
+        <h5 class="mpc-sidebar-title">
+          <i class="fas fa-map-location-dot me-2"></i>Mapa de incidencias
+        </h5>
+        <p class="text-muted small mpc-help">
+          Vista pública de las incidencias reportadas en la plataforma. Haz clic en
+          un marcador para ver más detalles.
+        </p>
+
+        <button
+          id="mpc-refresh"
+          type="button"
+          class="btn btn-sm btn-outline-secondary w-100 mt-2"
+        >
+          <i class="fas fa-sync me-1"></i>Actualizar ahora
+        </button>
+
+        <hr />
+
+        <div class="mpc-sidebar-meta small text-muted">
+          <div>
+            <i class="fas fa-list me-1"></i
+            ><span id="mpc-incident-count">0 incidencias</span>
+          </div>
+          <div class="mt-1">
+            <i class="fas fa-clock me-1"></i
+            ><span id="mpc-last-sync">Actualizando...</span>
+          </div>
+        </div>
+
+        <div class="mpc-legend mt-3">
+          <div class="mpc-legend-title small fw-semibold mb-1">Estado</div>
+          <div class="mpc-legend-item">
+            <span class="mpc-legend-dot bg-secondary"></span>Pendiente
+          </div>
+          <div class="mpc-legend-item">
+            <span class="mpc-legend-dot bg-warning text-dark"></span>Pendiente
+            operador
+          </div>
+          <div class="mpc-legend-item">
+            <span class="mpc-legend-dot bg-primary"></span>En proceso
+          </div>
+          <div class="mpc-legend-item">
+            <span class="mpc-legend-dot bg-success"></span>Resuelto
+          </div>
+        </div>
+      </aside>
+
+      <div
+        id="mpc-canvas"
+        class="mpc-canvas"
+        role="region"
+        aria-label="Mapa público de incidencias"
+      ></div>
+    </div>
+  `,
   styleUrl: 'app/mapa/mapa-ciudadano.component.css',
 
   async onInit() {
@@ -245,4 +312,4 @@ export default defineComponent({
     if (this._cluster) this._cluster.clearLayers();
     if (this._mapRemove) this._mapRemove();
   },
-});
+};
