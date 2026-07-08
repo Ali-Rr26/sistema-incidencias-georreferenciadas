@@ -23,7 +23,12 @@ class DatabaseSeeder extends Seeder
             IncidentSeeder::class,
         ]);
 
-        // Uncomment for performance / demo testing (creates 1000 incidents + comments):
+// Uncomment for performance / demo testing (creates 1000 incidents + comments):
         // $this->call(MassIncidentSeeder::class);
+
+        // Uncomment to seed ~25 realistic incidents in the Santa Elena province
+        // (cantons: Santa Elena, La Libertad, Salinas). Idempotent on title — safe
+        // to re-run. Useful for map demo without the 1000-incident mass seed.
+        // $this->call(SantaElenaIncidentSeeder::class);
     }
 }
