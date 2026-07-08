@@ -25,6 +25,10 @@ class AuthController
 
     private const ACCESS_TTL = 900;
 
+    private const ACCESS_COOKIE = 'access_token';
+
+    private const ACCESS_COOKIE_PATH = '/api/notifications';
+
     public function __construct(
         private readonly AuthService $authService,
     ) {}
@@ -50,7 +54,9 @@ class AuthController
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($result['user']),
-        ])->withCookie($this->refreshCookie($result['refreshToken']));
+        ])
+            ->withCookie($this->refreshCookie($result['refreshToken']))
+            ->withCookie($this->accessCookie($result['accessToken']));
     }
 
     /**
@@ -75,7 +81,9 @@ class AuthController
             'access_token' => $result['accessToken'],
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
-        ])->withCookie($this->refreshCookie($result['refreshToken']));
+        ])
+            ->withCookie($this->refreshCookie($result['refreshToken']))
+            ->withCookie($this->accessCookie($result['accessToken']));
     }
 
     /**
@@ -91,7 +99,9 @@ class AuthController
 
         return response()->json([
             'message' => 'Sesión cerrada exitosamente.',
-        ])->withCookie($this->expiredCookie());
+        ])
+            ->withCookie($this->expiredCookie())
+            ->withCookie($this->expiredAccessCookie());
     }
 
     /**
@@ -176,6 +186,46 @@ class AuthController
             '',
             -60,
             self::COOKIE_PATH,
+            null,
+            app()->isProduction(),
+            true,
+            false,
+            'Strict',
+        );
+    }
+
+    /**
+     * Build HttpOnly cookie with the access token.
+     *
+     * Scoped to /api/notifications only — a fallback for EventSource (which
+     * cannot set the Authorization header), not a replacement for the Bearer
+     * header used everywhere else.
+     */
+    private function accessCookie(string $token): Cookie
+    {
+        return cookie(
+            self::ACCESS_COOKIE,
+            $token,
+            (int) (self::ACCESS_TTL / 60),
+            self::ACCESS_COOKIE_PATH,
+            null,
+            app()->isProduction(),
+            true,
+            false,
+            'Strict',
+        );
+    }
+
+    /**
+     * Build access-token cookie that expires immediately (for logout).
+     */
+    private function expiredAccessCookie(): Cookie
+    {
+        return cookie(
+            self::ACCESS_COOKIE,
+            '',
+            -60,
+            self::ACCESS_COOKIE_PATH,
             null,
             app()->isProduction(),
             true,

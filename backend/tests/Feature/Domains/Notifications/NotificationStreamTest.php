@@ -8,9 +8,14 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Auth\Services\JwtService;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
+use App\Domains\Sessions\Models\Session;
+use App\Domains\Sessions\Repositories\SessionRepository;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Mockery\MockInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 uses(RefreshDatabase::class);
@@ -80,4 +85,40 @@ it('streams notifications for the authenticated user', function (): void {
 
     expect($content)->toContain('data:');
     expect($content)->toContain('A new incident has been created.');
+});
+
+it('authenticates the stream via the access_token cookie alone (no Authorization header)', function (): void {
+    $jwtService = $this->mock(JwtService::class);
+    $jwtService->shouldReceive('validateAccessToken')
+        ->once()
+        ->with('cookie-token')
+        ->andReturn([
+            'sub' => (string) $this->user->id,
+            'sid' => 'session-cookie-1',
+            'email' => $this->user->email,
+        ]);
+
+    $session = new Session([
+        'id' => 'session-cookie-1',
+        'user_id' => $this->user->id,
+        'refresh_token_hash' => 'hash',
+        'ip_address' => null,
+        'user_agent' => null,
+        'is_revoked' => false,
+        'expires_at' => Carbon::now()->addHour(),
+    ]);
+    $session->exists = true;
+
+    $this->mock(SessionRepository::class, function (MockInterface $mock) use ($session): void {
+        $mock->shouldReceive('findById')
+            ->once()
+            ->with('session-cookie-1')
+            ->andReturn($session);
+    });
+
+    $response = $this->withUnencryptedCookie('access_token', 'cookie-token')
+        ->get('/api/notifications/stream');
+
+    $response->assertOk();
+    expect($response->baseResponse)->toBeInstanceOf(StreamedResponse::class);
 });

@@ -28,13 +28,20 @@ class JwtAuthenticate
     {
         $header = $request->header('Authorization');
 
-        if ($header === null || ! str_starts_with($header, 'Bearer ')) {
+        if ($header !== null && str_starts_with($header, 'Bearer ')) {
+            $tokenString = substr($header, 7);
+        } else {
+            // Fallback for native EventSource, which cannot set custom
+            // request headers: /api/notifications/stream sets this cookie
+            // at login scoped to that path only.
+            $tokenString = $request->cookie('access_token');
+        }
+
+        if ($tokenString === null) {
             return response()->json([
                 'message' => 'Token de autenticación no proporcionado.',
             ], Response::HTTP_UNAUTHORIZED);
         }
-
-        $tokenString = substr($header, 7);
         $claims = $this->jwtService->validateAccessToken($tokenString);
 
         if ($claims === null) {

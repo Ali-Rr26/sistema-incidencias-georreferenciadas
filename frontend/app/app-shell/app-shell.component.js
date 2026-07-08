@@ -23,6 +23,8 @@ import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { router } from '../core/router.js';
+import { API_URL } from '../core/config.js';
+import { timeAgo } from '../utils/format.js';
 
 const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
 const STYLE_URL = 'app/app-shell/app-shell.component.css';
@@ -53,6 +55,20 @@ const SIDEBAR_COLLAPSE_BREAKPOINT = 768;
 let _onSidebarDocClick = null;
 let _onSidebarKeydown = null;
 let _onResize = null;
+
+// Notification bell (citizen header) — dropdown state + SSE connection.
+// The bell markup is static (part of the shell template), so listeners
+// are wired once in init(); only the EventSource connection is torn down
+// and re-established on auth change (new session → new stream).
+let _bellWired = false;
+let _bellBtn = null;
+let _bellPanel = null;
+let _bellList = null;
+let _bellBadge = null;
+let _bellOpen = false;
+let _onBellDocClick = null;
+let _onBellKeydown = null;
+let _notifStream = null;
 
 /**
  * Classify a user object into one of the three shell role buckets.
@@ -145,6 +161,7 @@ export const appShell = {
     await populateHeader();
     wireNav();
     wireSidebarToggle();
+    wireCitizenBell();
 
     // Render sidebar dynamically from /api/menus/my for ANY authenticated
     // user (admin OR citizen). Falls back silently if the endpoint fails
@@ -160,6 +177,7 @@ export const appShell = {
       renderBottomNavMenu().catch(() => {
         // No-op: empty bottom-nav is preferable to crashing the shell.
       });
+      connectNotificationStream();
     }
 
     // Re-apply role on every auth change (login / logout / role swap).
@@ -174,6 +192,7 @@ export const appShell = {
       menuService.clearCache();
       notificationService.clearCache();
       await populateHeader();
+      disconnectNotificationStream();
       if (document.body.dataset.role !== 'guest') {
         await renderSidebarMenu().catch(() => {
           // No-op: empty sidebar is preferable to crashing the shell.
@@ -182,6 +201,7 @@ export const appShell = {
         await renderBottomNavMenu().catch(() => {
           // No-op: empty bottom-nav is preferable to crashing the shell.
         });
+        connectNotificationStream();
       }
       // Re-apply sidebar collapsed state in case the role swap rebuilt
       // chrome (e.g. switching roles changes which sidebar is visible,
@@ -206,6 +226,10 @@ export const appShell = {
     // Sidebar toggle teardown — remove every listener we registered
     // and null the refs so a subsequent init() starts clean.
     teardownSidebarToggle();
+
+    // Notification bell + SSE stream teardown.
+    teardownCitizenBell();
+    disconnectNotificationStream();
   },
 
   outlet: '#page-outlet',
@@ -660,7 +684,36 @@ async function populateHeader() {
     if (avatarEl) {
       avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
     }
+
+    // Notifications badge (citizen header bell). Refreshed here on every
+    // populateHeader() call (init + auth change), and again in real time
+    // by connectNotificationStream() when the SSE connection is alive.
+    updateBellBadge();
   }
+}
+
+/**
+ * Refresh the citizen bell badge from notificationService's unread count.
+ * `force` bypasses the in-memory cache — used after an SSE event or a
+ * manual mark-as-read so the badge doesn't show stale data.
+ */
+function updateBellBadge(force = false) {
+  const badge =
+    _bellBadge || (_bellBadge = document.getElementById('app-shell-bell-badge'));
+  if (!badge) return;
+  notificationService
+    .unreadCount({ force })
+    .then((count) => {
+      if (count > 0) {
+        badge.textContent = String(count > 99 ? '99+' : count);
+        badge.classList.remove('d-none');
+      } else {
+        badge.classList.add('d-none');
+      }
+    })
+    .catch(() => {
+      // silent fail — badge stays as-is
+    });
 }
 
 /**
@@ -852,4 +905,195 @@ function createUserMenu({ triggerId, panelId, profileItemId, logoutItemId }) {
   }
 
   return { init, destroy };
+}
+
+/**
+ * T-3.3/3.4: citizen notification bell — dropdown of the latest
+ * notifications, anchored to #app-shell-bell. Wired once in init() since
+ * the bell markup is static (unlike the sidebar/bottom-nav, which are
+ * re-rendered from /api/menus/my).
+ *
+ * No-op if the bell panel isn't present in the DOM (e.g. shell test
+ * fixtures that mount a trimmed-down header without the dropdown).
+ */
+function wireCitizenBell() {
+  if (_bellWired) return;
+
+  _bellBtn = document.getElementById('app-shell-bell');
+  _bellPanel = document.getElementById('app-shell-bell-panel');
+  _bellList = document.getElementById('app-shell-bell-list');
+  _bellBadge = document.getElementById('app-shell-bell-badge');
+
+  if (!_bellBtn || !_bellPanel || !_bellList) return;
+
+  _bellBtn.addEventListener('click', onBellTriggerClick);
+
+  _onBellDocClick = (event) => {
+    if (!_bellOpen) return;
+    if (event.target.closest('.app-shell-bell-wrapper')) return;
+    closeBellPanel();
+  };
+  document.addEventListener('click', _onBellDocClick, true);
+
+  _onBellKeydown = (event) => {
+    if (event.key === 'Escape' && _bellOpen) closeBellPanel();
+  };
+  document.addEventListener('keydown', _onBellKeydown);
+
+  _bellWired = true;
+}
+
+function teardownCitizenBell() {
+  if (_bellBtn) _bellBtn.removeEventListener('click', onBellTriggerClick);
+  if (_onBellDocClick) {
+    document.removeEventListener('click', _onBellDocClick, true);
+    _onBellDocClick = null;
+  }
+  if (_onBellKeydown) {
+    document.removeEventListener('keydown', _onBellKeydown);
+    _onBellKeydown = null;
+  }
+  _bellBtn = null;
+  _bellPanel = null;
+  _bellList = null;
+  _bellBadge = null;
+  _bellOpen = false;
+  _bellWired = false;
+}
+
+async function onBellTriggerClick(event) {
+  event.stopPropagation();
+  if (_bellOpen) {
+    closeBellPanel();
+    return;
+  }
+  await openBellPanel();
+}
+
+async function openBellPanel() {
+  _bellOpen = true;
+  _bellPanel.hidden = false;
+  _bellBtn.setAttribute('aria-expanded', 'true');
+
+  try {
+    const { data } = await notificationService.list({ page: 1, perPage: 8 });
+    renderBellItems(data);
+  } catch {
+    renderBellItems([]);
+  }
+}
+
+function closeBellPanel() {
+  _bellOpen = false;
+  _bellPanel.hidden = true;
+  _bellBtn.setAttribute('aria-expanded', 'false');
+}
+
+function renderBellItems(items) {
+  if (!items || items.length === 0) {
+    _bellList.replaceChildren(buildBellEmptyState());
+    return;
+  }
+  _bellList.replaceChildren(...items.map(buildBellItem));
+}
+
+function buildBellEmptyState() {
+  const li = document.createElement('li');
+  li.className = 'app-shell-bell-panel__empty';
+  li.id = 'app-shell-bell-empty';
+  li.textContent = 'Sin notificaciones';
+  return li;
+}
+
+/**
+ * Build a single notification <li>. Clicking it marks the notification as
+ * read (if unread) and redirects to the incident detail view — citizens
+ * only have the `/feed/:id` route, unlike the admin `/incidencias/:id`.
+ */
+function buildBellItem(notif) {
+  const li = document.createElement('li');
+  li.className = `app-shell-bell-panel__item${notif.read ? '' : ' app-shell-bell-panel__item--unread'}`;
+  li.dataset.id = String(notif.id);
+
+  const body = document.createElement('div');
+  const msg = document.createElement('span');
+  msg.textContent = notif.message ?? '';
+  body.appendChild(msg);
+
+  const time = document.createElement('small');
+  time.className = 'app-shell-bell-panel__item-time';
+  time.textContent = timeAgo(notif.created_at);
+  body.appendChild(time);
+
+  li.appendChild(body);
+
+  li.addEventListener('click', async () => {
+    closeBellPanel();
+    if (!notif.read) {
+      try {
+        await notificationService.markRead(notif.id);
+      } catch {
+        // Non-fatal — still navigate even if marking as read failed.
+      }
+      updateBellBadge(true);
+    }
+    if (notif.incident?.id) {
+      router.navigate(`/feed/${notif.incident.id}`);
+    }
+  });
+
+  return li;
+}
+
+/**
+ * Establish the SSE connection to /api/notifications/stream for real-time
+ * bell updates.
+ *
+ * The native `EventSource` API cannot set the `Authorization` header, so
+ * auth for this endpoint relies on the httpOnly `access_token` cookie set
+ * at login (scoped to /api/notifications only — every other request still
+ * uses the Bearer header). `withCredentials: true` is required for the
+ * cross-origin cookie to be sent.
+ */
+function connectNotificationStream() {
+  if (typeof window.EventSource !== 'function') {
+    // SSE unsupported in this browser/environment — skip silently.
+    return;
+  }
+
+  try {
+    _notifStream = new EventSource(`${API_URL}/notifications/stream`, {
+      withCredentials: true,
+    });
+
+    _notifStream.onmessage = (event) => {
+      if (!event.data) return;
+      let notif;
+      try {
+        notif = JSON.parse(event.data);
+      } catch {
+        return; // malformed payload — ignore rather than crash the shell
+      }
+      updateBellBadge(true);
+      if (_bellOpen && _bellList) {
+        _bellList.querySelector('#app-shell-bell-empty')?.remove();
+        _bellList.prepend(buildBellItem(notif));
+      }
+    };
+
+    _notifStream.onerror = () => {
+      disconnectNotificationStream();
+    };
+  } catch {
+    // Constructing EventSource itself threw — never let this take down
+    // shell init.
+    _notifStream = null;
+  }
+}
+
+function disconnectNotificationStream() {
+  if (_notifStream) {
+    _notifStream.close();
+    _notifStream = null;
+  }
 }

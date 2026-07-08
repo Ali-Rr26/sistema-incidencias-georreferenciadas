@@ -130,3 +130,46 @@ it('allows the request through when the token and session are valid', function (
             '_session_id' => 'session-2',
         ]);
 });
+
+it('falls back to the access_token cookie when the Authorization header is absent', function (): void {
+    $user = User::factory()->create();
+
+    $jwtService = $this->mock(JwtService::class);
+    $jwtService->shouldReceive('validateAccessToken')
+        ->once()
+        ->with('cookie-token')
+        ->andReturn([
+            'sub' => (string) $user->id,
+            'sid' => 'session-3',
+            'email' => $user->email,
+        ]);
+
+    $session = new Session([
+        'id' => 'session-3',
+        'user_id' => $user->id,
+        'refresh_token_hash' => 'hash',
+        'ip_address' => null,
+        'user_agent' => null,
+        'is_revoked' => false,
+        'expires_at' => Carbon::now()->addHour(),
+    ]);
+    $session->exists = true;
+
+    $sessionRepository = $this->mock(SessionRepository::class);
+    $sessionRepository->shouldReceive('findById')
+        ->once()
+        ->with('session-3')
+        ->andReturn($session);
+
+    $middleware = new JwtAuthenticate($jwtService, $sessionRepository);
+
+    $request = Request::create('/api/notifications/stream', 'GET', [], ['access_token' => 'cookie-token']);
+
+    $response = $middleware->handle($request, function (Request $req) {
+        return response()->json(['user_id' => $req->user()->id]);
+    });
+
+    $testResponse = TestResponse::fromBaseResponse($response);
+
+    $testResponse->assertOk()->assertJson(['user_id' => $user->id]);
+});
