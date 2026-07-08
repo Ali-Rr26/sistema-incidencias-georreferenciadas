@@ -98,6 +98,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute((int) env('FEED_RATE_LIMIT_PER_MIN', 60));
         });
 
+        // /register — anti-spam for self-service account creation. R6.
+        // 5 attempts per minute per IP: low enough to block account-creation
+        // automation, high enough to tolerate a citizen typing their
+        // password wrong twice. PR-1 of the registro-y-google-auth change.
+        RateLimiter::for('register', function (Request $request): Limit {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
         // Admins bypass all gate/policy checks
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->isAdmin() ? true : null;

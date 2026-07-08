@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Auth\Http\AuthController;
+use App\Domains\Auth\Http\Controllers\RegisterController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\FeedController;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\Route;
 // Public
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+// Self-service registration (PR-1 of registro-y-google-auth). Public —
+// no auth middleware, only the per-IP throttle. Server hardcodes the
+// `usuario` role; client-supplied role_id is ignored (R1, R5, R13a).
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 Route::get('/incidents/feed', FeedController::class)->middleware('throttle:feed');
 
