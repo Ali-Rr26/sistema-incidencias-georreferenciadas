@@ -7,7 +7,6 @@ namespace App\Domains\Incidents\Enums;
 enum IncidentStatus: string
 {
     case Pending = 'pending';
-    case PendingOperator = 'pending_operator';
     case InProgress = 'in_progress';
     case Resolved = 'resolved';
 
@@ -49,7 +48,6 @@ enum IncidentStatus: string
     {
         return match ($this) {
             self::Pending => 'Pendiente',
-            self::PendingOperator => 'Pendiente de operador',
             self::InProgress => 'En proceso',
             self::Resolved => 'Resuelto',
         };

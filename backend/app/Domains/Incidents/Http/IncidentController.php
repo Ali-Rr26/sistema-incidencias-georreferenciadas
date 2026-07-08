@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Http\Requests\MapBoundsRequest;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
@@ -13,7 +12,6 @@ use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Incidents\Services\IncidentClaimService;
-use App\Domains\Incidents\Services\IncidentVerificationService;
 use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -45,16 +43,34 @@ class IncidentController extends Controller
      */
     private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location'];
 
-    public function index(MapBoundsRequest $request): JsonResponse
-    {
-        $validated = $request->validated() + ['relations' => self::INDEX_RELATIONS];
+        public function index(Request $request): JsonResponse
+        {
+            // Inline map params validation (was MapBoundsRequest FormRequest).
+            // One place to read; three fields actually filter the list.
+            $validated = $request->validate([
+                'bbox' => [
+                    'nullable',
+                    'string',
+                    'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/',
+                ],
+                'zoom' => ['nullable', 'integer', 'min:1', 'max:22'],
+                'status' => ['nullable', 'string'],
+                'priority' => ['nullable', 'string'],
+                'location_id' => ['nullable', 'integer'],
+                'incident_category_id' => ['nullable', 'integer'],
+                'user_id' => ['nullable', 'integer'],
+                'title' => ['nullable', 'string', 'max:200'],
+                'per_page' => ['nullable', 'integer', 'min:1', 'max:500'],
+                'relations' => ['nullable', 'array'],
+                'relations.*' => ['string'],
+            ]) + ['relations' => self::INDEX_RELATIONS];
 
-        // The map frontend asks for 500 per page because a single bbox
-        // viewport can legitimately hold >100 incidents in dense urban
-        // areas. The default repo cap (100) is too tight here, so we
-        // raise it only when a bbox is present. Other callers keep the
-        // safe 100 cap.
-        $hardCap = isset($validated['bbox']) ? 500 : null;
+            // The map frontend asks for 500 per page because a single bbox
+            // viewport can legitimately hold >100 incidents in dense urban
+            // areas. The default repo cap (100) is too tight here, so we
+            // raise it only when a bbox is present. Other callers keep the
+            // safe 100 cap.
+            $hardCap = isset($validated['bbox']) ? 500 : null;
 
         $incidents = $this->incidents->paginate(
             $validated,
@@ -143,58 +159,6 @@ class IncidentController extends Controller
         $this->incidents->delete($incident->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Multitenant: Claim / Release / Confirmar
-    // ──────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Toma (claim) una incidencia como OperadorOrg.
-     */
-    public function claim(Incident $incident, IncidentClaimService $service): JsonResponse
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        $incident = $service->claim($incident->id, $user);
-
-        return (new IncidentResource($incident))->response();
-    }
-
-    /**
-     * Libera (release) una incidencia previamente claimeada.
-     */
-    public function release(Incident $incident, IncidentClaimService $service): JsonResponse
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        $incident = $service->release($incident->id, $user);
-
-        return (new IncidentResource($incident))->response();
-    }
-
-    /**
-     * Confirma una incidencia como Publicador y la asigna a su org.
-     */
-    public function confirmar(Incident $incident, IncidentVerificationService $service): JsonResponse
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        $incident = $service->confirm($incident->id, $user);
-
-        return (new IncidentResource($incident))->response();
-    }
-
-    /**
-     * Lista incidencias pendientes de confirmación para el Publicador.
-     */
-    public function pendientes(IncidentVerificationService $service): JsonResponse
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        $incidents = $service->getPendingIncidents($user);
-
-        return (new IncidentCollection($incidents))->response();
     }
 
     /**

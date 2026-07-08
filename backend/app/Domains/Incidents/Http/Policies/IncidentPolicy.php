@@ -32,19 +32,16 @@ class IncidentPolicy extends PermissionPolicy
 
     public function update(User $user, Model $model): bool
     {
+        // System admins edit anything within their org scope (which is "all orgs").
+        // Operators and admins-in-org only edit their own org's incidents.
         if ($user->isSystemAdmin()) {
             return true;
         }
 
-        if ($user->isOperator()) {
-            return $model->organization_id !== null && $model->organization_id === $user->organization_id;
-        }
+        $inSameOrg = $model->organization_id !== null
+            && $model->organization_id === $user->organization_id;
 
-        if (! parent::update($user, $model)) {
-            return false;
-        }
-
-        return $model->organization_id !== null && $model->organization_id === $user->organization_id;
+        return $inSameOrg && parent::update($user, $model);
     }
 
     public function delete(User $user, Model $model): bool
@@ -82,23 +79,7 @@ class IncidentPolicy extends PermissionPolicy
         if ($user->role?->name !== UserRole::OperadorOrganizacion->value) {
             return false;
         }
-
+    
         return $incident->claimed_by === $user->id;
-    }
-
-    /**
-     * Un Publicador puede confirmar una incidencia solo si:
-     * - la categoría coincide con la de su organización
-     */
-    public function confirm(User $user, Incident $incident): bool
-    {
-        if ($user->role?->name !== UserRole::Publicador->value) {
-            return false;
-        }
-
-        $org = $user->organization;
-
-        return $org !== null
-            && $incident->incident_category_id === $org->incident_category_id;
     }
 }

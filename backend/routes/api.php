@@ -6,6 +6,7 @@ use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
+use App\Domains\Incidents\Http\IncidentWorkflowController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -34,14 +35,17 @@ Route::middleware('jwt')->group(function () {
     Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
 
     // Core
-    Route::get('incidents/pendientes', [IncidentController::class, 'pendientes']);
     Route::get('incidents/stats', IncidentStatsController::class);
-    Route::post('incidents/{incident}/claim', [IncidentController::class, 'claim'])->middleware('can:claim,incident');
-    Route::post('incidents/{incident}/release', [IncidentController::class, 'release'])->middleware('can:release,incident');
-    Route::post('incidents/{incident}/confirmar', [IncidentController::class, 'confirmar'])->middleware('can:confirm,incident');
-    Route::apiResource('incidents', IncidentController::class);
+    // {incident} constrained to digits so the apiResource's show with an
+    // alphabetic segment (e.g. "incidents/pendientes") doesn't try to bind
+    // a non-numeric id and raise a 500 QueryException. Without this, an
+    // endpoint that was never defined (because we deleted /pendientes)
+    // returns a misleading "invalid input syntax for type bigint: pendientes".
+    Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
+    Route::post('incidents/{incident}/release', [IncidentWorkflowController::class, 'release'])->where('incident', '\d+')->middleware('can:release,incident');
+    Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
-    Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index']);
+    Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 
