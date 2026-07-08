@@ -1700,7 +1700,7 @@ describe('renderBottomNavMenu (T-2.3)', () => {
     if (typeof unsub === 'function') unsub();
   });
 
-  it('operador_organizacion (no dashboard.view, no incidents.manage) renders 3 items (S3.2)', async () => {
+  it('operador_organizacion (no dashboard.view, no incidents.manage) renders 2 items (S3.2)', async () => {
     vi.spyOn(auth, 'getUser').mockReturnValue({
       id: 2,
       first_name: 'Operador',
@@ -1716,14 +1716,6 @@ describe('renderBottomNavMenu (T-2.3)', () => {
         name: 'Lista',
         route: '/incidencias',
         icon: 'list',
-        children: [],
-      },
-      {
-        id: 6,
-        parent_id: null,
-        name: 'Pendientes',
-        route: '/incidencias/pendientes',
-        icon: 'clock',
         children: [],
       },
       {
@@ -1756,10 +1748,9 @@ describe('renderBottomNavMenu (T-2.3)', () => {
     await Promise.resolve();
 
     const anchors = ul.querySelectorAll('a.app-shell-nav-item');
-    expect(anchors.length).toBe(3);
+    expect(anchors.length).toBe(2);
     expect(anchors[0].dataset.route).toBe('/incidencias');
-    expect(anchors[1].dataset.route).toBe('/incidencias/pendientes');
-    expect(anchors[2].dataset.route).toBe('/configuracion/perfil');
+    expect(anchors[1].dataset.route).toBe('/configuracion/perfil');
 
     // No Dashboard, no Crear
     expect(ul.querySelector('[data-route="/dashboard"]')).toBeNull();

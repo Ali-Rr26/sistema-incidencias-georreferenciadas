@@ -58,7 +58,6 @@ it('admin_sistema sees every active menu via the isAdmin() bypass branch', funct
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
         ->and($routes)->toContain('/incidencias/crear')
-        ->and($routes)->toContain('/incidencias/pendientes')
         ->and($routes)->toContain('/usuarios')
         ->and($routes)->toContain('/roles')
         ->and($routes)->toContain('/localizaciones')
@@ -82,7 +81,6 @@ it('operador_sistema sees Nueva Incidencia but NOT Usuarios or Roles', function 
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
         ->and($routes)->toContain('/incidencias/crear')
-        ->and($routes)->toContain('/incidencias/pendientes')
         ->and($routes)->toContain('/localizaciones')
         ->and($routes)->toContain('/categorias')
         ->and($routes)->toContain('/notificaciones')
@@ -100,7 +98,6 @@ it('operador_organizacion now sees Notificaciones after the leak fix', function 
     $routes = collectRoutes($response->json('data'));
 
     expect($routes)->toContain('/incidencias')
-        ->and($routes)->toContain('/incidencias/pendientes')
         // Previously missing: the menu was hidden despite notifications.update.
         ->and($routes)->toContain('/notificaciones')
         // Does NOT see Nueva Incidencia (incidents.manage).

@@ -22,7 +22,6 @@ import usuariosFormComponent from './configuracion/usuarios/pages/form/usuarios.
 import perfilComponent from './configuracion/perfil/perfil.component.js';
 import feedComponent from './feed/feed.component.js';
 import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
-import pendientesComponent from './incidencias/pages/pendientes/pendientes.component.js';
 import mapaComponent from './mapa/mapa.component.js';
 import mapaCiudadanoComponent from './mapa/mapa-ciudadano.component.js';
 import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.component.js';
@@ -52,7 +51,6 @@ router.addRoute('/dashboard', dashboardComponent, [], 'admin');
 router.addRoute('/incidencias', incidenciasIndexComponent, [], 'admin');
 router.addRoute('/incidencias/crear', incidenciaFormComponent, [], 'admin');
 router.addRoute('/incidencias/:id', incidenciasDetailComponent, [], 'admin');
-router.addRoute('/incidencias/pendientes', pendientesComponent, [], 'admin');
 router.addRoute('/mapa', mapaComponent, [], 'admin');
 router.addRoute(
   '/mapa-ciudadano',

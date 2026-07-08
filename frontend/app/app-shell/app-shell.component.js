@@ -534,11 +534,7 @@ const BOTTOM_NAV_WHITELIST = {
     '/incidencias/crear',
     '/configuracion/perfil',
   ],
-  ADMIN_LIMITED: [
-    '/incidencias',
-    '/incidencias/pendientes',
-    '/configuracion/perfil',
-  ],
+  ADMIN_LIMITED: ['/incidencias', '/configuracion/perfil'],
   CITIZEN: ['/feed', '/configuracion/perfil'],
 };
 
