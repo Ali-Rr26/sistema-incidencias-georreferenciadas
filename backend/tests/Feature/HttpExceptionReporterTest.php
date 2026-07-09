@@ -332,3 +332,47 @@ it('uses getCode() for non-HttpException Throwable when code is HTTP-like', func
         ->and($records[0]->context['level'])->toBe('warning')
         ->and($records[0]->context['message'])->toBe('unprocessable');
 });
+
+/**
+ * PDOException::getCode() (and QueryException, which wraps it) returns the
+ * SQLSTATE as a STRING (e.g. "42P01"), not an HTTP status. The render
+ * callback in bootstrap/app.php used to do `$code >= 400 && $code < 600`
+ * with no type check — PHP 8's non-numeric-string-vs-int comparison rules
+ * make a SQLSTATE like "42P01" compare as "in range" (lexicographic
+ * comparison against "400"/"600"), so `$status` became the STRING
+ * "42P01" and got passed straight to `response()->json(..., $status)`,
+ * which requires an int — a real TypeError, turning every unhandled DB
+ * error into a 500 that itself crashes instead of returning cleanly.
+ */
+it('returns a clean 500 (not a TypeError) for an exception with a non-numeric SQLSTATE-style code', function (): void {
+    Route::get('/api/__boom_pdo_sqlstate__', function () {
+        $e = new \PDOException('relation "role_permission" does not exist');
+        $e->errorInfo = ['42P01', 1, 'relation does not exist'];
+
+        // PDOException::$code is declared `protected` on the base
+        // Exception class — the real PDO C extension sets it internally
+        // at throw time, bypassing PHP-level property visibility
+        // entirely. Reflection is the only way to simulate that from a
+        // test: a plain `$e->code = '42P01'` from outside the class
+        // throws its OWN visibility Error instead of exercising the
+        // scenario this test is for.
+        $prop = new \ReflectionProperty(\PDOException::class, 'code');
+        $prop->setAccessible(true);
+        $prop->setValue($e, '42P01');
+
+        throw $e;
+    });
+
+    $response = $this->getJson('/api/__boom_pdo_sqlstate__');
+
+    // Without the is_int() guard, `'42P01' >= 400 && '42P01' < 600` is
+    // TRUE under PHP 8's string-vs-int comparison rules (lexicographic
+    // compare against '400'/'600'), so $status becomes the STRING
+    // "42P01" — passed straight to response()->json(..., $status),
+    // which requires int. If this test ever regresses, that mismatch
+    // resurfaces as a non-JSON response or a status this assertion
+    // rejects, not a silent pass.
+    $response->assertStatus(500);
+    $response->assertHeader('Content-Type', 'application/json');
+    expect($response->json('message'))->toBe('relation "role_permission" does not exist');
+});

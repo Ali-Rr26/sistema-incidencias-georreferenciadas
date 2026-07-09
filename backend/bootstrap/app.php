@@ -68,7 +68,12 @@ return Application::configure(basePath: dirname(__DIR__))
             }
             if ($request->is('api/*')) {
                 $code = $e->getCode();
-                $status = ($code >= 400 && $code < 600) ? $code : 500;
+                // PDOException/QueryException::getCode() returns the SQLSTATE
+                // as a string (e.g. "42P01"), not an HTTP status. Only treat
+                // the code as a status when it's genuinely an int in range —
+                // otherwise a DB-level error crashes with a TypeError instead
+                // of a clean 500 (found running CP-02-03-B / CP-04-04-B).
+                $status = (is_int($code) && $code >= 400 && $code < 600) ? $code : 500;
 
                 return response()->json(['message' => $e->getMessage()], $status);
             }

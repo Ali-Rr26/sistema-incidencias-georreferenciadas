@@ -27,11 +27,13 @@ class IncidentStatsController extends Controller
         $driver = DB::connection()->getDriverName();
         if ($driver === 'pgsql') {
             $averageSeconds = DB::table('incidents')
+                ->whereNull('deleted_at')
                 ->where('status', IncidentStatus::Resolved->value)
                 ->whereNotNull('resolution_date')
                 ->value(DB::raw('AVG(EXTRACT(EPOCH FROM (resolution_date - created_at)))'));
         } else { // sqlite
             $averageSeconds = DB::table('incidents')
+                ->whereNull('deleted_at')
                 ->where('status', IncidentStatus::Resolved->value)
                 ->whereNotNull('resolution_date')
                 ->value(DB::raw("AVG(strftime('%s', resolution_date) - strftime('%s', created_at))"));
@@ -72,6 +74,7 @@ class IncidentStatsController extends Controller
     private function groupCounts(string $column, array $knownValues): array
     {
         $rows = DB::table('incidents')
+            ->whereNull('deleted_at')
             ->selectRaw("{$column} as key, COUNT(*) as count")
             ->groupBy($column)
             ->get();

@@ -137,3 +137,61 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
         ->assertJsonPath('average_resolution_time.hours', 6)
         ->assertJsonPath('average_resolution_time.formatted', '1 days, 6 hours');
 });
+
+it('excludes soft-deleted incidents from total, by_status, and average_resolution_time', function () {
+    // DB::table('incidents') (query builder) never applies Eloquent's
+    // SoftDeletingScope — without an explicit whereNull('deleted_at') in
+    // IncidentStatsController, a soft-deleted row still counts toward
+    // total/by_status/by_priority and skews average_resolution_time.
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $location = \App\Domains\Locations\Models\Location::create(['name' => 'HQ', 'level' => 'city']);
+    $org = \App\Domains\Organizations\Models\Organization::create([
+        'name' => 'Test Org',
+        'location_id' => $location->id,
+    ]);
+    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'General',
+        'organization_id' => $org->id,
+    ]);
+
+    $visible = \App\Domains\Incidents\Models\Incident::create([
+        'title' => 'Visible incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+    ]);
+
+    // Resolved in 100 hours — wildly different from any visible resolved
+    // incident, so if this leaks into the average the test fails loudly
+    // rather than passing by coincidence.
+    $deleted = \App\Domains\Incidents\Models\Incident::create([
+        'title' => 'Soft-deleted incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+        'resolution_date' => now(),
+    ]);
+    $deleted->created_at = now()->subHours(100);
+    $deleted->save(['timestamps' => false]);
+    $deleted->delete();
+
+    $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
+
+    $response->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonPath('by_status.pending', 1)
+        ->assertJsonPath('by_status.resolved', 0)
+        ->assertJsonPath('average_resolution_time', null);
+});
