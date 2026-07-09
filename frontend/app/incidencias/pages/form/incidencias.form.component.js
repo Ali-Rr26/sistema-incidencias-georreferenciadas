@@ -216,24 +216,132 @@ export default {
       resetFieldError(P + 'error-category');
     });
 
-    const locSelect = document.getElementById('ici-location');
-    function flattenTree(items, depth) {
-      items.forEach((item) => {
+    // ── Location cascade: Provincia → Cantón → Parroquia ──
+    // Mirrors the category/subcategory cascade above. `locationsTree` is
+    // rooted at the single country node (Ecuador) — its direct children
+    // are provinces, so the country level itself is never shown (there's
+    // nothing to choose, it's the only option). Parroquia stays optional,
+    // same as subcategory: the submitted location_id is the deepest level
+    // actually chosen (neighborhood if picked, else city, else null).
+    const provinceSelect = document.getElementById('ici-location-province');
+    const citySelect = document.getElementById('ici-location-city');
+    const neighborhoodSelect = document.getElementById(
+      'ici-location-neighborhood',
+    );
+    const provinces = locationsTree[0]?.children ?? [];
+
+    function populateCities(provinceId) {
+      citySelect.innerHTML = '';
+      neighborhoodSelect.innerHTML = '';
+      const province = provinces.find((p) => String(p.id) === String(provinceId));
+      const cities = province?.children ?? [];
+
+      if (!province || cities.length === 0) {
         const opt = document.createElement('option');
-        opt.value = item.id;
-        opt.textContent = '  '.repeat(depth) + item.name;
-        locSelect.appendChild(opt);
-        if (item.children && item.children.length > 0) {
-          flattenTree(item.children, depth + 1);
-        }
-      });
+        opt.value = '';
+        opt.textContent = province
+          ? '-- Sin cantones --'
+          : '-- Seleccione una provincia primero --';
+        citySelect.appendChild(opt);
+        citySelect.disabled = true;
+      } else {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '-- Seleccione cantón --';
+        citySelect.appendChild(placeholder);
+        cities.forEach((city) => {
+          const opt = document.createElement('option');
+          opt.value = city.id;
+          opt.textContent = city.name;
+          citySelect.appendChild(opt);
+        });
+        citySelect.disabled = false;
+      }
+
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = '';
+      emptyOpt.textContent = '-- Seleccione un cantón primero --';
+      neighborhoodSelect.appendChild(emptyOpt);
+      neighborhoodSelect.disabled = true;
     }
-    flattenTree(locationsTree, 0);
-    if (locationsTree.length === 0) {
+
+    function populateNeighborhoods(cityId) {
+      neighborhoodSelect.innerHTML = '';
+      const province = provinces.find(
+        (p) => String(p.id) === String(provinceSelect.value),
+      );
+      const city = province?.children?.find(
+        (c) => String(c.id) === String(cityId),
+      );
+      const neighborhoods = city?.children ?? [];
+
+      if (!city || neighborhoods.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = city
+          ? '-- Sin parroquias --'
+          : '-- Seleccione un cantón primero --';
+        neighborhoodSelect.appendChild(opt);
+        neighborhoodSelect.disabled = true;
+        return;
+      }
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Seleccione parroquia (opcional) --';
+      neighborhoodSelect.appendChild(placeholder);
+      neighborhoods.forEach((n) => {
+        const opt = document.createElement('option');
+        opt.value = n.id;
+        opt.textContent = n.name;
+        neighborhoodSelect.appendChild(opt);
+      });
+      neighborhoodSelect.disabled = false;
+    }
+
+    // The "-- Sin ubicación fija --" placeholder is already the first
+    // <option> in the static markup (matches the category select's
+    // convention — the parent select's own placeholder lives in the
+    // HTML, not re-created here) so it reads fine even with zero
+    // provinces; just append the real options after it.
+    provinces.forEach((province) => {
       const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = '-- No hay ubicaciones disponibles --';
-      locSelect.appendChild(opt);
+      opt.value = province.id;
+      opt.textContent = province.name;
+      provinceSelect.appendChild(opt);
+    });
+
+    provinceSelect.addEventListener('change', function () {
+      populateCities(this.value);
+    });
+    citySelect.addEventListener('change', function () {
+      populateNeighborhoods(this.value);
+    });
+
+    /**
+     * Walk the location tree to find which province/city/neighborhood a
+     * given location_id belongs to, so edit mode can preselect all three
+     * cascading selects at once (mirrors findCategoryNode above, one
+     * level deeper since locations nest country → province → city →
+     * neighborhood instead of category → subcategory).
+     */
+    function findLocationAncestry(id) {
+      for (const province of provinces) {
+        if (String(province.id) === String(id)) {
+          return { province };
+        }
+        for (const city of province.children ?? []) {
+          if (String(city.id) === String(id)) {
+            return { province, city };
+          }
+          for (const neighborhood of city.children ?? []) {
+            if (String(neighborhood.id) === String(id)) {
+              return { province, city, neighborhood };
+            }
+          }
+        }
+      }
+      return null;
     }
 
     // ── Image preview ──
@@ -343,8 +451,21 @@ export default {
           }
         }
 
-        const locSelect = document.getElementById('ici-location');
-        if (locSelect) locSelect.value = inc.location_id ?? '';
+        const locationId = inc.location_id ?? null;
+        if (locationId) {
+          const ancestry = findLocationAncestry(locationId);
+          if (ancestry) {
+            provinceSelect.value = String(ancestry.province.id);
+            populateCities(ancestry.province.id);
+            if (ancestry.city) {
+              citySelect.value = String(ancestry.city.id);
+              populateNeighborhoods(ancestry.city.id);
+              if (ancestry.neighborhood) {
+                neighborhoodSelect.value = String(ancestry.neighborhood.id);
+              }
+            }
+          }
+        }
 
         // Map marker
         if (inc.geom?.coordinates) {
@@ -398,7 +519,14 @@ export default {
 
       if (!valid) return;
 
-      const locVal = document.getElementById('ici-location').value;
+      // Deepest level actually chosen wins — same fallback logic as
+      // category/subcategory (neighborhoodVal || cityVal), except there's
+      // no province-level fallback: a province alone isn't specific
+      // enough to be a submittable location_id, so it's treated the same
+      // as leaving the whole cascade blank (null).
+      const neighborhoodVal = document.getElementById('ici-location-neighborhood').value;
+      const cityVal = document.getElementById('ici-location-city').value;
+      const locVal = neighborhoodVal || cityVal;
       const locationId = locVal ? parseInt(locVal, 10) : null;
 
       const payloadBase = {
