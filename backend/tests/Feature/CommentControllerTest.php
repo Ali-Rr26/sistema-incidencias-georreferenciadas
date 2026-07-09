@@ -7,17 +7,53 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Seed role for UserFactory (role_id=1)
-    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    $this->seed(PermissionSeeder::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
+
+    // Register dynamic gates from permissions table (same seam as
+    // RolePermissionSyncTest.php:21-24). Without these, Gate::authorize()
+    // would throw on the first test because no gate 'comments.create' etc.
+    // would be defined; with them, the gate delegates to hasPermission().
+    foreach (Permission::all() as $permission) {
+        $slug = "{$permission->resource}.{$permission->action}";
+        Gate::define($slug, fn (User $user) => $user->hasPermission($slug));
+    }
+
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    // RolePermissionSeeder intentionally omits role 1 (admin_sistema is the
+    // Gate::before bypass in production). In tests, where some assertions
+    // rely on the bypass not kicking in, we still need the pivot rows for
+    // the EXISTING 7 create/list/show/update/delete tests to pass once
+    // authorizeResource is wired. This explicit grant is test-only — it
+    // mirrors what the production bypass already grants.
+    foreach (
+        Permission::whereIn('resource', ['comments', 'incidents'])
+            ->whereIn('action', ['view', 'create', 'update', 'delete'])
+            ->get() as $perm
+    ) {
+        DB::table('role_permission')->insertOrIgnore([
+            'role_id' => 1,
+            'permission_id' => $perm->permission_id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
 
     $this->user = User::factory()->create();
 
@@ -140,6 +176,133 @@ it('deletes a comment (soft)', function (): void {
     $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->user)
         ->deleteJson("/api/comments/{$comment->id}");
+
+    $response->assertStatus(204);
+    $this->assertSoftDeleted('comments', ['id' => $comment->id]);
+});
+
+// ============================================================================
+// PR-1 authorization tests — R-15, R-16, R-17, R-18.
+//
+// Each test uses a non-admin actor so the Gate::before admin hook in
+// AppServiceProvider does NOT short-circuit; the dynamic 'comments.*'
+// gates must independently allow or deny.
+// ============================================================================
+
+// R-15: POST /api/incidents/{id}/comments requires comments.create.
+
+it('R-15 denies comment creation for user without comments.create permission', function (): void {
+    // Fresh role with no pivot rows. role_id=null trips a SQLite NOT NULL
+    // on users.role_id, so we synthesize a non-admin role instead.
+    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
+    $this->actingAs($stranger);
+
+    $response = $this->postJson("/api/incidents/{$this->incident->id}/comments", [
+        'message' => 'Should never be persisted.',
+    ]);
+
+    $response->assertForbidden();
+    $this->assertDatabaseMissing('comments', [
+        'incident_id' => $this->incident->id,
+        'message' => 'Should never be persisted.',
+    ]);
+});
+
+// R-16: GET /api/incidents/{id}/comments requires comments.view.
+// (Existing "lists comments for an incident" test covers the allow path.)
+
+it('R-16 denies comment listing for user without comments.view permission', function (): void {
+    // operador_organizacion (role 4) has comments.create but NOT comments.view.
+    $operator = User::factory()->create(['role_id' => 4]);
+    $this->actingAs($operator);
+
+    // Real comment so the 0-row case doesn't trivially satisfy assertForbidden.
+    Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'A real comment',
+    ]);
+
+    $response = $this->getJson("/api/incidents/{$this->incident->id}/comments");
+
+    $response->assertForbidden();
+});
+
+// R-17: PUT /api/comments/{comment} requires comments.update OR ownership.
+
+it('R-17 prevents non-owner from updating comment without comments.update permission', function (): void {
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Original message',
+    ]);
+
+    // usuario (role 5) only has comments.create — no comments.update.
+    $stranger = User::factory()->create(['role_id' => 5]);
+    $this->actingAs($stranger);
+
+    $response = $this->putJson("/api/comments/{$comment->id}", [
+        'message' => 'Hijacked message',
+    ]);
+
+    $response->assertForbidden();
+    expect($comment->fresh()->message)->toBe('Original message');
+});
+
+it('R-17 allows non-owner with comments.update permission to update any comment', function (): void {
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Original message',
+    ]);
+
+    // operador_sistema (role 2) has comments.update. Exercises the gate,
+    // not the bypass — verifies permission overrides ownership.
+    $operator = User::factory()->create(['role_id' => 2]);
+    $this->actingAs($operator);
+
+    $response = $this->putJson("/api/comments/{$comment->id}", [
+        'message' => 'Updated by operator',
+    ]);
+
+    $response->assertOk();
+    expect($comment->fresh()->message)->toBe('Updated by operator');
+});
+
+// R-18: DELETE /api/comments/{comment} requires comments.delete OR ownership.
+
+it('R-18 prevents non-owner from deleting comment without comments.delete permission', function (): void {
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Do not delete',
+    ]);
+
+    // operador_sistema (role 2) has comments.update but NOT comments.delete.
+    $operator = User::factory()->create(['role_id' => 2]);
+    $this->actingAs($operator);
+
+    $response = $this->deleteJson("/api/comments/{$comment->id}");
+
+    $response->assertForbidden();
+    $this->assertNotSoftDeleted('comments', ['id' => $comment->id]);
+});
+
+it('R-18 allows comment owner to delete their own comment without comments.delete permission', function (): void {
+    // Owner-override branch. usuario (role 5) has comments.create only —
+    // no comments.delete — but IS the comment author. Owner override wins.
+    $owner = User::factory()->create(['role_id' => 5]);
+
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $owner->id,
+        'message' => 'Mine to delete',
+    ]);
+
+    $this->actingAs($owner);
+
+    $response = $this->deleteJson("/api/comments/{$comment->id}");
 
     $response->assertStatus(204);
     $this->assertSoftDeleted('comments', ['id' => $comment->id]);

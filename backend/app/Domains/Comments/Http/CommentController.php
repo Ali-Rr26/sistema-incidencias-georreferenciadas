@@ -11,15 +11,28 @@ use App\Domains\Comments\Http\Resources\CommentResource;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Comments\Repositories\CommentRepository;
 use App\Domains\Incidents\Models\Incident;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class CommentController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(
         private readonly CommentRepository $commentRepository,
-    ) {}
+    ) {
+        // Wires resource-level policy checks for every method:
+        //   index   → viewAny  (PermissionPolicy::viewAny → comments.view)
+        //   show    → view     (PermissionPolicy::view    → comments.view)
+        //   store   → create   (PermissionPolicy::create  → comments.create)
+        //   update  → update   (CommentPolicy::update     → owner OR comments.update)
+        //   destroy → delete   (CommentPolicy::delete     → owner OR comments.delete)
+        // The route param name is 'comment' (see routes/api.php:58 — Route::apiResource
+        // generates member routes at /api/comments/{comment} via shallow()).
+        $this->authorizeResource(Comment::class, 'comment');
+    }
 
     public function index(Request $request, Incident $incident): CommentCollection
     {
