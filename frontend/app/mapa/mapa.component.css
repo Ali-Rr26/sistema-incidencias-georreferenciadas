@@ -7,9 +7,10 @@
 .mp-layout {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 60px);
+  min-height: calc(100vh - 128px);
   width: 100%;
   background: #f4f6fa;
+  position: relative;
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────── */
