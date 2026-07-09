@@ -7,6 +7,7 @@ import { bindView } from '../../../utils/dom.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -48,6 +49,7 @@ export default {
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
     setupActionButtons(id, inc);
+    setupBuscarResponsables();
     setupEstado(id, inc);
     cargarHistorial(id);
     setupComments(id);
@@ -805,4 +807,111 @@ function setupActionButtons(incidentId, inc) {
       });
     }
   }
+}
+
+// ── Buscar Responsables (CP-03-01-F) ────────────────────────────
+
+function setupBuscarResponsables() {
+  const inputEl = document.getElementById('buscar-responsables-input');
+  const loadingEl = document.getElementById('buscar-responsables-loading');
+  const resultsEl = document.getElementById('buscar-responsables-results');
+  const listEl = document.getElementById('buscar-responsables-list');
+  const vacioEl = document.getElementById('buscar-responsables-vacio');
+  const errorEl = document.getElementById('buscar-responsables-error');
+  const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
+
+  if (!inputEl) return;
+
+  function showLoading(show) {
+    if (show) {
+      loadingEl?.classList.remove('d-none');
+      resultsEl?.classList.add('d-none');
+      vacioEl?.classList.add('d-none');
+      errorEl?.classList.add('d-none');
+    } else {
+      loadingEl?.classList.add('d-none');
+    }
+  }
+
+  function showResults(users) {
+    if (!users || users.length === 0) {
+      resultsEl?.classList.add('d-none');
+      vacioEl?.classList.remove('d-none');
+      return;
+    }
+
+    resultsEl?.classList.remove('d-none');
+    vacioEl?.classList.add('d-none');
+
+    listEl.replaceChildren(
+      ...users.map((user) => {
+        const li = document.createElement('li');
+        li.className =
+          'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
+        li.style.cursor = 'pointer';
+
+        const name = responsablesService.formatUserName(user);
+        const role = responsablesService.formatRole(user);
+        const email = user.email || '';
+
+        li.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold text-dark">${escapeHtml(name)}</div>
+              <small class="text-muted">${escapeHtml(email)}</small>
+              <br />
+              <small class="text-secondary">Rol: ${escapeHtml(role)}</small>
+            </div>
+          </div>
+        `;
+
+        li.addEventListener('mouseenter', () => {
+          li.classList.add('bg-light');
+        });
+        li.addEventListener('mouseleave', () => {
+          li.classList.remove('bg-light');
+        });
+
+        li.addEventListener('click', () => {
+          // CP-03-02-F: aquí iría la lógica de asignación
+          // Por ahora solo mostramos que se seleccionó
+          console.log('Usuario seleccionado:', user);
+        });
+
+        return li;
+      })
+    );
+  }
+
+  function showError(msg) {
+    errorMsgEl.textContent = msg;
+    errorEl?.classList.remove('d-none');
+    resultsEl?.classList.add('d-none');
+    vacioEl?.classList.add('d-none');
+  }
+
+  inputEl.addEventListener('input', (e) => {
+    const query = e.target.value.trim();
+
+    if (query.length === 0) {
+      showLoading(false);
+      resultsEl?.classList.add('d-none');
+      vacioEl?.classList.add('d-none');
+      errorEl?.classList.add('d-none');
+      return;
+    }
+
+    showLoading(true);
+
+    responsablesService.search(query, (users, err) => {
+      showLoading(false);
+
+      if (err) {
+        showError(err.message || 'Error al buscar usuarios.');
+        return;
+      }
+
+      showResults(users);
+    });
+  });
 }
