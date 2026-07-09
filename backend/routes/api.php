@@ -81,5 +81,6 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('roles', RoleController::class);
     Route::put('roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
     Route::get('permissions', [RoleController::class, 'availablePermissions']);
+    Route::get('permissions/my', [RoleController::class, 'myPermissions']);
     Route::get('menus/my', [MenuController::class, 'myMenus']);
 });

@@ -36,6 +36,8 @@ class CommentController extends Controller
 
     public function index(Request $request, Incident $incident): CommentCollection
     {
+        $this->authorizeIncidentOrgScope($incident);
+
         $comments = $this->commentRepository->paginate(
             filters: ['incident_id' => $incident->id],
             perPage: (int) $request->integer('per_page', 20),
@@ -46,6 +48,8 @@ class CommentController extends Controller
 
     public function store(StoreCommentRequest $request, Incident $incident): JsonResponse
     {
+        $this->authorizeIncidentOrgScope($incident);
+
         $comment = $this->commentRepository->create([
             'incident_id' => $incident->id,
             'user_id' => auth()->id(),
@@ -83,5 +87,31 @@ class CommentController extends Controller
         $this->commentRepository->delete($comment->id);
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * viewAny/create (index/store) never receive the parent Incident via
+     * Laravel's authorizeResource wiring, so CommentPolicy can't org-scope
+     * them — org-scoping happens here instead, mirroring
+     * CommentPolicy::inSameOrg exactly. Users without an organization
+     * (citizens, operador_sistema) are exempt, same as the Policy.
+     */
+    private function authorizeIncidentOrgScope(Incident $incident): void
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            abort(401);
+        }
+
+        if ($user->isSystemAdmin() || $user->organization_id === null) {
+            return;
+        }
+
+        if ($incident->organization_id !== null && $incident->organization_id === $user->organization_id) {
+            return;
+        }
+
+        abort(403, 'No tienes acceso a los comentarios de esta organización.');
     }
 }

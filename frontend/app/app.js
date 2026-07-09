@@ -48,12 +48,13 @@ router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'both');
 
 // ─── Admin routes ───────────────────────────────────────────────────
 // All admin routes now go through permissionGuard, which sources
-// authorization from menuService.getMyMenu() (single source of truth —
-// sidebar menu and route guard share the same data). Previously these
-// routes had `guards: []` (no enforcement) or `[roleGuard(['admin_sistema'])]`
-// (hardcoded role name); the guard replaces roleGuard on /roles per
-// clarifications #2327 and applies to the 13 back-office routes that
-// were left unguarded.
+// authorization from menuService.getMyMenu() for routes with their own
+// menu entry, plus a small explicit permission map (see
+// permission.guard.js's CHILD_ROUTE_PERMISSIONS) for child routes that
+// don't — detail pages, "crear" sub-routes. Previously these routes had
+// `guards: []` (no enforcement) or `[roleGuard(['admin_sistema'])]`
+// (hardcoded role name); the guard replaces roleGuard on /roles too —
+// /roles/:id is gated by roles.update, which only admin_sistema holds.
 router.addRoute('/dashboard', dashboardComponent, [permissionGuard], 'admin');
 router.addRoute(
   '/incidencias',

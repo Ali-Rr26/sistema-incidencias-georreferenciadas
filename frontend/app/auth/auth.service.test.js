@@ -38,6 +38,18 @@ vi.mock('../shared/menu.service.js', async (importOriginal) => {
   };
 });
 
+vi.mock('../shared/permission.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    permissionService: {
+      ...mod.permissionService,
+      invalidateMyPermissions: vi.fn(),
+      getMyPermissions: vi.fn(),
+    },
+  };
+});
+
 vi.mock('../shared/notification.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
@@ -52,6 +64,7 @@ vi.mock('../shared/notification.service.js', async (importOriginal) => {
 
 import { http } from '../core/http.service.js';
 import { menuService } from '../shared/menu.service.js';
+import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
 
 describe('auth.logout() — cache invalidation (T-2.10 menu-server-driven)', () => {
@@ -64,6 +77,18 @@ describe('auth.logout() — cache invalidation (T-2.10 menu-server-driven)', () 
     const { auth } = await import('./auth.service.js');
     await auth.logout();
     expect(menuService.clearCache).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression test — found live via Playwright while verifying the
+  // permission.guard.js fix: logging out of an admin_sistema session and
+  // into admin_organizacion within permissionService's TTL window let
+  // permissionGuard check /roles/:id against the PREVIOUS user's cached
+  // full permission set (admin_sistema's isAdmin bypass), incorrectly
+  // allowing navigation the new user's real grants don't cover.
+  it('calls permissionService.invalidateMyPermissions() during logout', async () => {
+    const { auth } = await import('./auth.service.js');
+    await auth.logout();
+    expect(permissionService.invalidateMyPermissions).toHaveBeenCalledTimes(1);
   });
 
   it('calls notificationService.clearCache() during logout', async () => {

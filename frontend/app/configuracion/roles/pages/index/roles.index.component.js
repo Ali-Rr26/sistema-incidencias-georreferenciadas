@@ -1,6 +1,7 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
+import { isForbidden } from '../../../../shared/forbidden.js';
 
 const POR_PAGINA = 15;
 
@@ -194,7 +195,7 @@ export default {
         renderTabla(datos, total);
       } catch (err) {
         // Defense in depth (R-24): distinguish 403 from generic failure.
-        if (err?.status === 403) {
+        if (isForbidden(err)) {
           mostrarToast('No tienes acceso a este recurso.', 'warning');
         }
         mostrarEstado('error');

@@ -26,6 +26,7 @@ import {
   getAccessToken,
 } from '../core/http.service.js';
 import { menuService } from '../shared/menu.service.js';
+import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { mapaService } from '../mapa/mapa.service.js';
 
@@ -120,8 +121,14 @@ class AuthService {
     // /menus/my from a previous user or the previous session must NEVER
     // leak into the next logged-in user's sidebar. Clear both caches
     // BEFORE notifying subscribers so any handler that reads them
-    // observes a clean slate.
+    // observes a clean slate. permissionService is the same class of
+    // cache (backs permissionGuard's CHILD_ROUTE_PERMISSIONS check) and
+    // must be cleared for the identical reason — without this, logging
+    // out of an admin_sistema session and into a less-privileged one
+    // within the TTL window serves the PREVIOUS user's full permission
+    // set to the guard.
     menuService.clearCache();
+    permissionService.invalidateMyPermissions();
     notificationService.clearCache();
     // mapaService is user-agnostic by default (keys on bbox/zoom/filters
     // only). Without an explicit invalidate on logout, a stored bbox-page

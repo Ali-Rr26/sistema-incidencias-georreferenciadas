@@ -126,4 +126,39 @@ class RoleController extends Controller
 
         return response()->json(['data' => $grouped]);
     }
+
+    /**
+     * Flat list of the CURRENT user's own granted permission slugs
+     * ("resource.action"), e.g. ["users.view", "users.create"].
+     *
+     * Exists so the frontend can authorize routes that have no dedicated
+     * menu entry (e.g. /usuarios/crear — the sidebar only links to
+     * /usuarios) without over- or under-granting: menuService.getMyMenu()
+     * only tells the guard "which list pages can this user see," which is
+     * NOT the same as "which specific actions can they take" — a role can
+     * hold resource.view without resource.create (e.g. admin_organizacion
+     * has organizations.view + organizations.update but NOT
+     * organizations.create). No route/menu semantics here, just the raw
+     * grant — any authenticated user, any role.
+     */
+    public function myPermissions(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($user->isAdmin()) {
+            $slugs = Permission::query()
+                ->selectRaw("resource || '.' || action as slug")
+                ->pluck('slug');
+        } else {
+            $slugs = $user->role?->permissions()
+                ->selectRaw("resource || '.' || action as slug")
+                ->pluck('slug') ?? collect();
+        }
+
+        return response()->json(['data' => $slugs->values()]);
+    }
 }

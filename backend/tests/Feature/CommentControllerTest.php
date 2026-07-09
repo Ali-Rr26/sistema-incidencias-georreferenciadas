@@ -270,6 +270,128 @@ it('R-17 allows non-owner with comments.update permission to update any comment'
     expect($comment->fresh()->message)->toBe('Updated by operator');
 });
 
+it('R-17 allows comment owner to update their own comment without comments.update permission', function (): void {
+    // Owner-override branch — the update-side mirror of the R-18 delete
+    // test below. usuario (role 5) has comments.create only, no
+    // comments.update, but IS the comment author. Owner override wins.
+    // Without this test the owner-without-permission branch of
+    // CommentPolicy::update() was never exercised: the pre-existing
+    // 'updates a comment' test uses the default factory user (role_id 1,
+    // admin_sistema), which Gate::before bypasses entirely before the
+    // policy method ever runs.
+    $owner = User::factory()->create(['role_id' => 5]);
+
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $owner->id,
+        'message' => 'Mine to edit',
+    ]);
+
+    $this->actingAs($owner);
+
+    $response = $this->putJson("/api/comments/{$comment->id}", [
+        'message' => 'Edited by owner',
+    ]);
+
+    $response->assertOk();
+    expect($comment->fresh()->message)->toBe('Edited by owner');
+});
+
+// Cross-org IDOR — admin_organizacion/operador_organizacion (roles 3/4)
+// hold comments.view/comments.update per RolePermissionSeeder, but that
+// grant must not cross organization boundaries: CommentPolicy/
+// CommentController must scope it the same way IncidentPolicy scopes
+// incidents. See docs/Pendientes/10-enforcement-permisos-frontend.md.
+
+it('denies a staff user from listing another organization\'s incident comments', function (): void {
+    $otherOrg = Organization::create([
+        'name' => 'Other Org',
+        'location_id' => $this->incident->location_id,
+    ]);
+    $otherIncident = Incident::create([
+        'incident_category_id' => $this->incident->incident_category_id,
+        'organization_id' => $otherOrg->id,
+        'user_id' => $this->user->id,
+        'location_id' => $this->incident->location_id,
+        'title' => 'Other org incident',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
+    ]);
+    Comment::create([
+        'incident_id' => $otherIncident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Belongs to the other org',
+    ]);
+
+    // admin_organizacion (role 3) — organization_id must differ from
+    // $otherOrg's to exercise the cross-org boundary.
+    $myOrg = Organization::create([
+        'name' => 'My Org',
+        'location_id' => $this->incident->location_id,
+    ]);
+    $staff = User::factory()->create(['role_id' => 3, 'organization_id' => $myOrg->id]);
+    $this->actingAs($staff);
+
+    $response = $this->getJson("/api/incidents/{$otherIncident->id}/comments");
+
+    $response->assertForbidden();
+});
+
+it('denies a staff user from updating another organization\'s comment', function (): void {
+    $otherOrg = Organization::create([
+        'name' => 'Other Org 2',
+        'location_id' => $this->incident->location_id,
+    ]);
+    $otherIncident = Incident::create([
+        'incident_category_id' => $this->incident->incident_category_id,
+        'organization_id' => $otherOrg->id,
+        'user_id' => $this->user->id,
+        'location_id' => $this->incident->location_id,
+        'title' => 'Other org incident 2',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
+    ]);
+    $comment = Comment::create([
+        'incident_id' => $otherIncident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Original — other org',
+    ]);
+
+    $myOrg = Organization::create([
+        'name' => 'My Org 2',
+        'location_id' => $this->incident->location_id,
+    ]);
+    $staff = User::factory()->create(['role_id' => 3, 'organization_id' => $myOrg->id]);
+    $this->actingAs($staff);
+
+    $response = $this->putJson("/api/comments/{$comment->id}", [
+        'message' => 'Hijacked across orgs',
+    ]);
+
+    $response->assertForbidden();
+    expect($comment->fresh()->message)->toBe('Original — other org');
+});
+
+it('allows a staff user to list and update comments within their own organization', function (): void {
+    $staff = User::factory()->create(['role_id' => 3, 'organization_id' => $this->incident->organization_id]);
+    $comment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Same org, original',
+    ]);
+
+    $this->actingAs($staff);
+
+    $listResponse = $this->getJson("/api/incidents/{$this->incident->id}/comments");
+    $listResponse->assertOk();
+
+    $updateResponse = $this->putJson("/api/comments/{$comment->id}", [
+        'message' => 'Same org, updated',
+    ]);
+    $updateResponse->assertOk();
+    expect($comment->fresh()->message)->toBe('Same org, updated');
+});
+
 // R-18: DELETE /api/comments/{comment} requires comments.delete OR ownership.
 
 it('R-18 prevents non-owner from deleting comment without comments.delete permission', function (): void {

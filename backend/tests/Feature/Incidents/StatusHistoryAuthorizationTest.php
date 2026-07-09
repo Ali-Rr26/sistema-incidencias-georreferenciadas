@@ -79,3 +79,23 @@ it('R-19 allows status history access for user who can view the incident', funct
     $response->assertOk();
     $response->assertJsonStructure(['data']);
 });
+
+it('R-19 denies status history to the citizen who reported the incident themselves', function (): void {
+    // Documents a known, pre-existing gap (not introduced by R-19, and not
+    // fixed here — flagged in docs/Pendientes/10-enforcement-permisos-frontend.md
+    // for a follow-up decision): USUARIO_PERMISSIONS (RolePermissionSeeder)
+    // grants role 5 only incidents.create, never incidents.view, so
+    // IncidentPolicy::view denies even the incident's own reporter. No
+    // citizen-facing page currently calls this endpoint, so today this is
+    // inert — but locking in the behavior here means a future change that
+    // starts calling /status-history from a citizen-facing page will fail
+    // this test instead of silently 403ing in production.
+    $citizenRole = \App\Domains\Roles\Models\Role::where('name', 'usuario')->firstOrFail();
+    $reporter = User::factory()->create(['role_id' => $citizenRole->id]);
+    $this->incident->update(['user_id' => $reporter->id]);
+    $this->actingAs($reporter);
+
+    $response = $this->getJson("/api/incidents/{$this->incident->id}/status-history");
+
+    $response->assertForbidden();
+});

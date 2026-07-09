@@ -1,6 +1,7 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
+import { isForbidden } from '../../../../shared/forbidden.js';
 
 const POR_PAGINA = 15;
 
@@ -150,7 +151,7 @@ export default {
         // user lost the permission since the menu was loaded. Surface
         // it explicitly instead of masking it behind the generic
         // "no se pudo conectar con el servidor" panel.
-        if (err?.status === 403) {
+        if (isForbidden(err)) {
           mostrarToast('No tienes acceso a este recurso.', 'warning');
         }
         mostrarEstado('error');

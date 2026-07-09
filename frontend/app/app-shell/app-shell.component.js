@@ -21,6 +21,7 @@
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { menuService } from '../shared/menu.service.js';
+import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { router } from '../core/router.js';
 import { timeAgo } from '../utils/format.js';
@@ -168,6 +169,7 @@ export const appShell = {
     // body[data-role] inside renderSidebarMenu itself.
     if (document.body.dataset.role !== 'guest') {
       menuService.clearCache();
+      permissionService.invalidateMyPermissions();
       notificationService.clearCache();
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
@@ -184,11 +186,15 @@ export const appShell = {
       let u = await auth.me().catch(() => null);
       if (!u) u = auth.getUser();
       document.body.dataset.role = classifyRole(u);
-      // Clear cached menu + notification state on every auth transition
-      // so the next render reads a fresh /menus/my and the bell badge
-      // reflects the new user's unread count rather than a previous
-      // session's stale data.
+      // Clear cached menu + permission + notification state on every auth
+      // transition so the next render reads a fresh /menus/my and the
+      // bell badge reflects the new user's unread count rather than a
+      // previous session's stale data. permissionService missing here
+      // was a real bug: logging out of an admin_sistema session and into
+      // a less-privileged one within the TTL window let permissionGuard
+      // serve the PREVIOUS user's full permission set to the new user.
       menuService.clearCache();
+      permissionService.invalidateMyPermissions();
       notificationService.clearCache();
       await populateHeader();
       disconnectNotificationStream();
