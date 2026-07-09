@@ -163,10 +163,15 @@ export default {
     this._pollTimer = null;
 
     // ── Map ──
+    // Ecuador-wide default (was hardcoded to Manta at street-level zoom 13
+    // — useless for a national incident map, showed "0 incidencias" on
+    // open until the user manually zoomed out). Center/zoom chosen to fit
+    // continental Ecuador (mainland) in one view; the user's own pan/zoom
+    // takes over from here via the moveend → _refresh() wiring below.
     const { map, remove } = await initMapView({
       container: 'mp-canvas',
-      center: { lat: -0.9537, lng: -80.7286 },
-      zoom: 13,
+      center: { lat: -1.5, lng: -78.5 },
+      zoom: 6,
       liveInputs: false,
     });
     if (this._aborted) return;
@@ -213,7 +218,9 @@ export default {
     }
 
     // ── Initial fetch ──
+    this._showLoading(true);
     await this._refresh();
+    this._showLoading(false);
     if (this._aborted) return;
 
     // ── Pan/zoom → debounced refetch ──
@@ -336,7 +343,6 @@ export default {
     // rendered. Combined with the `silent` boolean on success/failure
     // paths, this prevents the "two panend events → slow + fast
     // responses → wrong order" bug.
-    if (!silent) this._showLoading(true);
     const myToken = ++this._refreshToken;
     try {
       const bbox = this._currentBBox();
@@ -358,10 +364,6 @@ export default {
       if (this._aborted || myToken !== this._refreshToken) return;
       console.error('[mapa] refresh failed', err);
       if (!silent) this._showError(err.message || 'Error al cargar el mapa.');
-    } finally {
-      // Only the latest refresh turns the spinner off. An older, slower
-      // request returning now must not toggle loading state.
-      if (!silent && myToken === this._refreshToken) this._showLoading(false);
     }
   },
 

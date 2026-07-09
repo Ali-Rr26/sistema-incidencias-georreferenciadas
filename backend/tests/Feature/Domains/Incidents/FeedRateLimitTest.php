@@ -2,12 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
 
+// The anonymous "Visitante" role was retired — /api/incidents/feed now
+// requires auth for everyone (docs/Requisitos/SRS.md RF-SW-008), so the
+// "unauthenticated" framing below tests throttling for an authenticated
+// `usuario` (citizen) instead — the limiter itself (`throttle:feed`)
+// still applies per-request the same way, auth or not.
 beforeEach(function (): void {
     if (! class_exists('Redis')) {
         $this->markTestSkipped('Redis extension is required for this test.');
@@ -17,6 +23,7 @@ beforeEach(function (): void {
         ['id' => 2, 'name' => 'admin_sistema'],
         ['id' => 6, 'name' => 'usuario'],
     ]);
+    $this->citizen = User::factory()->create(['role_id' => 6]);
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -33,19 +40,19 @@ it('has a configured feed rate limiter', function (): void {
 // REQ-RTL-01: Request sin auth excede límite → 429
 // ──────────────────────────────────────────────────────────────
 
-it('returns 429 when unauthenticated requests exceed the feed rate limit', function (): void {
+it('returns 429 when requests exceed the feed rate limit', function (): void {
     putenv('FEED_RATE_LIMIT_PER_MIN=5');
 
     // Hit the endpoint enough times to trigger rate limiting
     // The FeedController falls back to PG when Redis is unavailable,
     // so requests will succeed until the rate limit is hit.
     for ($i = 0; $i < 5; $i++) {
-        $response = $this->getJson('/api/incidents/feed');
+        $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
         $response->assertOk();
     }
 
     // 6th request should be rate limited
-    $response = $this->getJson('/api/incidents/feed');
+    $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
     expect(in_array($response->status(), [429, 200]))->toBeTrue(
         'Rate limiting should trigger 429. If 200, cache driver may not persist between requests.'
     );

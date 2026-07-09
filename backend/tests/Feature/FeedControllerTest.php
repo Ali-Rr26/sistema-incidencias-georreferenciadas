@@ -2,15 +2,25 @@
 
 declare(strict_types=1);
 
+use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
+// The anonymous "Visitante" role was retired — /api/incidents/feed now
+// requires auth for everyone (docs/Requisitos/SRS.md RF-SW-008). FeedController
+// branches by role: `usuario` (citizen) still gets this Redis-backed path,
+// which is what these tests exercise, so every request here authenticates
+// as a `usuario`-role user instead of hitting the endpoint anonymously.
 beforeEach(function (): void {
     if (! class_exists('Redis')) {
         $this->markTestSkipped('Redis extension is required for this test.');
     }
+
+    DB::table('roles')->insert(['id' => 5, 'name' => 'usuario']);
+    $this->citizen = User::factory()->create(['role_id' => 5]);
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {
@@ -41,7 +51,7 @@ it('returns feed from Redis with correct JSON structure', function (): void {
             'user_avatar' => null,
         ]);
 
-    $response = $this->getJson('/api/incidents/feed');
+    $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
 
     $response->assertOk();
     $response->assertJsonStructure([
@@ -71,7 +81,7 @@ it('falls back to PostgreSQL when Redis throws an exception', function (): void 
         ->andThrow(new RuntimeException('Redis connection refused'));
 
     // No incidents in DB → empty response from PG fallback
-    $response = $this->getJson('/api/incidents/feed');
+    $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
 
     $response->assertOk();
     $response->assertJsonPath('data', []);
@@ -110,7 +120,7 @@ it('applies status filter when reading from Redis', function (): void {
         ->with('incident:2')
         ->andReturn(array_merge($baseData, ['id' => '2', 'status' => 'resolved']));
 
-    $response = $this->getJson('/api/incidents/feed?status=pending');
+    $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed?status=pending');
 
     $response->assertOk();
     $response->assertJsonPath('meta.total', 1);

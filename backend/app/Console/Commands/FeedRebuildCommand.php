@@ -48,6 +48,7 @@ class FeedRebuildCommand extends Command
                         'organization_id' => (string) $incident->organization_id,
                         'user_id' => (string) $incident->user_id,
                         'location_id' => (string) $incident->location_id,
+                        'title' => $incident->title,
                         'status' => $incident->status,
                         'priority' => $incident->priority,
                         'resolution_date' => $incident->resolution_date?->toIso8601String(),

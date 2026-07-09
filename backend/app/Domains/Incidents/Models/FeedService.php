@@ -198,6 +198,7 @@ class FeedService
             'organization_id' => (int) ($data['organization_id'] ?? 0),
             'user_id' => (int) ($data['user_id'] ?? 0),
             'location_id' => (int) ($data['location_id'] ?? 0),
+            'title' => $data['title'] ?? '',
             'status' => $data['status'] ?? '',
             'priority' => $data['priority'] ?? '',
             'resolution_date' => $data['resolution_date'] ?? null,
