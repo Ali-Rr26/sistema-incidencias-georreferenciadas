@@ -7,6 +7,7 @@ use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 
     // Register dynamic gates from permissions table
     foreach (Permission::all() as $permission) {
@@ -101,4 +103,38 @@ it('returns 404 when role does not exist', function (): void {
     ]);
 
     $response->assertNotFound();
+});
+
+// R-14: GET /api/permissions requires roles.view permission.
+// Closes an information-disclosure gap where any authenticated user
+// could enumerate the system's full permission catalog.
+
+it('denies availablePermissions for user without roles.view permission', function (): void {
+    // operador_organizacion (role 4) is NOT an admin and does NOT have
+    // roles.view per RolePermissionSeeder, so the dynamic gate 'roles.view'
+    // returns false and the authorize() call throws AuthorizationException.
+    // (admin_sistema role 1 would bypass via Gate::before in AppServiceProvider,
+    // which is why we cannot use role_id=1 here even though it lacks
+    // roles.view in pivot.)
+    $operador = User::factory()->create(['role_id' => 4]);
+    $this->actingAs($operador);
+
+    $response = $this->getJson('/api/permissions');
+
+    $response->assertForbidden();
+});
+
+it('allows availablePermissions for user with roles.view permission', function (): void {
+    // admin_organizacion (role 3) has roles.view per RolePermissionSeeder.
+    $orgAdmin = User::factory()->create(['role_id' => 3]);
+    $this->actingAs($orgAdmin);
+
+    $response = $this->getJson('/api/permissions');
+
+    $response->assertOk();
+    $response->assertJsonStructure([
+        'data' => [
+            '*' => ['resource', 'permissions'],
+        ],
+    ]);
 });

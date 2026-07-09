@@ -108,6 +108,8 @@ class RoleController extends Controller
      */
     public function availablePermissions(Request $request): JsonResponse
     {
+        $this->authorize('roles.view');
+
         $permissions = Permission::orderBy('resource')->orderBy('action')->get();
 
         $grouped = $permissions->groupBy('resource')->map(function ($items, $resource) {
