@@ -190,17 +190,25 @@ export default {
       subcatSelect.disabled = false;
     }
 
+    // ── Load categories and locations in parallel ──
     try {
-      const resp = await http.get('/incident-categories/tree');
-      categoryTree = resp.data ?? resp ?? [];
+      const [catResp, locResp] = await Promise.all([
+        http.get('/incident-categories/tree'),
+        http.get('/locations/tree'),
+      ]);
+
+      categoryTree = catResp.data ?? catResp ?? [];
       categoryTree.forEach((cat) => {
         const opt = document.createElement('option');
         opt.value = cat.id;
         opt.textContent = cat.name;
         catSelect.appendChild(opt);
       });
+
+      locationsTree = locResp.data ?? [];
     } catch {
       categoryTree = [];
+      locationsTree = [];
     }
 
     catSelect.addEventListener('change', function () {
@@ -208,13 +216,6 @@ export default {
       resetFieldError(P + 'error-category');
     });
 
-    // ── Load locations (flat, with indentation preserved) ──
-    try {
-      const resp = await http.get('/locations/tree');
-      locationsTree = resp.data ?? [];
-    } catch {
-      locationsTree = [];
-    }
     const locSelect = document.getElementById('ici-location');
     function flattenTree(items, depth) {
       items.forEach((item) => {

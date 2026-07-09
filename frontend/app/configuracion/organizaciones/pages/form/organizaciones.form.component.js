@@ -34,13 +34,11 @@ export default {
     }
 
     // ─── Cargar organizaciones padre ──────────────────────────────────────
-    async function cargarPadres(exceptId = null) {
+    function cargarPadres(organizations, exceptId = null) {
       try {
-        const resp = await http.get('/organizations?per_page=200');
-        const orgs = resp.data ?? resp;
         const sel = document.getElementById('org-padre');
         sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
-        orgs
+        organizations
           .filter((o) => o.id !== parseInt(exceptId))
           .forEach((o) => {
             const opt = document.createElement('option');
@@ -60,10 +58,8 @@ export default {
 
     let locationTree = null;
 
-    async function cargarArbolLocations() {
-      if (locationTree) return;
-      const resp = await http.get('/locations/tree');
-      locationTree = resp.data ?? resp;
+    function setLocationTree(tree) {
+      locationTree = tree;
     }
 
     function findNodeById(nodes, id) {
@@ -106,10 +102,8 @@ export default {
 
     // ─── Cargar categoría (single-select) ────────────────────────────
 
-    async function cargarCategorias(selectedId = null) {
+    async function cargarCategorias(allCats, selectedId = null) {
       try {
-        const resp = await http.get('/incident-categories?per_page=200');
-        const allCats = resp.data ?? resp;
         const cats = allCats.filter(
           (c) => c.parent_id === null || c.parent_id === undefined,
         );
@@ -192,8 +186,8 @@ export default {
         ciudad || provincia || pais;
     }
 
-    async function initCascadingLocation(valorSeleccionado = null) {
-      await cargarArbolLocations();
+    async function initCascadingLocation(tree, valorSeleccionado = null) {
+      setLocationTree(tree);
       if (!locationTree?.length) return;
 
       // Poblar países
@@ -240,6 +234,14 @@ export default {
 
     // ─── Carga inicial ────────────────────────────────────────────────────
 
+    let formCatalogs;
+    try {
+      formCatalogs = await http.get('/organizations/form-data');
+    } catch {
+      mostrarToast('No se pudieron cargar los datos del formulario.', 'danger');
+      return;
+    }
+
     if (esEdicion) {
       try {
         const resp = await http.get('/organizations/' + editId);
@@ -250,9 +252,9 @@ export default {
         const categoriaId = org.incident_category?.id ?? null;
 
         await Promise.all([
-          cargarPadres(editId),
-          initCascadingLocation(org.location_id),
-          cargarCategorias(categoriaId),
+          cargarPadres(formCatalogs.organizations, editId),
+          initCascadingLocation(formCatalogs.locations_tree, org.location_id),
+          cargarCategorias(formCatalogs.categories, categoriaId),
         ]);
         document.getElementById('org-padre').value = org.parent_id ?? '';
       } catch {
@@ -261,9 +263,9 @@ export default {
       }
     } else {
       await Promise.all([
-        cargarPadres(),
-        initCascadingLocation(),
-        cargarCategorias(),
+        cargarPadres(formCatalogs.organizations),
+        initCascadingLocation(formCatalogs.locations_tree),
+        cargarCategorias(formCatalogs.categories),
       ]);
     }
 
