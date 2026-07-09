@@ -38,6 +38,7 @@ services:
       # shell/CI environment, not committed here. Empty in dev falls back
       # to an insecure placeholder (AppServiceProvider/AuthController);
       # real deployments must set them.
+      LOG_CHANNEL: stderr_json
       MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
       MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
       # Firebase Admin SDK — verifies Google sign-in ID tokens server-side
@@ -150,6 +151,62 @@ services:
     depends_on:
       - frontend
       - backend
+    networks:
+      - dev-network
+
+  # ==========================================
+  # OBSERVABILITY
+  # ==========================================
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - dev-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning
+      - ./ops/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - dev-network
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./ops/loki/loki.yml:/etc/loki/loki.yml
+    networks:
+      - dev-network
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - ./ops/promtail/promtail.yml:/etc/promtail/promtail.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - dev-network
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USERNAME:-user}:${DB_PASSWORD:-password}@db:5432/${DB_DATABASE:-incidencias_db}?sslmode=disable"
+    networks:
+      - dev-network
+
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    environment:
+      REDIS_ADDR: "redis:6379"
     networks:
       - dev-network
 
