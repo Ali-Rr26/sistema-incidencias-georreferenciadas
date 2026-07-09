@@ -42,6 +42,7 @@ const CHILD_ROUTE_PERMISSIONS = {
   '/organizaciones/crear': 'organizations.create',
   '/localizaciones/crear': 'locations.create',
   '/categorias/crear': 'incident-categories.create',
+  '/incidencias/crear': 'incidents.manage',
   '/incidencias/:id': 'incidents.view',
   // roles.update is granted to admin_sistema only (RolePermissionSeeder
   // never assigns it to any other role) — replicates the original

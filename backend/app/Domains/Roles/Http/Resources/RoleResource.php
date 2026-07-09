@@ -15,7 +15,7 @@ class RoleResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'permissions' => $this->whenLoaded('permissions', fn () => $this->permissions->map(fn ($permission) => [
-                'id' => $permission->id,
+                'id' => $permission->permission_id,
                 'resource' => $permission->resource,
                 'action' => $permission->action,
             ])

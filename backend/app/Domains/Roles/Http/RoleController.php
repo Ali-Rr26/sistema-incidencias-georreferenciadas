@@ -55,7 +55,7 @@ class RoleController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        return new RoleResource($role)->response();
+        return new RoleResource($role->load('permissions'))->response();
     }
 
     public function update(UpdateRoleRequest $request, int $id): JsonResponse
