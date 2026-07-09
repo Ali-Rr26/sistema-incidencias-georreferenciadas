@@ -92,16 +92,20 @@ class IncidentSeeder extends Seeder
             $latOffset = (random_int(-500, 500) / 100000);
             $lngOffset = (random_int(-500, 500) / 100000);
 
-            Incident::create([
-                'incident_category_id' => $category->id,
-                'user_id' => $user->id,
-                'location_id' => $location->id,
-                'title' => $spec['category'].' — '.$spec['location'],
-                'status' => $spec['status'],
-                'priority' => $spec['priority'],
-                'resolution_date' => $spec['resolution_date'],
-                'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
-            ]);
+            $title = $spec['category'].' — '.$spec['location'];
+
+            Incident::updateOrCreate(
+                ['title' => $title],
+                [
+                    'incident_category_id' => $category->id,
+                    'user_id' => $user->id,
+                    'location_id' => $location->id,
+                    'status' => $spec['status'],
+                    'priority' => $spec['priority'],
+                    'resolution_date' => $spec['resolution_date'],
+                    'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
+                ],
+            );
         }
 
         $this->command?->info(count(self::INCIDENTS).' incidents seeded.');
