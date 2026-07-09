@@ -33,7 +33,6 @@ Route::post('/register', [RegisterController::class, 'register'])->middleware('t
 // defense-in-depth for brute-force / token-spray (R7-R10, R13b).
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
-Route::get('/incidents/feed', FeedController::class)->middleware('throttle:feed');
 
 Route::middleware('jwt')->group(function () {
 
@@ -48,6 +47,11 @@ Route::middleware('jwt')->group(function () {
 
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);
+    // Feed moved behind auth — the anonymous "Visitante" role is retired,
+    // every request now authenticates (see docs/Requisitos/SRS.md RF-SW-008,
+    // being updated alongside this). throttle:feed stays: still worth
+    // rate-limiting even for logged-in traffic.
+    Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     // {incident} constrained to digits so the apiResource's show with an
     // alphabetic segment (e.g. "incidents/pendientes") doesn't try to bind
     // a non-numeric id and raise a 500 QueryException. Without this, an
@@ -68,6 +72,7 @@ Route::middleware('jwt')->group(function () {
     Route::post('incidents/{incident}/assignments', [AssignmentController::class, 'store'])->whereNumber('incident');
     Route::delete('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'destroy'])->whereNumber(['incident', 'assignment']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
+    Route::get('incidents/{incident}/available-operators', [IncidentController::class, 'availableOperators'])->whereNumber('incident');
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 
@@ -83,10 +88,14 @@ Route::middleware('jwt')->group(function () {
     Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
+    Route::get('organizations/form-data', [OrganizationController::class, 'formData']);
     Route::apiResource('organizations', OrganizationController::class);
+
     Route::get('incident-categories/tree', [IncidentCategoryController::class, 'tree']);
     Route::apiResource('incident-categories', IncidentCategoryController::class);
+    Route::get('users/form-data', [UserController::class, 'formData']);
     Route::apiResource('users', UserController::class);
+
 
     // RBAC
     Route::apiResource('roles', RoleController::class);

@@ -38,6 +38,7 @@ export function initSelect(elementId, customConfig = {}) {
     maxItems: 1,
     placeholder: el.options[0]?.text || 'Seleccionar...',
     allowEmptyOption: false,
+    dropdownParent: 'body',
     onDropdownOpen: () => {
       // Pequeño fix para Bootstrap 5 z-index
       const dd = el.tomselect?.dropdown;

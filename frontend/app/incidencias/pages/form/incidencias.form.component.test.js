@@ -73,6 +73,42 @@ const categoryTreeFixture = [
   },
 ];
 
+// Rooted at the single country node — provinceSelect only ever sees its
+// direct children, mirroring the real GET /locations/tree shape (country
+// → province → city → neighborhood).
+const locationTreeFixture = [
+  {
+    id: 100,
+    name: 'Ecuador',
+    children: [
+      {
+        id: 200,
+        name: 'Pichincha',
+        children: [
+          {
+            id: 300,
+            name: 'Quito',
+            children: [
+              { id: 400, name: 'La Mariscal', parent_id: 300 },
+              { id: 401, name: 'Iñaquito', parent_id: 300 },
+            ],
+          },
+          {
+            id: 301,
+            name: 'Rumiñahui',
+            children: [],
+          },
+        ],
+      },
+      {
+        id: 201,
+        name: 'Guayas',
+        children: [],
+      },
+    ],
+  },
+];
+
 function buildFormDom() {
   document.body.innerHTML = `
     <div id="ici-map"></div>
@@ -95,8 +131,14 @@ function buildFormDom() {
       <option value="">-- Seleccione una categoría primero --</option>
     </select>
     <div id="ici-error-subcategory"></div>
-    <select id="ici-location">
+    <select id="ici-location-province">
       <option value="">-- Sin ubicación fija --</option>
+    </select>
+    <select id="ici-location-city" disabled>
+      <option value="">-- Seleccione una provincia primero --</option>
+    </select>
+    <select id="ici-location-neighborhood" disabled>
+      <option value="">-- Seleccione un cantón primero --</option>
     </select>
     <div id="ici-error-location"></div>
     <h1 id="ici-page-title"></h1>
@@ -130,7 +172,7 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
         return Promise.resolve({ data: categoryTreeFixture });
       }
       if (path === '/locations/tree') {
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({ data: locationTreeFixture });
       }
       return Promise.resolve({ data: [] });
     });
@@ -296,6 +338,191 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
       expect(catSelect.value).toBe('1');
       expect(subcatSelect.disabled).toBe(false);
       expect(subcatSelect.value).toBe('12');
+    });
+  });
+
+  describe('location cascade — Provincia → Cantón → Parroquia', () => {
+    it('renders the province select with the country node\'s direct children', async () => {
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      const options = Array.from(provinceSelect.options).map((o) => ({
+        value: o.value,
+        text: o.textContent,
+      }));
+
+      expect(options).toEqual([
+        { value: '', text: '-- Sin ubicación fija --' },
+        { value: '200', text: 'Pichincha' },
+        { value: '201', text: 'Guayas' },
+      ]);
+      expect(document.getElementById('ici-location-city').disabled).toBe(true);
+      expect(
+        document.getElementById('ici-location-neighborhood').disabled,
+      ).toBe(true);
+    });
+
+    it('selecting a province populates the city select', async () => {
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      provinceSelect.value = '200';
+      provinceSelect.dispatchEvent(new Event('change'));
+
+      const citySelect = document.getElementById('ici-location-city');
+      expect(citySelect.disabled).toBe(false);
+      const options = Array.from(citySelect.options).map((o) => ({
+        value: o.value,
+        text: o.textContent,
+      }));
+      expect(options).toEqual([
+        { value: '', text: '-- Seleccione cantón --' },
+        { value: '300', text: 'Quito' },
+        { value: '301', text: 'Rumiñahui' },
+      ]);
+    });
+
+    it('selecting a city with neighborhoods populates the (optional) neighborhood select', async () => {
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      provinceSelect.value = '200';
+      provinceSelect.dispatchEvent(new Event('change'));
+
+      const citySelect = document.getElementById('ici-location-city');
+      citySelect.value = '300'; // Quito
+      citySelect.dispatchEvent(new Event('change'));
+
+      const neighborhoodSelect = document.getElementById(
+        'ici-location-neighborhood',
+      );
+      expect(neighborhoodSelect.disabled).toBe(false);
+      const options = Array.from(neighborhoodSelect.options).map((o) => ({
+        value: o.value,
+        text: o.textContent,
+      }));
+      expect(options).toEqual([
+        { value: '', text: '-- Seleccione parroquia (opcional) --' },
+        { value: '400', text: 'La Mariscal' },
+        { value: '401', text: 'Iñaquito' },
+      ]);
+    });
+
+    it('selecting a city with no neighborhoods disables the neighborhood select', async () => {
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      provinceSelect.value = '200';
+      provinceSelect.dispatchEvent(new Event('change'));
+
+      const citySelect = document.getElementById('ici-location-city');
+      citySelect.value = '301'; // Rumiñahui, no children
+      citySelect.dispatchEvent(new Event('change'));
+
+      const neighborhoodSelect = document.getElementById(
+        'ici-location-neighborhood',
+      );
+      expect(neighborhoodSelect.disabled).toBe(true);
+      expect(neighborhoodSelect.options.length).toBe(1);
+      expect(neighborhoodSelect.options[0].textContent).toBe(
+        '-- Sin parroquias --',
+      );
+    });
+
+    it('resetting the province back to the placeholder resets city and neighborhood', async () => {
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      const citySelect = document.getElementById('ici-location-city');
+
+      provinceSelect.value = '200';
+      provinceSelect.dispatchEvent(new Event('change'));
+      citySelect.value = '300';
+      citySelect.dispatchEvent(new Event('change'));
+      expect(citySelect.disabled).toBe(false);
+
+      provinceSelect.value = '';
+      provinceSelect.dispatchEvent(new Event('change'));
+
+      expect(citySelect.disabled).toBe(true);
+      expect(citySelect.options.length).toBe(1);
+      expect(citySelect.options[0].textContent).toBe(
+        '-- Seleccione una provincia primero --',
+      );
+    });
+  });
+
+  describe('edit mode — preload resolves city vs. neighborhood location', () => {
+    beforeEach(() => {
+      mockRouter.queryParams = new URLSearchParams('id=42');
+    });
+
+    it('preselects province + city when the incident location is a city node with no neighborhood', async () => {
+      mockHttp.get.mockImplementation((path) => {
+        if (path === '/incident-categories/tree') {
+          return Promise.resolve({ data: categoryTreeFixture });
+        }
+        if (path === '/locations/tree') {
+          return Promise.resolve({ data: locationTreeFixture });
+        }
+        if (path === '/incidents/42') {
+          return Promise.resolve({
+            data: {
+              id: 42,
+              title: 'Bache en la vía',
+              description: '',
+              priority: 'medium',
+              incident_category_id: 2,
+              location_id: 301, // Rumiñahui (city, no neighborhood)
+            },
+          });
+        }
+        return Promise.resolve({ data: [] });
+      });
+
+      await component.onInit();
+
+      expect(document.getElementById('ici-location-province').value).toBe(
+        '200',
+      );
+      expect(document.getElementById('ici-location-city').value).toBe('301');
+      expect(
+        document.getElementById('ici-location-neighborhood').disabled,
+      ).toBe(true);
+    });
+
+    it('preselects province + city + neighborhood when the incident location is a neighborhood node', async () => {
+      mockHttp.get.mockImplementation((path) => {
+        if (path === '/incident-categories/tree') {
+          return Promise.resolve({ data: categoryTreeFixture });
+        }
+        if (path === '/locations/tree') {
+          return Promise.resolve({ data: locationTreeFixture });
+        }
+        if (path === '/incidents/42') {
+          return Promise.resolve({
+            data: {
+              id: 42,
+              title: 'Poste sin luz',
+              description: '',
+              priority: 'high',
+              incident_category_id: 2,
+              location_id: 400, // La Mariscal (neighborhood of Quito)
+            },
+          });
+        }
+        return Promise.resolve({ data: [] });
+      });
+
+      await component.onInit();
+
+      expect(document.getElementById('ici-location-province').value).toBe(
+        '200',
+      );
+      expect(document.getElementById('ici-location-city').value).toBe('300');
+      expect(
+        document.getElementById('ici-location-neighborhood').value,
+      ).toBe('400');
     });
   });
 });

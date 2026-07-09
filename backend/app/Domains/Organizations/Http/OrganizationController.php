@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domains\Organizations\Http;
 
+use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
+use App\Domains\Locations\Http\Resources\LocationResource;
+use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Organizations\Http\Requests\StoreOrganizationRequest;
 use App\Domains\Organizations\Http\Requests\UpdateOrganizationRequest;
 use App\Domains\Organizations\Http\Resources\OrganizationCollection;
@@ -20,8 +23,11 @@ class OrganizationController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly OrganizationRepository $organizations)
-    {
+    public function __construct(
+        private readonly OrganizationRepository $organizations,
+        private readonly LocationRepository $locations,
+        private readonly IncidentCategoryRepository $categories,
+    ) {
         $this->authorizeResource(Organization::class, 'organization');
     }
 
@@ -57,7 +63,7 @@ class OrganizationController extends Controller
     {
         $organization->load(['category', 'location', 'parent']);
 
-        return (new OrganizationResource($organization))->response();
+        return (new OrganizationResource($organization))->withCatalog()->response();
     }
 
     public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
@@ -73,5 +79,42 @@ class OrganizationController extends Controller
         $this->organizations->delete($organization->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Returns the catalogs needed to render the organization create/edit form
+     * in a single request:
+     *   - organizations: flat list of existing orgs (for the parent selector)
+     *   - locations_tree: full location hierarchy
+     *   - categories: flat list of root incident categories
+     *
+     * Replaces three sequential GET calls in organizaciones.form.component.js.
+     * Authorization: reuses the viewAny Organization policy gate.
+     */
+    public function formData(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Organization::class);
+
+        $locTree    = $this->locations->tree();
+        $cats       = $this->categories->tree(); // returns all nodes; frontend filters roots
+
+        $organizations = Organization::orderBy('name')
+            ->get(['id', 'name', 'parent_id'])
+            ->map(fn (Organization $o) => [
+                'id'        => $o->id,
+                'name'      => $o->name,
+                'parent_id' => $o->parent_id,
+            ])
+            ->values();
+
+        return response()->json([
+            'organizations'  => $organizations,
+            'locations_tree' => LocationResource::collection($locTree),
+            'categories'     => $cats->map(fn ($c) => [
+                'id'        => $c->id,
+                'name'      => $c->name,
+                'parent_id' => $c->parent_id,
+            ])->values(),
+        ]);
     }
 }

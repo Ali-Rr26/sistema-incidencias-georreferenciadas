@@ -21,10 +21,15 @@
     </div>
   </div>
 
-  <!-- Loading -->
-  <div id="detalle-loading" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="mt-2 text-muted">Cargando incidencia...</p>
+  <!-- Loading skeleton — shown while the incident data is fetching.
+       Intentionally minimal: the page loads fast so a full spinner
+       is more distracting than helpful. -->
+  <div id="detalle-loading" class="px-3 py-4">
+    <div class="placeholder-glow">
+      <span class="placeholder col-6 mb-2 d-block rounded"></span>
+      <span class="placeholder col-4 mb-4 d-block rounded"></span>
+      <span class="placeholder col-12 mb-2 d-block rounded" style="height:120px"></span>
+    </div>
   </div>
 
   <!-- Content -->

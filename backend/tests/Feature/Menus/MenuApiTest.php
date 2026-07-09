@@ -143,7 +143,7 @@ it('usuario sees only the four citizen entries — no back-office, no /incidenci
     expect($routes)->toContain('/feed')
         ->and($routes)->toContain('/feed/crear')
         ->and($routes)->toContain('/configuracion/perfil')
-        ->and($routes)->toContain('/mapa-ciudadano');
+        ->and($routes)->toContain('/mapa');
 
     // No back-office at all
     expect($routes)->not->toContain('/dashboard')

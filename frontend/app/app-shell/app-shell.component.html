@@ -36,19 +36,43 @@
           placeholder="Buscar incidencia..."
         />
       </div>
-      <button
-        class="app-shell-header__icon-btn"
-        aria-label="Notificaciones"
-        id="app-shell-bell-admin"
-        data-nav-target="/notificaciones"
-      >
-        <i class="fa-regular fa-bell"></i>
-        <span
-          class="app-shell-header__notif-badge d-none"
-          id="app-shell-bell-badge-admin"
-          >0</span
+      <div class="app-shell-bell-wrapper">
+        <button
+          class="app-shell-header__icon-btn"
+          type="button"
+          aria-label="Notificaciones"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="app-shell-bell-panel-admin"
+          id="app-shell-bell-admin"
         >
-      </button>
+          <i class="fa-regular fa-bell"></i>
+          <span
+            class="app-shell-header__notif-badge d-none"
+            id="app-shell-bell-badge-admin"
+            >0</span
+          >
+        </button>
+        <div
+          class="app-shell-user-menu__panel app-shell-bell-panel"
+          id="app-shell-bell-panel-admin"
+          hidden
+        >
+          <div class="app-shell-bell-panel__header">
+            Notificaciones
+            <button
+              type="button"
+              class="app-shell-bell-panel__markall"
+              id="app-shell-bell-markall-admin"
+            >
+              Marcar todas
+            </button>
+          </div>
+          <ul class="app-shell-bell-panel__list" id="app-shell-bell-list-admin">
+            <li class="app-shell-bell-panel__empty">Sin notificaciones</li>
+          </ul>
+        </div>
+      </div>
       <button class="app-shell-header__icon-btn" aria-label="Configuración">
         <i class="fa-solid fa-gear"></i>
       </button>
@@ -119,7 +143,16 @@
           id="app-shell-bell-panel"
           hidden
         >
-          <div class="app-shell-bell-panel__header">Notificaciones</div>
+          <div class="app-shell-bell-panel__header">
+            Notificaciones
+            <button
+              type="button"
+              class="app-shell-bell-panel__markall"
+              id="app-shell-bell-markall"
+            >
+              Marcar todas
+            </button>
+          </div>
           <ul class="app-shell-bell-panel__list" id="app-shell-bell-list">
             <li class="app-shell-bell-panel__empty" id="app-shell-bell-empty">
               Sin notificaciones

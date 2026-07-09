@@ -203,22 +203,15 @@ export default {
       document.getElementById('estado-error').classList.remove('d-none');
     }
 
-    async function cargarPermisos() {
-      const resp = await http.get('/permissions');
-      return resp.data ?? [];
-    }
-
     async function cargarRol() {
       try {
-        const [rol, grupos] = await Promise.all([
-          http.get(`/roles/${id}`),
-          cargarPermisos(),
-        ]);
+        const rol = await http.get(`/roles/${id}`);
 
         const data = rol.data ?? rol;
         const permisosAsignados = new Set(
           (data.permissions ?? []).map((p) => p.id),
         );
+        const grupos = data.available_permissions ?? [];
 
         document.getElementById('rol-nombre').value = data.name ?? '';
 

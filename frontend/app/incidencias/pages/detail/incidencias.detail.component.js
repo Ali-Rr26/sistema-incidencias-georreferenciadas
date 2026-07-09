@@ -39,9 +39,6 @@ export default {
     try {
       inc = await cargarIncidencia(id);
     } catch {
-      // 404 (or any other load failure) — bounce to not-found so the
-      // user doesn't sit on a blank page. The carga() helper has already
-      // logged the error and rendered the inline alert.
       router.navigate('/not-found');
       return;
     }
@@ -51,9 +48,9 @@ export default {
     setupActionButtons(id, inc);
     setupBuscarResponsables();
     setupEstado(id, inc);
-    cargarHistorial(id);
+    renderHistorial(inc.status_history ?? []);
     setupComments(id);
-    setupAssignments(id, inc);
+    setupAssignments(id, inc, inc.assignments ?? []);
   },
 
   onDestroy() {
@@ -153,6 +150,8 @@ async function renderMap(inc) {
 
   const [lng, lat] = inc.geom.coordinates;
 
+  // Inject the canvas div BEFORE the async Leaflet load so the container
+  // keeps its height and there is no blank-white flash while tiles fetch.
   mapEl.innerHTML =
     '<div id="detalle-mapa" class="incid-detail__map-canvas"></div>';
 
@@ -160,6 +159,7 @@ async function renderMap(inc) {
     container: 'detalle-mapa',
     center: { lat, lng },
     zoom: 15,
+    liveInputs: false,
     errorClass: 'incid-detail__map-error',
   });
   if (!map) return;
@@ -317,56 +317,51 @@ function setupEstado(incidentId, inc) {
 
 // ── Historial de estados (CP-02-03-F) ──────────────────────
 
-async function cargarHistorial(incidentId) {
+/**
+ * Renders the status history list from a pre-loaded array.
+ * Called with the data embedded in GET /incidents/:id so no extra
+ * network request is needed on initial load.
+ */
+function renderHistorial(items) {
   const loadingEl = document.getElementById('detalle-historial-loading');
   const listEl = document.getElementById('detalle-historial-list');
   const vacioEl = document.getElementById('detalle-historial-vacio');
 
   if (!loadingEl || !listEl) return;
 
-  try {
-    const resp = await http.get(`/incidents/${incidentId}/status-history`);
-    const items = resp.data ?? [];
+  loadingEl.classList.add('d-none');
 
-    loadingEl.classList.add('d-none');
-
-    if (items.length === 0) {
-      vacioEl.classList.remove('d-none');
-      return;
-    }
-
-    // más reciente primero (DESC)
-    listEl.innerHTML = [...items]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map((item) => {
-        const prev =
-          STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
-        const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-        const user = item.user
-          ? [item.user.first_name, item.user.last_name]
-              .filter(Boolean)
-              .join(' ')
-          : 'Sistema';
-        const fecha = new Date(item.created_at).toLocaleString('es-EC', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        return `
-          <div class="border-start border-2 border-primary ps-3 mb-3">
-            <div class="small fw-semibold">${prev} → ${next}</div>
-            <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
-          </div>`;
-      })
-      .join('');
-  } catch (err) {
-    console.error('Error al cargar historial:', err);
-    loadingEl.classList.add('d-none');
-    vacioEl.textContent = 'Error al cargar historial.';
+  if (!items || items.length === 0) {
     vacioEl.classList.remove('d-none');
+    return;
   }
+
+  // más reciente primero (DESC)
+  listEl.innerHTML = [...items]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map((item) => {
+      const prev =
+        STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
+      const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
+      const user = item.user
+        ? [item.user.first_name, item.user.last_name]
+            .filter(Boolean)
+            .join(' ')
+        : 'Sistema';
+      const fecha = new Date(item.created_at).toLocaleString('es-EC', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return `
+        <div class="border-start border-2 border-primary ps-3 mb-3">
+          <div class="small fw-semibold">${prev} → ${next}</div>
+          <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+        </div>`;
+    })
+    .join('');
 }
 
 // ── Comentarios públicos ────────────────────────────────────
@@ -525,25 +520,22 @@ function renderAssignments(items, puedeEliminar) {
 }
 
 /**
- * Puebla el <select> de operadores con los usuarios de rol
- * "operador_organizacion" pertenecientes a la organización de la
- * incidencia. Mirror del patrón usado en usuarios.index.component.js
- * (cargarFiltros): primero resuelve el id del rol vía /roles, luego
- * filtra /users por organization_id + role_id.
+ * Populates the operator <select> by calling the dedicated endpoint
+ * GET /incidents/:id/available-operators.
+ *
+ * The backend resolves the operador_organizacion role internally and
+ * filters by the incident's organization, so the frontend no longer
+ * needs two sequential requests (GET /roles → GET /users).
  */
 async function cargarOperadores(inc, selectEl, submitBtn) {
   if (!selectEl) return;
 
-  // R4-002: the submit button must stay disabled whenever the picker is
-  // empty/failed/still loading — only re-enabled once operators are
-  // confirmed to be available (success branch below).
   const setAvailability = (available) => {
     selectEl.disabled = !available;
     if (submitBtn) submitBtn.disabled = !available;
   };
 
-  const orgId = inc.organization?.id ?? inc.organization_id;
-  if (!orgId) {
+  if (!inc.organization_id && !inc.organization?.id) {
     selectEl.innerHTML = '<option value="">Sin organización asignada</option>';
     setAvailability(false);
     return;
@@ -552,27 +544,11 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
   setAvailability(false);
 
   try {
-    const rolesResp = await http.get('/roles?per_page=100');
-    const roles = rolesResp.data ?? rolesResp ?? [];
-    const operadorRole = roles.find((r) => r.name === 'operador_organizacion');
-
-    if (!operadorRole) {
-      selectEl.innerHTML =
-        '<option value="">Sin operadores disponibles</option>';
-      return;
-    }
-
-    const params = new URLSearchParams({
-      organization_id: orgId,
-      role_id: operadorRole.id,
-      per_page: 200,
-    });
-    const usersResp = await http.get(`/users?${params.toString()}`);
-    const usuarios = usersResp.data ?? usersResp ?? [];
+    const resp = await http.get(`/incidents/${inc.id}/available-operators`);
+    const usuarios = resp.data ?? [];
 
     if (usuarios.length === 0) {
-      selectEl.innerHTML =
-        '<option value="">Sin operadores disponibles</option>';
+      selectEl.innerHTML = '<option value="">Sin operadores disponibles</option>';
       return;
     }
 
@@ -590,7 +566,7 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
   }
 }
 
-async function setupAssignments(incidentId, inc) {
+async function setupAssignments(incidentId, inc, initialAssignments = null) {
   const cardEl = document.getElementById('detalle-asignaciones-card');
   const loadingEl = document.getElementById('detalle-asignaciones-loading');
   const listEl = document.getElementById('detalle-asignaciones-list');
@@ -612,13 +588,12 @@ async function setupAssignments(incidentId, inc) {
   try {
     permisos = await permissionService.getMyPermissions();
   } catch {
-    // Fail closed: sin permisos confirmados, no se muestra el formulario
-    // ni los botones de eliminar — la UI se degrada a solo-lectura.
     permisos = new Set();
   }
   const puedeCrear = permisos.has('assignments.create');
   const puedeEliminar = permisos.has('assignments.delete');
 
+  // Fetch-from-network used for post-mutation refreshes.
   async function cargarAsignaciones() {
     try {
       const { data } = await assignmentService.list(incidentId);
@@ -627,9 +602,6 @@ async function setupAssignments(incidentId, inc) {
     } catch (err) {
       console.error('Error al cargar asignaciones:', err);
       loadingEl?.classList.add('d-none');
-      // R4-004: don't leave previous (possibly now-stale, e.g. containing
-      // a just-deleted row's dangling button) rows on screen after a
-      // failed refetch — clear them and surface a clear error state.
       listEl.innerHTML = '';
       if (vacioEl) {
         vacioEl.textContent = 'Error al cargar asignaciones.';
@@ -663,9 +635,6 @@ async function setupAssignments(incidentId, inc) {
 
     formEl.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // R3-002: ignore a second submit while a create is already
-      // in-flight (submitBtn is also disabled while operators are
-      // loading/unavailable — either way, no submission should proceed).
       if (submitBtn?.disabled) return;
       errorEl?.classList.add('d-none');
 
@@ -690,7 +659,13 @@ async function setupAssignments(incidentId, inc) {
     });
   }
 
-  await cargarAsignaciones();
+  // Initial render — use embedded data if available, otherwise fetch.
+  if (initialAssignments !== null) {
+    loadingEl?.classList.add('d-none');
+    renderAssignments(initialAssignments, puedeEliminar);
+  } else {
+    await cargarAsignaciones();
+  }
 }
 
 // ── Claim / Release / Confirmar ────────────────────────────

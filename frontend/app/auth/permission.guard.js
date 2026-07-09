@@ -57,11 +57,11 @@ const CHILD_ROUTE_PERMISSIONS = {
  */
 export const permissionGuard = {
   async canActivate(_ctx) {
-    const [requestedPath] = (window.location.hash.slice(1) || '/').split('?');
+    const [requestedPath, queryString] = (window.location.hash.slice(1) || '/').split('?');
 
     let allowed;
     try {
-      allowed = await isAllowed(requestedPath);
+      allowed = await isAllowed(requestedPath, queryString);
     } catch {
       // menuService/permissionService failed (network error, backend
       // down) — fail closed rather than let this reject silently and
@@ -77,7 +77,7 @@ export const permissionGuard = {
   },
 };
 
-async function isAllowed(requestedPath) {
+async function isAllowed(requestedPath, queryString = '') {
   const tree = await menuService.getMyMenu();
   if (flattenRoutes(tree).has(requestedPath)) {
     return true;
@@ -86,6 +86,20 @@ async function isAllowed(requestedPath) {
   for (const [pattern, permission] of Object.entries(CHILD_ROUTE_PERMISSIONS)) {
     if (matchesPattern(pattern, requestedPath)) {
       const perms = await permissionService.getMyPermissions();
+
+      // These "crear" routes are reused for editing too (index pages
+      // navigate to `X/crear?id=N` — see e.g. organizaciones.index
+      // .component.js). A role can have `.update` without `.create`
+      // (admin_organizacion: organizations.view + .update, no .create),
+      // so when `id` is present this must also accept the `.update`
+      // grant — otherwise a role that's allowed to edit gets bounced
+      // to /not-found for lacking a permission editing never needed.
+      if (permission.endsWith('.create') && new URLSearchParams(queryString).has('id')) {
+        const updatePermission = permission.replace(/\.create$/, '.update');
+
+        return perms.has(permission) || perms.has(updatePermission);
+      }
+
       return perms.has(permission);
     }
   }

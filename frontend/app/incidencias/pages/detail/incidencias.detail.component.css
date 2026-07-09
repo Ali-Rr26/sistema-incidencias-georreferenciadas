@@ -66,6 +66,7 @@
   border-radius: 8px;
 }
 
+
 /* Comments list — scrollable so a long thread doesn't push the rest of
    the sidebar out of view on the main info column. */
 .incid-detail__comments-list {

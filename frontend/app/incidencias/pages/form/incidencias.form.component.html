@@ -167,12 +167,28 @@
             </div>
           </div>
           <div class="form-fields">
-            <div class="form-fields__cell form-fields__cell--wide">
-              <label for="ici-location" class="form-label fw-semibold">
-                Ubicación
+            <div class="form-fields__cell">
+              <label for="ici-location-province" class="form-label fw-semibold">
+                Provincia
               </label>
-              <select class="form-select form-select-lg" id="ici-location">
+              <select class="form-select form-select-lg" id="ici-location-province">
                 <option value="">-- Sin ubicación fija --</option>
+              </select>
+            </div>
+            <div class="form-fields__cell">
+              <label for="ici-location-city" class="form-label fw-semibold">
+                Cantón
+              </label>
+              <select class="form-select form-select-lg" id="ici-location-city" disabled>
+                <option value="">-- Seleccione una provincia primero --</option>
+              </select>
+            </div>
+            <div class="form-fields__cell">
+              <label for="ici-location-neighborhood" class="form-label fw-semibold">
+                Parroquia
+              </label>
+              <select class="form-select form-select-lg" id="ici-location-neighborhood" disabled>
+                <option value="">-- Seleccione un cantón primero --</option>
               </select>
               <div id="ici-error-location" class="invalid-feedback"></div>
             </div>

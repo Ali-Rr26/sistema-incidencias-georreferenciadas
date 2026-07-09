@@ -68,6 +68,15 @@ export default {
       // Load and render Leaflet map
       await this._renderMap(inc);
 
+      // Images gallery
+      this._renderImages(inc.images ?? []);
+
+      // Status history timeline
+      this._renderStatusHistory(inc.status_history ?? []);
+
+      // Assignments list (read-only)
+      this._renderAssignments(inc.assignments ?? []);
+
       // Comments — public, visible/postable by both citizens and operators
       this._setupComments(incidentId);
 
@@ -129,6 +138,7 @@ export default {
       inc.geom?.type === 'Point' && Array.isArray(inc.geom?.coordinates)
         ? `${inc.geom.coordinates[1].toFixed(4)}, ${inc.geom.coordinates[0].toFixed(4)}`
         : '';
+    const orgName = inc.organization?.name || '';
 
     // Description
     const descEl = document.getElementById('fd-description');
@@ -143,6 +153,7 @@ export default {
         <div class="fd-meta-item"><span class="fd-meta-label">Categoría</span><span class="fd-meta-value">${escapeHtml(catName)}</span></div>
         <div class="fd-meta-item"><span class="fd-meta-label">Ubicación</span><span class="fd-meta-value">${escapeHtml(locName) || 'No especificada'}</span></div>
         <div class="fd-meta-item"><span class="fd-meta-label">Coordenadas</span><span class="fd-meta-value">${escapeHtml(coords) || 'No disponibles'}</span></div>
+        <div class="fd-meta-item"><span class="fd-meta-label">Organización</span><span class="fd-meta-value">${escapeHtml(orgName) || 'Sin asignar'}</span></div>
         <div class="fd-meta-item"><span class="fd-meta-label">Estado</span><span class="fd-meta-value feed-status-badge feed-status-${inc.status}">${STATUS_LABEL[inc.status] ?? inc.status}</span></div>
       `;
     }
@@ -266,6 +277,104 @@ export default {
     });
   },
 
+  _renderImages(images) {
+    const container = document.getElementById('fd-images');
+    const emptyEl = document.getElementById('fd-images-empty');
+    if (!container) return;
+
+    if (!images || images.length === 0) {
+      emptyEl?.classList.remove('d-none');
+      return;
+    }
+
+    emptyEl?.classList.add('d-none');
+    container.innerHTML = images
+      .map(
+        (img) => `
+      <a href="${escapeHtml(img.url)}" target="_blank" class="fd-image-item" rel="noopener">
+        <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.original_name || '')}" loading="lazy" />
+      </a>`,
+      )
+      .join('');
+  },
+
+  _renderStatusHistory(items) {
+    const loadingEl = document.getElementById('fd-history-loading');
+    const listEl = document.getElementById('fd-history-list');
+    const emptyEl = document.getElementById('fd-history-empty');
+    if (!loadingEl || !listEl) return;
+
+    loadingEl.classList.add('d-none');
+
+    if (!items || items.length === 0) {
+      emptyEl?.classList.remove('d-none');
+      return;
+    }
+
+    // más reciente primero (DESC)
+    listEl.innerHTML = [...items]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map((item) => {
+        const prev =
+          STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
+        const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
+        const user = item.user
+          ? [item.user.first_name, item.user.last_name]
+              .filter(Boolean)
+              .join(' ')
+          : 'Sistema';
+        const fecha = new Date(item.created_at).toLocaleString('es-EC', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return `
+        <div class="fd-history-item">
+          <div class="fd-history-badge">${escapeHtml(prev)} → ${escapeHtml(next)}</div>
+          <div class="fd-history-meta">${escapeHtml(user)} · ${fecha}</div>
+        </div>`;
+      })
+      .join('');
+  },
+
+  _renderAssignments(items) {
+    const loadingEl = document.getElementById('fd-assignments-loading');
+    const listEl = document.getElementById('fd-assignments-list');
+    const emptyEl = document.getElementById('fd-assignments-empty');
+    if (!loadingEl || !listEl) return;
+
+    loadingEl.classList.add('d-none');
+
+    if (!items || items.length === 0) {
+      emptyEl?.classList.remove('d-none');
+      return;
+    }
+
+    const roleBadge = {
+      responsable: '<span class="fd-badge fd-badge-primary">Responsable</span>',
+      apoyo: '<span class="fd-badge fd-badge-secondary">Apoyo</span>',
+    };
+
+    listEl.innerHTML = items
+      .map((a) => {
+        const nombre = a.user
+          ? [a.user.first_name, a.user.last_name].filter(Boolean).join(' ')
+          : 'Usuario';
+        const badge =
+          roleBadge[a.role] ?? escapeHtml(String(a.role ?? ''));
+        return `
+        <div class="fd-assignment-row">
+          <div>
+            <div class="fd-assignment-name">${escapeHtml(nombre)}</div>
+            <div>${badge}</div>
+          </div>
+        </div>`;
+      })
+      .join('');
+  },
+
   onDestroy() {
     // Cleanup Leaflet map via the helper's returned disposer
     if (this._detailMapRemove) {
@@ -341,9 +450,36 @@ export default {
         </div>
       </div>
 
+      <!-- Images -->
+      <div class="fd-section">
+        <h3 class="fd-section-title"><i class="fa-solid fa-images" style="margin-right:8px"></i>Imágenes</h3>
+        <p id="fd-images-empty" class="fd-empty-text">Sin imágenes</p>
+        <div id="fd-images" class="fd-images-grid"></div>
+      </div>
+
+      <!-- Status history -->
+      <div class="fd-section">
+        <h3 class="fd-section-title"><i class="fa-solid fa-clock-rotate-left" style="margin-right:8px"></i>Historial de estados</h3>
+        <div id="fd-history-loading" class="fd-loading-sm">
+          <div class="fd-spinner fd-spinner--sm"></div>
+        </div>
+        <div id="fd-history-list"></div>
+        <p id="fd-history-empty" class="fd-empty-text d-none">Sin cambios de estado registrados.</p>
+      </div>
+
+      <!-- Assignments -->
+      <div class="fd-section">
+        <h3 class="fd-section-title"><i class="fa-solid fa-user-check" style="margin-right:8px"></i>Asignaciones</h3>
+        <div id="fd-assignments-loading" class="fd-loading-sm">
+          <div class="fd-spinner fd-spinner--sm"></div>
+        </div>
+        <div id="fd-assignments-list"></div>
+        <p id="fd-assignments-empty" class="fd-empty-text d-none">Sin operadores asignados.</p>
+      </div>
+
       <!-- Comments -->
       <div class="fd-section">
-        <h3 class="fd-section-title">Comentarios</h3>
+        <h3 class="fd-section-title"><i class="fa-solid fa-comments" style="margin-right:8px"></i>Comentarios</h3>
         <form id="fd-comment-form" class="fd-comment-form">
           <textarea
             id="fd-comment-input"

@@ -25,6 +25,11 @@ class FeedRebuildCommand extends Command
     {
         $this->info('Rebuilding Redis feed v2 from PostgreSQL...');
 
+        // Rebuild must be authoritative: wipe first so incidents deleted
+        // from PostgreSQL since the last rebuild don't linger as ghosts in
+        // the hash/sorted-set (upsert-only never prunes stale members).
+        Redis::del(self::V2_ITEMS_KEY, self::V2_INDEX_KEY);
+
         $incidentCount = 0;
 
         Incident::with(['category', 'location', 'user'])
@@ -43,6 +48,7 @@ class FeedRebuildCommand extends Command
                         'organization_id' => (string) $incident->organization_id,
                         'user_id' => (string) $incident->user_id,
                         'location_id' => (string) $incident->location_id,
+                        'title' => $incident->title,
                         'status' => $incident->status,
                         'priority' => $incident->priority,
                         'resolution_date' => $incident->resolution_date?->toIso8601String(),

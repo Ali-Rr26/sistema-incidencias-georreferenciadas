@@ -26,41 +26,41 @@ class IncidentSeeder extends Seeder
     ];
 
     /**
-     * Each entry references category by name, location by code, and user by email.
+     * Each entry references category by name, location by code, user by email, and org by name.
      * status + priority cover all combinations for meaningful test coverage.
      */
     private const INCIDENTS = [
         // Quito — pending
-        ['category' => 'Baches y Hundimientos',       'location' => 'EC-17-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
-        ['category' => 'Alumbrado Público',           'location' => 'EC-17-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario2@test.com',   'resolution_date' => null],
-        ['category' => 'Agua Potable',                'location' => 'EC-17-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'usuario1@test.com',   'resolution_date' => null],
-        ['category' => 'Construcciones Ilegales',     'location' => 'EC-17-01', 'priority' => 'low',    'status' => 'in_progress', 'user' => 'operador1@sistema.com', 'resolution_date' => null],
-        ['category' => 'Vandalismo',                  'location' => 'EC-17-01', 'priority' => 'medium', 'status' => 'resolved',    'user' => 'usuario2@test.com',   'resolution_date' => '2026-06-10 14:00:00'],
+        ['category' => 'Baches y Hundimientos',       'location' => 'EC-17-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Quito',     'resolution_date' => null],
+        ['category' => 'Alumbrado Público',            'location' => 'EC-17-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Quito',     'resolution_date' => null],
+        ['category' => 'Agua Potable',                 'location' => 'EC-17-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'operador.gad-quito-zona-norte@organizacion.com',     'org' => 'GAD Quito — Zona Norte',             'resolution_date' => null],
+        ['category' => 'Construcciones Ilegales',      'location' => 'EC-17-01', 'priority' => 'low',    'status' => 'in_progress', 'user' => 'operador.gad-quito-zona-centro@organizacion.com',    'org' => 'GAD Quito — Zona Centro',            'resolution_date' => null],
+        ['category' => 'Vandalismo',                   'location' => 'EC-17-01', 'priority' => 'medium', 'status' => 'resolved',    'user' => 'usuario@test.com',                                   'org' => 'GAD Quito — Zona Sur',               'resolution_date' => '2026-06-10 14:00:00'],
 
         // Guayaquil
-        ['category' => 'Alcantarillado',              'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
-        ['category' => 'Semáforos Dañados',           'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'operador2@sistema.com', 'resolution_date' => null],
-        ['category' => 'Recolección de Residuos',     'location' => 'EC-09-01', 'priority' => 'medium', 'status' => 'resolved',    'user' => 'usuario2@test.com',   'resolution_date' => '2026-06-15 09:30:00'],
-        ['category' => 'Accidentes de Tránsito',      'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'resolved',    'user' => 'operador1@sistema.com', 'resolution_date' => '2026-06-18 16:00:00'],
-        ['category' => 'Contaminación Ambiental',     'location' => 'EC-09-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
+        ['category' => 'Alcantarillado',               'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Guayaquil', 'resolution_date' => null],
+        ['category' => 'Semáforos Dañados',            'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'operador.gad-guayaquil-norte@organizacion.com',      'org' => 'GAD Guayaquil — Norte',              'resolution_date' => null],
+        ['category' => 'Recolección de Residuos',      'location' => 'EC-09-01', 'priority' => 'medium', 'status' => 'resolved',    'user' => 'usuario@test.com',                                   'org' => 'GAD Guayaquil — Centro',             'resolution_date' => '2026-06-15 09:30:00'],
+        ['category' => 'Accidentes de Tránsito',       'location' => 'EC-09-01', 'priority' => 'high',   'status' => 'resolved',    'user' => 'operador.gad-guayaquil-centro@organizacion.com',     'org' => 'GAD Guayaquil — Centro',             'resolution_date' => '2026-06-18 16:00:00'],
+        ['category' => 'Contaminación Ambiental',      'location' => 'EC-09-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Guayaquil', 'resolution_date' => null],
 
         // Cuenca
-        ['category' => 'Señalización Vial',           'location' => 'EC-01-01', 'priority' => 'low',    'status' => 'pending',     'user' => 'usuario2@test.com',   'resolution_date' => null],
-        ['category' => 'Obras Abandonadas',           'location' => 'EC-01-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador1@sistema.com', 'resolution_date' => null],
-        ['category' => 'Tala de Árboles',             'location' => 'EC-01-01', 'priority' => 'low',    'status' => 'resolved',    'user' => 'usuario1@test.com',   'resolution_date' => '2026-06-20 11:00:00'],
-        ['category' => 'Robos y Hurtos',              'location' => 'EC-01-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'usuario2@test.com',   'resolution_date' => null],
-        ['category' => 'Red Eléctrica',               'location' => 'EC-01-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'operador2@sistema.com', 'resolution_date' => null],
+        ['category' => 'Señalización Vial',            'location' => 'EC-01-01', 'priority' => 'low',    'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Cuenca',    'resolution_date' => null],
+        ['category' => 'Obras Abandonadas',            'location' => 'EC-01-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador.gad-cuenca-centro@organizacion.com',        'org' => 'GAD Cuenca — Centro',                'resolution_date' => null],
+        ['category' => 'Tala de Árboles',              'location' => 'EC-01-01', 'priority' => 'low',    'status' => 'resolved',    'user' => 'usuario@test.com',                                   'org' => 'GAD Cuenca — Centro',                'resolution_date' => '2026-06-20 11:00:00'],
+        ['category' => 'Robos y Hurtos',               'location' => 'EC-01-01', 'priority' => 'high',   'status' => 'in_progress', 'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Cuenca',    'resolution_date' => null],
+        ['category' => 'Red Eléctrica',                'location' => 'EC-01-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'operador.gad-cuenca-centro@organizacion.com',        'org' => 'GAD Cuenca — Centro',                'resolution_date' => null],
 
         // Ambato
-        ['category' => 'Baches y Hundimientos',       'location' => 'EC-18-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
-        ['category' => 'Basureros Clandestinos',      'location' => 'EC-18-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador1@sistema.com', 'resolution_date' => null],
-        ['category' => 'Veredas y Aceras Deterioradas', 'location' => 'EC-18-01', 'priority' => 'low',  'status' => 'resolved',    'user' => 'usuario2@test.com',   'resolution_date' => '2026-06-22 08:00:00'],
+        ['category' => 'Baches y Hundimientos',        'location' => 'EC-18-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Ambato',    'resolution_date' => null],
+        ['category' => 'Basureros Clandestinos',       'location' => 'EC-18-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador.gad-municipal-del-canton-ambato@organizacion.com', 'org' => 'GAD Municipal del Cantón Ambato', 'resolution_date' => null],
+        ['category' => 'Veredas y Aceras Deterioradas', 'location' => 'EC-18-01', 'priority' => 'low',   'status' => 'resolved',    'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Ambato',    'resolution_date' => '2026-06-22 08:00:00'],
 
         // Loja
-        ['category' => 'Agua Potable',                'location' => 'EC-11-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
-        ['category' => 'Alumbrado Público',           'location' => 'EC-11-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador2@sistema.com', 'resolution_date' => null],
-        ['category' => 'Vandalismo',                  'location' => 'EC-11-01', 'priority' => 'low',    'status' => 'resolved',    'user' => 'usuario2@test.com',   'resolution_date' => '2026-06-21 17:00:00'],
-        ['category' => 'Señalización Vial',           'location' => 'EC-11-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario1@test.com',   'resolution_date' => null],
+        ['category' => 'Agua Potable',                 'location' => 'EC-11-01', 'priority' => 'high',   'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Loja',      'resolution_date' => null],
+        ['category' => 'Alumbrado Público',            'location' => 'EC-11-01', 'priority' => 'medium', 'status' => 'in_progress', 'user' => 'operador.gad-municipal-del-canton-loja@organizacion.com', 'org' => 'GAD Municipal del Cantón Loja', 'resolution_date' => null],
+        ['category' => 'Vandalismo',                   'location' => 'EC-11-01', 'priority' => 'low',    'status' => 'resolved',    'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Loja',      'resolution_date' => '2026-06-21 17:00:00'],
+        ['category' => 'Señalización Vial',            'location' => 'EC-11-01', 'priority' => 'medium', 'status' => 'pending',     'user' => 'usuario@test.com',                                   'org' => 'GAD Municipal del Cantón Loja',      'resolution_date' => null],
     ];
 
     public function run(): void
@@ -75,10 +75,13 @@ class IncidentSeeder extends Seeder
 
         $users = User::all()->keyBy('email');
 
+        $organizations = \App\Domains\Organizations\Models\Organization::all()->keyBy('name');
+
         foreach (self::INCIDENTS as $spec) {
             $category = $categories->get($spec['category'])?->first();
             $location = $locations->get($spec['location']);
-            $user = $users->get($spec['user']);
+            $user     = $users->get($spec['user']);
+            $org      = $organizations->get($spec['org']);
 
             if (! $category || ! $location || ! $user) {
                 $this->command?->warn("Skipping incident — missing: category=[{$spec['category']}] location=[{$spec['location']}] user=[{$spec['user']}]");
@@ -98,12 +101,13 @@ class IncidentSeeder extends Seeder
                 ['title' => $title],
                 [
                     'incident_category_id' => $category->id,
-                    'user_id' => $user->id,
-                    'location_id' => $location->id,
-                    'status' => $spec['status'],
-                    'priority' => $spec['priority'],
-                    'resolution_date' => $spec['resolution_date'],
-                    'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
+                    'user_id'              => $user->id,
+                    'location_id'          => $location->id,
+                    'organization_id'      => $org?->id,
+                    'status'               => $spec['status'],
+                    'priority'             => $spec['priority'],
+                    'resolution_date'      => $spec['resolution_date'],
+                    'geom'                 => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
                 ],
             );
         }

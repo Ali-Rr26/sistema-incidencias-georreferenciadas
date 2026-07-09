@@ -19,13 +19,22 @@ class MenuSeeder extends Seeder
      * IDs con huecos: 5 era Asignaciones (borrado paso 06),
      *                  9 era Permisos (borrado paso 05-A),
      *                  10 era Menús (sin contraparte, removido),
-     *                  15 era Notificaciones (sin ruta todavía, paso 07).
+     *                  15 era Notificaciones — página completa retirada, el
+     *                  ícono de campana (bell) en el header ya cubre listar +
+     *                  marcar leídas/todas sin necesitar una página aparte.
      *                  16/17/18 son entradas ciudadanas añadidas en el change
      *                  menu-server-driven (Inicio/Reportar/Perfil).
      *                  4 era Nueva Incidencia (back-office), removida — route
      *                  movido a botón en lista + CHILD_ROUTE_PERMISSIONS.
+     *                  20 era el "Mapa" espejo ciudadano (/mapa-ciudadano) —
+     *                  removido al fusionar los dos mapas en un solo endpoint
+     *                  + componente (ver comentario en la entrada 19).
      *
-     * @var array<int, array{name: string, route: string|null, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|null}>
+     * `permission` acepta un solo spec {resource, action} o una lista de
+     * specs — una lista asigna varios permisos al mismo menú (OR: alcanza
+     * con tener uno cualquiera para verlo), usado por la entrada 19 abajo.
+     *
+     * @var array<int, array{name: string, route: string|null, icon: string|null, parent_id: int|null, permission: array{resource: string, action: string}|list<array{resource: string, action: string}>|null}>
      */
     private const MENUS = [
         1 => ['name' => 'Dashboard',              'route' => '/dashboard',             'icon' => 'gauge-high',       'parent_id' => null, 'permission' => ['resource' => 'dashboard',           'action' => 'view']],
@@ -52,19 +61,20 @@ class MenuSeeder extends Seeder
         11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
         12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
         13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-        // Standalone
-        15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
         // Citizen entries (no parent header, flat at the root)
         16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
         17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
         18 => ['name' => 'Perfil',                'route' => '/configuracion/perfil',  'icon' => 'user',             'parent_id' => null, 'permission' => ['resource' => 'profile',             'action' => 'view']],
-        // Mapa georreferenciado — admin-only incident map view.
-        19 => ['name' => 'Mapa',                  'route' => '/mapa',                  'icon' => 'map-location-dot', 'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
-        // Citizen mirror of the admin mapa. Lives at the citizen sidebar
-        // root (parent_id = null) so it sits next to Inicio/Reportar/Perfil.
-        // Gated by `feed.view` because it consumes the public /incidents/feed
-        // endpoint — not the admin /incidents endpoint.
-        20 => ['name' => 'Mapa',                  'route' => '/mapa-ciudadano',        'icon' => 'map-location-dot', 'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
+        // Mapa georreferenciado — single entry for every role now that
+        // FeedController branches server-side by role instead of needing
+        // two separate frontend components/routes (/mapa admin vs
+        // /mapa-ciudadano citizen). Gated by EITHER incidents.view (staff)
+        // OR feed.view (citizen) — whichever the role has, they see one
+        // "Mapa" link, and the backend decides what data comes back.
+        19 => ['name' => 'Mapa',                  'route' => '/mapa',                  'icon' => 'map-location-dot', 'parent_id' => 2,    'permission' => [
+            ['resource' => 'incidents', 'action' => 'view'],
+            ['resource' => 'feed', 'action' => 'view'],
+        ]],
     ];
 
     public function run(): void
@@ -107,22 +117,29 @@ class MenuSeeder extends Seeder
                 continue;
             }
 
-            $permission = Permission::where('resource', $data['permission']['resource'])
-                ->where('action', $data['permission']['action'])
-                ->first();
+            // 'permission' is either a single {resource, action} spec or a
+            // list of specs (see menu_id 19 "Mapa" — granted on EITHER
+            // incidents.view OR feed.view). Normalize to a list either way.
+            $specs = array_is_list($data['permission']) ? $data['permission'] : [$data['permission']];
 
-            if ($permission === null) {
-                $this->command?->warn("Permission {$data['permission']['resource']}.{$data['permission']['action']} not found — skipping menu {$menuId}.");
+            foreach ($specs as $spec) {
+                $permission = Permission::where('resource', $spec['resource'])
+                    ->where('action', $spec['action'])
+                    ->first();
 
-                continue;
+                if ($permission === null) {
+                    $this->command?->warn("Permission {$spec['resource']}.{$spec['action']} not found — skipping menu {$menuId}.");
+
+                    continue;
+                }
+
+                DB::table('menu_permission')->insert([
+                    'menu_id' => $menuId,
+                    'permission_id' => $permission->permission_id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
             }
-
-            DB::table('menu_permission')->insert([
-                'menu_id' => $menuId,
-                'permission_id' => $permission->permission_id,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
         }
 
         $this->command?->info('Permisos de menú asignados.');
