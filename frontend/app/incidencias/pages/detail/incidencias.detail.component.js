@@ -38,9 +38,6 @@ export default {
     try {
       inc = await cargarIncidencia(id);
     } catch {
-      // 404 (or any other load failure) — bounce to not-found so the
-      // user doesn't sit on a blank page. The carga() helper has already
-      // logged the error and rendered the inline alert.
       router.navigate('/not-found');
       return;
     }
@@ -49,9 +46,9 @@ export default {
     setupUpload(id);
     setupActionButtons(id, inc);
     setupEstado(id, inc);
-    cargarHistorial(id);
+    renderHistorial(inc.status_history ?? []);
     setupComments(id);
-    setupAssignments(id, inc);
+    setupAssignments(id, inc, inc.assignments ?? []);
   },
 
   onDestroy() {
@@ -315,56 +312,51 @@ function setupEstado(incidentId, inc) {
 
 // ── Historial de estados (CP-02-03-F) ──────────────────────
 
-async function cargarHistorial(incidentId) {
+/**
+ * Renders the status history list from a pre-loaded array.
+ * Called with the data embedded in GET /incidents/:id so no extra
+ * network request is needed on initial load.
+ */
+function renderHistorial(items) {
   const loadingEl = document.getElementById('detalle-historial-loading');
   const listEl = document.getElementById('detalle-historial-list');
   const vacioEl = document.getElementById('detalle-historial-vacio');
 
   if (!loadingEl || !listEl) return;
 
-  try {
-    const resp = await http.get(`/incidents/${incidentId}/status-history`);
-    const items = resp.data ?? [];
+  loadingEl.classList.add('d-none');
 
-    loadingEl.classList.add('d-none');
-
-    if (items.length === 0) {
-      vacioEl.classList.remove('d-none');
-      return;
-    }
-
-    // más reciente primero (DESC)
-    listEl.innerHTML = [...items]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .map((item) => {
-        const prev =
-          STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
-        const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-        const user = item.user
-          ? [item.user.first_name, item.user.last_name]
-              .filter(Boolean)
-              .join(' ')
-          : 'Sistema';
-        const fecha = new Date(item.created_at).toLocaleString('es-EC', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        return `
-          <div class="border-start border-2 border-primary ps-3 mb-3">
-            <div class="small fw-semibold">${prev} → ${next}</div>
-            <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
-          </div>`;
-      })
-      .join('');
-  } catch (err) {
-    console.error('Error al cargar historial:', err);
-    loadingEl.classList.add('d-none');
-    vacioEl.textContent = 'Error al cargar historial.';
+  if (!items || items.length === 0) {
     vacioEl.classList.remove('d-none');
+    return;
   }
+
+  // más reciente primero (DESC)
+  listEl.innerHTML = [...items]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map((item) => {
+      const prev =
+        STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
+      const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
+      const user = item.user
+        ? [item.user.first_name, item.user.last_name]
+            .filter(Boolean)
+            .join(' ')
+        : 'Sistema';
+      const fecha = new Date(item.created_at).toLocaleString('es-EC', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return `
+        <div class="border-start border-2 border-primary ps-3 mb-3">
+          <div class="small fw-semibold">${prev} → ${next}</div>
+          <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+        </div>`;
+    })
+    .join('');
 }
 
 // ── Comentarios públicos ────────────────────────────────────
@@ -588,7 +580,7 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
   }
 }
 
-async function setupAssignments(incidentId, inc) {
+async function setupAssignments(incidentId, inc, initialAssignments = null) {
   const cardEl = document.getElementById('detalle-asignaciones-card');
   const loadingEl = document.getElementById('detalle-asignaciones-loading');
   const listEl = document.getElementById('detalle-asignaciones-list');
@@ -610,13 +602,12 @@ async function setupAssignments(incidentId, inc) {
   try {
     permisos = await permissionService.getMyPermissions();
   } catch {
-    // Fail closed: sin permisos confirmados, no se muestra el formulario
-    // ni los botones de eliminar — la UI se degrada a solo-lectura.
     permisos = new Set();
   }
   const puedeCrear = permisos.has('assignments.create');
   const puedeEliminar = permisos.has('assignments.delete');
 
+  // Fetch-from-network used for post-mutation refreshes.
   async function cargarAsignaciones() {
     try {
       const { data } = await assignmentService.list(incidentId);
@@ -625,9 +616,6 @@ async function setupAssignments(incidentId, inc) {
     } catch (err) {
       console.error('Error al cargar asignaciones:', err);
       loadingEl?.classList.add('d-none');
-      // R4-004: don't leave previous (possibly now-stale, e.g. containing
-      // a just-deleted row's dangling button) rows on screen after a
-      // failed refetch — clear them and surface a clear error state.
       listEl.innerHTML = '';
       if (vacioEl) {
         vacioEl.textContent = 'Error al cargar asignaciones.';
@@ -661,9 +649,6 @@ async function setupAssignments(incidentId, inc) {
 
     formEl.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // R3-002: ignore a second submit while a create is already
-      // in-flight (submitBtn is also disabled while operators are
-      // loading/unavailable — either way, no submission should proceed).
       if (submitBtn?.disabled) return;
       errorEl?.classList.add('d-none');
 
@@ -688,7 +673,13 @@ async function setupAssignments(incidentId, inc) {
     });
   }
 
-  await cargarAsignaciones();
+  // Initial render — use embedded data if available, otherwise fetch.
+  if (initialAssignments !== null) {
+    loadingEl?.classList.add('d-none');
+    renderAssignments(initialAssignments, puedeEliminar);
+  } else {
+    await cargarAsignaciones();
+  }
 }
 
 // ── Claim / Release / Confirmar ────────────────────────────

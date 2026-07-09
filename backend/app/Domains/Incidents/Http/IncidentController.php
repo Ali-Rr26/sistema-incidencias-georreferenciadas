@@ -116,16 +116,18 @@ class IncidentController extends Controller
     }
 
     /**
-     * Relations eagerly loaded for the show endpoint. Same shape as index —
-     * IncidentResource is the single shape for both.
+     * Relations eagerly loaded for the show endpoint.
+     * `assignments.user` is included here (not in INDEX_RELATIONS) because
+     * the detail view embeds assignments directly — the list endpoint does
+     * not need them.
      */
-    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location'];
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user'];
 
     public function show(Request $request, Incident $incident): JsonResponse
     {
         $incident->load(self::SHOW_RELATIONS);
 
-        return (new IncidentResource($incident))->response();
+        return (new IncidentResource($incident))->withDetail()->response();
     }
 
     public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
