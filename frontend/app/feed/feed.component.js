@@ -12,6 +12,7 @@ import {
 import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
 import { auth } from '../auth/auth.service.js';
+import loadLeaflet from '../shared/leaflet.js';
 
 const POR_PAGINA = 10;
 
@@ -75,14 +76,18 @@ function renderCard(inc) {
     </div>
   `;
 
-  // Image/Map placeholder with coords overlay
+  // Extract geometry coords for minimap (real or inline)
+  const geomCoords =
+    inc.geom?.type === 'Point' && Array.isArray(inc.geom?.coordinates)
+      ? { lng: inc.geom.coordinates[0], lat: inc.geom.coordinates[1] }
+      : null;
+
   let coordsHtml = '';
-  if (inc.geom?.type === 'Point' && Array.isArray(inc.geom?.coordinates)) {
-    const [lng, lat] = inc.geom.coordinates;
+  if (geomCoords) {
     coordsHtml = `
       <div style="position:absolute;left:16px;bottom:12px;background:rgba(255,255,255,.9);border-radius:8px;padding:6px 11px;font-size:11.5px;color:#6b7180;display:flex;align-items:center;gap:6px;backdrop-filter:blur(4px)">
         <i class="fa-solid fa-location-crosshairs" style="color:#5a6ff0;font-size:11px"></i>
-        ${lat.toFixed(4)}, ${lng.toFixed(4)}
+        ${geomCoords.lat.toFixed(4)}, ${geomCoords.lng.toFixed(4)}
       </div>
     `;
   }
@@ -95,18 +100,12 @@ function renderCard(inc) {
         ${coordsHtml}
       </div>
     `;
-  } else {
-    // Renders the classic preview map background
+  } else if (geomCoords) {
+    // Real Leaflet minimap — initMiniMaps() hydrates it after DOM insert
     mediaHtml = `
-      <div class="feed-card-preview" style="margin:0 18px 14px;height:180px;border-radius:12px;background:linear-gradient(160deg,#dce4ee,#c8d4e2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
-        <div style="position:absolute;inset:0;background-image:linear-gradient(#c8d4e2 1px,transparent 1px),linear-gradient(90deg,#c8d4e2 1px,transparent 1px);background-size:38px 38px;opacity:.5"></div>
-        <div style="position:absolute;top:0;bottom:0;left:40%;width:22px;background:#e4ecf5;opacity:.8"></div>
-        <div style="position:absolute;left:0;right:0;top:54%;height:18px;background:#e4ecf5;opacity:.8"></div>
-        <div style="position:absolute;left:46%;top:48%;transform:translate(-50%,-100%)">
-          <div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:#fa5a7d;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 12px rgba(0,0,0,.28)">
-            <i class="fa-solid fa-location-dot" style="color:#fff;font-size:13px;transform:rotate(45deg)"></i>
-          </div>
-        </div>
+      <div id="feed-mm-${inc.id}" class="feed-minimap"
+           data-lat="${geomCoords.lat}" data-lng="${geomCoords.lng}"
+           style="margin:0 18px 14px;height:180px;border-radius:12px;overflow:hidden;position:relative;background:#e8ecf1">
         ${coordsHtml}
       </div>
     `;
@@ -164,6 +163,55 @@ function renderCard(inc) {
       </div>
     </div>
   `;
+}
+
+// ── Mini-map initializer ──────────────────────────────────
+
+async function initMiniMaps() {
+  const containers = document.querySelectorAll('.feed-minimap:not([data-map-init])');
+  if (!containers.length) return;
+
+  try {
+    await loadLeaflet();
+  } catch {
+    return;
+  }
+
+  containers.forEach((el) => {
+    const lat = parseFloat(el.dataset.lat);
+    const lng = parseFloat(el.dataset.lng);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    if (el._leaflet_map) return;
+
+    const map = L.map(el, {
+      zoomControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+      keyboard: false,
+      attributionControl: false,
+    }).setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(map);
+
+    L.marker([lat, lng]).addTo(map);
+
+    el._leaflet_map = map;
+    el.dataset.mapInit = '';
+  });
+}
+
+function disposeMiniMaps() {
+  document.querySelectorAll('.feed-minimap').forEach((el) => {
+    if (el._leaflet_map) {
+      el._leaflet_map.remove();
+      delete el._leaflet_map;
+    }
+  });
 }
 
 // ── DOM ids (single responsive template) ───────────────────
@@ -276,8 +324,10 @@ export default {
               datos.map(renderCard).join(''),
             );
           } else {
+            disposeMiniMaps();
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
           }
+          initMiniMaps();
           sentinel.classList.toggle('done', !hasMore);
           sentinel.classList.toggle('loading', hasMore && !cargando);
         }
@@ -377,6 +427,7 @@ export default {
 
         const listEl = document.getElementById(LIST);
         if (listEl) {
+          disposeMiniMaps();
           if (checkedLabels.length === 0) {
             listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
           } else {
@@ -388,6 +439,7 @@ export default {
             });
             listEl.innerHTML = filtered.map(renderCard).join('');
           }
+          initMiniMaps();
         }
       });
     }
@@ -398,6 +450,7 @@ export default {
   },
 
   onDestroy() {
+    disposeMiniMaps();
     document.body.classList.remove('feed-view');
   },
 };
