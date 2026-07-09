@@ -20,22 +20,46 @@ import { http } from '../core/http.service.js';
  * solo agrupan hijos). El frontend los renderiza como títulos de sección y
  * los ignora como destinos de link.
  *
- * Caché en memoria: la respuesta se cachea después del primer fetch exitoso
- * dentro de la misma sesión. Si el rol/permisos del usuario cambian, hay
- * que llamar a `clearCache()` antes de la próxima lectura.
+ * Caché en memoria con TTL: la respuesta se cachea después del primer fetch
+ * exitoso dentro de la misma sesión y se considera fresca durante
+ * DEFAULT_TTL_MS (5 minutos por defecto). Pasado el TTL, la próxima llamada
+ * re-fetchea en lugar de servir la copia vieja — esto garantiza que cuando
+ * un admin concede/revoca un permiso, los permisos del usuario afectado se
+ * reflejan dentro de una ventana razonable sin necesidad de recargar.
+ *
+ * Si los permisos del usuario cambian (logout, asignación de rol, etc.),
+ * el llamador debe invalidar la caché explícitamente vía
+ * `invalidateMyMenu()` (o el alias legacy `clearCache()`) antes de la
+ * próxima lectura.
  */
 
+const DEFAULT_TTL_MS = 5 * 60 * 1000;
+
 let _cache = null;
+let _cachedAt = 0;
 let _inflight = null;
 
 export const menuService = {
   /**
    * Devuelve el árbol de menús del usuario autenticado.
-   * Reutiliza caché si está disponible.
+   * Reutiliza caché si está disponible y es reciente (dentro del TTL).
+   *
+   * @param {{ ttlMs?: number, forceRefresh?: boolean }} [opts]
+   *   ttlMs override del TTL por defecto (útil en tests).
+   *   forceRefresh salta la caché aunque esté fresca (útil tras un cambio
+   *   de permisos).
    */
-  async getMyMenu() {
-    if (_cache) return _cache;
-    if (_inflight) return _inflight;
+  async getMyMenu(opts = {}) {
+    const ttl = opts.ttlMs ?? DEFAULT_TTL_MS;
+    const now = Date.now();
+    const fresh = _cache !== null && now - _cachedAt <= ttl;
+
+    if (!opts.forceRefresh && fresh) {
+      return _cache;
+    }
+    if (_inflight) {
+      return _inflight;
+    }
 
     _inflight = http
       .get('/menus/my')
@@ -47,6 +71,7 @@ export const menuService = {
         } else {
           _cache = [];
         }
+        _cachedAt = Date.now();
         return _cache;
       })
       .finally(() => {
@@ -57,10 +82,23 @@ export const menuService = {
   },
 
   /**
+   * Invalida la caché forzando una recarga en la próxima lectura. Llamar
+   * después de logout, cambio de rol, o cuando se sepa que los permisos
+   * del usuario cambiaron. Es un alias semántico de `clearCache()` —
+   * ambos nombres hacen lo mismo.
+   */
+  invalidateMyMenu() {
+    this.clearCache();
+  },
+
+  /**
    * Limpia la caché. Llamar después de logout o cambios de permisos.
+   * Mantenido como alias de `invalidateMyMenu()` por compat con los
+   * llamadores existentes (auth.service.js, app-shell.component.js).
    */
   clearCache() {
     _cache = null;
+    _cachedAt = 0;
     _inflight = null;
   },
 };
