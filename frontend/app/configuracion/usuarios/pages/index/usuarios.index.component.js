@@ -144,7 +144,15 @@ export default {
         const total = resp.meta?.total ?? resp.total ?? datos.length;
         totalPaginas = Math.ceil(total / POR_PAGINA) || 1;
         renderTabla(datos, total);
-      } catch {
+      } catch (err) {
+        // Defense in depth (R-24): a 403 means "you can see the route but
+        // not the data" — usually a stale permission state, e.g. the
+        // user lost the permission since the menu was loaded. Surface
+        // it explicitly instead of masking it behind the generic
+        // "no se pudo conectar con el servidor" panel.
+        if (err?.status === 403) {
+          mostrarToast('No tienes acceso a este recurso.', 'warning');
+        }
         mostrarEstado('error');
       }
     }

@@ -129,7 +129,11 @@ export default {
         const total = resp.meta?.total ?? resp.total ?? datos.length;
         totalPaginas = Math.ceil(total / POR_PAGINA) || 1;
         renderTabla(datos, total);
-      } catch {
+      } catch (err) {
+        // Defense in depth (R-24): distinguish 403 from generic failure.
+        if (err?.status === 403) {
+          mostrarToast('No tienes acceso a este recurso.', 'warning');
+        }
         mostrarEstado('error');
       }
     }
