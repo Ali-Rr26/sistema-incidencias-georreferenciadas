@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\StatusHistory\Interfaces;
 
+use App\Domains\Incidents\Models\Incident;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,13 +20,27 @@ use Illuminate\Support\Facades\DB;
  * the "actor" recorded here is the incident's reporter, not necessarily the
  * user who changed the status. The frontend can show this with appropriate
  * framing.
+ *
+ * Authorization (R-19): the endpoint reuses the parent incident's view
+ * permission (IncidentPolicy::view, driven by the `incidents.view` gate).
+ * Status history is a sub-resource of an incident — if you can't view the
+ * incident, the history is meaningless — so we resolve the parent first,
+ * then authorize against it. A bogus incident id surfaces as 404 via
+ * {@see Incident::findOrFail()} BEFORE the authorize check; a valid
+ * incident the user cannot view surfaces as 403.
  */
 class StatusHistoryController
 {
+    use AuthorizesRequests;
+
     public function index(Request $request, int $incidentId): JsonResponse
     {
+        $incident = Incident::findOrFail($incidentId);
+
+        $this->authorize('view', $incident);
+
         $rows = DB::table('status_history')
-            ->where('incident_id', $incidentId)
+            ->where('incident_id', $incident->id)
             ->orderBy('created_at')
             ->orderBy('id')
             ->get(['id', 'user_id', 'previous_status', 'new_status', 'created_at']);
