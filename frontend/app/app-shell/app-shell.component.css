@@ -23,6 +23,8 @@
 
 .app-shell-header {
   grid-area: header;
+  position: relative;
+  z-index: 50;
 }
 .app-shell-sidebar {
   grid-area: sidebar;
@@ -398,11 +400,28 @@ body[data-role='guest']
 }
 
 .app-shell-bell-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   font-weight: 700;
   font-size: 0.85rem;
   color: #23283b;
   border-bottom: 1px solid #eef0f5;
+}
+
+.app-shell-bell-panel__markall {
+  border: none;
+  background: transparent;
+  color: #6a5cf3;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.app-shell-bell-panel__markall:hover {
+  text-decoration: underline;
 }
 
 .app-shell-bell-panel__list {

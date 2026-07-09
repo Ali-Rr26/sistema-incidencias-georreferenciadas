@@ -25,7 +25,6 @@ import feedDetailComponent from './feed/pages/detail/feed-detail.component.js';
 import mapaComponent from './mapa/mapa.component.js';
 import rolesIndexComponent from './configuracion/roles/pages/index/roles.index.component.js';
 import rolesDetailComponent from './configuracion/roles/pages/detail/roles.detail.component.js';
-import notificacionesIndexComponent from './notificaciones/pages/index/notificaciones.index.component.js';
 
 // ─── Register shell (single, unified) ───────────────────────────────
 // Only the unified 'app' shell exists post-consolidar-layout-unico.
@@ -133,13 +132,6 @@ router.addRoute(
   [permissionGuard],
   'admin',
 );
-router.addRoute(
-  '/notificaciones',
-  notificacionesIndexComponent,
-  [authGuard],
-  'admin',
-);
-
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
 // ─── Global listeners (cleaned up if app is ever re-booted in tests) ──

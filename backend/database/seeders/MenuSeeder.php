@@ -19,7 +19,9 @@ class MenuSeeder extends Seeder
      * IDs con huecos: 5 era Asignaciones (borrado paso 06),
      *                  9 era Permisos (borrado paso 05-A),
      *                  10 era Menús (sin contraparte, removido),
-     *                  15 era Notificaciones (sin ruta todavía, paso 07).
+     *                  15 era Notificaciones — página completa retirada, el
+     *                  ícono de campana (bell) en el header ya cubre listar +
+     *                  marcar leídas/todas sin necesitar una página aparte.
      *                  16/17/18 son entradas ciudadanas añadidas en el change
      *                  menu-server-driven (Inicio/Reportar/Perfil).
      *                  4 era Nueva Incidencia (back-office), removida — route
@@ -59,8 +61,6 @@ class MenuSeeder extends Seeder
         11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
         12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
         13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-        // Standalone
-        15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'view']],
         // Citizen entries (no parent header, flat at the root)
         16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
         17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
