@@ -267,6 +267,95 @@
           </div>
         </div>
 
+        <!-- Asignaciones (operadores responsable/apoyo) -->
+        <div class="gr-card mb-3" id="detalle-asignaciones-card">
+          <div style="padding: 24px 28px">
+            <h5 class="fw-bold mb-3">
+              <i class="fas fa-user-check me-2"></i>Asignaciones
+            </h5>
+            <div id="detalle-asignaciones-loading" class="text-center py-2">
+              <div
+                class="spinner-border spinner-border-sm text-secondary"
+                role="status"
+              ></div>
+            </div>
+            <div id="detalle-asignaciones-list"></div>
+            <p
+              id="detalle-asignaciones-vacio"
+              class="text-muted small mb-0 d-none"
+            >
+              Sin operadores asignados.
+            </p>
+
+            <!-- Visible regardless of assignments.create/assignments.delete
+                 permission combo (see R4-001): both the create-submit and
+                 the delete-row error handlers point here so a
+                 delete-only user still sees a failure message even though
+                 the create form below stays hidden for them. -->
+            <div id="detalle-asignaciones-error" class="d-none">
+              <div
+                class="alert alert-danger py-2 mb-2 small"
+                id="detalle-asignaciones-msg"
+              ></div>
+            </div>
+
+            <form
+              id="detalle-asignaciones-form"
+              class="d-none mt-3 pt-3 border-top"
+            >
+              <div class="mb-2">
+                <label
+                  for="detalle-asignaciones-select"
+                  class="form-label small fw-semibold"
+                  >Operador</label
+                >
+                <select
+                  id="detalle-asignaciones-select"
+                  class="form-select form-select-sm"
+                ></select>
+              </div>
+              <div class="mb-2">
+                <div class="form-check form-check-inline">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="asignacion-rol"
+                    id="detalle-asignaciones-rol-responsable"
+                    value="responsable"
+                    checked
+                  />
+                  <label
+                    class="form-check-label small"
+                    for="detalle-asignaciones-rol-responsable"
+                    >Responsable</label
+                  >
+                </div>
+                <div class="form-check form-check-inline">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="asignacion-rol"
+                    id="detalle-asignaciones-rol-apoyo"
+                    value="apoyo"
+                  />
+                  <label
+                    class="form-check-label small"
+                    for="detalle-asignaciones-rol-apoyo"
+                    >Apoyo</label
+                  >
+                </div>
+              </div>
+              <button
+                type="submit"
+                id="detalle-asignaciones-submit"
+                class="btn btn-primary btn-sm w-100"
+              >
+                <i class="fas fa-user-plus me-1"></i>Asignar
+              </button>
+            </form>
+          </div>
+        </div>
+
         <!-- Images -->
         <div class="gr-card">
           <div class="incid-detail__card-body">

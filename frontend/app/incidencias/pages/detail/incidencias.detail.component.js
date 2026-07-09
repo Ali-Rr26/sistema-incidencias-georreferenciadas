@@ -5,6 +5,8 @@ import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { bindView } from '../../../utils/dom.js';
 import { commentService } from '../../../shared/comment.service.js';
+import { assignmentService } from '../../../shared/assignment.service.js';
+import { permissionService } from '../../../shared/permission.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -49,6 +51,7 @@ export default {
     setupEstado(id, inc);
     cargarHistorial(id);
     setupComments(id);
+    setupAssignments(id, inc);
   },
 
   onDestroy() {
@@ -452,6 +455,240 @@ async function setupComments(incidentId) {
       if (submitBtn) submitBtn.disabled = false;
     }
   });
+}
+
+// ── Asignaciones de operadores (responsable/apoyo) ─────────
+
+const ASSIGNMENT_ROLE_BADGE = {
+  responsable: '<span class="badge bg-primary">Responsable</span>',
+  apoyo: '<span class="badge bg-secondary">Apoyo</span>',
+};
+
+// Matches the default placeholder text in incidencias.detail.component.html
+// (#detalle-asignaciones-vacio) — used to restore the empty-state message
+// after a previous error render had overwritten it (see R4-003).
+const ASSIGNMENTS_VACIO_TEXT = 'Sin operadores asignados.';
+
+function buildAssignmentRow(assignment, canDelete) {
+  const nombre = assignment.user
+    ? [assignment.user.first_name, assignment.user.last_name]
+        .filter(Boolean)
+        .join(' ') || assignment.user.email
+    : 'Usuario';
+  // role/id are enum/int-constrained server-side today, but escaped here
+  // for defense-in-depth consistency with `nombre` above.
+  const badge =
+    ASSIGNMENT_ROLE_BADGE[assignment.role] ??
+    escapeHtml(String(assignment.role ?? ''));
+  const btn = canDelete
+    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-asignacion" data-id="${escapeHtml(String(assignment.id))}" title="Quitar asignación">
+        <i class="fas fa-times"></i>
+      </button>`
+    : '';
+
+  return `
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <div class="small fw-semibold">${escapeHtml(nombre)}</div>
+        <div>${badge}</div>
+      </div>
+      ${btn}
+    </div>`;
+}
+
+/**
+ * Renders the assignment list into #detalle-asignaciones-list, toggling
+ * the empty-state placeholder as needed. Mirrors the fetch-function →
+ * render-function split used for comments (buildCommentLi/renderComments)
+ * so rendering can be tested independently of the network call.
+ */
+function renderAssignments(items, puedeEliminar) {
+  const listEl = document.getElementById('detalle-asignaciones-list');
+  const vacioEl = document.getElementById('detalle-asignaciones-vacio');
+  if (!listEl) return;
+
+  if (!items || items.length === 0) {
+    listEl.innerHTML = '';
+    if (vacioEl) {
+      vacioEl.textContent = ASSIGNMENTS_VACIO_TEXT;
+      vacioEl.classList.remove('d-none');
+    }
+    return;
+  }
+
+  vacioEl?.classList.add('d-none');
+  listEl.innerHTML = items
+    .map((a) => buildAssignmentRow(a, puedeEliminar))
+    .join('');
+}
+
+/**
+ * Puebla el <select> de operadores con los usuarios de rol
+ * "operador_organizacion" pertenecientes a la organización de la
+ * incidencia. Mirror del patrón usado en usuarios.index.component.js
+ * (cargarFiltros): primero resuelve el id del rol vía /roles, luego
+ * filtra /users por organization_id + role_id.
+ */
+async function cargarOperadores(inc, selectEl, submitBtn) {
+  if (!selectEl) return;
+
+  // R4-002: the submit button must stay disabled whenever the picker is
+  // empty/failed/still loading — only re-enabled once operators are
+  // confirmed to be available (success branch below).
+  const setAvailability = (available) => {
+    selectEl.disabled = !available;
+    if (submitBtn) submitBtn.disabled = !available;
+  };
+
+  const orgId = inc.organization?.id ?? inc.organization_id;
+  if (!orgId) {
+    selectEl.innerHTML = '<option value="">Sin organización asignada</option>';
+    setAvailability(false);
+    return;
+  }
+
+  setAvailability(false);
+
+  try {
+    const rolesResp = await http.get('/roles?per_page=100');
+    const roles = rolesResp.data ?? rolesResp ?? [];
+    const operadorRole = roles.find((r) => r.name === 'operador_organizacion');
+
+    if (!operadorRole) {
+      selectEl.innerHTML =
+        '<option value="">Sin operadores disponibles</option>';
+      return;
+    }
+
+    const params = new URLSearchParams({
+      organization_id: orgId,
+      role_id: operadorRole.id,
+      per_page: 200,
+    });
+    const usersResp = await http.get(`/users?${params.toString()}`);
+    const usuarios = usersResp.data ?? usersResp ?? [];
+
+    if (usuarios.length === 0) {
+      selectEl.innerHTML =
+        '<option value="">Sin operadores disponibles</option>';
+      return;
+    }
+
+    selectEl.innerHTML = usuarios
+      .map((u) => {
+        const nombre =
+          [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+        return `<option value="${u.id}">${escapeHtml(nombre)}</option>`;
+      })
+      .join('');
+    setAvailability(true);
+  } catch (err) {
+    console.error('Error al cargar operadores:', err);
+    selectEl.innerHTML = '<option value="">Error al cargar operadores</option>';
+  }
+}
+
+async function setupAssignments(incidentId, inc) {
+  const cardEl = document.getElementById('detalle-asignaciones-card');
+  const loadingEl = document.getElementById('detalle-asignaciones-loading');
+  const listEl = document.getElementById('detalle-asignaciones-list');
+  const vacioEl = document.getElementById('detalle-asignaciones-vacio');
+  const formEl = document.getElementById('detalle-asignaciones-form');
+  const selectEl = document.getElementById('detalle-asignaciones-select');
+  const errorEl = document.getElementById('detalle-asignaciones-error');
+  const errorMsgEl = document.getElementById('detalle-asignaciones-msg');
+  const submitBtn = document.getElementById('detalle-asignaciones-submit');
+
+  if (!cardEl || !listEl) return;
+
+  function showError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    errorEl?.classList.remove('d-none');
+  }
+
+  let permisos;
+  try {
+    permisos = await permissionService.getMyPermissions();
+  } catch {
+    // Fail closed: sin permisos confirmados, no se muestra el formulario
+    // ni los botones de eliminar — la UI se degrada a solo-lectura.
+    permisos = new Set();
+  }
+  const puedeCrear = permisos.has('assignments.create');
+  const puedeEliminar = permisos.has('assignments.delete');
+
+  async function cargarAsignaciones() {
+    try {
+      const { data } = await assignmentService.list(incidentId);
+      loadingEl?.classList.add('d-none');
+      renderAssignments(data, puedeEliminar);
+    } catch (err) {
+      console.error('Error al cargar asignaciones:', err);
+      loadingEl?.classList.add('d-none');
+      // R4-004: don't leave previous (possibly now-stale, e.g. containing
+      // a just-deleted row's dangling button) rows on screen after a
+      // failed refetch — clear them and surface a clear error state.
+      listEl.innerHTML = '';
+      if (vacioEl) {
+        vacioEl.textContent = 'Error al cargar asignaciones.';
+        vacioEl.classList.remove('d-none');
+      }
+    }
+  }
+
+  if (puedeEliminar) {
+    listEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.btn-eliminar-asignacion');
+      if (!btn) return;
+
+      const assignmentId = btn.dataset.id;
+      btn.disabled = true;
+      errorEl?.classList.add('d-none');
+
+      try {
+        await assignmentService.remove(incidentId, assignmentId);
+        await cargarAsignaciones();
+      } catch (err) {
+        showError(err.message || 'No se pudo eliminar la asignación.');
+        btn.disabled = false;
+      }
+    });
+  }
+
+  if (puedeCrear && formEl) {
+    formEl.classList.remove('d-none');
+    cargarOperadores(inc, selectEl, submitBtn);
+
+    formEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // R3-002: ignore a second submit while a create is already
+      // in-flight (submitBtn is also disabled while operators are
+      // loading/unavailable — either way, no submission should proceed).
+      if (submitBtn?.disabled) return;
+      errorEl?.classList.add('d-none');
+
+      const userId = selectEl?.value;
+      const role = formEl.querySelector(
+        'input[name="asignacion-rol"]:checked',
+      )?.value;
+      if (!userId || !role) {
+        showError('Seleccione un operador y un rol.');
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        await assignmentService.create(incidentId, Number(userId), role);
+        await cargarAsignaciones();
+      } catch (err) {
+        showError(err.message || 'No se pudo crear la asignación.');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  }
+
+  await cargarAsignaciones();
 }
 
 // ── Claim / Release / Confirmar ────────────────────────────
