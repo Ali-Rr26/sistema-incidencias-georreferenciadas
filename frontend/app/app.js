@@ -8,7 +8,7 @@ import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.c
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
 import { authGuard } from './auth/auth.guard.js';
-import { roleGuard } from './auth/role.guard.js';
+import { permissionGuard } from './auth/permission.guard.js';
 import { auth } from './auth/auth.service.js';
 
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
@@ -47,45 +47,92 @@ router.addRoute('/feed/:id', feedDetailComponent, [authGuard], 'citizen');
 router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'both');
 
 // ─── Admin routes ───────────────────────────────────────────────────
-router.addRoute('/dashboard', dashboardComponent, [], 'admin');
-router.addRoute('/incidencias', incidenciasIndexComponent, [], 'admin');
-router.addRoute('/incidencias/crear', incidenciaFormComponent, [], 'admin');
-router.addRoute('/incidencias/:id', incidenciasDetailComponent, [], 'admin');
-router.addRoute('/mapa', mapaComponent, [], 'admin');
+// All admin routes now go through permissionGuard, which sources
+// authorization from menuService.getMyMenu() (single source of truth —
+// sidebar menu and route guard share the same data). Previously these
+// routes had `guards: []` (no enforcement) or `[roleGuard(['admin_sistema'])]`
+// (hardcoded role name); the guard replaces roleGuard on /roles per
+// clarifications #2327 and applies to the 13 back-office routes that
+// were left unguarded.
+router.addRoute('/dashboard', dashboardComponent, [permissionGuard], 'admin');
+router.addRoute(
+  '/incidencias',
+  incidenciasIndexComponent,
+  [permissionGuard],
+  'admin',
+);
+router.addRoute(
+  '/incidencias/crear',
+  incidenciaFormComponent,
+  [permissionGuard],
+  'admin',
+);
+router.addRoute(
+  '/incidencias/:id',
+  incidenciasDetailComponent,
+  [permissionGuard],
+  'admin',
+);
+router.addRoute('/mapa', mapaComponent, [permissionGuard], 'admin');
 router.addRoute(
   '/mapa-ciudadano',
   mapaCiudadanoComponent,
   [authGuard],
   'citizen',
 );
-router.addRoute('/usuarios', usuariosComponent, [], 'admin');
-router.addRoute('/usuarios/crear', usuariosFormComponent, [], 'admin');
-router.addRoute('/organizaciones', organizacionesComponent, [], 'admin');
+router.addRoute('/usuarios', usuariosComponent, [permissionGuard], 'admin');
+router.addRoute(
+  '/usuarios/crear',
+  usuariosFormComponent,
+  [permissionGuard],
+  'admin',
+);
+router.addRoute(
+  '/organizaciones',
+  organizacionesComponent,
+  [permissionGuard],
+  'admin',
+);
 router.addRoute(
   '/organizaciones/crear',
   organizacionesFormComponent,
-  [],
+  [permissionGuard],
   'admin',
 );
-router.addRoute('/localizaciones', localizacionesComponent, [], 'admin');
+router.addRoute(
+  '/localizaciones',
+  localizacionesComponent,
+  [permissionGuard],
+  'admin',
+);
 router.addRoute(
   '/localizaciones/crear',
   localizacionesFormComponent,
-  [],
+  [permissionGuard],
   'admin',
 );
-router.addRoute('/categorias', categoriasComponent, [], 'admin');
-router.addRoute('/categorias/crear', categoriasFormComponent, [], 'admin');
+router.addRoute(
+  '/categorias',
+  categoriasComponent,
+  [permissionGuard],
+  'admin',
+);
+router.addRoute(
+  '/categorias/crear',
+  categoriasFormComponent,
+  [permissionGuard],
+  'admin',
+);
 router.addRoute(
   '/roles',
   rolesIndexComponent,
-  [roleGuard(['admin_sistema'])],
+  [permissionGuard],
   'admin',
 );
 router.addRoute(
   '/roles/:id',
   rolesDetailComponent,
-  [roleGuard(['admin_sistema'])],
+  [permissionGuard],
   'admin',
 );
 router.addRoute(
