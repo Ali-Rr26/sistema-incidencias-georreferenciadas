@@ -233,14 +233,8 @@ export default {
     }
 
     // ─── Carga inicial ────────────────────────────────────────────────────
-
-    let formCatalogs;
-    try {
-      formCatalogs = await http.get('/organizations/form-data');
-    } catch {
-      mostrarToast('No se pudieron cargar los datos del formulario.', 'danger');
-      return;
-    }
+    // Edit:   GET /organizations/:id  →  org data + catalog (single request)
+    // Create: GET /organizations/form-data  →  catalog only
 
     if (esEdicion) {
       try {
@@ -252,9 +246,9 @@ export default {
         const categoriaId = org.incident_category?.id ?? null;
 
         await Promise.all([
-          cargarPadres(formCatalogs.organizations, editId),
-          initCascadingLocation(formCatalogs.locations_tree, org.location_id),
-          cargarCategorias(formCatalogs.categories, categoriaId),
+          cargarPadres(org.organizations ?? [], editId),
+          initCascadingLocation(org.locations_tree ?? [], org.location_id),
+          cargarCategorias(org.categories ?? [], categoriaId),
         ]);
         document.getElementById('org-padre').value = org.parent_id ?? '';
       } catch {
@@ -262,6 +256,13 @@ export default {
         return;
       }
     } else {
+      let formCatalogs;
+      try {
+        formCatalogs = await http.get('/organizations/form-data');
+      } catch {
+        mostrarToast('No se pudieron cargar los datos del formulario.', 'danger');
+        return;
+      }
       await Promise.all([
         cargarPadres(formCatalogs.organizations),
         initCascadingLocation(formCatalogs.locations_tree),

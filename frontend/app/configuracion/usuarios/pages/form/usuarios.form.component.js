@@ -31,47 +31,44 @@ export default {
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
-    // ─── Cargar roles y organizaciones ──────────────────────────────
+    // ─── Poblar selects con catálogo ──────────────────────────────────
 
-    async function cargarCombos() {
-      try {
-        const { roles, organizations } = await http.get('/users/form-data');
+    function poblarCombos({ roles, organizations }) {
+      const selRol = document.getElementById('user-rol');
+      selRol.innerHTML = '<option value="">-- Seleccione Rol --</option>';
+      roles.forEach((r) => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        selRol.appendChild(opt);
+      });
 
-        const selRol = document.getElementById('user-rol');
-        selRol.innerHTML = '<option value="">-- Seleccione Rol --</option>';
-        roles.forEach((r) => {
-          const opt = document.createElement('option');
-          opt.value = r.id;
-          opt.textContent = r.name;
-          selRol.appendChild(opt);
-        });
-
-        const selOrg = document.getElementById('user-org');
-        selOrg.innerHTML =
-          '<option value="">-- Ninguna (Global / Sistema) --</option>';
-        organizations.forEach((o) => {
-          const opt = document.createElement('option');
-          opt.value = o.id;
-          opt.textContent = o.name;
-          selOrg.appendChild(opt);
-        });
-      } catch (err) {
-        console.error('Error cargando roles y organizaciones:', err);
-      }
+      const selOrg = document.getElementById('user-org');
+      selOrg.innerHTML =
+        '<option value="">-- Ninguna (Global / Sistema) --</option>';
+      organizations.forEach((o) => {
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = o.name;
+        selOrg.appendChild(opt);
+      });
     }
 
-    await cargarCombos();
-
-    // ─── Tom Select ───────────────────────────────────────────────────
-    initSelect('user-rol', { placeholder: 'Buscar rol...' });
-    initSelect('user-org', { placeholder: 'Buscar organización...' });
-
-    // ─── Si edición, cargar datos ────────────────────────────────────
+    // ─── Carga inicial ────────────────────────────────────────────────
+    // Edit:   GET /users/:id  →  user data + catalog (single request)
+    // Create: GET /users/form-data  →  catalog only
 
     if (esEdicion) {
       try {
         const resp = await http.get('/users/' + userId);
         const u = resp.data ?? resp;
+
+        poblarCombos({ roles: u.roles ?? [], organizations: u.organizations ?? [] });
+
+        // Tom Select must be initialized AFTER options are in the DOM.
+        initSelect('user-rol', { placeholder: 'Buscar rol...' });
+        initSelect('user-org', { placeholder: 'Buscar organización...' });
+
         document.getElementById('user-id').value = u.id;
         document.getElementById('user-nombre').value = u.first_name ?? '';
         document.getElementById('user-apellido').value = u.last_name ?? '';
@@ -85,6 +82,16 @@ export default {
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
+    } else {
+      try {
+        const data = await http.get('/users/form-data');
+        poblarCombos(data);
+      } catch (err) {
+        console.error('Error cargando roles y organizaciones:', err);
+      }
+
+      initSelect('user-rol', { placeholder: 'Buscar rol...' });
+      initSelect('user-org', { placeholder: 'Buscar organización...' });
     }
 
     // ─── Submit ──────────────────────────────────────────────────────

@@ -52,7 +52,7 @@ class UserController extends Controller
     {
         $user->load(['role', 'organization']);
 
-        return new UserResource($user)->response();
+        return (new UserResource($user))->withCatalog()->response();
     }
 
     public function update(UpdateUserRequest $request, User $user): JsonResponse

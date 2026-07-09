@@ -63,7 +63,7 @@ class OrganizationController extends Controller
     {
         $organization->load(['category', 'location', 'parent']);
 
-        return (new OrganizationResource($organization))->response();
+        return (new OrganizationResource($organization))->withCatalog()->response();
     }
 
     public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
