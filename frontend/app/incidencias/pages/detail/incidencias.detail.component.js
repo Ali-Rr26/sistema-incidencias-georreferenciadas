@@ -148,6 +148,8 @@ async function renderMap(inc) {
 
   const [lng, lat] = inc.geom.coordinates;
 
+  // Inject the canvas div BEFORE the async Leaflet load so the container
+  // keeps its height and there is no blank-white flash while tiles fetch.
   mapEl.innerHTML =
     '<div id="detalle-mapa" class="incid-detail__map-canvas"></div>';
 
@@ -155,6 +157,7 @@ async function renderMap(inc) {
     container: 'detalle-mapa',
     center: { lat, lng },
     zoom: 15,
+    liveInputs: false,
     errorClass: 'incid-detail__map-error',
   });
   if (!map) return;
