@@ -18,8 +18,8 @@ alcance y criterios de aceptación.
 | 06 | [Asignaciones](06-asignaciones.md) | Feature | 🟠 Media | ✅ Stack zombie borrado | ✅ N/A (no aplica) |
 | 07 | [Consolidación de shells](07-consolidacion-shells.md) | Deuda técnica | 🟡 Baja | — | ✅ Completado por PR #43 |
 | 08 | [Vista de mapa georreferenciado](08-vista-mapa.md) | **Feature** | **🟠 Media-Alta** | ✅ Datos listos | ❌ Solo captura, falta vista |
-| 09 | [Registro de usuarios + Login con Google](09-registro-y-google-auth.md) | Feature | 🟠 Media | ❌ No existe | ❌ No existe |
-| 10 | [Enforcement de permisos en rutas frontend](10-enforcement-permisos-frontend.md) | Seguridad | 🟡 Media | ⚠️ 1 gap confirmado + 5 sin auditar | ❌ No existe |
+| 09 | [Registro de usuarios + Login con Google](09-registro-y-google-auth.md) | Feature | 🟠 Media | ✅ Implementado | ✅ Tabs login/registro + botón Google |
+| 10 | [Enforcement de permisos en rutas frontend](10-enforcement-permisos-frontend.md) | Seguridad | 🟡 Media | ⚠️ IDOR comentarios cerrado + `/permissions` gateado; Incidents/Notifications/OperatorLocation aún sin auditar | ✅ Guard real por permiso, verificado en vivo |
 
 ## Leyenda
 
