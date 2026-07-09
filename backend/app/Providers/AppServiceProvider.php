@@ -77,14 +77,13 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
-            $factory = KreaitFirebaseFactory::withServiceAccount($credentialsPath)
-                ->withProjectId((string) (config('services.firebase.project_id')
-                    ?: env('FIREBASE_PROJECT_ID', '')));
+            $factory = (new KreaitFirebaseFactory())
+                ->withServiceAccount($credentialsPath)
+                ->withProjectId((string) config('services.firebase.project_id'));
 
             return new KreaitFirebaseTokenVerifier(
                 $factory->createAuth(),
-                leewayInSeconds: (int) (config('services.firebase.leeway_seconds')
-                    ?: env('FIREBASE_TOKEN_LEEWAY_SECONDS', 5)),
+                leewayInSeconds: (int) config('services.firebase.leeway_seconds'),
             );
         });
 

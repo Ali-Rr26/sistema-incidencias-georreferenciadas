@@ -40,6 +40,13 @@ services:
       # real deployments must set them.
       MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
       MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+      # Firebase Admin SDK — verifies Google sign-in ID tokens server-side
+      # (see AppServiceProvider::FirebaseTokenVerifier). credentials_path
+      # must be an absolute path INSIDE the container, i.e. under
+      # /var/www/backend/storage/... — not a host path.
+      FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_LEEWAY_SECONDS: ${FIREBASE_LEEWAY_SECONDS:-}
     volumes:
       - ./backend/app:/var/www/backend/app
       - ./backend/routes:/var/www/backend/routes
