@@ -68,6 +68,7 @@ Route::middleware('jwt')->group(function () {
     Route::post('incidents/{incident}/assignments', [AssignmentController::class, 'store'])->whereNumber('incident');
     Route::delete('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'destroy'])->whereNumber(['incident', 'assignment']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
+    Route::get('incidents/{incident}/available-operators', [IncidentController::class, 'availableOperators'])->whereNumber('incident');
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration
 

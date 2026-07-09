@@ -515,25 +515,22 @@ function renderAssignments(items, puedeEliminar) {
 }
 
 /**
- * Puebla el <select> de operadores con los usuarios de rol
- * "operador_organizacion" pertenecientes a la organización de la
- * incidencia. Mirror del patrón usado en usuarios.index.component.js
- * (cargarFiltros): primero resuelve el id del rol vía /roles, luego
- * filtra /users por organization_id + role_id.
+ * Populates the operator <select> by calling the dedicated endpoint
+ * GET /incidents/:id/available-operators.
+ *
+ * The backend resolves the operador_organizacion role internally and
+ * filters by the incident's organization, so the frontend no longer
+ * needs two sequential requests (GET /roles → GET /users).
  */
 async function cargarOperadores(inc, selectEl, submitBtn) {
   if (!selectEl) return;
 
-  // R4-002: the submit button must stay disabled whenever the picker is
-  // empty/failed/still loading — only re-enabled once operators are
-  // confirmed to be available (success branch below).
   const setAvailability = (available) => {
     selectEl.disabled = !available;
     if (submitBtn) submitBtn.disabled = !available;
   };
 
-  const orgId = inc.organization?.id ?? inc.organization_id;
-  if (!orgId) {
+  if (!inc.organization_id && !inc.organization?.id) {
     selectEl.innerHTML = '<option value="">Sin organización asignada</option>';
     setAvailability(false);
     return;
@@ -542,27 +539,11 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
   setAvailability(false);
 
   try {
-    const rolesResp = await http.get('/roles?per_page=100');
-    const roles = rolesResp.data ?? rolesResp ?? [];
-    const operadorRole = roles.find((r) => r.name === 'operador_organizacion');
-
-    if (!operadorRole) {
-      selectEl.innerHTML =
-        '<option value="">Sin operadores disponibles</option>';
-      return;
-    }
-
-    const params = new URLSearchParams({
-      organization_id: orgId,
-      role_id: operadorRole.id,
-      per_page: 200,
-    });
-    const usersResp = await http.get(`/users?${params.toString()}`);
-    const usuarios = usersResp.data ?? usersResp ?? [];
+    const resp = await http.get(`/incidents/${inc.id}/available-operators`);
+    const usuarios = resp.data ?? [];
 
     if (usuarios.length === 0) {
-      selectEl.innerHTML =
-        '<option value="">Sin operadores disponibles</option>';
+      selectEl.innerHTML = '<option value="">Sin operadores disponibles</option>';
       return;
     }
 

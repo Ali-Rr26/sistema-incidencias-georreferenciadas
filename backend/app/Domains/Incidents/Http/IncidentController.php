@@ -12,6 +12,7 @@ use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Incidents\Services\IncidentClaimService;
+use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -161,6 +162,42 @@ class IncidentController extends Controller
         $this->incidents->delete($incident->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Returns the list of operators (role = operador_organizacion) that
+     * belong to the same organization as the incident.
+     *
+     * Replaces the two-request dance the frontend used to do:
+     *   GET /roles?per_page=100  → find operador_organizacion role id
+     *   GET /users?organization_id=X&role_id=Y → get operator list
+     *
+     * Authorization reuses the parent incident's view policy — if you can
+     * see the incident you can see who could be assigned to it.
+     */
+    public function availableOperators(Request $request, Incident $incident): JsonResponse
+    {
+        $this->authorize('view', $incident);
+
+        if ($incident->organization_id === null) {
+            return response()->json(['data' => []]);
+        }
+
+        $operators = User::query()
+            ->whereHas('role', fn ($q) => $q->where('name', UserRole::OperadorOrganizacion->value))
+            ->where('organization_id', $incident->organization_id)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        return response()->json([
+            'data' => $operators->map(fn (User $u) => [
+                'id'         => $u->id,
+                'first_name' => $u->first_name,
+                'last_name'  => $u->last_name,
+                'email'      => $u->email,
+            ])->values(),
+        ]);
     }
 
     /**
