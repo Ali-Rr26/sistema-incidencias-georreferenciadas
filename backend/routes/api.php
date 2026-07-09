@@ -5,6 +5,7 @@ use App\Domains\Auth\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Http\Controllers\RegisterController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
+use App\Domains\Incidents\Http\Controllers\AssignmentController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
@@ -56,6 +57,16 @@ Route::middleware('jwt')->group(function () {
     Route::post('incidents/{incident}/release', [IncidentWorkflowController::class, 'release'])->where('incident', '\d+')->middleware('can:release,incident');
     Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
+
+    // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
+    // Explicit named routes instead of `apiResource` because we only expose
+    // index/store/destroy — show/update are out of scope for this change.
+    // Numeric constraints mirror the {incident} route param above so a
+    // non-numeric {assignment} id surfaces as a route miss (404) rather than
+    // a 500 from `abort(404)` on a string-coerced numeric column.
+    Route::get('incidents/{incident}/assignments', [AssignmentController::class, 'index'])->whereNumber(['incident', 'assignment']);
+    Route::post('incidents/{incident}/assignments', [AssignmentController::class, 'store'])->whereNumber('incident');
+    Route::delete('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'destroy'])->whereNumber(['incident', 'assignment']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
     // Images are now handled via multipart in IncidentController::store/update
     // Legacy endpoint kept for now — remove after frontend migration

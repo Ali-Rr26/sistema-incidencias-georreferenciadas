@@ -20,6 +20,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'locations',           'action' => 'view'],
@@ -40,6 +41,9 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'comments',            'action' => 'delete'],
         ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'delete'],
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'locations',           'action' => 'view'],
@@ -70,12 +74,14 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'notifications',       'action' => 'update'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'profile',             'action' => 'view'],
     ];
 
     private const USUARIO_PERMISSIONS = [
         ['resource' => 'incidents',     'action' => 'create'],
         ['resource' => 'comments',      'action' => 'create'],
+        ['resource' => 'assignments',   'action' => 'view'],
         ['resource' => 'feed',          'action' => 'view'],
         ['resource' => 'profile',       'action' => 'view'],
     ];
