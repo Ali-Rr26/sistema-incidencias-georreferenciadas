@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http;
 
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Http\Requests\StoreUserRequest;
 use App\Domains\Users\Http\Requests\UpdateUserRequest;
 use App\Domains\Users\Http\Resources\UserCollection;
@@ -66,5 +68,29 @@ class UserController extends Controller
         $this->users->delete($user->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Returns the catalogs needed to render the user create/edit form
+     * and the user index filter bar — roles and organizations — in a
+     * single request instead of two parallel ones.
+     *
+     * Authorization: requires users.view so only admins with user
+     * management access can retrieve the catalog.
+     */
+    public function formData(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        return response()->json([
+            'roles' => Role::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name])
+                ->values(),
+            'organizations' => Organization::orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name])
+                ->values(),
+        ]);
     }
 }

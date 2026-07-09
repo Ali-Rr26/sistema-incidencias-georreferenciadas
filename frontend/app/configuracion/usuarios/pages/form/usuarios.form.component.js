@@ -35,12 +35,8 @@ export default {
 
     async function cargarCombos() {
       try {
-        const [rResp, oResp] = await Promise.all([
-          http.get('/roles?per_page=100'),
-          http.get('/organizations?per_page=200'),
-        ]);
+        const { roles, organizations } = await http.get('/users/form-data');
 
-        const roles = rResp.data ?? rResp;
         const selRol = document.getElementById('user-rol');
         selRol.innerHTML = '<option value="">-- Seleccione Rol --</option>';
         roles.forEach((r) => {
@@ -50,11 +46,10 @@ export default {
           selRol.appendChild(opt);
         });
 
-        const orgs = oResp.data ?? oResp;
         const selOrg = document.getElementById('user-org');
         selOrg.innerHTML =
           '<option value="">-- Ninguna (Global / Sistema) --</option>';
-        orgs.forEach((o) => {
+        organizations.forEach((o) => {
           const opt = document.createElement('option');
           opt.value = o.id;
           opt.textContent = o.name;

@@ -87,7 +87,9 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('organizations', OrganizationController::class);
     Route::get('incident-categories/tree', [IncidentCategoryController::class, 'tree']);
     Route::apiResource('incident-categories', IncidentCategoryController::class);
+    Route::get('users/form-data', [UserController::class, 'formData']);
     Route::apiResource('users', UserController::class);
+
 
     // RBAC
     Route::apiResource('roles', RoleController::class);

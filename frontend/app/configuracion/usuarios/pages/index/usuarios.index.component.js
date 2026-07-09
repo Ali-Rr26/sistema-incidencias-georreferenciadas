@@ -159,30 +159,36 @@ export default {
     }
 
     async function cargarFiltros() {
-      if (!roles.length) {
-        const rResp = await http.get('/roles?per_page=100');
-        roles = rResp.data ?? rResp;
-        const selRol = document.getElementById('filtro-rol');
-        selRol.innerHTML = '<option value="">Todos los roles</option>';
-        roles.forEach((r) => {
-          const opt = document.createElement('option');
-          opt.value = r.id;
-          opt.textContent = r.name;
-          selRol.appendChild(opt);
-        });
-      }
+      if (roles.length && organizaciones.length) return;
 
-      if (!organizaciones.length) {
-        const oResp = await http.get('/organizations?per_page=200');
-        organizaciones = oResp.data ?? oResp;
-        const selOrg = document.getElementById('filtro-org');
-        selOrg.innerHTML = '<option value="">Todas las organizaciones</option>';
-        organizaciones.forEach((o) => {
-          const opt = document.createElement('option');
-          opt.value = o.id;
-          opt.textContent = o.name;
-          selOrg.appendChild(opt);
-        });
+      try {
+        const data = await http.get('/users/form-data');
+
+        if (!roles.length) {
+          roles = data.roles ?? [];
+          const selRol = document.getElementById('filtro-rol');
+          selRol.innerHTML = '<option value="">Todos los roles</option>';
+          roles.forEach((r) => {
+            const opt = document.createElement('option');
+            opt.value = r.id;
+            opt.textContent = r.name;
+            selRol.appendChild(opt);
+          });
+        }
+
+        if (!organizaciones.length) {
+          organizaciones = data.organizations ?? [];
+          const selOrg = document.getElementById('filtro-org');
+          selOrg.innerHTML = '<option value="">Todas las organizaciones</option>';
+          organizaciones.forEach((o) => {
+            const opt = document.createElement('option');
+            opt.value = o.id;
+            opt.textContent = o.name;
+            selOrg.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Error cargando filtros:', err);
       }
     }
 
