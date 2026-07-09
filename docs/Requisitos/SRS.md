@@ -54,8 +54,8 @@
 - v2.0:
   - `SystemAdmin` (cross-tenant, bypass de scope)
   - `OperadorOrganizacion` (scoped a su org, ejecuta `claim`/`release`)
-  - `Publicador` (confirma resoluciones cuya categoría coincide con la de su organización)
-  - Visitante (sin auth, acceso a feed público throttled)
+  - ~~`Publicador`~~ (rol eliminado — migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`; el flujo de 3 estados Pendiente→En proceso→Resuelto no lo necesitaba)
+  - ~~Visitante (sin auth)~~ — retirado: ya no existe acceso anónimo, toda ruta exige JWT. El registro (`POST /register`) sigue siendo público, pero asigna el rol `usuario` (autenticado, sin permisos elevados) en vez de dejar navegar sin sesión.
 
 Las acciones `claim`, `release` y `confirmar` tienen gates `can:claim`, `can:release`, `can:confirm` en `IncidentPolicy`.
 
@@ -66,7 +66,7 @@ Las acciones `claim`, `release` y `confirmar` tienen gates `can:claim`, `can:rel
 - `POST /api/incidents/{id}/confirmar` (Publicador de org cuya categoría coincide)
 - `POST /api/operator/location` y `GET /api/operator/locations` (tracking de operadores)
 - `GET /api/menus/my` (menú dinámico por rol)
-- `GET /api/incidents/feed` (público, throttled)
+- `GET /api/incidents/feed` (autenticado, throttled — ver nota sobre retiro del rol Visitante)
 
 ### Numeración de requisitos
 
@@ -245,14 +245,12 @@ El despliegue usa Docker Compose con servicios: `backend` (Frankenphp), `fronten
 | **Frecuencia de uso** | Media |
 | **Nivel de expertise** | Intermedio |
 
-#### 2.3.4 Visitante (sin autenticación)
+#### 2.3.4 ~~Visitante (sin autenticación)~~ — rol retirado
 
-| Atributo | Detalle |
-|---|---|
-| **Rol** | Usuario sin acceso al sistema |
-| **Permisos** | `GET /incidents/feed` (público, throttled) |
-| **Frecuencia de uso** | Variable |
-| **Nivel de expertise** | N/A |
+Ya no existe acceso anónimo al sistema. `GET /incidents/feed` ahora exige JWT
+igual que el resto de rutas (excepto `/login`, `/register`, `/auth/refresh`,
+`/auth/google` y `/health`). Quien quiera ver el feed se registra (rol
+`usuario`, sin permisos elevados) y se autentica como cualquier otro rol.
 
 ### 2.4 Ambiente Operativo
 
@@ -494,11 +492,11 @@ Rutas anidadas con `shallow` (prefijo solo en la colección).
 | POST | `/api/operator/location` | JWT | Reporta la ubicación actual del operador (heartbeat) |
 | GET | `/api/operator/locations` | JWT | Lista ubicaciones recientes de operadores (filtrado por scope) |
 
-##### RF-SW-008: Feed público
+##### RF-SW-008: Feed de incidencias
 
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| GET | `/api/incidents/feed` | No | Feed público throttled (`throttle:feed`) |
+| GET | `/api/incidents/feed` | JWT | Feed throttled (`throttle:feed`); ya no es público — el rol Visitante fue retirado, toda cuenta se autentica |
 
 ##### RF-SW-009: Health
 

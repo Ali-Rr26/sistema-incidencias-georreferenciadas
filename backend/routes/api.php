@@ -33,7 +33,6 @@ Route::post('/register', [RegisterController::class, 'register'])->middleware('t
 // defense-in-depth for brute-force / token-spray (R7-R10, R13b).
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
-Route::get('/incidents/feed', FeedController::class)->middleware('throttle:feed');
 
 Route::middleware('jwt')->group(function () {
 
@@ -48,6 +47,11 @@ Route::middleware('jwt')->group(function () {
 
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);
+    // Feed moved behind auth — the anonymous "Visitante" role is retired,
+    // every request now authenticates (see docs/Requisitos/SRS.md RF-SW-008,
+    // being updated alongside this). throttle:feed stays: still worth
+    // rate-limiting even for logged-in traffic.
+    Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     // {incident} constrained to digits so the apiResource's show with an
     // alphabetic segment (e.g. "incidents/pendientes") doesn't try to bind
     // a non-numeric id and raise a 500 QueryException. Without this, an
