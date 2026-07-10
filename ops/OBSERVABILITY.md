@@ -117,33 +117,75 @@ sum by (stream) (rate({service="backend"}[5m]))
 
 ## Query Variants para Prometheus
 
-```promql
-# Total requests
-app_http_requests_total
+### Tráfico
 
-# Rate (needs 5m de data)
+```promql
+# Requests por segundo (total)
 rate(app_http_requests_total[5m])
 
-# Errores 4xx
-sum(rate(app_http_requests_total{status=~"4.."}[5m])) by (method, route, status)
+# Requests por segundo por ruta
+topk(10, sum by (route) (rate(app_http_requests_total[5m])))
 
-# Requests en progreso
+# Requests por segundo por status code
+sum by (status) (rate(app_http_requests_total[5m]))
+
+# Tasa de error (5xx + 4xx / total)
+sum(rate(app_http_requests_total{status=~"5.."}[5m])) / sum(rate(app_http_requests_total[5m])) * 100
+```
+
+### Latencia
+
+```promql
+# P95 latencia
+histogram_quantile(0.95, rate(app_http_request_duration_seconds_bucket[5m]))
+
+# P99 por ruta
+histogram_quantile(0.99, sum by (le, route) (rate(app_http_request_duration_seconds_bucket[5m])))
+
+# Latencia promedio por ruta (top 5 más lentas)
+topk(5, avg by (route) (
+  rate(app_http_request_duration_seconds_sum[5m]) /
+  rate(app_http_request_duration_seconds_count[5m])
+))
+```
+
+### Saturación
+
+```promql
+# Requests en progreso ahora
 app_http_requests_in_progress
 
-# P99 latencia
-histogram_quantile(0.99, rate(app_http_request_duration_seconds_bucket[5m]))
+# Requests en progreso por ruta
+sum by (route) (app_http_requests_in_progress)
+```
 
-# Latencia promedio
-rate(app_http_request_duration_seconds_sum[5m]) / rate(app_http_request_duration_seconds_count[5m])
+### Negocio
 
+```promql
 # Usuarios activos
 app_users_active_total
 
 # Incidencias por estado
 app_incidents_by_status
 
-# Total incidencias
+# Total de incidencias
 app_incidents_total
+
+# Distribución % de incidencias por estado
+sum by (status) (app_incidents_by_status) / ignoring(status) (sum(app_incidents_by_status)) * 100
+```
+
+### Sistema
+
+```promql
+# Uptime del backend (siempre que haya requests)
+changes(app_http_requests_total[1m]) > 0
+
+# Conexiones PostgreSQL activas
+pg_stat_activity_count
+
+# Uso de memoria Redis
+redis_memory_used_bytes / redis_memory_max_bytes * 100
 ```
 
 ---
