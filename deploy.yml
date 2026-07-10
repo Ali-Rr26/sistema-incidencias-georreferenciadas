@@ -42,6 +42,8 @@ services:
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      STORAGE_ENDPOINT: rustfs
+      STORAGE_PORT: "9000"
       OCTANE_SERVER: frankenphp
       LOG_CHANNEL: stderr_json
       MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
