@@ -38,10 +38,28 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
+      APP_NAME: ${APP_NAME:-Sistema de Incidencias Georreferenciadas}
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY:?Variable APP_KEY requerida}
+      APP_URL: ${APP_URL:-http://localhost}
+      DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-incidencias_db}
+      DB_USERNAME: ${DB_USERNAME:-user}
+      DB_PASSWORD: ${DB_PASSWORD:?Variable DB_PASSWORD requerida}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      SESSION_DRIVER: ${SESSION_DRIVER:-file}
+      CACHE_STORE: ${CACHE_STORE:-file}
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Variable JWT_ACCESS_SECRET requerida}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Variable JWT_REFRESH_SECRET requerida}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
+      API_VERSION: ${API_VERSION:-1.0.0}
       STORAGE_ENDPOINT: rustfs
       STORAGE_PORT: "9000"
       AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-rustfsadmin}
