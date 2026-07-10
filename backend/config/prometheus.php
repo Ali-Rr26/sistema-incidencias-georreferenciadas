@@ -27,9 +27,7 @@ return [
     /*
      * The middleware that will be applied to the urls above
      */
-    'middleware' => [
-        Spatie\Prometheus\Http\Middleware\AllowIps::class,
-    ],
+    'middleware' => [],
 
     /*
      * You can override these classes to customize low-level behaviour of the package.
@@ -55,5 +53,5 @@ return [
      *  'cache' => null       // InMemory implementation without laravel cache
      *  'cache' => 'array'    // InMemory implementation using laravel cache
      */
-    'cache' => null,
+    'cache' => env('PROMETHEUS_CACHE', 'redis'),
 ];

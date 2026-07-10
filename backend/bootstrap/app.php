@@ -3,6 +3,7 @@
 use App\Domains\Auth\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Exceptions\HttpExceptionReporter;
+use App\Http\Middleware\InstrumentHttpRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,6 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'jwt' => JwtAuthenticate::class,
+        ]);
+
+        $middleware->api(append: [
+            InstrumentHttpRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
