@@ -8,15 +8,15 @@ function loadC3() {
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'assets/extra-libs/c3/c3.min.css';
+  link.href = '/assets/extra-libs/c3/c3.min.css';
   document.head.appendChild(link);
 
   return new Promise((resolve, reject) => {
     const d3 = document.createElement('script');
-    d3.src = 'assets/extra-libs/c3/d3.min.js';
+    d3.src = '/assets/extra-libs/c3/d3.min.js';
     d3.onload = () => {
       const c3 = document.createElement('script');
-      c3.src = 'assets/extra-libs/c3/c3.min.js';
+      c3.src = '/assets/extra-libs/c3/c3.min.js';
       c3.onload = resolve;
       c3.onerror = reject;
       document.head.appendChild(c3);
