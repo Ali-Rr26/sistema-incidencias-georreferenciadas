@@ -46,7 +46,7 @@ export default {
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
     setupActionButtons(id, inc);
-    setupBuscarResponsables();
+    setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
     setupComments(id);
@@ -786,7 +786,7 @@ function setupActionButtons(incidentId, inc) {
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
 
-function setupBuscarResponsables() {
+function setupBuscarResponsables(incidentId) {
   const inputEl = document.getElementById('buscar-responsables-input');
   const loadingEl = document.getElementById('buscar-responsables-loading');
   const resultsEl = document.getElementById('buscar-responsables-results');
@@ -794,6 +794,8 @@ function setupBuscarResponsables() {
   const vacioEl = document.getElementById('buscar-responsables-vacio');
   const errorEl = document.getElementById('buscar-responsables-error');
   const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
+  const operatorSelectEl = document.getElementById('detalle-asignaciones-select');
+  const formEl = document.getElementById('detalle-asignaciones-form');
 
   if (!inputEl) return;
 
@@ -848,9 +850,18 @@ function setupBuscarResponsables() {
         });
 
         li.addEventListener('click', () => {
-          // CP-03-02-F: aquí iría la lógica de asignación
-          // Por ahora solo mostramos que se seleccionó
-          console.log('Usuario seleccionado:', user);
+          // CP-03-02-F: seleccionar usuario en búsqueda → llenar operador
+          if (operatorSelectEl && user.id) {
+            operatorSelectEl.value = user.id;
+            if (formEl) {
+              formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            inputEl.value = '';
+            showLoading(false);
+            resultsEl?.classList.add('d-none');
+            vacioEl?.classList.add('d-none');
+            errorEl?.classList.add('d-none');
+          }
         });
 
         return li;
