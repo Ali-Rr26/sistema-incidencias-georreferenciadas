@@ -1,8 +1,13 @@
 # Opt-in perf/load-testing overlay. Never started by a bare
 # `docker compose up` — bring it up explicitly alongside the main file:
 #
-#   docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d influxdb grafana
+#   docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d influxdb
 #   docker compose -f docker-compose.yml -f docker-compose.perf.yml run --rm k6 run /scripts/smoke.js
+#
+# Grafana is NOT part of this overlay — it's the same instance already
+# provided by the main docker-compose.yml (avoids two services fighting
+# over the same container name/port/provisioning mount). Bring up the
+# main stack's `grafana` service separately if it isn't already running.
 #
 # See perf/README.md for the full walkthrough.
 services:
@@ -19,23 +24,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    networks:
-      - dev-network
-
-  grafana:
-    image: grafana/grafana:11.1.0
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
-    volumes:
-      - ./perf/grafana/provisioning:/etc/grafana/provisioning
-      - perf_grafana_data:/var/lib/grafana
-    depends_on:
-      influxdb:
-        condition: service_healthy
     networks:
       - dev-network
 
@@ -59,4 +47,3 @@ services:
 
 volumes:
   perf_influxdb_data:
-  perf_grafana_data:

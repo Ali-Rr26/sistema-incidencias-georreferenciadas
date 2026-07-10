@@ -23,16 +23,17 @@ extra glue.
 ## 1. Bring up the metrics stack
 
 The main stack (`docker-compose.yml`) must already be running (backend,
-db, redis). Then:
+db, redis, grafana). Then bring up InfluxDB from this overlay:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d influxdb grafana
+docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d influxdb
 ```
 
-Grafana: http://localhost:3001 — user `admin`, password `admin`
-(dev-only default; **never** expose this compose file's ports on a
-public network). The `k6-influxdb` datasource and the `k6` dashboard
-folder are auto-provisioned — no manual setup needed.
+Grafana is not part of this overlay — it's the same instance the main
+stack already provides at http://localhost:3001 (anonymous Admin
+access, no login needed). The `k6-influxdb` datasource and the `k6`
+dashboard folder are provisioned via `ops/grafana/provisioning` —
+no manual setup needed.
 
 ## 2. Run a script
 
@@ -83,9 +84,9 @@ docker compose exec -T db psql -U user -d incidencias_db -c "DELETE FROM inciden
 docker compose -f docker-compose.yml -f docker-compose.perf.yml down
 ```
 
-(This only removes the perf overlay's containers — `influxdb`/`grafana`
-— and their volumes if you also pass `-v`. It does not touch the main
-stack.)
+(This only removes the perf overlay's container — `influxdb` — and its
+volume if you also pass `-v`. Grafana belongs to the main stack, not
+this overlay, so it's untouched either way.)
 
 ## Notes
 

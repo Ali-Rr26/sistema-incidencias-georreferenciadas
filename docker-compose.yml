@@ -176,6 +176,8 @@ services:
     volumes:
       - ./ops/grafana/provisioning:/etc/grafana/provisioning
       - ./ops/dashboards:/var/lib/grafana/dashboards
+      - ./ops/dashboards-k6:/var/lib/grafana/dashboards-k6
+      - grafana_data:/var/lib/grafana
     networks:
       - dev-network
 
@@ -215,6 +217,7 @@ volumes:
   db_data:
   redis_data:
   rustfs_data:
+  grafana_data:
 
 networks:
   dev-network:
