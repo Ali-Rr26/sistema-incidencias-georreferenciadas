@@ -38,4 +38,11 @@ export const commentService = {
     });
     return resp.data ?? resp;
   },
+
+  /**
+   * Elimina un comentario (soft delete en backend).
+   */
+  async delete(commentId) {
+    await http.delete(`/comments/${commentId}`);
+  },
 };
