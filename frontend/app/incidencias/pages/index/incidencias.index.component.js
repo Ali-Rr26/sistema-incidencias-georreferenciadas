@@ -1,4 +1,4 @@
-import { STATUS_LABEL, PRIORITY_LABEL } from '../../../utils/format.js';
+import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
@@ -68,95 +68,106 @@ export default {
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px)').matches;
+    }
+
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
       }
 
+      const esDesktop = isDesktop();
       const tbody = document.getElementById('tabla-body');
-      tbody.innerHTML = datos
-        .map((inc) => {
-          const categoria = inc.category?.name || '—';
-          const ubicacion = inc.location?.name || '—';
-          const titulo = inc.title || 'Sin título';
-          return `<tr data-id="${inc.id}" style="cursor:pointer;" class="lista-row">
-          <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
-          <td>
-            <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
-              <span class="fw-semibold">${titulo}</span>
-            </div>
-            <small class="text-muted">${categoria}</small>
-          </td>
-          <td>${badgePrioridad(inc.priority)}</td>
-          <td>${badgeEstado(inc.status)}</td>
-          <td class="small text-muted">${ubicacion}</td>
-          <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
-          <td class="text-center">
-            <div class="d-flex justify-content-center gap-1">
-              <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                <i class="fas fa-eye"></i>
-              </a>
-              <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
-                data-id="${inc.id}" title="Editar">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </div>
-          </td>
-        </tr>`;
-        })
-        .join('');
-
       const cards = document.getElementById('contenedor-cards');
-      cards.innerHTML = datos
-        .map((inc) => {
-          const categoria = inc.category?.name || '—';
-          const ubicacion = inc.location?.name || '—';
-          const titulo = inc.title || 'Sin título';
-          return `
-          <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" style="cursor:pointer;">
-            <div class="card-body p-3">
-              <div class="d-flex justify-content-between align-items-start mb-1">
-                <div style="min-width:0;flex:1;margin-right:8px;">
-                  <h6 class="card-title mb-0" style="font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titulo}</h6>
-                  <small class="text-muted" style="font-size:.78rem;">${categoria}</small>
+
+      // Desktop: tabla
+      if (esDesktop) {
+        tbody.innerHTML = datos
+          .map((inc) => {
+            const categoria = inc.category?.name || '—';
+            const ubicacion = inc.location?.name || '—';
+            const titulo = inc.title || 'Sin título';
+            return `<tr data-id="${inc.id}" style="cursor:pointer;" class="lista-row">
+            <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
+            <td>
+              <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
+                <span class="fw-semibold">${titulo}</span>
+              </div>
+              <small class="text-muted">${categoria}</small>
+            </td>
+            <td>${badgePrioridad(inc.priority)}</td>
+            <td>${badgeEstado(inc.status)}</td>
+            <td class="small text-muted">${ubicacion}</td>
+            <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
+            <td class="text-center">
+              <div class="d-flex justify-content-center gap-1">
+                <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
+                  data-id="${inc.id}" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
+                  data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+          })
+          .join('');
+        cards.innerHTML = '';
+      } else {
+        // Mobile: cards — compact layout sin scroll horizontal
+        tbody.innerHTML = '';
+        cards.innerHTML = datos
+          .map((inc) => {
+            const categoria = inc.category?.name || '—';
+            const ubicacion = inc.location?.name || '—';
+            const titulo = inc.title || 'Sin título';
+            return `
+            <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" style="cursor:pointer;">
+              <div class="card-body p-1" style="padding:0.75rem !important;">
+                <!-- Título y categoría -->
+                <div class="mb-1">
+                  <h6 class="card-title mb-0" style="font-size:0.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(titulo)}</h6>
+                  <small class="text-muted" style="font-size:0.75rem;">${escapeHtml(categoria)}</small>
                 </div>
-                ${badgePrioridad(inc.priority)}
-              </div>
-              <div class="d-flex flex-wrap gap-2 mb-2">
-                ${badgeEstado(inc.status)}
-              </div>
-              <div class="d-flex justify-content-between align-items-center">
-                <small class="text-muted">
-                  <i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i>
-                  ${formatearFecha(inc.created_at)}
-                </small>
-                <small class="text-muted">
-                  <i class="fas fa-map-marker-alt" style="font-size:0.75rem;"></i>
-                  ${ubicacion}
-                </small>
-                <div class="d-flex gap-1">
-                  <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                    <i class="fas fa-eye"></i>
+
+                <!-- Prioridad y Estado -->
+                <div class="d-flex gap-1 mb-2" style="font-size:0.75rem;">
+                  ${badgePrioridad(inc.priority)}
+                  ${badgeEstado(inc.status)}
+                </div>
+
+                <!-- Metadata (fecha, ubicación) -->
+                <div class="mb-2" style="font-size:0.7rem;">
+                  <div class="text-muted mb-1">
+                    <i class="fas fa-calendar-alt" style="width:12px;"></i>
+                    ${formatearFecha(inc.created_at)}
+                  </div>
+                  <div class="text-muted">
+                    <i class="fas fa-map-marker-alt" style="width:12px;"></i>
+                    <span style="overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:180px;vertical-align:middle;">
+                      ${escapeHtml(ubicacion)}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Botón Ver en mobile solamente -->
+                <div class="d-flex gap-1 justify-content-end">
+                  <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-primary" title="Ver detalle" style="padding:0.4rem 0.8rem;font-size:0.75rem;">
+                    Ver
                   </a>
-                  <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
-                    data-id="${inc.id}" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                    data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>`;
-        })
-        .join('');
+            </div>`;
+          })
+          .join('');
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
