@@ -81,6 +81,16 @@ class AssignmentPolicy extends PermissionPolicy
     }
 
     /**
+     * Permitted if the user holds `assignments.update`. Org-scoping
+     * is enforced at the controller layer (the parent `Incident` is
+     * already resolved by the time `authorizeResource` calls this).
+     */
+    public function update(User $user, Model $model): bool
+    {
+        return parent::update($user, $model);
+    }
+
+    /**
      * Permitted if the user holds `assignments.delete`. Org-scoping
      * is enforced at the controller layer (the parent `Incident` is
      * already resolved by the time `authorizeResource` calls this).
