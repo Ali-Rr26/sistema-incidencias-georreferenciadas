@@ -78,7 +78,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Cambiar rol de "Juan" de Responsable a Apoyo, guardar.
 - **Criterio:** Badge actualizado: "Juan - Apoyo", historial de cambio registrado.
-- **Estado:** 🔲 Bloqueada (falta PUT endpoint backend)
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -89,7 +89,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** PUT /api/incidencias/{id}/responsables/{usuario_id} con `{ "rol": "apoyo" }`.
 - **Criterio:** HTTP 200, campo rol actualizado, timestamp modificado.
-- **Estado:** 🔲 Bloqueada (no implementada en backend)
+- **Estado:** ✅ Implementado
 
 ---
 
