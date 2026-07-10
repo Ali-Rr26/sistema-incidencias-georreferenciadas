@@ -44,6 +44,13 @@ services:
       REDIS_PORT: "6379"
       STORAGE_ENDPOINT: rustfs
       STORAGE_PORT: "9000"
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-rustfsadmin}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:-rustfsadmin}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_BUCKET: ${STORAGE_BUCKET:-incidencias}
+      AWS_ENDPOINT: http://rustfs:9000
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      FILESYSTEM_STORAGE_DISK: s3
       OCTANE_SERVER: frankenphp
       LOG_CHANNEL: stderr_json
       MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
