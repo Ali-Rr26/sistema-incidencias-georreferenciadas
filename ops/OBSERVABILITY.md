@@ -70,7 +70,7 @@ Labels disponibles:
 ```
 
 ```logql
-{service="backend"} |= "ERROR" or {service="backend"} |= "exception"
+{service="backend"} |= "ERROR" or "exception"
 ```
 
 ```logql
@@ -78,7 +78,7 @@ Labels disponibles:
 ```
 
 ```logql
-{service="backend"} | json | level="error"
+{service="backend"} | json | level_name="ERROR"
 ```
 
 ```logql
