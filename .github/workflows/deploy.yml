@@ -1,16 +1,27 @@
 # ============================================
 # Deploy - Sistema de Incidencias Georreferenciadas
 # ============================================
-# Runs on the self-hosted runner of the server.
-# Pulls the code, rebuilds containers, and restarts services.
+# Runs on the self-hosted runner of the server, which is also the single
+# Docker Swarm node. Builds images locally, then deploys deploy.yml as-is
+# with `docker stack deploy`.
 #
 # Requirements:
 #   - Configured self-hosted runner
-#   - Docker and Docker Compose (v2) installed
+#   - Docker Engine with Swarm mode active (`docker swarm init`, one-time
+#     manual bootstrap — see docs/docker-swarm-guide.md)
 #   - .env files placed in the runner workspace:
-#     - Root .env (for docker-compose variables)
+#     - Root .env (for deploy.yml variables)
 #     - backend/.env (for Laravel/FrankenPHP application secrets)
 #     (clean: false preserves these between runs)
+#
+# NOTE: `docker stack deploy` does NOT read .env files the way
+# `docker compose up` does (Compose feature only, not supported by Swarm)
+# — it DOES interpolate ${VAR} from the process environment, so we export
+# .env into the shell first. We deliberately do NOT pre-render the file
+# with `docker compose config`: that round-trip rewrites `cpus: "0.5"` and
+# short-form `ports:` into typed long-form YAML (float / string) that
+# `docker stack deploy`'s stricter parser then rejects
+# ("must be a string" / "must be a integer").
 # ============================================
 
 name: Deploy App
@@ -44,18 +55,33 @@ jobs:
             exit 1
           fi
 
-      - name: Rebuild and restart services
+      - name: Ensure Swarm mode is active
+        run: |
+          if ! docker info --format '{{.Swarm.LocalNodeState}}' | grep -q active; then
+            echo "❌ Docker Swarm is not active on this host."
+            echo "Run 'docker swarm init' manually once (see docs/docker-swarm-guide.md), then re-run this workflow."
+            exit 1
+          fi
+
+      - name: Build images
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
         run: |
-          docker compose up -d --build --remove-orphans
+          docker compose -f deploy.yml build
+
+      - name: Deploy stack
+        run: |
+          set -a
+          source .env
+          set +a
+          docker stack deploy -c deploy.yml incidencias-stack
 
       - name: Health check
         run: |
           echo "Waiting for services to stabilize..."
           sleep 15
-          docker compose ps
+          docker stack services incidencias-stack
 
-      - name: Clean up old images
+      - name: Clean up
         run: docker image prune -f

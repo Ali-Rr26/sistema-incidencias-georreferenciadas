@@ -1,0 +1,362 @@
+name: sistema-incidencias-georreferenciadas
+services:
+  backend:
+    build:
+      context: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_started
+        required: true
+      redis:
+        condition: service_started
+        required: true
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: any
+    environment:
+      API_VERSION: 1.0.0
+      APP_DEBUG: "true"
+      APP_ENV: local
+      APP_KEY: base64:1HNXe1X9Yy/NzrgoBJGtiCQj48PyvYqioS2Uy6wjGhA=
+      APP_NAME: Sistema de Incidencias Georreferenciadas
+      APP_URL: http://localhost:3000
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_BUCKET: incidencias
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT: http://rustfs:9000
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_USE_PATH_STYLE_ENDPOINT: "true"
+      BACKEND_PORT: "8000"
+      CACHE_STORE: file
+      CLOUDFLARE_TUNNEL_TOKEN: eyJhIjoiODJlN2EyZWE0OTQyOTlmZDgwOWJkNjIxOGRiYzA3MzEiLCJ0IjoiZmY0MDE4NmUtNDI2YS00Njc1LWFhMGItMTZmZDMyNTIzMzJhIiwicyI6Ik5HUTJZVFUyT0dRdE1ETTBaQzAwWWprM0xUZ3haV0V0WWpRME4yUmxOVEUwWkRkaiJ9
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      DB_CONNECTION: pgsql
+      DB_DATABASE: incidencias_db
+      DB_HOST: db
+      DB_PASSWORD: password
+      DB_PORT: "5432"
+      DB_USERNAME: user
+      FILESYSTEM_STORAGE_DISK: s3
+      FIREBASE_CREDENTIALS: /var/www/backend/storage/auth-92411-firebase-adminsdk-fbsvc-538415f630.json
+      FIREBASE_LEEWAY_SECONDS: "5"
+      FIREBASE_PROJECT_ID: auth-92411
+      FRONTEND_PORT: "3000"
+      GRAFANA_PORT: "3001"
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_ACCESS_SECRET: DHI+IRoVAowNAbITEBqQYreupMSeBvnjMwND2FfnLJphR2s3LfoStpm4OZObGtd4
+      JWT_REFRESH_EXPIRES_IN: 7d
+      JWT_REFRESH_SECRET: NOHAoBYnPPlvM1EiqCZJcDOf5/qD9a6MIzkdQ4n0d+9LCymNMPvjFJWuqHEO+QM6
+      LOG_CHANNEL: stack
+      LOG_LEVEL: debug
+      LOG_STACK: single
+      LOKI_PORT: "3100"
+      MERCURE_PUBLISHER_JWT_SECRET: 07f8b71612fd742a1bc7ac3c2b320b587cc4a75f641c85241937de954f014990
+      MERCURE_SUBSCRIBER_JWT_SECRET: 6d787b16eb15e5ef242b95852a3570682305c8a273326e55cdeb941836214d0b
+      OCTANE_SERVER: frankenphp
+      POSTGIS_IMAGE: postgis/postgis:17-3.5-alpine
+      PROMETHEUS_PORT: "9090"
+      QUEUE_CONNECTION: sync
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_IMAGE: redis:8-alpine
+      REDIS_PASSWORD: "null"
+      REDIS_PORT: "6379"
+      RUSTFS_API_PORT: "9300"
+      RUSTFS_CONSOLE_PORT: "9301"
+      RUSTFS_IMAGE: rustfs/rustfs:latest
+      SESSION_DOMAIN: "null"
+      SESSION_DRIVER: file
+      SESSION_ENCRYPT: "false"
+      SESSION_LIFETIME: "120"
+      SESSION_PATH: /
+      STORAGE_ACCESS_KEY: rustfsadmin
+      STORAGE_BUCKET: incidencias
+      STORAGE_ENDPOINT: rustfs
+      STORAGE_PORT: "9000"
+      STORAGE_SECRET_KEY: rustfsadmin
+      STORAGE_URL_EXPIRY_HOURS: "24"
+      STORAGE_USE_SSL: "false"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8000/api/health
+      timeout: 5s
+      interval: 10s
+      retries: 5
+    image: ghcr.io/sistema-incidencias/backend:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+  cloudflared:
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - eyJhIjoiODJlN2EyZWE0OTQyOTlmZDgwOWJkNjIxOGRiYzA3MzEiLCJ0IjoiZmY0MDE4NmUtNDI2YS00Njc1LWFhMGItMTZmZDMyNTIzMzJhIiwicyI6Ik5HUTJZVFUyT0dRdE1ETTBaQzAwWWprM0xUZ3haV0V0WWpRME4yUmxOVEUwWkRkaiJ9
+    depends_on:
+      backend:
+        condition: service_started
+        required: true
+      frontend:
+        condition: service_started
+        required: true
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    image: cloudflare/cloudflared:latest
+    networks:
+      incidencias-network: null
+    restart: unless-stopped
+  db:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    environment:
+      POSTGRES_DB: incidencias_db
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U user -d incidencias_db
+      timeout: 5s
+      interval: 10s
+      retries: 5
+    image: postgis/postgis:17-3.5-alpine
+    networks:
+      incidencias-network: null
+    volumes:
+      - type: volume
+        source: db_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  frontend:
+    build:
+      context: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      backend:
+        condition: service_started
+        required: true
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      restart_policy:
+        condition: any
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://localhost/nginx_status
+      timeout: 5s
+      interval: 10s
+      retries: 5
+    image: ghcr.io/sistema-incidencias/frontend:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "3000"
+        protocol: tcp
+  grafana:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    image: grafana/grafana:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 3000
+        published: "3001"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/grafana/provisioning
+        target: /etc/grafana/provisioning
+        bind: {}
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/dashboards
+        target: /var/lib/grafana/dashboards
+        bind: {}
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/dashboards-k6
+        target: /var/lib/grafana/dashboards-k6
+        bind: {}
+      - type: volume
+        source: grafana_data
+        target: /var/lib/grafana
+        volume: {}
+  loki:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    image: grafana/loki:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 3100
+        published: "3100"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/loki/loki.yml
+        target: /etc/loki/loki.yml
+        bind: {}
+  postgres_exporter:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    environment:
+      DATA_SOURCE_NAME: postgresql://user:password@db:5432/incidencias_db?sslmode=disable
+    image: prometheuscommunity/postgres-exporter:latest
+    networks:
+      incidencias-network: null
+  prometheus:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    image: prom/prometheus:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 9090
+        published: "9090"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/prometheus/prometheus.swarm.yml
+        target: /etc/prometheus/prometheus.yml
+        bind: {}
+  promtail:
+    deploy:
+      mode: global
+      restart_policy:
+        condition: any
+    image: grafana/promtail:latest
+    networks:
+      incidencias-network: null
+    user: root
+    volumes:
+      - type: bind
+        source: /home/yan2005dris-afk/Documentos/GitHub/sistema-incidencias-georreferenciadas/ops/promtail/promtail.yml
+        target: /etc/promtail/config.yml
+        bind: {}
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind: {}
+  redis:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 3s
+      interval: 10s
+      retries: 5
+    image: redis:8-alpine
+    networks:
+      incidencias-network: null
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+  redis_exporter:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    environment:
+      REDIS_ADDR: redis:6379
+    image: oliver006/redis_exporter:latest
+    networks:
+      incidencias-network: null
+  rustfs:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    entrypoint:
+      - /bin/sh
+      - -c
+      - chown -R 10001:10001 /data && exec /entrypoint.sh rustfs
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_ADDRESS: :9000
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_SECRET_KEY: rustfsadmin
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/ | grep -qE '200|403'
+      timeout: 20s
+      interval: 30s
+      retries: 3
+    image: rustfs/rustfs:latest
+    networks:
+      incidencias-network: null
+    ports:
+      - mode: ingress
+        target: 9000
+        published: "9300"
+        protocol: tcp
+      - mode: ingress
+        target: 9001
+        published: "9301"
+        protocol: tcp
+    user: root
+    volumes:
+      - type: volume
+        source: rustfs_data
+        target: /data
+        volume: {}
+networks:
+  incidencias-network:
+    name: sistema-incidencias-georreferenciadas_incidencias-network
+    driver: overlay
+volumes:
+  db_data:
+    name: sistema-incidencias-georreferenciadas_db_data
+  grafana_data:
+    name: sistema-incidencias-georreferenciadas_grafana_data
+  redis_data:
+    name: sistema-incidencias-georreferenciadas_redis_data
+  rustfs_data:
+    name: sistema-incidencias-georreferenciadas_rustfs_data
