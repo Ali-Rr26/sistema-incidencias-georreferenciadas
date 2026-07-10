@@ -1,8 +1,29 @@
 import { defineConfig } from 'vite';
+import { cpSync, statSync } from 'node:fs';
+
+// Cada componente carga su propio *.component.html vía fetch() en runtime
+// (ver app-shell.component.js:98, mount()) con un string plano, no un
+// import estático — Vite no puede rastrear eso, así que nunca los mete en
+// dist/. Sin este plugin, esos fetch devuelven 404 y nginx los enmascara
+// sirviendo index.html de vuelta (fallback SPA de try_files), rompiendo
+// el mount de cualquier componente en producción.
+function copyComponentTemplates() {
+  return {
+    name: 'copy-component-templates',
+    apply: 'build',
+    writeBundle() {
+      cpSync('app', 'dist/app', {
+        recursive: true,
+        filter: (src) => statSync(src).isDirectory() || src.endsWith('.html'),
+      });
+    },
+  };
+}
 
 export default defineConfig({
   // index.html vive en la raíz del proyecto (frontend/), igual que hoy.
   root: '.',
+  plugins: [copyComponentTemplates()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
