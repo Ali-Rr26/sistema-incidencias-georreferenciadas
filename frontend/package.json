@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "lint": "eslint \"app/**/*.js\"",
     "lint:fix": "eslint \"app/**/*.js\" --fix",
     "format": "prettier --check \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
@@ -19,6 +22,7 @@
     "eslint": "^8.57.0",
     "jsdom": "^25.0.1",
     "prettier": "^3.9.3",
+    "vite": "^6.4.3",
     "vitest": "^2.1.8"
   }
 }
