@@ -466,7 +466,7 @@ const ASSIGNMENT_ROLE_BADGE = {
 // after a previous error render had overwritten it (see R4-003).
 const ASSIGNMENTS_VACIO_TEXT = 'Sin operadores asignados.';
 
-function buildAssignmentRow(assignment, canDelete, canUpdate) {
+function buildAssignmentRow(assignment, canDelete) {
   const nombre = assignment.user
     ? [assignment.user.first_name, assignment.user.last_name]
         .filter(Boolean)
@@ -477,27 +477,19 @@ function buildAssignmentRow(assignment, canDelete, canUpdate) {
   const badge =
     ASSIGNMENT_ROLE_BADGE[assignment.role] ??
     escapeHtml(String(assignment.role ?? ''));
-  const btns = [];
-  if (canUpdate) {
-    btns.push(`<button type="button" class="btn btn-sm btn-outline-primary btn-editar-asignacion" data-id="${escapeHtml(String(assignment.id))}" data-role="${escapeHtml(String(assignment.role))}" title="Cambiar rol">
-      <i class="fas fa-edit"></i>
-    </button>`);
-  }
-  if (canDelete) {
-    btns.push(`<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-asignacion" data-id="${escapeHtml(String(assignment.id))}" title="Quitar asignación">
-      <i class="fas fa-times"></i>
-    </button>`);
-  }
+  const btn = canDelete
+    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-asignacion" data-id="${escapeHtml(String(assignment.id))}" title="Quitar asignación">
+        <i class="fas fa-times"></i>
+      </button>`
+    : '';
 
   return `
-    <div class="d-flex justify-content-between align-items-center mb-2" data-assignment-id="${escapeHtml(String(assignment.id))}">
+    <div class="d-flex justify-content-between align-items-center mb-2">
       <div>
         <div class="small fw-semibold">${escapeHtml(nombre)}</div>
         <div>${badge}</div>
       </div>
-      <div class="btn-group btn-group-sm" role="group">
-        ${btns.join('')}
-      </div>
+      ${btn}
     </div>`;
 }
 
@@ -507,7 +499,7 @@ function buildAssignmentRow(assignment, canDelete, canUpdate) {
  * render-function split used for comments (buildCommentLi/renderComments)
  * so rendering can be tested independently of the network call.
  */
-function renderAssignments(items, puedeEliminar, puedeActualizar) {
+function renderAssignments(items, puedeEliminar) {
   const listEl = document.getElementById('detalle-asignaciones-list');
   const vacioEl = document.getElementById('detalle-asignaciones-vacio');
   if (!listEl) return;
@@ -523,7 +515,7 @@ function renderAssignments(items, puedeEliminar, puedeActualizar) {
 
   vacioEl?.classList.add('d-none');
   listEl.innerHTML = items
-    .map((a) => buildAssignmentRow(a, puedeEliminar, puedeActualizar))
+    .map((a) => buildAssignmentRow(a, puedeEliminar))
     .join('');
 }
 
@@ -599,7 +591,6 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
     permisos = new Set();
   }
   const puedeCrear = permisos.has('assignments.create');
-  const puedeActualizar = permisos.has('assignments.update');
   const puedeEliminar = permisos.has('assignments.delete');
 
   // Fetch-from-network used for post-mutation refreshes.
@@ -607,7 +598,7 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
     try {
       const { data } = await assignmentService.list(incidentId);
       loadingEl?.classList.add('d-none');
-      renderAssignments(data, puedeEliminar, puedeActualizar);
+      renderAssignments(data, puedeEliminar);
     } catch (err) {
       console.error('Error al cargar asignaciones:', err);
       loadingEl?.classList.add('d-none');
@@ -619,55 +610,21 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
     }
   }
 
-  if (puedeEliminar || puedeActualizar) {
+  if (puedeEliminar) {
     listEl.addEventListener('click', async (e) => {
-      const deleteBtn = e.target.closest('.btn-eliminar-asignacion');
-      if (deleteBtn && puedeEliminar) {
-        const assignmentId = deleteBtn.dataset.id;
-        deleteBtn.disabled = true;
-        errorEl?.classList.add('d-none');
+      const btn = e.target.closest('.btn-eliminar-asignacion');
+      if (!btn) return;
 
-        try {
-          await assignmentService.remove(incidentId, assignmentId);
-          await cargarAsignaciones();
-        } catch (err) {
-          showError(err.message || 'No se pudo eliminar la asignación.');
-          deleteBtn.disabled = false;
-        }
-        return;
-      }
+      const assignmentId = btn.dataset.id;
+      btn.disabled = true;
+      errorEl?.classList.add('d-none');
 
-      const editBtn = e.target.closest('.btn-editar-asignacion');
-      if (editBtn && puedeActualizar) {
-        const assignmentId = editBtn.dataset.id;
-        const currentRole = editBtn.dataset.role;
-        editBtn.disabled = true;
-        errorEl?.classList.add('d-none');
-
-        const newRole = prompt(
-          'Selecciona nuevo rol:\n1 = responsable\n2 = apoyo',
-          currentRole === 'apoyo' ? '2' : '1',
-        );
-        if (!newRole) {
-          editBtn.disabled = false;
-          return;
-        }
-
-        const roleMap = { '1': 'responsable', '2': 'apoyo' };
-        const role = roleMap[newRole];
-        if (!role) {
-          showError('Rol inválido. Usa 1 o 2.');
-          editBtn.disabled = false;
-          return;
-        }
-
-        try {
-          await assignmentService.update(incidentId, assignmentId, role);
-          await cargarAsignaciones();
-        } catch (err) {
-          showError(err.message || 'No se pudo actualizar la asignación.');
-          editBtn.disabled = false;
-        }
+      try {
+        await assignmentService.remove(incidentId, assignmentId);
+        await cargarAsignaciones();
+      } catch (err) {
+        showError(err.message || 'No se pudo eliminar la asignación.');
+        btn.disabled = false;
       }
     });
   }
@@ -705,7 +662,7 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
   // Initial render — use embedded data if available, otherwise fetch.
   if (initialAssignments !== null) {
     loadingEl?.classList.add('d-none');
-    renderAssignments(initialAssignments, puedeEliminar, puedeActualizar);
+    renderAssignments(initialAssignments, puedeEliminar);
   } else {
     await cargarAsignaciones();
   }
