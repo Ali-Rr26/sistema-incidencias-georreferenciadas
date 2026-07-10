@@ -89,12 +89,20 @@
 @media (max-width: 480px) {
   .gr-filter-btn {
     width: 100%;
+    min-width: 0;
     justify-content: flex-start;
     font-size: 12px;
     padding: 8px 10px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  .gr-filter-btn i:first-child {
+    flex-shrink: 0;
+  }
+
+  .gr-filter-btn i.gr-filter-btn__arrow {
+    flex-shrink: 0;
+    margin-left: auto;
   }
 }
 
