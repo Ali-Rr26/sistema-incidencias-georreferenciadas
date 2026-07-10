@@ -57,7 +57,7 @@ jobs:
 
       - name: Ensure Swarm mode is active
         run: |
-          if ! docker info --format '{{.Swarm.LocalNodeState}}' | grep -q active; then
+          if [ "$(docker info --format '{{.Swarm.LocalNodeState}}')" != "active" ]; then
             echo "❌ Docker Swarm is not active on this host."
             echo "Run 'docker swarm init' manually once (see docs/docker-swarm-guide.md), then re-run this workflow."
             exit 1
