@@ -9,6 +9,7 @@
     "format:fix": "prettier --write \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
     "test": "vitest run --config vitest.config.js",
     "test:unit": "vitest run --config vitest.unit.config.js",
+    "test:coverage": "vitest run --config vitest.unit.config.js --coverage",
     "test:integration": "vitest run --config vitest.integration.config.js",
     "test:snapshot": "vitest run --config vitest.snapshot.config.js",
     "test:watch": "vitest"

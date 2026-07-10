@@ -213,11 +213,71 @@ services:
     networks:
       - dev-network
 
+  # ==========================================
+  # STATIC CODE ANALYSIS (SonarQube)
+  # ==========================================
+  # Standalone stack, deliberately NOT wired into Prometheus/Grafana/Loki —
+  # SonarQube ships its own UI/dashboard (see ops/sonarqube/README.md).
+  #
+  # NOTE: SonarQube's embedded Elasticsearch requires the host kernel setting
+  # vm.max_map_count >= 262144, or the sonarqube service will fail to start
+  # (Elasticsearch bootstrap check failure). This is NOT set automatically.
+  # On the host, run:
+  #   sudo sysctl -w vm.max_map_count=262144
+  # To persist across reboots, add `vm.max_map_count=262144` to /etc/sysctl.conf
+  # (or a drop-in under /etc/sysctl.d/).
+  sonarqube_db:
+    image: ${SONARQUBE_DB_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: ${SONARQUBE_DB_DATABASE:-sonarqube}
+      POSTGRES_USER: ${SONARQUBE_DB_USERNAME:-sonarqube}
+      POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonarqube}
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - dev-network
+
+  sonarqube:
+    # Pinned to a specific Community Build release — floating tags like
+    # `lts-community` can resolve to a build SonarQube's own update-center
+    # later flags as inactive. Bump this manually when upgrading.
+    image: ${SONARQUBE_IMAGE:-sonarqube:26.7.0.124771-community}
+    depends_on:
+      sonarqube_db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: "jdbc:postgresql://sonarqube_db:5432/${SONARQUBE_DB_DATABASE:-sonarqube}"
+      SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USERNAME:-sonarqube}
+      SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonarqube}
+    ports:
+      - "${SONARQUBE_PORT:-9002}:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - dev-network
+
 volumes:
   db_data:
   redis_data:
   rustfs_data:
   grafana_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonarqube_db_data:
 
 networks:
   dev-network:
