@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Http\Controllers;
+namespace App\Domains\Auth\Firebase\Http\Controllers;
 
-use App\Domains\Auth\Exceptions\AuthenticationException;
-use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
-use App\Domains\Auth\Exceptions\RejectedUnverifiedException;
-use App\Domains\Auth\Http\Requests\GoogleLoginRequest;
-use App\Domains\Auth\Services\GoogleAuthService;
+use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
+use App\Domains\Auth\Firebase\Exceptions\RejectedUnverifiedException;
+use App\Domains\Auth\Firebase\Http\Requests\GoogleLoginRequest;
+use App\Domains\Auth\Firebase\Services\GoogleAuthService;
+use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
@@ -20,19 +20,6 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Thin controller for the public `POST /api/auth/google` endpoint.
- *
- * Delegates to GoogleAuthService for the verify + link/create +
- * session-issue pipeline, then emits the same JSON body + httpOnly
- * cookies (`refresh_token`, `mercureAuthorization`) as the email
- * `/login` flow so the frontend can store them via identical code.
- *
- * Cookie-building is duplicated from AuthController rather than
- * extracted into a shared trait — that refactor (a clean chore that
- * touches PR-1's controller) is out of scope for PR-2 per the
- * chained-pr rule. See T2.8 in the tasks artifact.
- */
 class GoogleAuthController
 {
     private const REFRESH_COOKIE = 'refresh_token';
@@ -58,9 +45,6 @@ class GoogleAuthController
                 ua: $request->userAgent(),
             );
         } catch (InvalidFirebaseTokenException|RejectedUnverifiedException $e) {
-            // Both map to HTTP 401 per the spec; the exception's own
-            // message is the spec-required Spanish copy (the service
-            // raises the right exception for the right branch).
             if ($e instanceof RejectedUnverifiedException) {
                 Log::warning('auth.google.rejected_unverified', [
                     'ip' => $request->ip(),
@@ -89,8 +73,7 @@ class GoogleAuthController
             ->withCookie($this->mercureAuthCookie($user));
     }
 
-    // ─── Cookie builders — duplicated from AuthController on purpose ──────
-    // See class-level docblock. Future chore: extract AuthControllerHelpers.
+    // Cookie builders
 
     private function refreshCookie(string $token): Cookie
     {

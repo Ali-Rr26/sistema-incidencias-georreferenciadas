@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Http;
+namespace App\Domains\Auth\Local\Http\Controllers;
 
-use App\Domains\Auth\Exceptions\AuthenticationException;
-use App\Domains\Auth\Http\Requests\LoginRequest;
-use App\Domains\Auth\Services\AuthService;
+use App\Domains\Auth\Local\Http\Requests\LoginRequest;
+use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
+use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
@@ -31,11 +31,6 @@ class AuthController
 
     private const ACCESS_TTL = 900;
 
-    /**
-     * Standard cookie name from the Mercure protocol spec — the hub reads
-     * this itself to authorize private-topic subscriptions, so the name
-     * isn't arbitrary.
-     */
     private const MERCURE_COOKIE = 'mercureAuthorization';
 
     public function __construct(
@@ -138,9 +133,6 @@ class AuthController
             'last_name' => 'sometimes|string|max:100',
             'phone' => 'sometimes|nullable|string|max:50',
             'password' => 'sometimes|nullable|string|min:8',
-            // REQ-7 (H7 from audit): avatar MUST be an array. When the array
-            // contains an `urls` key, the inner array is capped at 5 entries
-            // and each entry MUST be a syntactically-valid URL.
             'avatar' => ['sometimes', 'array'],
             'avatar.urls' => Rule::when(
                 $request->has('avatar.urls'),
@@ -205,21 +197,9 @@ class AuthController
 
     /**
      * Build the Mercure subscriber authorization cookie for this user.
-     *
-     * The JWT carries the Mercure-spec `mercure.subscribe` claim scoped to
-     * exactly this user's private notification topic — the hub itself
-     * enforces that a subscriber can only listen to topics listed here, so
-     * this is the actual authorization boundary, not the app's own JWT.
-     * Signed with a separate secret (`MERCURE_SUBSCRIBER_JWT_SECRET`) from
-     * the publisher key so a leaked subscriber token can't be used to
-     * publish. Path is root — the hub lives at /.well-known/mercure, not
-     * under /api, so it must be sent on that request regardless of prefix.
      */
     private function mercureAuthCookie(User $user): Cookie
     {
-        // Key\InMemory rejects an empty secret at construction — never let
-        // a missing MERCURE_SUBSCRIBER_JWT_SECRET break login/refresh over
-        // a real-time feature that degrades gracefully on the frontend.
         $secret = (string) config('octane.mercure.subscriber_jwt');
         if ($secret === '') {
             Log::warning('MERCURE_SUBSCRIBER_JWT_SECRET is not configured — issuing a placeholder Mercure cookie that the hub will reject.');

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Exceptions;
+namespace App\Domains\Auth\Shared\Exceptions;
 
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;

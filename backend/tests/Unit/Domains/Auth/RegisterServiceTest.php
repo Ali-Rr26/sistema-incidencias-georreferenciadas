@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Services\RegisterService;
+use App\Domains\Auth\Local\Services\RegisterService;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;

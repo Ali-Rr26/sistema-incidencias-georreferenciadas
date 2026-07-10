@@ -1,6 +1,6 @@
 <?php
 
-use App\Domains\Auth\Exceptions\AuthenticationException;
+use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Exceptions\HttpExceptionReporter;
 use App\Http\Middleware\InstrumentHttpRequests;

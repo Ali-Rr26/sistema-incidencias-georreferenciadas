@@ -2,27 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Services;
+namespace App\Domains\Auth\Firebase\Services;
 
-use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
-use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
+use App\Domains\Auth\Firebase\Contracts\FirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
 use Kreait\Firebase\Contract\Auth as KreaitAuth;
 use Kreait\Firebase\Exception\Auth as KreaitAuthException;
 
-/**
- * Production FirebaseTokenVerifier. Wraps the kreait/firebase-php SDK
- * and translates its exception/claim shape into the domain's own
- * types (VerifiedFirebaseToken DTO + InvalidFirebaseTokenException).
- *
- * Construction takes a Kreait Auth contract instance — the binding
- * in AppServiceProvider::register() builds it from config (the
- * FIREBASE_CREDENTIALS env var, see config/services.php). Tests bind
- * the FakeFirebaseTokenVerifier to the same contract so they never
- * touch the SDK.
- *
- * `leewayInSeconds` matches Firebase's clock-skew tolerance default
- * (5 seconds). Pass a different value via config('services.firebase.leeway_seconds').
- */
 final class KreaitFirebaseTokenVerifier implements FirebaseTokenVerifier
 {
     public function __construct(
@@ -39,10 +25,8 @@ final class KreaitFirebaseTokenVerifier implements FirebaseTokenVerifier
                 leewayInSeconds: $this->leewayInSeconds,
             );
         } catch (KreaitAuthException\FailedToVerifyToken) {
-            // Malformed, expired, wrong audience, wrong signature.
             throw new InvalidFirebaseTokenException;
         } catch (KreaitAuthException\RevokedIdToken) {
-            // Token was once valid but has been revoked (sign-out, etc).
             throw new InvalidFirebaseTokenException;
         }
 

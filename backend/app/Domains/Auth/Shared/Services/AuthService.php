@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Services;
+namespace App\Domains\Auth\Shared\Services;
 
-use App\Domains\Auth\Exceptions\AuthenticationException;
+use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
@@ -39,17 +39,6 @@ class AuthService
     }
 
     /**
-     * Issue a fresh access/refresh JWT pair plus a session row for a
-     * User that has ALREADY been authenticated by the caller. Used by
-     * both the email/password `login()` and the Google ID-token flow
-     * (`GoogleAuthService::login`).
-     *
-     * This is NOT a credential-validation surface — anyone calling it
-     * is asserting "I already have a real User; just give me a session".
-     * Splitting it out of `login()` lets the Google flow reuse the
-     * exact same JWT issuance + session-row creation without duplicating
-     * the cookie/JWT plumbing.
-     *
      * @return array{accessToken: string, refreshToken: string, expiresIn: int, user: User}
      */
     public function issueSession(User $user, ?string $ip, ?string $ua): array

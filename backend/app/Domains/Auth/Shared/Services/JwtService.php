@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Auth\Services;
+namespace App\Domains\Auth\Shared\Services;
 
 use DateTimeImmutable;
 use Illuminate\Support\Str;
