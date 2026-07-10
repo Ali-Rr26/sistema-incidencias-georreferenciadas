@@ -71,6 +71,18 @@ b, strong { font-weight: 500; }
   min-height: calc(100vh - 210px);
 }
 
+@media (max-width: 767.98px) {
+  .page-wrapper > .container-fluid,
+  .page-wrapper > .container-sm,
+  .page-wrapper > .container-md,
+  .page-wrapper > .container-lg,
+  .page-wrapper > .container-xl,
+  .page-wrapper > .container-xxl {
+    padding: 16px 12px;
+    min-height: calc(100vh - 180px);
+  }
+}
+
 .page-wrapper > .page-breadcrumb {
   max-width: 1300px;
   margin: 0 auto;
@@ -156,6 +168,11 @@ b, strong { font-weight: 500; }
     position: relative;
     top: 80px;
     background: var(--bg-card);
+  }
+
+  /* Remove sidebar margin when sidebar is hidden on mobile */
+  #main-wrapper[data-layout=vertical][data-sidebartype=full] .page-wrapper {
+    margin-left: 0;
   }
 }
 
