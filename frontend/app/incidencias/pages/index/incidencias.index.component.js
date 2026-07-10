@@ -80,7 +80,7 @@ export default {
           const categoria = inc.category?.name || '—';
           const ubicacion = inc.location?.name || '—';
           const titulo = inc.title || 'Sin título';
-          return `<tr>
+          return `<tr data-id="${inc.id}" style="cursor:pointer;" class="lista-row">
           <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
           <td>
             <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
@@ -118,7 +118,7 @@ export default {
           const ubicacion = inc.location?.name || '—';
           const titulo = inc.title || 'Sin título';
           return `
-          <div class="card mb-2 shadow-sm">
+          <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" style="cursor:pointer;">
             <div class="card-body p-3">
               <div class="d-flex justify-content-between align-items-start mb-1">
                 <div style="min-width:0;flex:1;margin-right:8px;">
@@ -217,6 +217,21 @@ export default {
     document
       .getElementById('contenedor-cards')
       .addEventListener('click', manejarClicks);
+
+    // Double-click handlers: abrir detalle
+    function manejarDobleClic(e) {
+      const fila = e.target.closest('.lista-row, .lista-card');
+      if (!fila) return;
+      const id = fila.dataset.id;
+      if (id) router.navigate('/incidencias/' + id);
+    }
+
+    document
+      .getElementById('tabla-body')
+      .addEventListener('dblclick', manejarDobleClic);
+    document
+      .getElementById('contenedor-cards')
+      .addEventListener('dblclick', manejarDobleClic);
 
     document
       .getElementById('btn-confirmar-eliminar')
