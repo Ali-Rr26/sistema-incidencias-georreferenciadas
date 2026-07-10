@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
 import { cpSync, statSync } from 'node:fs';
 
-// Cada componente carga su propio *.component.html vía fetch() en runtime
-// (ver app-shell.component.js:98, mount()) con un string plano, no un
-// import estático — Vite no puede rastrear eso, así que nunca los mete en
-// dist/. Sin este plugin, esos fetch devuelven 404 y nginx los enmascara
-// sirviendo index.html de vuelta (fallback SPA de try_files), rompiendo
-// el mount de cualquier componente en producción.
+// Cada componente carga su propio *.component.html Y *.component.css vía
+// fetch() en runtime (ver app-shell.component.js:98 mount(), y
+// router.js:171-173 _injectStyle() para el styleUrl de cada página) con
+// un string plano, no un import estático — Vite no puede rastrear eso,
+// así que nunca los mete en dist/. Sin este plugin, esos fetch devuelven
+// 404 y nginx los enmascara sirviendo index.html de vuelta (fallback SPA
+// de try_files), rompiendo el mount/estilo de cualquier componente en
+// producción.
 function copyComponentTemplates() {
   return {
     name: 'copy-component-templates',
@@ -14,7 +16,10 @@ function copyComponentTemplates() {
     writeBundle() {
       cpSync('app', 'dist/app', {
         recursive: true,
-        filter: (src) => statSync(src).isDirectory() || src.endsWith('.html'),
+        filter: (src) =>
+          statSync(src).isDirectory() ||
+          src.endsWith('.html') ||
+          src.endsWith('.css'),
       });
     },
   };
