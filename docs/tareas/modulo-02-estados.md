@@ -23,7 +23,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** GET /api/estados.
 - **Criterio:** JSON con array de estados: `[{ "id": 1, "nombre": "Pendiente" }, ...]`.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado | **Implementación:** StatusHistoryController.availableStatuses() (routes: GET /api/estados)
 
 ---
 
@@ -45,7 +45,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** PUT /api/incidencias/{id}/estado con `{ "estado_id": 2, "comentario": "Iniciando revisión técnica" }`.
 - **Criterio:** HTTP 200, nuevo registro en historial_estados con todos los campos.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado | **Implementación:** IncidentController.updateStatus() (routes: PUT /api/incidents/{id}/estado). Trigger BD auto-crea historial
 
 ---
 
@@ -67,7 +67,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** GET /api/incidencias/{id}/historial.
 - **Criterio:** Array JSON ordenado por created_at DESC, incluye estado_origen, estado_destino, usuario, timestamp, comentario.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado | **Verificado:** StatusHistoryController.index() (routes/api.php:59)
 
 ---
 
@@ -100,7 +100,7 @@
 - **Capa:** Base de Datos (BD) | **Responsable:** Integrante 3
 - **Descripción:** Consultar incidencia con estado "Resuelto".
 - **Criterio:** Campo fecha_resolucion tiene timestamp válido, coincide con último cambio de estado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado | **Verificado:** Incident model booted() hook (line 30-31) auto-asigna now() a resolution_date
 
 ---
 
@@ -111,7 +111,7 @@
 - **Capa:** Base de Datos (BD) | **Responsable:** Integrante 3
 - **Descripción:** Cambiar estado de incidencia vía SQL directo.
 - **Criterio:** Nuevo registro insertado en historial_estados con todos los campos requeridos.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado | **Verificado:** trigger `trg_log_incident_status` (migration 2026_06_15_000010_create_incident_triggers, ref: StatusHistoryController line 17)
 
 ---
 
@@ -123,4 +123,5 @@
 
 ---
 
-> **Total tareas:** 11 | **Frontend:** 5 | **Backend:** 4 | **BD:** 2
+> **Total tareas:** 11 | **Frontend:** 5/5 ✅ | **Backend:** 4/4 ✅ | **BD:** 2/2 ✅  
+> **ESTADO M02:** ✅ 11/11 COMPLETADO (100%)
