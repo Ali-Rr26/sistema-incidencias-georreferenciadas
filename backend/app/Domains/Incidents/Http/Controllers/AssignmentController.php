@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Http\Controllers;
 
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\Incidents\Http\Requests\StoreAssignmentRequest;
+use App\Domains\Incidents\Http\Requests\UpdateAssignmentRequest;
 use App\Domains\Incidents\Http\Resources\AssignmentCollection;
 use App\Domains\Incidents\Http\Resources\AssignmentResource;
 use App\Domains\Incidents\Models\Assignment;
@@ -21,6 +22,7 @@ use Illuminate\Routing\Controller;
  *
  *   GET    /api/incidents/{incident}/assignments
  *   POST   /api/incidents/{incident}/assignments
+ *   PUT    /api/incidents/{incident}/assignments/{assignment}
  *   DELETE /api/incidents/{incident}/assignments/{assignment}
  *
  * Layered in PR #2 (this batch):
@@ -56,6 +58,7 @@ class AssignmentController extends Controller
         // Mapping applied:
         //   index   → viewAny  (AssignmentPolicy::viewAny  → incidents.view)
         //   store   → create   (PermissionPolicy::create    → assignments.create)
+        //   update  → update   (PermissionPolicy::update    → assignments.update)
         //   destroy → delete   (PermissionPolicy::delete    → assignments.delete)
         $this->authorizeResource(Assignment::class, 'assignment');
     }
@@ -115,6 +118,24 @@ class AssignmentController extends Controller
         $service->unassign($incident, $assignment->id);
 
         return response()->json(null, 204);
+    }
+
+    public function update(
+        UpdateAssignmentRequest $request,
+        Incident $incident,
+        Assignment $assignment,
+    ): JsonResponse {
+        $this->authorizeIncidentOrgScope($incident);
+        $this->authorize('update', $assignment);
+
+        $role = (string) $request->input('role');
+
+        $assignment->update(['assignment_role' => $role]);
+
+        // Reload with eager-loaded user so response mirrors index shape
+        $assignment->load('user');
+
+        return (new AssignmentResource($assignment))->response();
     }
 
     /**

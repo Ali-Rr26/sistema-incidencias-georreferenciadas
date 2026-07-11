@@ -8,6 +8,12 @@
   font-family: var(--font-family);
 }
 
+@media (max-width: 480px) {
+  .gr-page {
+    padding: 16px 12px;
+  }
+}
+
 .gr-page__header {
   display: flex;
   align-items: flex-start;
@@ -17,11 +23,24 @@
   flex-wrap: wrap;
 }
 
+@media (max-width: 480px) {
+  .gr-page__header {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
 .gr-page__title {
   font-size: 23px;
   font-weight: 700;
   color: #23283b;
   margin: 0 0 4px;
+}
+
+@media (max-width: 480px) {
+  .gr-page__title {
+    font-size: 18px;
+  }
 }
 
 .gr-breadcrumb {
@@ -44,6 +63,13 @@
   gap: 10px;
 }
 
+@media (max-width: 480px) {
+  .gr-page__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
 .gr-filter-btn {
   background: #fff;
   border: 1px solid var(--border-light);
@@ -58,6 +84,26 @@
   cursor: pointer;
   user-select: none;
   font-family: var(--font-family);
+}
+
+@media (max-width: 480px) {
+  .gr-filter-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    font-size: 12px;
+    padding: 8px 10px;
+    overflow: hidden;
+  }
+
+  .gr-filter-btn i:first-child {
+    flex-shrink: 0;
+  }
+
+  .gr-filter-btn i.gr-filter-btn__arrow {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
 }
 
 .gr-filter-btn i:first-child {
@@ -83,6 +129,14 @@
   }
 }
 
+@media (max-width: 480px) {
+  .gr-stats-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+}
+
 .gr-stat-card {
   border-radius: 18px;
   padding: 18px 20px;
@@ -91,6 +145,14 @@
   flex-direction: column;
   gap: 12px;
   position: relative;
+}
+
+@media (max-width: 480px) {
+  .gr-stat-card {
+    border-radius: 12px;
+    padding: 14px 16px;
+    gap: 8px;
+  }
 }
 
 .gr-stat-card--blue {
@@ -126,10 +188,22 @@
   letter-spacing: -0.02em;
 }
 
+@media (max-width: 480px) {
+  .gr-stat-card__num {
+    font-size: 22px;
+  }
+}
+
 .gr-stat-card__label {
   font-size: 13px;
   opacity: 0.92;
   margin-top: 2px;
+}
+
+@media (max-width: 480px) {
+  .gr-stat-card__label {
+    font-size: 11px;
+  }
 }
 
 .gr-stat-card__icon {
@@ -146,9 +220,26 @@
   right: 20px;
 }
 
+@media (max-width: 480px) {
+  .gr-stat-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    font-size: 14px;
+    top: 14px;
+    right: 16px;
+  }
+}
+
 .gr-stat-card__trend {
   font-size: 11.5px;
   opacity: 0.9;
+}
+
+@media (max-width: 480px) {
+  .gr-stat-card__trend {
+    font-size: 10px;
+  }
 }
 
 .gr-stat-card__badge {
@@ -168,6 +259,12 @@
   }
 }
 
+@media (max-width: 480px) {
+  .gr-charts-row {
+    gap: 12px;
+  }
+}
+
 .gr-card {
   background: #fff;
   border-radius: 18px;
@@ -175,11 +272,25 @@
   box-shadow: var(--shadow-sm);
 }
 
+@media (max-width: 480px) {
+  .gr-card {
+    border-radius: 12px;
+    padding: 16px 14px;
+  }
+}
+
 .gr-card__title {
   font-size: 15.5px;
   font-weight: 700;
   color: #23283b;
   margin-bottom: 16px;
+}
+
+@media (max-width: 480px) {
+  .gr-card__title {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
 }
 
 /* Legend */
@@ -192,12 +303,26 @@
   gap: 11px;
 }
 
+@media (max-width: 480px) {
+  .gr-legend {
+    gap: 8px;
+    margin-top: 8px;
+  }
+}
+
 .gr-legend li {
   display: flex;
   align-items: center;
   gap: 9px;
   font-size: 12.5px;
   color: #5b6172;
+}
+
+@media (max-width: 480px) {
+  .gr-legend li {
+    font-size: 11px;
+    gap: 7px;
+  }
 }
 
 .gr-legend li i {

@@ -10,6 +10,44 @@ use Illuminate\Support\Facades\DB;
 
 class RolePermissionSeeder extends Seeder
 {
+    private const ADMIN_SISTEMA_PERMISSIONS = [
+        ['resource' => 'dashboard',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'view'],
+        ['resource' => 'incidents',           'action' => 'create'],
+        ['resource' => 'incidents',           'action' => 'update'],
+        ['resource' => 'incidents',           'action' => 'delete'],
+        ['resource' => 'incidents',           'action' => 'manage'],
+        ['resource' => 'comments',            'action' => 'view'],
+        ['resource' => 'comments',            'action' => 'create'],
+        ['resource' => 'comments',            'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'delete'],
+        ['resource' => 'status-history',      'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'view'],
+        ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'delete'],
+        ['resource' => 'notifications',       'action' => 'view'],
+        ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'view'],
+        ['resource' => 'locations',           'action' => 'create'],
+        ['resource' => 'locations',           'action' => 'update'],
+        ['resource' => 'locations',           'action' => 'delete'],
+        ['resource' => 'organizations',       'action' => 'view'],
+        ['resource' => 'organizations',       'action' => 'create'],
+        ['resource' => 'organizations',       'action' => 'update'],
+        ['resource' => 'organizations',       'action' => 'delete'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
+        ['resource' => 'incident-categories', 'action' => 'create'],
+        ['resource' => 'incident-categories', 'action' => 'update'],
+        ['resource' => 'incident-categories', 'action' => 'delete'],
+        ['resource' => 'roles',               'action' => 'view'],
+        ['resource' => 'roles',               'action' => 'update'],
+        ['resource' => 'users',               'action' => 'view'],
+        ['resource' => 'users',               'action' => 'create'],
+        ['resource' => 'users',               'action' => 'update'],
+        ['resource' => 'users',               'action' => 'delete'],
+        ['resource' => 'profile',             'action' => 'view'],
+    ];
+
     private const OPERADOR_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
@@ -89,8 +127,9 @@ class RolePermissionSeeder extends Seeder
     public function run(): void
     {
         // Limpiar relaciones previas para evitar duplicados
-        DB::table('role_permission')->whereIn('role_id', [2, 3, 4, 5])->delete();
+        DB::table('role_permission')->whereIn('role_id', [1, 2, 3, 4, 5])->delete();
 
+        $this->assignPermissions(1, self::ADMIN_SISTEMA_PERMISSIONS);
         $this->assignPermissions(2, self::OPERADOR_SISTEMA_PERMISSIONS);
         $this->assignPermissions(3, self::ADMIN_ORGANIZACION_PERMISSIONS);
         $this->assignPermissions(4, self::OPERADOR_ORGANIZACION_PERMISSIONS);

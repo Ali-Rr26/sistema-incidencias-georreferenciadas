@@ -43,6 +43,15 @@ export const assignmentService = {
     return resp.data ?? resp;
   },
 
+  /** Actualiza el rol de una asignación existente. */
+  async update(incidentId, assignmentId, role) {
+    const resp = await http.put(
+      `/incidents/${incidentId}/assignments/${assignmentId}`,
+      { role },
+    );
+    return resp.data ?? resp;
+  },
+
   /** Elimina una asignación existente de la incidencia. */
   async remove(incidentId, assignmentId) {
     await http.delete(`/incidents/${incidentId}/assignments/${assignmentId}`);

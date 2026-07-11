@@ -12,7 +12,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Ir a "Asignar responsable", escribir parte del nombre en campo de búsqueda.
 - **Criterio:** Lista muestra únicamente usuarios que contienen "Juan" en nombre o apellido.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -23,7 +23,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** GET /api/usuarios?buscar=Juan.
 - **Criterio:** JSON con usuarios que coinciden.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -34,7 +34,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Seleccionar "Juan Pérez", rol "Responsable", click en "Asignar".
 - **Criterio:** Badge muestra "Juan Pérez - Responsable" con color/icono diferenciado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -45,7 +45,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** POST /api/incidencias/{id}/responsables.
 - **Criterio:** HTTP 200, registro en incidencia_usuario con todos los campos.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -56,7 +56,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Asignar Juan como "Responsable", María como "Apoyo", ver lista.
 - **Criterio:** Lista muestra ambos con roles diferenciados: badge verde (Responsable), azul (Apoyo).
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -67,7 +67,7 @@
 - **Capa:** Base de Datos (BD) | **Responsable:** Integrante 3
 - **Descripción:** Verificar BD después de múltiples asignaciones.
 - **Criterio:** Tabla incidencia_usuario tiene 2 registros con FK correctas.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -78,7 +78,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Cambiar rol de "Juan" de Responsable a Apoyo, guardar.
 - **Criterio:** Badge actualizado: "Juan - Apoyo", historial de cambio registrado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -89,7 +89,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** PUT /api/incidencias/{id}/responsables/{usuario_id} con `{ "rol": "apoyo" }`.
 - **Criterio:** HTTP 200, campo rol actualizado, timestamp modificado.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -100,7 +100,7 @@
 - **Capa:** Frontend (F) | **Responsable:** Integrante 1
 - **Descripción:** Click en icono "X" junto a responsable, confirmar eliminación.
 - **Criterio:** Responsable removido de la lista, badge desaparece.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 
@@ -111,7 +111,7 @@
 - **Capa:** Backend (B) | **Responsable:** Integrante 2
 - **Descripción:** DELETE /api/incidencias/{id}/responsables/{usuario_id}.
 - **Criterio:** HTTP 200, registro eliminado de tabla pivote.
-- **Estado:** ☐ Pendiente
+- **Estado:** ✅ Implementado
 
 ---
 

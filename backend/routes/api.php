@@ -46,8 +46,15 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
 
+    // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
+    // Explicit named routes instead of `apiResource` because we only expose
+    // index/store/update/destroy — show is out of scope for this change.
+    // Numeric constraints mirror the {incident} route param above so a
+    // non-numeric {assignment} id surfaces as a route miss (404) rather than
+    // a 500 from `abort(404)` on a string-coerced numeric column.
     Route::get('incidents/{incident}/assignments', [AssignmentController::class, 'index'])->whereNumber(['incident', 'assignment']);
     Route::post('incidents/{incident}/assignments', [AssignmentController::class, 'store'])->whereNumber('incident');
+    Route::put('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'update'])->whereNumber(['incident', 'assignment']);
     Route::delete('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'destroy'])->whereNumber(['incident', 'assignment']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
     Route::get('incidents/{incident}/available-operators', [IncidentController::class, 'availableOperators'])->whereNumber('incident');
