@@ -18,3 +18,12 @@ providers:
     updateIntervalSeconds: 30
     options:
       path: /var/lib/grafana/dashboards-k6
+
+  - name: 'E5'
+    orgId: 1
+    folder: 'E5 Calidad'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards-e5
