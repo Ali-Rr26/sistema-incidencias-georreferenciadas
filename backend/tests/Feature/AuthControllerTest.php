@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Services\AuthService;
+use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Users\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;

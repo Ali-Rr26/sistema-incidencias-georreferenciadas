@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
-use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
-use App\Domains\Auth\Services\FakeFirebaseTokenVerifier;
-use App\Domains\Auth\Services\VerifiedFirebaseToken;
+use App\Domains\Auth\Firebase\Contracts\FirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
+use App\Domains\Auth\Firebase\Services\FakeFirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Services\VerifiedFirebaseToken;
 use Tests\TestCase;
 
 uses(TestCase::class);

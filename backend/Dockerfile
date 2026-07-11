@@ -7,7 +7,7 @@ RUN apk add --no-cache bash
 # Laravel logs → stderr for docker logs visibility
 ENV LOG_CHANNEL=stderr
 
-RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium
+RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium pcov
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

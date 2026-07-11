@@ -6,5 +6,9 @@ export default defineConfig({
     ...sharedTestConfig,
     include: unitTestGlobs,
     exclude: ['**/*.integration.test.js', '**/*.snapshot.test.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['lcov', 'text'],
+    },
   },
 });

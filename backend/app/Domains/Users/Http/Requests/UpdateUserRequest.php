@@ -8,6 +8,7 @@ use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -57,10 +58,12 @@ class UpdateUserRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = $this->route('user');
-
         return [
-            'email' => "sometimes|email|unique:users,email,{$userId}",
+            'email' => [
+                'sometimes',
+                'email',
+                Rule::unique('users', 'email')->ignore($this->route('user')),
+            ],
             'password' => 'nullable|string|min:8',
             'role_id' => 'sometimes|integer|exists:roles,id',
             'organization_id' => 'nullable|integer|exists:organizations,id',

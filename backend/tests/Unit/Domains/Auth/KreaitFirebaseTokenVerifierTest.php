@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Exceptions\InvalidFirebaseTokenException;
-use App\Domains\Auth\Services\KreaitFirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
+use App\Domains\Auth\Firebase\Services\KreaitFirebaseTokenVerifier;
 use Kreait\Firebase\Contract\Auth;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use Lcobucci\JWT\Token\DataSet;
