@@ -173,11 +173,23 @@ services:
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_INSTALL_PLUGINS: yesoreyeram-infinity-datasource
     volumes:
       - ./ops/grafana/provisioning:/etc/grafana/provisioning
       - ./ops/dashboards:/var/lib/grafana/dashboards
       - ./ops/dashboards-k6:/var/lib/grafana/dashboards-k6
+      - ./ops/dashboards-e5:/var/lib/grafana/dashboards-e5
       - grafana_data:/var/lib/grafana
+    networks:
+      - dev-network
+
+  # Static file server for quality-metrics/data — read by the main `grafana`
+  # service's Infinity datasource (see ops/grafana/provisioning/datasources/
+  # e5-infinity.yml). Not a second Grafana instance.
+  e5-metrics-data:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./quality-metrics/data:/usr/share/nginx/html:ro
     networks:
       - dev-network
 

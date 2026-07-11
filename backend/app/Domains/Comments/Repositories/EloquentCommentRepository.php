@@ -18,6 +18,7 @@ class EloquentCommentRepository extends EloquentRepository implements CommentRep
     protected function applyFilters(Builder $query, array $filters): void
     {
         $query
-            ->when($filters['incident_id'] ?? null, fn (Builder $q, $v) => $q->where('incident_id', $v));
+            ->when($filters['incident_id'] ?? null, fn (Builder $q, $v) => $q->where('incident_id', $v))
+            ->orderBy('created_at', 'desc');
     }
 }

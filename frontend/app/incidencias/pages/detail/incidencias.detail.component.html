@@ -130,15 +130,24 @@
                 maxlength="5000"
                 placeholder="Escriba un comentario público..."
               ></textarea>
-              <div
-                id="detalle-comment-error"
-                class="invalid-feedback d-block d-none"
-              ></div>
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <div>
+                  <small id="detalle-comment-counter" class="text-muted">0/5000</small>
+                </div>
+                <div>
+                  <div
+                    id="detalle-comment-error"
+                    class="invalid-feedback d-block d-none"
+                    style="margin-bottom: 0"
+                  ></div>
+                </div>
+              </div>
               <div class="d-flex justify-content-end mt-2">
                 <button
                   type="submit"
                   id="detalle-comment-submit"
                   class="btn btn-primary btn-sm"
+                  disabled
                 >
                   <i class="fas fa-paper-plane me-1"></i>Publicar
                 </button>

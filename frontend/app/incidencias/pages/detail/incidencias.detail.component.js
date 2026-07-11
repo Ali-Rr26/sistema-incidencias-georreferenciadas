@@ -366,7 +366,7 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-function buildCommentLi(comment) {
+function buildCommentLi(comment, currentUserId) {
   const li = document.createElement('li');
   li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
 
@@ -376,17 +376,27 @@ function buildCommentLi(comment) {
         .join(' ') || comment.user.email
     : 'Usuario';
 
+  const isOwner = comment.user_id === currentUserId;
+  const deleteBtn = isOwner
+    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-comentario" data-id="${escapeHtml(String(comment.id))}" title="Eliminar comentario">
+        <i class="fas fa-trash-alt"></i>
+      </button>`
+    : '';
+
   li.innerHTML = `
     <div class="d-flex justify-content-between">
       <span class="fw-semibold small">${escapeHtml(userName)}</span>
-      <small class="text-muted">${timeAgo(comment.created_at)}</small>
+      <div class="d-flex gap-2 align-items-center">
+        <small class="text-muted">${timeAgo(comment.created_at)}</small>
+        ${deleteBtn}
+      </div>
     </div>
     <div class="small">${escapeHtml(comment.message)}</div>`;
 
   return li;
 }
 
-function renderComments(items) {
+function renderComments(items, currentUserId) {
   const listEl = document.getElementById('detalle-comments-list');
   const vacioEl = document.getElementById('detalle-comments-vacio');
   if (!listEl) return;
@@ -398,7 +408,7 @@ function renderComments(items) {
   }
 
   vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(...items.map(buildCommentLi));
+  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId)));
 }
 
 async function setupComments(incidentId) {
@@ -407,14 +417,46 @@ async function setupComments(incidentId) {
   const input = document.getElementById('detalle-comment-input');
   const errorEl = document.getElementById('detalle-comment-error');
   const submitBtn = document.getElementById('detalle-comment-submit');
+  const counterEl = document.getElementById('detalle-comment-counter');
+  const listEl = document.getElementById('detalle-comments-list');
 
   if (!form || !input) return;
+
+  let currentUserId;
+  try {
+    const user = await auth.me();
+    currentUserId = user?.id;
+  } catch {
+    currentUserId = null;
+  }
+
+  function updateCounter() {
+    const len = input.value.length;
+    if (counterEl) {
+      counterEl.textContent = `${len}/5000`;
+      if (len >= 4000) {
+        counterEl.classList.add('text-danger');
+      } else {
+        counterEl.classList.remove('text-danger');
+      }
+    }
+  }
+
+  function updateSubmitBtn() {
+    const isEmpty = input.value.trim() === '';
+    if (submitBtn) submitBtn.disabled = isEmpty;
+  }
+
+  input.addEventListener('input', () => {
+    updateCounter();
+    updateSubmitBtn();
+  });
 
   async function cargarComentarios() {
     loadingEl?.classList.remove('d-none');
     try {
       const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data);
+      renderComments(data, currentUserId);
     } catch (err) {
       console.error('Error al cargar comentarios:', err);
     } finally {
@@ -441,6 +483,8 @@ async function setupComments(incidentId) {
     try {
       await commentService.create(incidentId, message);
       input.value = '';
+      updateCounter();
+      updateSubmitBtn();
       await cargarComentarios();
     } catch (err) {
       if (errorEl) {
@@ -452,6 +496,29 @@ async function setupComments(incidentId) {
       if (submitBtn) submitBtn.disabled = false;
     }
   });
+
+  if (listEl) {
+    listEl.addEventListener('click', async (e) => {
+      const deleteBtn = e.target.closest('.btn-eliminar-comentario');
+      if (!deleteBtn) return;
+
+      const commentId = deleteBtn.dataset.id;
+      if (!commentId) return;
+
+      if (!confirm('¿Eliminar este comentario?')) return;
+
+      deleteBtn.disabled = true;
+      try {
+        await commentService.delete(commentId);
+        await cargarComentarios();
+      } catch (err) {
+        console.error('Error al eliminar comentario:', err);
+        alert('No se pudo eliminar el comentario.');
+      } finally {
+        deleteBtn.disabled = false;
+      }
+    });
+  }
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────
