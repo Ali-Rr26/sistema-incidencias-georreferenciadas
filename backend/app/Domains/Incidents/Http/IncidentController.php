@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
@@ -21,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
 class IncidentController extends Controller
@@ -162,6 +164,30 @@ class IncidentController extends Controller
         $this->incidents->delete($incident->id);
 
         return response()->json(null, Response::HTTP_NO_CONTENT);
+    }
+
+    public function updateStatus(Request $request, Incident $incident): JsonResponse
+    {
+        $this->authorize('update', $incident);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in([IncidentStatus::Pending->value, IncidentStatus::InProgress->value, IncidentStatus::Resolved->value])],
+        ]);
+
+        if ($validated['status'] !== $incident->status->value) {
+            $isResponsable = $incident->assignedUsers()
+                ->where('user_id', $request->user()->id)
+                ->where('assignment_role', 'responsable')
+                ->exists();
+
+            if (! $isResponsable) {
+                abort(403, 'No estás asignado como responsable de esta incidencia.');
+            }
+        }
+
+        $incident = $this->incidents->update($incident->id, ['status' => $validated['status']]);
+
+        return (new IncidentResource($incident))->response();
     }
 
     /**
