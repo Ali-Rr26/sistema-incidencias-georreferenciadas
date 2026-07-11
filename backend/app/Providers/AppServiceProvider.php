@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
-use App\Domains\Auth\Services\KreaitFirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Contracts\FirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Services\KreaitFirebaseTokenVerifier;
 use App\Domains\Comments\Listeners\RedisCommentSync;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Comments\Repositories\CommentRepository;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Exceptions\AuthenticationException;
+use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Users\Models\User;
 use App\Exceptions\HttpExceptionReporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Contracts\FirebaseTokenVerifier;
-use App\Domains\Auth\Services\FakeFirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Contracts\FirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Services\FakeFirebaseTokenVerifier;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;

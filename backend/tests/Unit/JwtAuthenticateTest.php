@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Domains\Auth\Services\JwtService;
+use App\Domains\Auth\Shared\Services\JwtService;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Sessions\Models\Session;
