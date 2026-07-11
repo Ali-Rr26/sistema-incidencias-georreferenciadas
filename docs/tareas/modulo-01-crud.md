@@ -25,7 +25,7 @@
 - **Responsable:** Integrante 2 — Especialista en Backend
 - **Descripción:** Enviar POST /api/incidencias con payload JSON válido con todos los campos.
 - **Criterio de aceptación:** HTTP 201, respuesta incluye ID de la incidencia creada, registros en tablas relacionadas.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -49,7 +49,7 @@
 - **Responsable:** Integrante 2 — Especialista en Backend
 - **Descripción:** Enviar POST /api/incidencias sin campo título.
 - **Criterio de aceptación:** HTTP 422, `"errors": {"titulo": ["El campo título es obligatorio"]}`.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -61,7 +61,7 @@
 - **Responsable:** Integrante 1 — Especialista en Frontend
 - **Descripción:** Ir a campo teléfono, intentar escribir letras "abc", luego números "1234567890".
 - **Criterio de aceptación:** Solo aparecen números en el campo, letras bloqueadas inmediatamente.
-- **Estado:** ☑ Completado
+- **Estado:** ❌ No Aplica (v2.0 descartó campo teléfono)
 
 ---
 
@@ -73,7 +73,7 @@
 - **Responsable:** Integrante 2 — Especialista en Backend
 - **Descripción:** Enviar teléfono con letras vía Postman.
 - **Criterio de aceptación:** HTTP 422, `"errors": {"telefono_contacto": ["El formato del teléfono es inválido"]}`.
-- **Estado:** ☐ Pendiente
+- **Estado:** ❌ No Aplica (v2.0 descartó campo teléfono — verificado vs SRS.md)
 
 ---
 
@@ -97,7 +97,7 @@
 - **Responsable:** Integrante 2 — Especialista en Backend
 - **Descripción:** Enviar PUT /api/incidencias/{id} con datos modificados.
 - **Criterio de aceptación:** HTTP 200, registro actualizado, timestamps modificados.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
@@ -133,8 +133,10 @@
 - **Responsable:** Integrante 2 — Especialista en Backend
 - **Descripción:** Enviar DELETE /api/incidencias/{id}.
 - **Criterio de aceptación:** HTTP 200, campo deleted_at actualizado, incidencia no aparece en consultas normales.
-- **Estado:** ☐ Pendiente
+- **Estado:** ☑ Completado
 
 ---
 
-> **Total tareas:** 12 | **Frontend:** 6 | **Backend:** 6 | **BD:** 0
+> **Total tareas aplicables:** 10 | **Frontend:** 5 | **Backend:** 5 | **BD:** 0  
+> *2 tareas (CP-01-03-F/B) no aplican en v2.0 SRS*  
+> **ESTADO M01:** ✅ 100% COMPLETADO (10/10 tareas válidas)
