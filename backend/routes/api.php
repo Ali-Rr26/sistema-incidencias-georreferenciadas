@@ -43,6 +43,7 @@ Route::middleware('jwt')->group(function () {
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentWorkflowController::class, 'release'])->where('incident', '\d+')->middleware('can:release,incident');
+    Route::put('incidents/{incident}/estado', [IncidentController::class, 'updateStatus'])->where('incident', '\d+');
     Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
 
@@ -58,6 +59,7 @@ Route::middleware('jwt')->group(function () {
     Route::delete('incidents/{incident}/assignments/{assignment}', [AssignmentController::class, 'destroy'])->whereNumber(['incident', 'assignment']);
     Route::get('incidents/{incident}/status-history', [StatusHistoryController::class, 'index'])->where('incident', '\d+');
     Route::get('incidents/{incident}/available-operators', [IncidentController::class, 'availableOperators'])->whereNumber('incident');
+    Route::get('estados', [StatusHistoryController::class, 'availableStatuses']);
 
     // Notificaciones
     Route::get('notifications', [NotificationController::class, 'index']);
