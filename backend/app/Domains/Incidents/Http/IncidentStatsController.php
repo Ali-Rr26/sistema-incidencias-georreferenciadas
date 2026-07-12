@@ -7,7 +7,10 @@ namespace App\Domains\Incidents\Http;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -26,6 +29,15 @@ class IncidentStatsController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'inicio' => 'nullable|date_format:Y-m-d',
+            'fin' => 'nullable|date_format:Y-m-d',
+            'tipo_id' => 'nullable|integer|exists:incident_categories,id',
+            'ciudad_id' => 'nullable|integer|exists:locations,id',
+            'provincia_id' => 'nullable|integer|exists:locations,id',
+            'pais_id' => 'nullable|integer|exists:locations,id',
+        ]);
+
         $driver = DB::connection()->getDriverName();
         if ($driver === 'pgsql') {
             $averageSeconds = $this->applyOrgScope(
@@ -33,14 +45,28 @@ class IncidentStatsController extends Controller
                     ->whereNull('deleted_at')
                     ->where('status', IncidentStatus::Resolved->value)
                     ->whereNotNull('resolution_date'),
-            )->value(DB::raw('AVG(EXTRACT(EPOCH FROM (resolution_date - created_at)))'));
+            )
+                ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+                ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+                ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
+                ->value(DB::raw('AVG(EXTRACT(EPOCH FROM (resolution_date - created_at)))'));
         } else { // sqlite
             $averageSeconds = $this->applyOrgScope(
                 DB::table('incidents')
                     ->whereNull('deleted_at')
                     ->where('status', IncidentStatus::Resolved->value)
                     ->whereNotNull('resolution_date'),
-            )->value(DB::raw("AVG(strftime('%s', resolution_date) - strftime('%s', created_at))"));
+            )
+                ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+                ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+                ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
+                ->value(DB::raw("AVG(strftime('%s', resolution_date) - strftime('%s', created_at))"));
         }
 
         $averageResolutionTime = null;
@@ -49,7 +75,7 @@ class IncidentStatsController extends Controller
             $days = (int) floor($averageSeconds / 86400);
             $hours = (int) floor(($averageSeconds % 86400) / 3600);
             $averageResolutionTime = [
-                'formatted' => "{$days} days, {$hours} hours",
+                'formatted' => "{$days}d {$hours}h",
                 'days' => $days,
                 'hours' => $hours,
                 'seconds' => (int) round($averageSeconds),
@@ -57,15 +83,35 @@ class IncidentStatsController extends Controller
         }
 
         return response()->json([
-            'total' => $this->applyOrgScope(Incident::query())->count(),
-            'by_status' => $this->groupCounts('status', IncidentStatus::values()),
-            'by_priority' => $this->groupCounts('priority', IncidentPriority::values()),
+            'total' => $this->applyOrgScope(Incident::query())
+                ->when($validated['inicio'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+                ->when($validated['fin'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+                ->when($validated['tipo_id'] ?? null, fn (Builder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'pais_id', $validated['pais_id']))
+                ->count(),
+            'by_status' => $this->groupCounts('status', IncidentStatus::values(), $validated),
+            'by_priority' => $this->groupCounts('priority', IncidentPriority::values(), $validated),
             'recent_count' => $this->applyOrgScope(
                 Incident::query()->where('created_at', '>=', now()->subDays(7)),
-            )->count(),
+            )
+                ->when($validated['tipo_id'] ?? null, fn (Builder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'pais_id', $validated['pais_id']))
+                ->count(),
             'locations_count' => $this->applyOrgScope(
                 Incident::query()->whereNotNull('location_id'),
-            )->distinct()->count('location_id'),
+            )
+                ->when($validated['inicio'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+                ->when($validated['fin'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+                ->when($validated['tipo_id'] ?? null, fn (Builder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'pais_id', $validated['pais_id']))
+                ->distinct()
+                ->count('location_id'),
             'average_resolution_time' => $averageResolutionTime,
         ]);
     }
@@ -74,11 +120,17 @@ class IncidentStatsController extends Controller
      * Build a count map for the given column, zero-filling any known
      * values that did not appear in the aggregate query.
      */
-    private function groupCounts(string $column, array $knownValues): array
+    private function groupCounts(string $column, array $knownValues, array $validated = []): array
     {
         $rows = $this->applyOrgScope(
             DB::table('incidents')->whereNull('deleted_at'),
         )
+            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+            ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+            ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+            ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
             ->selectRaw("{$column} as key, COUNT(*) as count")
             ->groupBy($column)
             ->get();
@@ -91,6 +143,42 @@ class IncidentStatsController extends Controller
         }
 
         return $counts;
+    }
+
+    /**
+     * Apply location hierarchy filter to query builder (Query\Builder).
+     * Resolves location descendants when filtering by parent (country → provinces → cities).
+     */
+    private function applyLocationFilter(QueryBuilder $query, string $filterType, int $locationId): QueryBuilder
+    {
+        $location = Location::find($locationId);
+        if ($location === null) {
+            return $query;
+        }
+
+        $descendantIds = $location->descendantsAndSelf()
+            ->pluck('id')
+            ->toArray();
+
+        return $query->whereIn('location_id', $descendantIds);
+    }
+
+    /**
+     * Apply location hierarchy filter to Eloquent builder.
+     * Mirrors applyLocationFilter for Eloquent queries.
+     */
+    private function applyLocationFilterEloquent(Builder $query, string $filterType, int $locationId): Builder
+    {
+        $location = Location::find($locationId);
+        if ($location === null) {
+            return $query;
+        }
+
+        $descendantIds = $location->descendantsAndSelf()
+            ->pluck('id')
+            ->toArray();
+
+        return $query->whereIn('location_id', $descendantIds);
     }
 
     /**
