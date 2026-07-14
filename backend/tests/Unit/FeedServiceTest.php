@@ -10,7 +10,7 @@ uses(TestCase::class);
 
 it('returns empty feed when Redis has no incidents', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn([]);
 
     $service = new FeedService;
@@ -21,55 +21,54 @@ it('returns empty feed when Redis has no incidents', function (): void {
         ->and($result['meta']['current_page'])->toBe(1);
 });
 
-it('fetches and parses incidents from Redis', function (): void {
+it('fetches and parses incidents from Redis v2 hash', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2']);
 
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
+        ->with('feed:v2:items')
         ->andReturn([
-            'id' => '1',
-            'incident_category_id' => '10',
-            'organization_id' => '5',
-            'user_id' => '3',
-            'location_id' => '100',
-            'status' => 'pending',
-            'priority' => 'high',
-            'resolution_date' => null,
-            'created_at' => '2026-06-26T10:00:00+00:00',
-            'updated_at' => '2026-06-26T10:00:00+00:00',
-            'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
-            'category_name' => 'Accidente',
-            'organization_name' => 'Org A',
-            'location_name' => 'Quito',
-            'location_path_ids' => '[1,10,100]',
-            'user_first_name' => 'Juan',
-            'user_last_name' => 'Pérez',
-            'user_avatar' => null,
-        ]);
-
-    Redis::shouldReceive('hgetall')
-        ->with('incident:2')
-        ->andReturn([
-            'id' => '2',
-            'incident_category_id' => '20',
-            'organization_id' => '5',
-            'user_id' => '4',
-            'location_id' => '200',
-            'status' => 'in_progress',
-            'priority' => 'medium',
-            'resolution_date' => null,
-            'created_at' => '2026-06-25T08:00:00+00:00',
-            'updated_at' => '2026-06-25T08:30:00+00:00',
-            'geom' => null,
-            'category_name' => 'Robo',
-            'organization_name' => 'Org A',
-            'location_name' => 'Guayaquil',
-            'location_path_ids' => '[1,20,200]',
-            'user_first_name' => 'María',
-            'user_last_name' => 'Gómez',
-            'user_avatar' => null,
+            '1' => json_encode([
+                'id' => '1',
+                'incident_category_id' => '10',
+                'organization_id' => '5',
+                'user_id' => '3',
+                'location_id' => '100',
+                'status' => 'pending',
+                'priority' => 'high',
+                'resolution_date' => null,
+                'created_at' => '2026-06-26T10:00:00+00:00',
+                'updated_at' => '2026-06-26T10:00:00+00:00',
+                'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
+                'category_name' => 'Accidente',
+                'organization_name' => 'Org A',
+                'location_name' => 'Quito',
+                'location_path_ids' => '[1,10,100]',
+                'user_first_name' => 'Juan',
+                'user_last_name' => 'Pérez',
+                'user_avatar' => null,
+            ]),
+            '2' => json_encode([
+                'id' => '2',
+                'incident_category_id' => '20',
+                'organization_id' => '5',
+                'user_id' => '4',
+                'location_id' => '200',
+                'status' => 'in_progress',
+                'priority' => 'medium',
+                'resolution_date' => null,
+                'created_at' => '2026-06-25T08:00:00+00:00',
+                'updated_at' => '2026-06-25T08:30:00+00:00',
+                'geom' => null,
+                'category_name' => 'Robo',
+                'organization_name' => 'Org A',
+                'location_name' => 'Guayaquil',
+                'location_path_ids' => '[1,20,200]',
+                'user_first_name' => 'María',
+                'user_last_name' => 'Gómez',
+                'user_avatar' => null,
+            ]),
         ]);
 
     $service = new FeedService;
@@ -91,16 +90,16 @@ it('fetches and parses incidents from Redis', function (): void {
 
 it('filters incidents by status', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2', '3']);
 
-    $hashData = [
-        'id' => '1',
+    $base = fn (string $id, string $status) => json_encode([
+        'id' => $id,
         'incident_category_id' => '10',
         'organization_id' => '5',
         'user_id' => '3',
         'location_id' => '100',
-        'status' => 'pending',
+        'status' => $status,
         'priority' => 'high',
         'created_at' => '2026-06-26T10:00:00+00:00',
         'updated_at' => '2026-06-26T10:00:00+00:00',
@@ -110,19 +109,15 @@ it('filters incidents by status', function (): void {
         'location_path_ids' => '[1,10,100]',
         'user_first_name' => 'Juan',
         'user_last_name' => 'Pérez',
-    ];
+    ]);
 
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
-        ->andReturn(array_merge($hashData, ['status' => 'pending']));
-
-    Redis::shouldReceive('hgetall')
-        ->with('incident:2')
-        ->andReturn(array_merge($hashData, ['id' => '2', 'status' => 'resolved']));
-
-    Redis::shouldReceive('hgetall')
-        ->with('incident:3')
-        ->andReturn(array_merge($hashData, ['id' => '3', 'status' => 'pending']));
+        ->with('feed:v2:items')
+        ->andReturn([
+            '1' => $base('1', 'pending'),
+            '2' => $base('2', 'resolved'),
+            '3' => $base('3', 'pending'),
+        ]);
 
     $service = new FeedService;
     $result = $service->getFeed(status: 'pending');
@@ -134,13 +129,13 @@ it('filters incidents by status', function (): void {
 
 it('filters incidents by organization_id', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2']);
 
-    $baseData = [
-        'id' => '1',
+    $base = fn (string $id, string $orgId) => json_encode([
+        'id' => $id,
         'incident_category_id' => '10',
-        'organization_id' => '5',
+        'organization_id' => $orgId,
         'user_id' => '3',
         'location_id' => '100',
         'status' => 'pending',
@@ -153,15 +148,14 @@ it('filters incidents by organization_id', function (): void {
         'location_path_ids' => '[]',
         'user_first_name' => 'Juan',
         'user_last_name' => 'Pérez',
-    ];
+    ]);
 
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
-        ->andReturn(array_merge($baseData, ['organization_id' => '5']));
-
-    Redis::shouldReceive('hgetall')
-        ->with('incident:2')
-        ->andReturn(array_merge($baseData, ['id' => '2', 'organization_id' => '10']));
+        ->with('feed:v2:items')
+        ->andReturn([
+            '1' => $base('1', '5'),
+            '2' => $base('2', '10'),
+        ]);
 
     $service = new FeedService;
     $result = $service->getFeed(organizationId: 5);
@@ -172,11 +166,11 @@ it('filters incidents by organization_id', function (): void {
 
 it('filters incidents by location_id via location_path_ids', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2']);
 
-    $baseData = [
-        'id' => '1',
+    $base = fn (string $id, string $pathIds) => json_encode([
+        'id' => $id,
         'incident_category_id' => '10',
         'organization_id' => '5',
         'user_id' => '3',
@@ -188,19 +182,17 @@ it('filters incidents by location_id via location_path_ids', function (): void {
         'category_name' => 'Accidente',
         'organization_name' => 'Org A',
         'location_name' => 'Quito',
+        'location_path_ids' => $pathIds,
         'user_first_name' => 'Juan',
         'user_last_name' => 'Pérez',
-    ];
+    ]);
 
-    // incident:1 has location_path_ids containing 999 (match)
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
-        ->andReturn(array_merge($baseData, ['location_path_ids' => '[1,10,100,999]']));
-
-    // incident:2 does not contain 999 (no match)
-    Redis::shouldReceive('hgetall')
-        ->with('incident:2')
-        ->andReturn(array_merge($baseData, ['id' => '2', 'location_path_ids' => '[1,20,200]']));
+        ->with('feed:v2:items')
+        ->andReturn([
+            '1' => $base('1', '[1,10,100,999]'),
+            '2' => $base('2', '[1,20,200]'),
+        ]);
 
     $service = new FeedService;
     $result = $service->getFeed(locationId: 999);
@@ -211,11 +203,11 @@ it('filters incidents by location_id via location_path_ids', function (): void {
 
 it('paginates results correctly', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2', '3', '4', '5']);
 
-    $baseData = [
-        'id' => '0',
+    $base = fn (string $id) => json_encode([
+        'id' => $id,
         'incident_category_id' => '10',
         'organization_id' => '5',
         'user_id' => '3',
@@ -230,13 +222,17 @@ it('paginates results correctly', function (): void {
         'location_path_ids' => '[]',
         'user_first_name' => 'Juan',
         'user_last_name' => 'Pérez',
-    ];
+    ]);
 
-    foreach (range(1, 5) as $id) {
-        Redis::shouldReceive('hgetall')
-            ->with("incident:{$id}")
-            ->andReturn(array_merge($baseData, ['id' => (string) $id]));
-    }
+    Redis::shouldReceive('hgetall')
+        ->with('feed:v2:items')
+        ->andReturn([
+            '1' => $base('1'),
+            '2' => $base('2'),
+            '3' => $base('3'),
+            '4' => $base('4'),
+            '5' => $base('5'),
+        ]);
 
     $service = new FeedService;
     $result = $service->getFeed(page: 2, perPage: 2);
@@ -251,7 +247,6 @@ it('paginates results correctly', function (): void {
             'to' => 4,
         ]);
 
-    // Page 2 should have items 3 and 4 (0-indexed: 2, 3)
     expect($result['data'][0]['id'])->toBe(3);
     expect($result['data'][1]['id'])->toBe(4);
 });

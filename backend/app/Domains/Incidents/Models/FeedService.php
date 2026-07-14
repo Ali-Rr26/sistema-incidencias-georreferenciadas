@@ -15,12 +15,6 @@ class FeedService
 
     private const V2_INDEX_KEY = 'feed:v2:index';
 
-    /** @deprecated Legacy keys — use feed:v2:* instead */
-    private const SORTED_SET_KEY = 'feed:incidents';
-
-    /** @deprecated Legacy keys — use feed:v2:* instead */
-    private const HASH_PREFIX = 'incident:';
-
     /**
      * @return array{data: array, meta: array}
      */
@@ -31,50 +25,12 @@ class FeedService
         int $page = 1,
         int $perPage = 12,
     ): array {
-        // Try v2 path first — at most 2 Redis round-trips
-        // Wrap in try-catch for backward compat with tests mocking old key expectations
-        try {
-            $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
-        } catch (\Throwable $e) {
-            Log::warning('Feed v2 index lookup failed, falling back to v1', [
-                'exception' => $e->getMessage(),
-            ]);
-            $candidateIds = [];
+        $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+
+        if ($candidateIds === []) {
+            return $this->emptyResponse($page, $perPage);
         }
 
-        if (is_array($candidateIds) && $candidateIds !== []) {
-            return $this->getFeedFromV2(
-                candidateIds: $candidateIds,
-                status: $status,
-                organizationId: $organizationId,
-                locationId: $locationId,
-                page: $page,
-                perPage: $perPage,
-            );
-        }
-
-        // Fall back to v1 (legacy keys) for backward compatibility during transition
-        return $this->getFeedFromV1(
-            status: $status,
-            organizationId: $organizationId,
-            locationId: $locationId,
-            page: $page,
-            perPage: $perPage,
-        );
-    }
-
-    /**
-     * @param  array<int, string>  $candidateIds
-     * @return array{data: array, meta: array}
-     */
-    private function getFeedFromV2(
-        array $candidateIds,
-        ?string $status,
-        ?int $organizationId,
-        ?int $locationId,
-        int $page,
-        int $perPage,
-    ): array {
         $allItems = Redis::hgetall(self::V2_ITEMS_KEY);
 
         $incidents = [];
@@ -86,40 +42,6 @@ class FeedService
 
             $data = json_decode($json, true);
             if (! is_array($data) || $data === []) {
-                continue;
-            }
-
-            if (! $this->matchesFilters($data, $status, $organizationId, $locationId)) {
-                continue;
-            }
-
-            $incidents[] = $this->buildItem($data);
-        }
-
-        return $this->buildPaginatedResponse($incidents, $page, $perPage);
-    }
-
-    /**
-     * @return array{data: array, meta: array}
-     */
-    private function getFeedFromV1(
-        ?string $status,
-        ?int $organizationId,
-        ?int $locationId,
-        int $page,
-        int $perPage,
-    ): array {
-        $candidateIds = Redis::zrevrange(self::SORTED_SET_KEY, 0, self::CANDIDATE_LIMIT - 1);
-
-        if ($candidateIds === []) {
-            return $this->emptyResponse($page, $perPage);
-        }
-
-        $incidents = [];
-        foreach ($candidateIds as $id) {
-            $data = Redis::hgetall(self::HASH_PREFIX.$id);
-
-            if ($data === []) {
                 continue;
             }
 

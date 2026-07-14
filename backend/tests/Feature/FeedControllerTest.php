@@ -25,30 +25,32 @@ beforeEach(function (): void {
 
 it('returns feed from Redis with correct JSON structure', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1']);
 
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
+        ->with('feed:v2:items')
         ->andReturn([
-            'id' => '1',
-            'incident_category_id' => '10',
-            'organization_id' => '5',
-            'user_id' => '3',
-            'location_id' => '100',
-            'status' => 'pending',
-            'priority' => 'high',
-            'resolution_date' => null,
-            'created_at' => '2026-06-26T10:00:00+00:00',
-            'updated_at' => '2026-06-26T10:00:00+00:00',
-            'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
-            'category_name' => 'Accidente',
-            'organization_name' => 'Defensa Civil',
-            'location_name' => 'Quito',
-            'location_path_ids' => '[1,10,100]',
-            'user_first_name' => 'Juan',
-            'user_last_name' => 'Pérez',
-            'user_avatar' => null,
+            '1' => json_encode([
+                'id' => '1',
+                'incident_category_id' => '10',
+                'organization_id' => '5',
+                'user_id' => '3',
+                'location_id' => '100',
+                'status' => 'pending',
+                'priority' => 'high',
+                'resolution_date' => null,
+                'created_at' => '2026-06-26T10:00:00+00:00',
+                'updated_at' => '2026-06-26T10:00:00+00:00',
+                'geom' => '{"type":"Point","coordinates":[-78.5,-1.2]}',
+                'category_name' => 'Accidente',
+                'organization_name' => 'Defensa Civil',
+                'location_name' => 'Quito',
+                'location_path_ids' => '[1,10,100]',
+                'user_first_name' => 'Juan',
+                'user_last_name' => 'Pérez',
+                'user_avatar' => null,
+            ]),
         ]);
 
     $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
@@ -75,12 +77,12 @@ it('returns feed from Redis with correct JSON structure', function (): void {
     $response->assertJsonPath('meta.total', 1);
 });
 
-it('falls back to PostgreSQL when Redis throws an exception', function (): void {
+it('returns empty feed when Redis throws an exception', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andThrow(new RuntimeException('Redis connection refused'));
 
-    // No incidents in DB → empty response from PG fallback
+    // FeedService catches Redis exceptions and returns an empty response
     $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed');
 
     $response->assertOk();
@@ -90,7 +92,7 @@ it('falls back to PostgreSQL when Redis throws an exception', function (): void 
 
 it('applies status filter when reading from Redis', function (): void {
     Redis::shouldReceive('zrevrange')
-        ->with('feed:incidents', 0, 499)
+        ->with('feed:v2:index', 0, 499)
         ->andReturn(['1', '2']);
 
     $baseData = [
@@ -113,12 +115,11 @@ it('applies status filter when reading from Redis', function (): void {
     ];
 
     Redis::shouldReceive('hgetall')
-        ->with('incident:1')
-        ->andReturn(array_merge($baseData, ['id' => '1', 'status' => 'pending']));
-
-    Redis::shouldReceive('hgetall')
-        ->with('incident:2')
-        ->andReturn(array_merge($baseData, ['id' => '2', 'status' => 'resolved']));
+        ->with('feed:v2:items')
+        ->andReturn([
+            '1' => json_encode(array_merge($baseData, ['id' => '1', 'status' => 'pending'])),
+            '2' => json_encode(array_merge($baseData, ['id' => '2', 'status' => 'resolved'])),
+        ]);
 
     $response = $this->actingAs($this->citizen)->getJson('/api/incidents/feed?status=pending');
 

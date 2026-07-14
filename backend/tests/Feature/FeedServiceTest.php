@@ -165,17 +165,11 @@ it('ignores old feed:incidents and incident:* keys', function (): void {
     expect($result['data'][0]['id'])->toBe(1);
 });
 
-// Edge case: returns empty response when v2 index is empty and no v1 fallback data
+// Edge case: returns empty response when v2 index is empty
 it('returns empty response when no data exists', function (): void {
     Redis::shouldReceive('zrevrange')
         ->once()
         ->with('feed:v2:index', 0, 499)
-        ->andReturn([]);
-
-    // Fall back to v1 which also returns empty
-    Redis::shouldReceive('zrevrange')
-        ->once()
-        ->with('feed:incidents', 0, 499)
         ->andReturn([]);
 
     $service = app(FeedService::class);
