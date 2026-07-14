@@ -346,7 +346,7 @@ it('uses getCode() for non-HttpException Throwable when code is HTTP-like', func
  */
 it('returns a clean 500 (not a TypeError) for an exception with a non-numeric SQLSTATE-style code', function (): void {
     Route::get('/api/__boom_pdo_sqlstate__', function () {
-        $e = new \PDOException('relation "role_permission" does not exist');
+        $e = new PDOException('relation "role_permission" does not exist');
         $e->errorInfo = ['42P01', 1, 'relation does not exist'];
 
         // PDOException::$code is declared `protected` on the base
@@ -356,7 +356,7 @@ it('returns a clean 500 (not a TypeError) for an exception with a non-numeric SQ
         // test: a plain `$e->code = '42P01'` from outside the class
         // throws its OWN visibility Error instead of exercising the
         // scenario this test is for.
-        $prop = new \ReflectionProperty(\PDOException::class, 'code');
+        $prop = new ReflectionProperty(PDOException::class, 'code');
         $prop->setAccessible(true);
         $prop->setValue($e, '42P01');
 

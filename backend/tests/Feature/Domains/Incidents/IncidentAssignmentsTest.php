@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -52,7 +53,7 @@ beforeEach(function (): void {
 it('has assignments table with correct schema', function (): void {
     expect(Schema::hasTable('assignments'))->toBeTrue();
     expect(Schema::hasColumns('assignments', [
-        'id', 'incident_id', 'user_id', 'assignment_role', 'created_at', 'updated_at'
+        'id', 'incident_id', 'user_id', 'assignment_role', 'created_at', 'updated_at',
     ]))->toBeTrue();
 });
 
@@ -65,13 +66,13 @@ it('has unique constraint on incident_id and user_id', function (): void {
         'updated_at' => now(),
     ]);
 
-    expect(fn() => DB::table('assignments')->insert([
+    expect(fn () => DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user1->id,
         'assignment_role' => 'apoyo',
         'created_at' => now(),
         'updated_at' => now(),
-    ]))->toThrow(\Illuminate\Database\QueryException::class);
+    ]))->toThrow(QueryException::class);
 });
 
 it('has check constraint on assignment_role', function (): void {
@@ -96,13 +97,13 @@ it('has check constraint on assignment_role', function (): void {
     ]);
 
     $user3 = User::factory()->create();
-    expect(fn() => DB::table('assignments')->insert([
+    expect(fn () => DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $user3->id,
         'assignment_role' => 'invalid_role',
         'created_at' => now(),
         'updated_at' => now(),
-    ]))->toThrow(\Illuminate\Database\QueryException::class);
+    ]))->toThrow(QueryException::class);
 });
 
 it('implements assignedUsers relationship on Incident model', function (): void {

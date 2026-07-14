@@ -95,24 +95,24 @@ class OrganizationController extends Controller
     {
         $this->authorize('viewAny', Organization::class);
 
-        $locTree    = $this->locations->tree();
-        $cats       = $this->categories->tree(); // returns all nodes; frontend filters roots
+        $locTree = $this->locations->tree();
+        $cats = $this->categories->tree(); // returns all nodes; frontend filters roots
 
         $organizations = Organization::orderBy('name')
             ->get(['id', 'name', 'parent_id'])
             ->map(fn (Organization $o) => [
-                'id'        => $o->id,
-                'name'      => $o->name,
+                'id' => $o->id,
+                'name' => $o->name,
                 'parent_id' => $o->parent_id,
             ])
             ->values();
 
         return response()->json([
-            'organizations'  => $organizations,
+            'organizations' => $organizations,
             'locations_tree' => LocationResource::collection($locTree),
-            'categories'     => $cats->map(fn ($c) => [
-                'id'        => $c->id,
-                'name'      => $c->name,
+            'categories' => $cats->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
                 'parent_id' => $c->parent_id,
             ])->values(),
         ]);

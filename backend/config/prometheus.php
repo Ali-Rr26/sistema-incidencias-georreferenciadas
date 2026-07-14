@@ -1,5 +1,7 @@
 <?php
 
+use Spatie\Prometheus\Actions\RenderCollectorsAction;
+
 return [
     'enabled' => true,
 
@@ -34,7 +36,7 @@ return [
      * In most cases, you can just use the defaults.
      */
     'actions' => [
-        'render_collectors' => Spatie\Prometheus\Actions\RenderCollectorsAction::class,
+        'render_collectors' => RenderCollectorsAction::class,
     ],
 
     /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Organizations\Http\Resources;
 
-use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryResource;
+use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\Locations\Http\Resources\LocationResource;
 use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Organizations\Models\Organization;
@@ -31,27 +31,27 @@ class OrganizationResource extends JsonResource
     public function toArray(Request $request): array
     {
         $data = [
-            'id'                => $this->id,
-            'name'              => $this->name,
-            'location_id'       => $this->location_id,
-            'location'          => $this->whenLoaded('location'),
-            'parent_id'         => $this->parent_id,
-            'parent'            => $this->whenLoaded('parent'),
-            'children'          => OrganizationResource::collection($this->whenLoaded('children')),
+            'id' => $this->id,
+            'name' => $this->name,
+            'location_id' => $this->location_id,
+            'location' => $this->whenLoaded('location'),
+            'parent_id' => $this->parent_id,
+            'parent' => $this->whenLoaded('parent'),
+            'children' => OrganizationResource::collection($this->whenLoaded('children')),
             'incident_category' => new IncidentCategoryResource($this->whenLoaded('category')),
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
 
         if ($this->withCatalog) {
-            $locations  = app(LocationRepository::class)->tree();
-            $cats       = app(IncidentCategoryRepository::class)->tree();
+            $locations = app(LocationRepository::class)->tree();
+            $cats = app(IncidentCategoryRepository::class)->tree();
 
             $data['organizations'] = Organization::orderBy('name')
                 ->get(['id', 'name', 'parent_id'])
                 ->map(fn (Organization $o) => [
-                    'id'        => $o->id,
-                    'name'      => $o->name,
+                    'id' => $o->id,
+                    'name' => $o->name,
                     'parent_id' => $o->parent_id,
                 ])
                 ->values();
@@ -59,8 +59,8 @@ class OrganizationResource extends JsonResource
             $data['locations_tree'] = LocationResource::collection($locations);
 
             $data['categories'] = $cats->map(fn ($c) => [
-                'id'        => $c->id,
-                'name'      => $c->name,
+                'id' => $c->id,
+                'name' => $c->name,
                 'parent_id' => $c->parent_id,
             ])->values();
         }

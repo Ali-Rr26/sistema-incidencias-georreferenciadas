@@ -90,8 +90,6 @@ it('usuario has incident creation and comment creation permissions', function ()
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
 });
 
-
-
 // ─── Menu server-driven: new permission grants ────────────────────────
 
 it('usuario has feed.view for citizen sidebar (Inicio + Reportar)', function (): void {
@@ -153,8 +151,6 @@ it('operador_organizacion has notifications.view so the menu item appears', func
     // Does not have feed.view either.
     expect(Gate::forUser($user)->allows('feed.view'))->toBeFalse();
 });
-
-
 
 it('admin_sistema sees everything via the MenuService bypass branch', function (): void {
     $user = User::factory()->create([
