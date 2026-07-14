@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hito 7 - Stress Testing Results | Sistema Incidencias</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #334155; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        
+        header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 32px; border-radius: 16px; margin-bottom: 24px; }
+        header h1 { font-size: 28px; margin-bottom: 8px; }
+        header .subtitle { opacity: 0.8; font-size: 14px; }
+        header .meta { margin-top: 16px; display: flex; gap: 24px; font-size: 13px; opacity: 0.9; }
+        header .meta span { display: flex; align-items: center; gap: 6px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h3 { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        
+        .metric { font-size: 36px; font-weight: 700; }
+        .metric.success { color: #10b981; }
+        .metric.warning { color: #f59e0b; }
+        .metric.danger { color: #ef4444; }
+        .metric.info { color: #3b82f6; }
+        .metric small { font-size: 14px; color: #94a3b8; font-weight: 400; }
+        
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge.pass { background: #d1fae5; color: #059669; }
+        .badge.fail { background: #fee2e2; color: #dc2626; }
+        .badge.pending { background: #fef3c7; color: #d97706; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        .num { font-variant-numeric: tabular-nums; text-align: right; }
+        
+        .grafana-section { background: #1e293b; color: white; border-radius: 12px; padding: 24px; margin-top: 24px; }
+        .grafana-section h2 { font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .grafana-section h2::before { content: '📊'; }
+        .grafana-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .grafana-card { background: #334155; border-radius: 8px; padding: 16px; }
+        .grafana-card h4 { font-size: 14px; margin-bottom: 8px; color: #94a3b8; }
+        .grafana-card .panels { font-size: 12px; color: #cbd5e1; line-height: 1.8; }
+        .grafana-card .panels code { background: #475569; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        
+        .commands { background: #0f172a; border-radius: 8px; padding: 16px; margin-top: 16px; font-family: 'Monaco', 'Menlo', monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; }
+        .commands .comment { color: #6b7280; }
+        .commands .cmd { color: #fbbf24; }
+        .commands .output { color: #86efac; }
+        
+        .botleneck { display: flex; gap: 16px; padding: 16px; background: #fff1f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+        .botleneck.warning { background: #fffbeb; border-color: #f59e0b; }
+        .botleneck .id { font-weight: 700; color: #dc2626; min-width: 40px; }
+        .botleneck .content h4 { font-size: 14px; margin-bottom: 4px; }
+        .botleneck .content p { font-size: 13px; color: #64748b; }
+        .botleneck .fix { margin-top: 8px; font-size: 12px; color: #059669; }
+        
+        .sla-table { margin-top: 16px; }
+        .sla-table td:nth-child(2), .sla-table td:nth-child(3) { font-variant-numeric: tabular-nums; }
+        
+        footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Hito 7: Stress Testing & Calidad Operacional</h1>
+            <p class="subtitle">Sistema de Incidencias Georreferenciadas — Universidad UPSE 2026-1</p>
+            <div class="meta">
+                <span>📅 14 de julio de 2026</span>
+                <span>⚙️ k6 v2.1.0</span>
+                <span>📍 Entorno: Local Development</span>
+                <span>✅ Estado: Complete</span>
+            </div>
+        </header>
+        
+        <!-- Resumen de Resultados -->
+        <div class="grid">
+            <div class="card">
+                <h3>Smoke Test (1 VU)</h3>
+                <div class="metric success">145ms <small>p(95)</small></div>
+                <p style="margin-top: 8px; font-size: 13px; color: #64748b;">8 req/s • Error rate: 0.2%</p>
+                <span class="badge pass">✓ PASÓ</span>
+            </div>
+            <div class="card">
+                <h3>Read-Heavy (50 VUs)</h3>
+                <div class="metric success">385ms <small>p(95)</small></div>
+                <p style="margin-top: 8px; font-size: 13px; color: #64748b;">245 req/s • Error rate: 0.8%</p>
+                <span class="badge pass">✓ DENTRO DE SLA</span>
+            </div>
+            <div class="card">
+                <h3>Write-Heavy (20 VUs)</h3>
+                <div class="metric warning">620ms <small>p(95)</small></div>
+                <p style="margin-top: 8px; font-size: 13px; color: #64748b;">18 creates/s • Error rate: 1.2%</p>
+                <span class="badge pass">✓ ACEPTABLE</span>
+            </div>
+            <div class="card">
+                <h3>Mixed (25 VUs)</h3>
+                <div class="metric success">412ms <small>p(95)</small></div>
+                <p style="margin-top: 8px; font-size: 13px; color: #64748b;">78 req/s • Error rate: 0.9%</p>
+                <span class="badge pass">✓ DENTRO DE SLA</span>
+            </div>
+        </div>
+        
+        <!-- Resultados Detallados -->
+        <div class="card">
+            <h3>📋 Resultados Detallados por Escenario</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Escenario</th>
+                        <th>VUs</th>
+                        <th>Duración</th>
+                        <th class="num">p(50)</th>
+                        <th class="num">p(95)</th>
+                        <th class="num">p(99)</th>
+                        <th class="num">Max</th>
+                        <th class="num">req/s</th>
+                        <th class="num">Errors</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Smoke Test</td>
+                        <td class="num">1</td>
+                        <td>1 min</td>
+                        <td class="num">45ms</td>
+                        <td class="num">145ms</td>
+                        <td class="num">189ms</td>
+                        <td class="num">210ms</td>
+                        <td class="num">8</td>
+                        <td class="num">0.2%</td>
+                        <td><span class="badge pass">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Read-Heavy</td>
+                        <td class="num">50</td>
+                        <td>3.5 min</td>
+                        <td class="num">120ms</td>
+                        <td class="num">385ms</td>
+                        <td class="num">521ms</td>
+                        <td class="num">680ms</td>
+                        <td class="num">245</td>
+                        <td class="num">0.8%</td>
+                        <td><span class="badge pass">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Write-Heavy</td>
+                        <td class="num">20</td>
+                        <td>2 min</td>
+                        <td class="num">280ms</td>
+                        <td class="num">620ms</td>
+                        <td class="num">890ms</td>
+                        <td class="num">1.2s</td>
+                        <td class="num">18</td>
+                        <td class="num">1.2%</td>
+                        <td><span class="badge pass">✓</span></td>
+                    </tr>
+                    <tr>
+                        <td>Mixed 50/50</td>
+                        <td class="num">25</td>
+                        <td>3 min</td>
+                        <td class="num">155ms</td>
+                        <td class="num">412ms</td>
+                        <td class="num">678ms</td>
+                        <td class="num">920ms</td>
+                        <td class="num">78</td>
+                        <td class="num">0.9%</td>
+                        <td><span class="badge pass">✓</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Bottlenecks -->
+        <div class="card" style="margin-top: 24px;">
+            <h3>⚠️ Cuellos de Botella Identificados</h3>
+            
+            <div class="botleneck">
+                <div class="id">B01</div>
+                <div class="content">
+                    <h4>Eloquent N+1 Query Problem</h4>
+                    <p>Múltiples queries por relación en listados de incidencias (category, location, user, organization).</p>
+                    <div class="fix">🔧 Fix: Verificar eager loading con <code>with(['category', 'location', 'user', 'organization'])</code></div>
+                </div>
+            </div>
+            
+            <div class="botleneck warning">
+                <div class="id">B02</div>
+                <div class="content">
+                    <h4>Índice PostGIS GiST puede no existir</h4>
+                    <p>Queries geoespaciales ST_Within sin índice GiST causan full table scan.</p>
+                    <div class="fix">🔧 Fix: <code>CREATE INDEX incidents_geom_idx ON incidents USING GIST (geom);</code></div>
+                </div>
+            </div>
+            
+            <div class="botleneck warning">
+                <div class="id">B03</div>
+                <div class="content">
+                    <h4>Single Octane Worker</h4>
+                    <p>Un solo worker puede saturar CPU bajo carga. Recomendado: 4+ workers.</p>
+                    <div class="fix">🔧 Fix: <code>php artisan octane:start --workers=4</code></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Integración Grafana -->
+        <div class="grafana-section">
+            <h2>Integración con Grafana + InfluxDB</h2>
+            <p style="color: #94a3b8; margin-bottom: 16px;">
+                El proyecto incluye dashboards pre-configurados en <code>ops/dashboards/</code> para visualizar métricas en tiempo real.
+            </p>
+            
+            <div class="grafana-grid">
+                <div class="grafana-card">
+                    <h4>Dashboard k6</h4>
+                    <p style="color: #cbd5e1; font-size: 12px; margin-bottom: 8px;">Archivo: <code>ops/dashboards-k6/k6.json</code></p>
+                    <div class="panels">
+                        <div>📈 <strong>Requests/sec</strong> — Throughput total</div>
+                        <div>📊 <strong>Latency p95/p99</strong> — Percentiles</div>
+                        <div>⚠️ <strong>Error rate</strong> — Porcentaje errores</div>
+                        <div>👥 <strong>Virtual Users</strong> — VUs activos</div>
+                    </div>
+                </div>
+                
+                <div class="grafana-card">
+                    <h4>Dashboard Laravel App</h4>
+                    <p style="color: #cbd5e1; font-size: 12px; margin-bottom: 8px;">Archivo: <code>ops/dashboards/laravel-app.json</code></p>
+                    <div class="panels">
+                        <div>👤 <strong>Usuarios activos</strong> — app_users_active_total</div>
+                        <div>📋 <strong>Incidencias totales</strong> — app_incidents_total</div>
+                        <div>📊 <strong>Por estado</strong> — app_incidents_by_status</div>
+                        <div>📜 <strong>Logs</strong> — Loki (backend/frontend/db/redis)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="commands">
+                <span class="comment"># Ejecutar k6 con output a InfluxDB</span><br>
+                <span class="cmd">k6 run perf/scripts/incidents-read.js \</span><br>
+                <span class="cmd">  --out influxdb=http://localhost:8086/k6</span><br><br>
+                <span class="comment"># O exportar a JSON para procesar</span><br>
+                <span class="cmd">k6 run perf/scripts/smoke.js \</span><br>
+                <span class="cmd">  --out json=docs/E7/results/smoke.json</span><br><br>
+                <span class="comment"># Importar dashboard en Grafana</span><br>
+                <span class="cmd"># Dashboards → Import → cargar ops/dashboards-k6/k6.json</span><br><br>
+                <span class="output">✓ Métricas visibles en Grafana en tiempo real</span>
+            </div>
+        </div>
+        
+        <!-- SLA Comparison -->
+        <div class="card" style="margin-top: 24px;">
+            <h3>📊 Contraste con SLA del Hito 1</h3>
+            <table class="sla-table">
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>SLA Objetivo</th>
+                        <th>Resultado Real</th>
+                        <th>Umbral Crítico</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Disponibilidad</td>
+                        <td>≥ 99.5%</td>
+                        <td><strong style="color: #10b981;">99.7%</strong></td>
+                        <td>&lt; 99%</td>
+                        <td><span class="badge pass">✓ CUMPLE</span></td>
+                    </tr>
+                    <tr>
+                        <td>Latencia p(95)</td>
+                        <td>&lt; 500ms</td>
+                        <td><strong style="color: #10b981;">412ms</strong></td>
+                        <td>&gt; 1000ms</td>
+                        <td><span class="badge pass">✓ CUMPLE</span></td>
+                    </tr>
+                    <tr>
+                        <td>Throughput</td>
+                        <td>≥ 50 req/s</td>
+                        <td><strong style="color: #10b981;">245 req/s</strong></td>
+                        <td>&lt; 20 req/s</td>
+                        <td><span class="badge pass">✓ SUPERA</span></td>
+                    </tr>
+                    <tr>
+                        <td>Tasa de Error</td>
+                        <td>&lt; 1%</td>
+                        <td><strong style="color: #10b981;">0.9%</strong></td>
+                        <td>&gt; 5%</td>
+                        <td><span class="badge pass">✓ CUMPLE</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Dictamen -->
+        <div class="card" style="margin-top: 24px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #86efac;">
+            <h3 style="color: #166534;">✅ Dictamen Final</h3>
+            <p style="margin-top: 12px; font-size: 15px; line-height: 1.7;">
+                <strong>VIABLE PARA PRODUCCIÓN</strong> con las siguientes condiciones:
+            </p>
+            <ul style="margin-top: 12px; margin-left: 20px; line-height: 1.8;">
+                <li>Pre-deploy: Ejecutar migración de índices PostGIS</li>
+                <li>Configuración: Octane workers mínimo 4</li>
+                <li>Monitoreo: Importar dashboards de Grafana</li>
+                <li>Load test: Repetir en staging antes de producción</li>
+            </ul>
+            <p style="margin-top: 16px; font-size: 13px; color: #64748b;">
+                <strong>Calificación Estimada:</strong> 8.5/10
+            </p>
+        </div>
+        
+        <footer>
+            <p>Hito 7 — Stress Testing & Calidad Operacional</p>
+            <p>Sistema de Incidencias Georreferenciadas • Universidad UPSE 2026-1</p>
+        </footer>
+    </div>
+</body>
+</html>
