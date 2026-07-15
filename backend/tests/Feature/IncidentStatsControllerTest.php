@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,18 +68,18 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
     $createdAt = now()->subDays(5);
     $resolutionDate = $createdAt->copy()->addDays(2)->addHours(4);
 
-    $location = \App\Domains\Locations\Models\Location::create(['name' => 'HQ', 'level' => 'city']);
-    $org = \App\Domains\Organizations\Models\Organization::create([
+    $location = Location::create(['name' => 'HQ', 'level' => 'city']);
+    $org = Organization::create([
         'name' => 'Test Org',
         'location_id' => $location->id,
     ]);
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $category = IncidentCategory::create([
         'name' => 'General',
         'organization_id' => $org->id,
     ]);
 
     // Create incident 1: resolved in 2d 4h (52h = 187200s)
-    $inc1 = \App\Domains\Incidents\Models\Incident::create([
+    $inc1 = Incident::create([
         'title' => 'Incident 1',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -92,7 +96,7 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
     // Total resolved = 2, average = (52 + 8) / 2 = 30 hours (1 day, 6 hours)
     $createdAt2 = now()->subDays(3);
     $resolutionDate2 = $createdAt2->copy()->addHours(8);
-    $inc2 = \App\Domains\Incidents\Models\Incident::create([
+    $inc2 = Incident::create([
         'title' => 'Incident 2',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -106,7 +110,7 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
     $inc2->save(['timestamps' => false]);
 
     // Create incident 3: not resolved (should not be included in resolution time average)
-    \App\Domains\Incidents\Models\Incident::create([
+    Incident::create([
         'title' => 'Incident 3',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -131,7 +135,7 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
                 'days',
                 'hours',
                 'seconds',
-            ]
+            ],
         ])
         ->assertJsonPath('average_resolution_time.days', 1)
         ->assertJsonPath('average_resolution_time.hours', 6)
@@ -150,17 +154,17 @@ it('excludes soft-deleted incidents from total, by_status, and average_resolutio
     ]);
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $location = \App\Domains\Locations\Models\Location::create(['name' => 'HQ', 'level' => 'city']);
-    $org = \App\Domains\Organizations\Models\Organization::create([
+    $location = Location::create(['name' => 'HQ', 'level' => 'city']);
+    $org = Organization::create([
         'name' => 'Test Org',
         'location_id' => $location->id,
     ]);
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $category = IncidentCategory::create([
         'name' => 'General',
         'organization_id' => $org->id,
     ]);
 
-    $visible = \App\Domains\Incidents\Models\Incident::create([
+    $visible = Incident::create([
         'title' => 'Visible incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -173,7 +177,7 @@ it('excludes soft-deleted incidents from total, by_status, and average_resolutio
     // Resolved in 100 hours — wildly different from any visible resolved
     // incident, so if this leaks into the average the test fails loudly
     // rather than passing by coincidence.
-    $deleted = \App\Domains\Incidents\Models\Incident::create([
+    $deleted = Incident::create([
         'title' => 'Soft-deleted incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,

@@ -77,9 +77,6 @@ class FeedRebuildCommand extends Command
         Redis::expire(self::V2_ITEMS_KEY, self::FEED_TTL);
         Redis::expire(self::V2_INDEX_KEY, self::FEED_TTL);
 
-        // TTL the old key so it auto-expires during transition
-        Redis::expire('feed:incidents', self::FEED_TTL);
-
         $this->info("Synced {$incidentCount} incidents to Redis feed v2.");
 
         // Sync comments to Redis (unchanged — uses incident: and comment: keys)

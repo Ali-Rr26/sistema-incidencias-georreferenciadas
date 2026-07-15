@@ -41,8 +41,7 @@ class FeedController extends Controller
 
     public function __construct(
         private readonly IncidentRepository $incidents,
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {

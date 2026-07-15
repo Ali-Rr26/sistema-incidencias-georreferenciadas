@@ -140,6 +140,7 @@ class SantaElenaIncidentSeeder extends Seeder
 
             if (Incident::where('title', $uniqueTitle)->exists()) {
                 $skipped++;
+
                 continue;
             }
 

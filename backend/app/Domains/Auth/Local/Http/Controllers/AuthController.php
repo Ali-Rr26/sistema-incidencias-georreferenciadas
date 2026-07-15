@@ -207,10 +207,10 @@ class AuthController
         }
 
         $config = Configuration::forSymmetricSigner(
-            new Sha256(),
+            new Sha256,
             InMemory::plainText($secret),
         );
-        $now = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable;
 
         $token = $config->builder()
             ->issuedAt($now)

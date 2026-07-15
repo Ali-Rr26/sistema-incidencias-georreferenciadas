@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Seeder;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -75,13 +76,13 @@ class IncidentSeeder extends Seeder
 
         $users = User::all()->keyBy('email');
 
-        $organizations = \App\Domains\Organizations\Models\Organization::all()->keyBy('name');
+        $organizations = Organization::all()->keyBy('name');
 
         foreach (self::INCIDENTS as $spec) {
             $category = $categories->get($spec['category'])?->first();
             $location = $locations->get($spec['location']);
-            $user     = $users->get($spec['user']);
-            $org      = $organizations->get($spec['org']);
+            $user = $users->get($spec['user']);
+            $org = $organizations->get($spec['org']);
 
             if (! $category || ! $location || ! $user) {
                 $this->command?->warn("Skipping incident — missing: category=[{$spec['category']}] location=[{$spec['location']}] user=[{$spec['user']}]");
@@ -101,13 +102,13 @@ class IncidentSeeder extends Seeder
                 ['title' => $title],
                 [
                     'incident_category_id' => $category->id,
-                    'user_id'              => $user->id,
-                    'location_id'          => $location->id,
-                    'organization_id'      => $org?->id,
-                    'status'               => $spec['status'],
-                    'priority'             => $spec['priority'],
-                    'resolution_date'      => $spec['resolution_date'],
-                    'geom'                 => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
+                    'user_id' => $user->id,
+                    'location_id' => $location->id,
+                    'organization_id' => $org?->id,
+                    'status' => $spec['status'],
+                    'priority' => $spec['priority'],
+                    'resolution_date' => $spec['resolution_date'],
+                    'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
                 ],
             );
         }

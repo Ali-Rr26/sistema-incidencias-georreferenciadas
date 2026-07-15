@@ -78,7 +78,23 @@ export default async function initMapView({
     }
   }
 
-  setTimeout(() => map.invalidateSize(), 100);
+  // Guard: only invalidate once the map container is actually visible.
+  // Leaflet's _leaflet_pos is undefined if the pane isn't in the layout yet,
+  // which happens often in production with lazy bundles and slower networks.
+  const tryInvalidate = () => {
+    if (removed || !map) return;
+    const pane = map.getPane?.('mapPane');
+    if (!pane || pane.clientWidth === 0) {
+      // Not yet visible — retry on next frame, but give up after 5 attempts
+      if (!map._invalidatingRetry) map._invalidatingRetry = 0;
+      if (map._invalidatingRetry++ < 5) {
+        requestAnimationFrame(tryInvalidate);
+      }
+      return;
+    }
+    map.invalidateSize();
+  };
+  requestAnimationFrame(tryInvalidate);
 
   // Re-invalidate when the map container is resized (e.g. viewport change
   // reflows the grid). Without this, tiles can render with grey/empty bands

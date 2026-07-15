@@ -129,8 +129,6 @@ it('admin_organizacion sees back-office plus citizen entries (spec override)', f
         ->and($routes)->toContain('/configuracion/perfil');
 });
 
-
-
 it('usuario sees only the four citizen entries — no back-office, no /incidencias', function (): void {
     $user = User::factory()->create(['role_id' => 5]);
 
