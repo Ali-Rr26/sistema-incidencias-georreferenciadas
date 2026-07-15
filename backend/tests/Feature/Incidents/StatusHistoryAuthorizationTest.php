@@ -90,7 +90,7 @@ it('R-19 denies status history to the citizen who reported the incident themselv
     // inert — but locking in the behavior here means a future change that
     // starts calling /status-history from a citizen-facing page will fail
     // this test instead of silently 403ing in production.
-    $citizenRole = \App\Domains\Roles\Models\Role::where('name', 'usuario')->firstOrFail();
+    $citizenRole = Role::where('name', 'usuario')->firstOrFail();
     $reporter = User::factory()->create(['role_id' => $citizenRole->id]);
     $this->incident->update(['user_id' => $reporter->id]);
     $this->actingAs($reporter);

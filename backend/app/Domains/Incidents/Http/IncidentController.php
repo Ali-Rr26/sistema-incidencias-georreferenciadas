@@ -12,7 +12,6 @@ use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
-use App\Domains\Incidents\Services\IncidentClaimService;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
@@ -46,34 +45,34 @@ class IncidentController extends Controller
      */
     private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location'];
 
-        public function index(Request $request): JsonResponse
-        {
-            // Inline map params validation (was MapBoundsRequest FormRequest).
-            // One place to read; three fields actually filter the list.
-            $validated = $request->validate([
-                'bbox' => [
-                    'nullable',
-                    'string',
-                    'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/',
-                ],
-                'zoom' => ['nullable', 'integer', 'min:1', 'max:22'],
-                'status' => ['nullable', 'string'],
-                'priority' => ['nullable', 'string'],
-                'location_id' => ['nullable', 'integer'],
-                'incident_category_id' => ['nullable', 'integer'],
-                'user_id' => ['nullable', 'integer'],
-                'title' => ['nullable', 'string', 'max:200'],
-                'per_page' => ['nullable', 'integer', 'min:1', 'max:500'],
-                'relations' => ['nullable', 'array'],
-                'relations.*' => ['string'],
-            ]) + ['relations' => self::INDEX_RELATIONS];
+    public function index(Request $request): JsonResponse
+    {
+        // Inline map params validation (was MapBoundsRequest FormRequest).
+        // One place to read; three fields actually filter the list.
+        $validated = $request->validate([
+            'bbox' => [
+                'nullable',
+                'string',
+                'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/',
+            ],
+            'zoom' => ['nullable', 'integer', 'min:1', 'max:22'],
+            'status' => ['nullable', 'string'],
+            'priority' => ['nullable', 'string'],
+            'location_id' => ['nullable', 'integer'],
+            'incident_category_id' => ['nullable', 'integer'],
+            'user_id' => ['nullable', 'integer'],
+            'title' => ['nullable', 'string', 'max:200'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'relations' => ['nullable', 'array'],
+            'relations.*' => ['string'],
+        ]) + ['relations' => self::INDEX_RELATIONS];
 
-            // The map frontend asks for 500 per page because a single bbox
-            // viewport can legitimately hold >100 incidents in dense urban
-            // areas. The default repo cap (100) is too tight here, so we
-            // raise it only when a bbox is present. Other callers keep the
-            // safe 100 cap.
-            $hardCap = isset($validated['bbox']) ? 500 : null;
+        // The map frontend asks for 500 per page because a single bbox
+        // viewport can legitimately hold >100 incidents in dense urban
+        // areas. The default repo cap (100) is too tight here, so we
+        // raise it only when a bbox is present. Other callers keep the
+        // safe 100 cap.
+        $hardCap = isset($validated['bbox']) ? 500 : null;
 
         $incidents = $this->incidents->paginate(
             $validated,
@@ -218,10 +217,10 @@ class IncidentController extends Controller
 
         return response()->json([
             'data' => $operators->map(fn (User $u) => [
-                'id'         => $u->id,
+                'id' => $u->id,
                 'first_name' => $u->first_name,
-                'last_name'  => $u->last_name,
-                'email'      => $u->email,
+                'last_name' => $u->last_name,
+                'email' => $u->email,
             ])->values(),
         ]);
     }

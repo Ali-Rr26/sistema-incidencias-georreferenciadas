@@ -44,11 +44,13 @@ it('calls HMSET and ZADD when incident is created', function (): void {
     $incident->setRelation('location', $location);
     $incident->setRelation('user', $user);
 
-    Redis::shouldReceive('hmset')
-        ->once();
+    Redis::shouldReceive('hset')
+        ->once()
+        ->with('feed:v2:items', '42', Mockery::any());
 
     Redis::shouldReceive('zadd')
-        ->once();
+        ->once()
+        ->with('feed:v2:index', Mockery::any(), '42');
 
     $sync = new RedisIncidentSync;
     $sync->created($incident);
@@ -59,13 +61,13 @@ it('calls DEL and ZREM when incident is deleted', function (): void {
     $incident->id = 99;
     $incident->exists = true;
 
-    Redis::shouldReceive('del')
+    Redis::shouldReceive('hdel')
         ->once()
-        ->with('incident:99');
+        ->with('feed:v2:items', '99');
 
     Redis::shouldReceive('zrem')
         ->once()
-        ->with('feed:incidents', '99');
+        ->with('feed:v2:index', '99');
 
     $sync = new RedisIncidentSync;
     $sync->deleted($incident);
@@ -102,11 +104,13 @@ it('calls HMSET and ZADD when incident is updated', function (): void {
     $incident->setRelation('location', $location);
     $incident->setRelation('user', $user);
 
-    Redis::shouldReceive('hmset')
-        ->once();
+    Redis::shouldReceive('hset')
+        ->once()
+        ->with('feed:v2:items', '7', Mockery::any());
 
     Redis::shouldReceive('zadd')
-        ->once();
+        ->once()
+        ->with('feed:v2:index', Mockery::any(), '7');
 
     $sync = new RedisIncidentSync;
     $sync->updated($incident);
@@ -117,7 +121,7 @@ it('does not throw when Redis is unreachable', function (): void {
     $incident->id = 1;
     $incident->exists = true;
 
-    Redis::shouldReceive('del')
+    Redis::shouldReceive('hdel')
         ->once()
         ->andThrow(new RuntimeException('Connection refused'));
 

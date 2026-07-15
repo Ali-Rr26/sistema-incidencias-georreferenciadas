@@ -31,32 +31,32 @@ class IncidentResource extends JsonResource
         $thumbnail = ! empty($images) ? $images[0] : null;
 
         $data = [
-            'id'                   => $this->id,
+            'id' => $this->id,
             'incident_category_id' => $this->incident_category_id,
-            'organization_id'      => $this->organization_id,
-            'user_id'              => $this->user_id,
-            'location_id'          => $this->location_id,
-            'title'                => $this->title,
-            'description'          => $this->description,
-            'status'               => $this->status?->value,
-            'priority'             => $this->priority?->value,
-            'resolution_date'      => $this->resolution_date,
-            'geom'                 => $this->when($this->geom !== null, fn () => json_decode($this->geom->toJson())),
-            'created_at'           => $this->created_at,
-            'claimed_by'           => $this->claimed_by,
-            'claimed_at'           => $this->claimed_at,
-            'category'             => $this->whenLoaded('category'),
-            'organization'         => $this->whenLoaded('organization'),
-            'user'                 => $this->whenLoaded('user'),
-            'location'             => $this->whenLoaded('location'),
-            'thumbnail_url'        => $thumbnail
+            'organization_id' => $this->organization_id,
+            'user_id' => $this->user_id,
+            'location_id' => $this->location_id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'status' => $this->status?->value,
+            'priority' => $this->priority?->value,
+            'resolution_date' => $this->resolution_date,
+            'geom' => $this->when($this->geom !== null, fn () => json_decode($this->geom->toJson())),
+            'created_at' => $this->created_at,
+            'claimed_by' => $this->claimed_by,
+            'claimed_at' => $this->claimed_at,
+            'category' => $this->whenLoaded('category'),
+            'organization' => $this->whenLoaded('organization'),
+            'user' => $this->whenLoaded('user'),
+            'location' => $this->whenLoaded('location'),
+            'thumbnail_url' => $thumbnail
                 ? $storage->proxyUrl($thumbnail['path'])
                 : null,
-            'images'               => array_map(fn (array $img) => [
-                'id'            => $this->id . '-' . md5($img['path']),
-                'url'           => $storage->proxyUrl($img['path']),
+            'images' => array_map(fn (array $img) => [
+                'id' => $this->id.'-'.md5($img['path']),
+                'url' => $storage->proxyUrl($img['path']),
                 'original_name' => $img['original_name'],
-                'is_thumbnail'  => $img['is_thumbnail'] ?? false,
+                'is_thumbnail' => $img['is_thumbnail'] ?? false,
             ], $images),
         ];
 
@@ -69,11 +69,11 @@ class IncidentResource extends JsonResource
                 ->orderBy('id')
                 ->get(['id', 'user_id', 'previous_status', 'new_status', 'created_at'])
                 ->map(fn ($r) => [
-                    'id'              => (int) $r->id,
-                    'user_id'         => (int) $r->user_id,
+                    'id' => (int) $r->id,
+                    'user_id' => (int) $r->user_id,
                     'previous_status' => $r->previous_status,
-                    'new_status'      => $r->new_status,
-                    'created_at'      => $r->created_at,
+                    'new_status' => $r->new_status,
+                    'created_at' => $r->created_at,
                 ])
                 ->all();
 
@@ -81,13 +81,13 @@ class IncidentResource extends JsonResource
             $data['assignments'] = $this->whenLoaded(
                 'assignments',
                 fn () => $this->assignments->map(fn ($a) => [
-                    'id'          => $a->id,
+                    'id' => $a->id,
                     'incident_id' => $a->incident_id,
-                    'user_id'     => $a->user_id,
-                    'role'        => $a->assignment_role,
-                    'created_at'  => $a->created_at,
-                    'updated_at'  => $a->updated_at,
-                    'user'        => $a->relationLoaded('user') ? $a->user : null,
+                    'user_id' => $a->user_id,
+                    'role' => $a->assignment_role,
+                    'created_at' => $a->created_at,
+                    'updated_at' => $a->updated_at,
+                    'user' => $a->relationLoaded('user') ? $a->user : null,
                 ])->values()->all(),
             );
         }

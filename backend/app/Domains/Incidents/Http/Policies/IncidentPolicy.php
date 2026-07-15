@@ -83,7 +83,7 @@ class IncidentPolicy extends PermissionPolicy
         if ($user->role?->name !== UserRole::OperadorOrganizacion->value) {
             return false;
         }
-    
+
         return $incident->claimed_by === $user->id;
     }
 }

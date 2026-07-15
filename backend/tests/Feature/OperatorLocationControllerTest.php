@@ -95,8 +95,6 @@ it('SCEN-3.2: Usuario is rejected with 403 on /api/operator/locations', function
         ->assertStatus(403);
 });
 
-
-
 // SCEN-3.1 (companion) — the active-operators payload is filtered to
 // OperadorOrganizacion by the enum-driven whereHas clause, not by role_id.
 

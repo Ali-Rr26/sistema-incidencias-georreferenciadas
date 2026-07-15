@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
                 );
             }
 
-            $factory = (new KreaitFirebaseFactory())
+            $factory = (new KreaitFirebaseFactory)
                 ->withServiceAccount($credentialsPath)
                 ->withProjectId((string) config('services.firebase.project_id'));
 

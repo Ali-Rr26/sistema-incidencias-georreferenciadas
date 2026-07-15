@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Redis;
 
 class RedisIncidentSync
 {
-    private const SORTED_SET_KEY = 'feed:incidents';
+    private const V2_INDEX_KEY = 'feed:v2:index';
 
-    private const HASH_PREFIX = 'incident:';
+    private const V2_ITEMS_KEY = 'feed:v2:items';
 
     public function created(Incident $incident): void
     {
@@ -66,8 +66,8 @@ class RedisIncidentSync
                 'user_avatar' => $incident->user?->avatar,
             ];
 
-            Redis::hmset(self::HASH_PREFIX.$incident->id, $data);
-            Redis::zadd(self::SORTED_SET_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
+            Redis::hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
+            Redis::zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
         } catch (\Throwable $e) {
             Log::warning('Failed to sync incident to Redis', [
                 'incident_id' => $incident->id,
@@ -79,8 +79,8 @@ class RedisIncidentSync
     private function removeIncident(Incident $incident): void
     {
         try {
-            Redis::del(self::HASH_PREFIX.$incident->id);
-            Redis::zrem(self::SORTED_SET_KEY, (string) $incident->id);
+            Redis::hdel(self::V2_ITEMS_KEY, (string) $incident->id);
+            Redis::zrem(self::V2_INDEX_KEY, (string) $incident->id);
         } catch (\Throwable $e) {
             Log::warning('Failed to remove incident from Redis', [
                 'incident_id' => $incident->id,

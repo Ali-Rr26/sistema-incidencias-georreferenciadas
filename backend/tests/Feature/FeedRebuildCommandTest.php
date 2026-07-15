@@ -60,10 +60,6 @@ it('rebuilds the Redis feed from PostgreSQL', function (): void {
         ->once()
         ->with('feed:v2:index', 604800);
 
-    Redis::shouldReceive('expire')
-        ->once()
-        ->with('feed:incidents', 604800);
-
     $this->artisan('feed:rebuild')
         ->expectsOutputToContain('Synced 1 incidents to Redis feed v2.')
         ->assertExitCode(0);
