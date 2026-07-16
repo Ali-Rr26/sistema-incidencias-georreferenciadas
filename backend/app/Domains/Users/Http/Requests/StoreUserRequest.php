@@ -63,7 +63,7 @@ class StoreUserRequest extends FormRequest
             'email.unique' => 'Este correo electrónico ya está registrado',
             'role_id.exists' => 'El rol selecionnado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
-            'password.regex' => 'La contraseña debe incluir mayúscula, minúscula y dígito',
+            'password.regex' => 'La contraseña debe contener: mayúscula (A-Z), minúscula (a-z) y dígito (0-9)',
         ];
     }
 }
