@@ -267,6 +267,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - sonarqube
     networks:
       - incidencias-network
     deploy:
@@ -274,12 +275,71 @@ services:
       restart_policy:
         condition: any
 
+  # ==========================================
+  # STATIC CODE ANALYSIS (SonarQube)
+  # ==========================================
+  # SonarQube ships its own UI/dashboard, intentionally kept separate from
+  # the Prometheus/Grafana/Loki observability stack.
+  #
+  # NOTE: Elasticsearch (embedded) requires vm.max_map_count >= 262144 on
+  # the host. Persist it with:
+  #   echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+  sonarqube_db:
+    image: ${SONARQUBE_DB_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: ${SONARQUBE_DB_DATABASE:-sonarqube}
+      POSTGRES_USER: ${SONARQUBE_DB_USERNAME:-sonarqube}
+      POSTGRES_PASSWORD: ${SONARQUBE_DB_PASSWORD:?Variable SONARQUBE_DB_PASSWORD requerida}
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sonarqube:
+    image: ${SONARQUBE_IMAGE:-sonarqube:26.7.0.124771-community}
+    depends_on:
+      sonarqube_db:
+        condition: service_started
+    environment:
+      SONAR_JDBC_URL: "jdbc:postgresql://sonarqube_db:5432/${SONARQUBE_DB_DATABASE:-sonarqube}"
+      SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USERNAME:-sonarqube}
+      SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:?Variable SONARQUBE_DB_PASSWORD requerida}
+    ports:
+      - "${SONARQUBE_PORT:-9002}:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
 volumes:
   db_data:
   redis_data:
   rustfs_data:
   grafana_data:
   portainer_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_db_data:
 
 networks:
   incidencias-network:
