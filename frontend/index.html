@@ -7,29 +7,26 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Sistema de Incidencias Georreferenciadas</title>
 
-    <!-- Bootstrap 5 CSS (auto-hospedado, ver assets/extra-libs) -->
+    <!-- ── Critical CSS (blocking) ──────────────────── -->
     <link href="/assets/extra-libs/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
-    <!-- Freedash layout + components (sin Bootstrap) -->
-    <link href="/css/freedash-layout.css" rel="stylesheet" />
-    <!-- Font Awesome 5 -->
-    <link href="/assets/extra-libs/font-awesome-5/css/all.min.css" rel="stylesheet" />
-    <!-- Simple Line Icons -->
-    <link href="/assets/extra-libs/simple-line-icons/css/simple-line-icons.min.css" rel="stylesheet" />
-    <!-- Bootstrap Icons -->
-    <link href="/assets/extra-libs/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <!-- Tom Select CSS (Bootstrap 5 theme) -->
-    <link href="/assets/extra-libs/tom-select/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
-    <!-- Be Vietnam Pro font (Google Fonts, queda externo — preconnect ya adelanta la conexión) -->
+    <link href="/css/variables.css" rel="stylesheet" />
+    <link href="/css/app.css" rel="stylesheet" />
+
+    <!-- ── Google Fonts (display=swap evita FOUT) ──── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <!-- FontAwesome 6 (replaces FA5 for new icon names) -->
-    <link rel="stylesheet" href="/assets/extra-libs/font-awesome-6/css/all.min.css" />
-    <!-- Global CSS -->
-    <link href="/css/global.css" rel="stylesheet" />
+
+    <!-- Non-critical CSS (diferido via print hack) -->
+    <link href="/assets/extra-libs/font-awesome-6/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
+    <link href="/assets/extra-libs/tom-select/css/tom-select.bootstrap5.min.css" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="/assets/extra-libs/font-awesome-6/css/all.min.css" rel="stylesheet" />
+      <link href="/assets/extra-libs/tom-select/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+    </noscript>
   </head>
   <body>
     <div id="shell-outlet"></div>

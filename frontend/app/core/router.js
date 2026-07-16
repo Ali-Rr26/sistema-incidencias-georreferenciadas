@@ -163,14 +163,25 @@ class Router {
       throw new Error('Router: page outlet not found');
     }
 
-    const html = component.template
-      ? component.template
-      : await this._fetchText(component.templateUrl);
+    // Fetch template + CSS in parallel so the component never renders
+    // without its styles (eliminates FOUC between insert and style inject).
+    const htmlPromise = component.template
+      ? Promise.resolve(component.template)
+      : this._fetchText(component.templateUrl);
+    const cssPromise = component.styleUrl
+      ? this._fetchText(component.styleUrl)
+      : Promise.resolve(null);
+
+    const [html, css] = await Promise.all([htmlPromise, cssPromise]);
+
     outlet.innerHTML = html;
 
-    if (component.styleUrl) {
+    if (css !== null) {
       const id = `style-${Date.now()}`;
-      await this._injectStyle(component.styleUrl, id);
+      const style = document.createElement('style');
+      style.id = id;
+      style.textContent = css;
+      document.head.appendChild(style);
       component._styleId = id;
     }
 
@@ -199,7 +210,7 @@ class Router {
   }
 
   async _fetchText(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url);
     if (!res.ok)
       throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();
