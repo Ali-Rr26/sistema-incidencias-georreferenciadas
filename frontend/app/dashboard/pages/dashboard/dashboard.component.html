@@ -12,15 +12,70 @@
       </nav>
     </div>
     <div class="gr-page__actions">
-      <div class="gr-filter-btn">
-        <i class="fa-solid fa-filter"></i>Todos los tipos
-        <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i>
-      </div>
-      <div class="gr-filter-btn">
-        <i class="fa-regular fa-calendar"></i>Últimos 30 días
-        <i class="fa-solid fa-chevron-down gr-filter-btn__arrow"></i>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filter-modal">
+        <i class="fa-solid fa-filter"></i> Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Filtros -->
+  <div class="modal fade" id="filter-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Filtrar Dashboard</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Rango de fechas -->
+            <div class="col-md-6 mb-3">
+              <label for="filter-inicio" class="form-label">Fecha Inicio</label>
+              <input type="date" class="form-control" id="filter-inicio">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="filter-fin" class="form-label">Fecha Fin</label>
+              <input type="date" class="form-control" id="filter-fin">
+            </div>
+
+            <!-- Tipo de Incidencia -->
+            <div class="col-md-6 mb-3">
+              <label for="filter-tipo" class="form-label">Tipo de Incidencia</label>
+              <select class="form-select" id="filter-tipo">
+                <option value="">-- Todos los tipos --</option>
+              </select>
+            </div>
+
+            <!-- Ubicación (cascada) -->
+            <div class="col-md-6 mb-3">
+              <label for="filter-pais" class="form-label">País</label>
+              <select class="form-select" id="filter-pais">
+                <option value="">-- Seleccione país --</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="filter-provincia" class="form-label">Provincia</label>
+              <select class="form-select" id="filter-provincia" disabled>
+                <option value="">-- Seleccione provincia --</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label for="filter-ciudad" class="form-label">Ciudad</label>
+              <select class="form-select" id="filter-ciudad" disabled>
+                <option value="">-- Seleccione ciudad --</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-filter-apply">Aplicar Filtros</button>
+        </div>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- Stats row -->
