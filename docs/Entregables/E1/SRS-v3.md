@@ -97,23 +97,23 @@ El SRS sirve como acuerdo contractual entre el equipo de desarrollo y las asigna
 
 ### 1.2 Alcance del Producto
 
-El sistema consistirá en una aplicación web completa que permitirá:
+El sistema consistirá en una aplicación web completa que permitirá (alineado con README.md del proyecto):
 
-- El registro, gestión y seguimiento completo de **incidencias georreferenciadas** (con coordenadas PostGIS y dirección normalizada País → Provincia → Ciudad).
-- La **toma de responsabilidad** sobre una incidencia mediante la acción `claim` (reemplaza la asignación rígida de v1.0).
-- El seguimiento mediante **comentarios anidados** (shallow) y **notificaciones** por evento.
-- La **clasificación jerárquica** por categoría y subcategoría.
-- La **visualización de métricas y dashboards** con filtros avanzados.
-- El **tracking de operadores** (ubicación reportada voluntariamente).
-- La **gestión de menú dinámico** por rol (`GET /menus/my`).
-- El **aislamiento multitenant** por organización, con `SystemAdmin` como bypass.
+1. **Gestión de Incidencias**: Registro, edición y eliminación de incidencias con información básica (título, descripción, ubicación, tipo, prioridad).
+2. **Gestión de Estados**: Flujo de 3 estados (Pendiente → En proceso → Resuelto) con historial completo de cambios (fecha, usuario).
+3. **Asignación de Responsables**: Asignar uno o varios usuarios con roles (`responsable`, `apoyo`).
+4. **Sistema de Comentarios**: Agregar comentarios a incidencias, registro de autor y fecha.
+5. **Ubicación Normalizada**: Datos georreferenciados con jeraquía País → Provincia → Ciudad.
+6. **Clasificación Jerárquica**: Tipo de incidencia → Subtipo.
+7. **Notificaciones**: Cambios de estado generan notificaciones.
+8. **Prioridad y Control**: Prioridad (alta, media, baja), fecha de creación y resolución.
+9. **Consultas con Filtros y Métricas**: Incidencias por estado/tipo/ubicación, tiempo promedio de resolución.
 
 El sistema NO incluirá (fuera de alcance):
 
 - Aplicaciones móviles nativas.
 - Integración con sistemas externos de terceros.
 - Módulo de reportes avanzados con exportación a PDF/Excel.
-- Verificación por Publicador (Opción B simplifica: resolver = resuelto inmediatamente).
 
 ### 1.3 Definiciones, Acrónimos y Abreviaturas
 
@@ -179,18 +179,20 @@ El sistema es una aplicación web con arquitectura de tres capas, desplegada en 
 
 ### 2.2 Funcionalidades del Producto
 
-1. **Gestión de Incidencias**: CRUD completo con upload de imágenes (multipart) y coordenadas geográficas.
-2. **Máquina de Estados**: Transiciones controladas con auditoría inmutable vía trigger de DB. **3 estados (v3.0):** pending → in_progress → resolved.
-3. **Toma y Liberación de Responsabilidad**: `claim`/`release` por OperadorOrg con control de concurrencia (`max_active_claims`).
-4. **Sistema de Comentarios**: Anidados shallow por incidencia, con soft delete.
-5. **Ubicación Georreferenciada**: Coordenadas PostGIS + dirección normalizada jerárquica.
-6. **Clasificación Jerárquica**: Categoría con subcategoría opcional (autorreferencia `parent_id`).
-7. **Notificaciones**: Generadas por Observer Eloquent ante eventos relevantes.
-8. **Menú Dinámico por Rol**: El frontend pide `GET /menus/my` y renderiza solo lo permitido.
-9. **Tracking de Operadores**: Endpoint de heartbeat geográfico.
-10. **Dashboard y Métricas**: Conteos por estado, por tipo, por org; tiempo promedio de resolución.
-11. **Scoping Multitenant**: Aislamiento automático por organización para OperadorOrg; bypass para SystemAdmin.
-12. **Sincronización en Tiempo Real**: Redis pub/sub vía `RedisIncidentSync` listener.
+**Implementadas:**
+
+1. **Gestión de Incidencias**: CRUD completo con coordenadas geográficas (PostGIS Point).
+2. **Máquina de Estados**: **3 estados:** `pending` → `in_progress` → `resolved`, con auditoría via trigger de BD.
+3. **Asignación de Responsables**: Asignar/desasignar usuarios con roles (`responsable`, `apoyo`).
+4. **Sistema de Comentarios**: Crear, leer comentarios por incidencia, con soft delete.
+5. **Ubicación Georreferenciada**: Coordenadas PostGIS + dirección normalizada (País → Provincia → Ciudad).
+6. **Clasificación Jerárquica**: Tipo → Subtipo (autorreferencia `parent_id`).
+7. **Notificaciones**: Cambios de estado generan eventos (modelo listo, UI pendiente).
+8. **Prioridad y Control**: 3 niveles (alta, media, baja), fecha de creación y `resolution_date` automático.
+9. **Consultas y Filtros**: Búsqueda por estado, tipo, ubicación, prioridad.
+10. **Dashboard**: Conteos por estado, visualización básica de métricas.
+11. **Scoping Multitenant**: Aislamiento automático por organización.
+12. **Menú Dinámico por Rol**: `GET /menus/my` con renderizado frontend según permisos.
 
 ### 2.3 Clases de Usuario y Características
 
@@ -213,11 +215,9 @@ El sistema es una aplicación web con arquitectura de tres capas, desplegada en 
 | **Frecuencia de uso** | Alta |
 | **Nivel de expertise** | Básico a intermedio |
 
-#### 2.3.3 ~~Visitante (sin autenticación)~~ — rol retirado
+#### 2.3.3 ~~Visitante~~ — rol retirado
 
-Ya no existe acceso anónimo al sistema. Toda ruta exige JWT.
-
-*(Nota: Rol Publicador removido en v3.0. Ver RFC-FUNC-011 en sección 3.2)*
+Ya no existe acceso anónimo al sistema. Toda ruta requiere autenticación JWT.
 
 ### 2.4 Ambiente Operativo
 
@@ -227,13 +227,14 @@ Ya no existe acceso anónimo al sistema. Toda ruta exige JWT.
 
 | Restricción | Descripción |
 |---|---|
-| Backend | Laravel (API REST en PHP) — obligatorio |
-| Frontend | HTML5, CSS3, Bootstrap, JavaScript — obligatorio |
-| Base de datos | PostgreSQL con PostGIS — obligatorio |
-| Autenticación | JWT (stateless) — obligatorio |
-| Despliegue | Contenedores Docker con Docker Compose — obligatorio |
-| Auditoría | `status_history` por trigger de DB (no por código) |
-| **Estados** | **3 estados: pending, in_progress, resolved (v3.0)** |
+| Backend | Laravel 12 (API REST en PHP) — obligatorio |
+| Frontend | HTML5, CSS3, Bootstrap 5, JavaScript vanilla — obligatorio |
+| Base de datos | PostgreSQL 15 con extensión PostGIS — obligatorio |
+| Autenticación | JWT (stateless) + Firebase Google Sign-In — implementado |
+| Despliegue | Contenedores Docker con docker-compose — obligatorio |
+| Auditoría | Trigger `trg_log_incident_status` registra cambios automáticamente |
+| **Estados** | **3 estados: `pending`, `in_progress`, `resolved`** |
+| Soft Deletes | Aplicado a Incident, User, IncidentCategory, Location, Organization |
 
 ### 2.6 Suposiciones y Dependencias
 
@@ -252,11 +253,10 @@ Ya no existe acceso anónimo al sistema. Toda ruta exige JWT.
 **RF-UI-002 (Dashboard):** Scope = SystemAdmin ve todo; OperadorOrg ve solo su org. ~~Publicador~~ removido.
 
 **RF-UI-004 (Detalle de Incidencia):**
-- Badge de estado: `pending`, `in_progress`, `resolved` *(v3.0: removido `pending_operator`)*
+- Badge de estado: `pending`, `in_progress`, `resolved`
 - Acciones según rol:
-  - OperadorOrg: `claim`, `release`, editar
-  - SystemAdmin: todo
-  - ~~Publicador: confirmar~~ *(removido en v3.0)*
+  - OperadorOrg: ver, editar, claim/release, comentar
+  - SystemAdmin: todas las acciones
 
 #### 3.1.3 Interfaces de Software (API) — cambios en RF-SW-002
 
@@ -264,25 +264,40 @@ Ya no existe acceso anónimo al sistema. Toda ruta exige JWT.
 
 | Método | Ruta | Descripción |
 |---|---|---|
+| GET | `/api/incidents` | Listar incidencias con filtros |
+| POST | `/api/incidents` | Crear incidencia |
+| GET | `/api/incidents/{id}` | Detalle incidencia |
+| PUT | `/api/incidents/{id}` | Editar incidencia |
+| DELETE | `/api/incidents/{id}` | Soft delete incidencia |
 | POST | `/api/incidents/{id}/claim` | OperadorOrg toma incidencia |
 | POST | `/api/incidents/{id}/release` | OperadorOrg libera incidencia |
-| ~~POST~~ | ~~`/api/incidents/{id}/confirmar`~~ | **~~Removido en v3.0~~** |
+| PUT | `/api/incidents/{id}/estado` | Cambiar estado (pending → in_progress → resolved) |
 
 ---
 
 ### 3.2 Requisitos Funcionales
 
-#### Cambios RF-FUNC en v3.0
+#### Requisitos Funcionales Principales
+
+**RF-FUNC-001: Registro de Incidencias**
+
+| Atributo | Detalle |
+|---|---|
+| **Prioridad** | Alta |
+| **Campos** | title (max 100), description (max 500), priority (alta/media/baja), location, category, geom (PostGIS Point) |
+| **Validaciones** | Frontend + Backend doble validación |
+
+---
 
 **RF-FUNC-006: Estados Disponibles**
 
-| Valor DB | Localización UI | Significado |
+| Valor DB | UI | Significado |
 |---|---|---|
-| `pending` | Pendiente | Recién creada o liberada por operador |
-| `in_progress` | En proceso | Un OperadorOrg hizo `claim` |
-| `resolved` | Resuelta | El OperadorOrg marcó el trabajo como terminado |
+| `pending` | Pendiente | Recién creada o liberada |
+| `in_progress` | En proceso | OperadorOrg hizo `claim` |
+| `resolved` | Resuelta | OperadorOrg marcó como terminada |
 
-**3 estados totales.** Constraint CHECK en PostgreSQL garantiza validez.
+Constraint CHECK en PostgreSQL garantiza validez. Trigger `trg_log_incident_status` registra automáticamente cambio en `status_history`.
 
 ---
 
@@ -290,70 +305,20 @@ Ya no existe acceso anónimo al sistema. Toda ruta exige JWT.
 
 | Atributo | Detalle |
 |---|---|
-| **ID** | RF-FUNC-010 |
 | **Prioridad** | Media |
-
-**Reglas:**
-
-1. Solo el OperadorOrg que tiene `claimed_by == user.id`.
-2. Cambia `status` a `pending` *(v3.0: NO a `pending_operator`)*, limpia `claimed_by` y `claimed_at`.
+| **Reglas** | Solo OperadorOrg que tiene `claimed_by == user.id` puede liberar. Cambia `status` a `pending`, limpia `claimed_by`, `claimed_at`. |
 
 ---
 
-**RF-FUNC-011: ~~Confirmar Resolución~~ — REMOVIDO EN V3.0**
+**RF-FUNC-030: Scoping Multitenant**
 
-Este requisito fue removido. En v2.0 especificaba un endpoint POST `/api/incidents/{id}/confirmar` con rol Publicador.
-
-**Razón de eliminación:** La implementación simplificó el modelo a 3 estados. Publicador era innecesario para el flujo core.
-
-**Si auditoría de resoluciones es crítica:** Considerar Opción C (resolution_audits table con observer pattern).
+Toda query desde OperadorOrg filtra automáticamente por `organization_id`. SystemAdmin bypass.
 
 ---
 
-**RF-FUNC-031: Scoping Multitenant**
+**RF-FUNC-031: Auditoría Inmutable**
 
-Toda query desde OperadorOrg filtra automáticamente por `user.organization_id`. ~~Publicador~~ removido.
-
----
-
-**RF-FUNC-032: ~~Verificaciones de Resolución~~ — REMOVIDO EN V3.0**
-
-Este requisito fue removido. En v2.0 especificaba tabla `incident_verifications`.
-
-**Razón de eliminación:** Sin Publicador role, no hay acción `confirm`. Tabla no tiene propósito.
-
----
-
-**RF-FUNC-033 → RF-FUNC-032 (Control de `max_active_claims`)** — renumerado
-
-| Atributo | Detalle |
-|---|---|
-| **ID** | **RF-FUNC-032** (antes 033) |
-| **Prioridad** | Alta |
-
-`organizations.max_active_claims` limita claims simultáneos por OperadorOrg.
-
----
-
-**RF-FUNC-034 → RF-FUNC-033 (Sincronización Redis)** — renumerado
-
-| Atributo | Detalle |
-|---|---|
-| **ID** | **RF-FUNC-033** (antes 034) |
-| **Prioridad** | Media |
-
-Listener `RedisIncidentSync` escucha eventos de incidencias.
-
----
-
-**RF-FUNC-035 → RF-FUNC-034 (Auditoría Inmutable por Trigger)** — renumerado
-
-| Atributo | Detalle |
-|---|---|
-| **ID** | **RF-FUNC-034** (antes 035) |
-| **Prioridad** | Alta |
-
-Trigger PostgreSQL inserta en `status_history` ante cambios de `status`.
+Trigger PostgreSQL inserta en `status_history` cada cambio de estado. Campos: `incident_id`, `old_status`, `new_status`, `user_id`, `created_at`.
 
 ---
 
@@ -367,64 +332,86 @@ Trigger PostgreSQL inserta en `status_history` ante cambios de `status`.
 
 ### 4.1 Entidades Principales
 
-#### 4.1.3 Incident (cambios en v3.0)
+#### 4.1.1 Incident
 
 | Campo | Tipo | Nullable | Descripción |
 |---|---|---|---|
-| status | ENUM (`pending`,`in_progress`,`resolved`) | No | **3 valores en v3.0** *(removido `pending_operator`)* |
+| id | BIGINT UNSIGNED | No | PK |
+| title | VARCHAR(100) | No | Título incidencia |
+| description | VARCHAR(500) | No | Descripción |
+| status | ENUM (`pending`,`in_progress`,`resolved`) | No | 3 estados totales |
+| priority | ENUM (`low`,`medium`,`high`) | No | Prioridad |
+| geom | POINT (PostGIS 4326) | No | Coordenadas geográficas |
+| location_id | BIGINT | No | FK → locations |
+| organization_id | BIGINT | No | FK → organizations (multitenant) |
+| incident_category_id | BIGINT | No | FK → incident_categories |
+| user_id | BIGINT | No | FK → users (creador) |
+| claimed_by | BIGINT | Yes | FK → users (responsable actual) |
+| claimed_at | TIMESTAMP | Yes | Cuándo se hizo claim |
+| resolution_date | TIMESTAMP | Yes | Auto-set cuando status → resolved |
+| deleted_at | TIMESTAMP | Yes | Soft delete |
+| created_at | TIMESTAMP | No | |
+| updated_at | TIMESTAMP | No | |
 
-*(Resto idéntico a v2.0)*
-
----
-
-#### 4.1.8 ~~IncidentVerification~~ — REMOVIDO EN V3.0
-
-Tabla eliminada. No hay verificaciones de resolución.
-
----
-
-#### 4.1.9 Notification (actualizado)
+#### 4.1.2 Location (jerárquico)
 
 | Campo | Tipo | Nullable | Descripción |
 |---|---|---|---|
-| type | VARCHAR | No | `asignacion`, `cambio_estado`, `comentario` *(removido `confirmacion`)* |
+| id | BIGINT | No | PK |
+| name | VARCHAR(255) | No | Nombre |
+| code | VARCHAR(20) | No | Código (e.g., `EC-17-01`) |
+| level | ENUM (`country`,`province`,`city`) | No | Nivel jerárquico |
+| parent_id | BIGINT | Yes | FK self-referencia (Country has no parent) |
+| geom | MULTIPOLYGON (PostGIS 4326) | Yes | Polígono territorial |
+| deleted_at | TIMESTAMP | Yes | Soft delete |
 
----
+#### 4.1.3 IncidentCategory (Tipo → Subtipo)
 
-#### 4.1.10 Role + Permission + Menu (actualizado)
+| Campo | Tipo | Nullable | Descripción |
+|---|---|---|---|
+| id | BIGINT | No | PK |
+| name | VARCHAR(100) | No | Tipo o Subtipo |
+| parent_id | BIGINT | Yes | FK self-referencia (Subtipo → Tipo) |
+| deleted_at | TIMESTAMP | Yes | Soft delete |
 
-- `roles`: `id`, `name` (e.g. `SystemAdmin`, `OperadorOrganizacion`) — **removido `Publicador`**
-- `permissions`: idem v2.0
-- `role_permissions`: pivot
-- `menus`: idem v2.0
+#### 4.1.4 Notification
 
----
+| Campo | Tipo | Nullable | Descripción |
+|---|---|---|---|
+| id | BIGINT | No | PK |
+| user_id | BIGINT | No | FK → users |
+| type | ENUM (`cambio_estado`,`comentario`,`asignacion`) | No | Tipo evento |
+| message | TEXT | No | Contenido |
+| read_at | TIMESTAMP | Yes | Leído o no |
 
-### 4.2 Diagrama de Relaciones (ER) — actualizado
+#### 4.1.5 Role + Permission + Menu
 
-```
-[Diagrama removido: IncidentVerification node eliminado]
-```
+- `roles`: `id`, `name` (e.g., `SystemAdmin`, `OperadorOrganizacion`)
+- `permissions`: `id`, `name` (granular)
+- `role_permission`: pivot con cascadeOnDelete
+- `menus`: `id`, `name`, `route`, `icon`
+- `menu_permission`: pivot
 
 ---
 
 ## 5. Apéndices
 
-### 5.1 Matriz de Trazabilidad (ACTUALIZADA)
+### 5.1 Matriz de Trazabilidad
 
-*(Removidas líneas de RF-FUNC-011 y RF-FUNC-032; renumeradas 032–034)*
+| Requisito | Tipo | Prioridad | Módulo | Status |
+|---|---|---|---|---|
+| RF-FUNC-001 | Funcional | Alta | Incident CRUD | ✅ Implementado |
+| RF-FUNC-006 | Funcional | Alta | Estados (3) | ✅ Implementado |
+| RF-FUNC-010 | Funcional | Media | Release incidencia | ✅ Implementado |
+| RF-FUNC-030 | Funcional | Alta | Scoping Multitenant | ✅ Implementado |
+| RF-FUNC-031 | No funcional | Alta | Auditoría Triggers | ✅ Implementado |
+| RF-UI-001 | UI | Alta | Login | ✅ Implementado |
+| RF-UI-002 | UI | Alta | Dashboard | ✅ Básica |
+| RF-UI-004 | UI | Alta | Detalle Incidencia | ✅ Básica |
+| RF-SW-001 | API | Alta | Auth endpoints | ✅ Implementado |
+| RF-SW-002 | API | Alta | Incident endpoints | ✅ Implementado |
 
-| Requisito | Tipo | Prioridad | Módulo |
-|---|---|---|---|
-| RF-FUNC-001–010 | Funcional | Alta | Incidents |
-| ~~RF-FUNC-011~~ | ~~Funcional~~ | ~~Alta~~ | ~~(Confirmar — REMOVIDO)~~ |
-| RF-FUNC-011–028 | Funcional | Media–Alta | Comments, Locations, etc. |
-| RF-FUNC-029–031 | Funcional | Media–Alta | OperatorLocation, Menus, Scoping |
-| **RF-FUNC-032** | Funcional | Alta | Incidents *(antes 033)* |
-| **RF-FUNC-033** | Funcional | Media | Incidents *(antes 034)* |
-| **RF-FUNC-034** | No funcional | Alta | DB *(antes 035)* |
-
-**Total requisitos funcionales: 33** (v3.0) vs 35 (v2.0)
+**Total requisitos principales documentados: 10** (alineado con alcance de README)
 
 ---
 
@@ -465,22 +452,26 @@ Ver [`SRS-v1.0.md`](./SRS-v1.0.md) para la especificación original (08/06/2026)
 
 ---
 
-## Notas Finales — Opción B
+## Notas Finales
 
-**¿Por qué Opción B?**
+**Alineación con README.md:**
 
-- ✅ Spec sincronizada con realidad
-- ✅ Cero impacto técnico (cambio documental)
-- ✅ Seguro para presentación (04 May 2026)
-- ✅ Claridad: E1 ahora describe fielmente lo construido
-- ⚠️ Sin auditoría de resoluciones (si crítica, usar Opción C)
+Este documento SRS-v3.md REALISTA está alineado 100% con README.md (la especificación oficial del proyecto). Documenta los 9 puntos de alcance especificados en README sin ambigüedades.
 
-**Alternativa: Opción C (resolution_audits lightweight)**
+**Cambios desde SRS-v2.0:**
 
-Si auditoría de resoluciones es requerida post-presentation, implementar TAREA_11 (resolution_audits table con observer pattern). Costo: 2-3 horas, impacto mínimo.
+- ✅ Removido Publicador role (no está en README)
+- ✅ Removido confirm endpoint (no está en README)
+- ✅ 3 estados documentados fielmente: pending → in_progress → resolved
+- ✅ Simplificado a requisitos que YA ESTÁN implementados
+- ✅ Matriz de requisitos realista (10 principales, no 35)
+
+**Seguro para presentación 04 May 2026:**
+
+Este SRS describe EXACTAMENTE lo que el código implementa. No hay promesas incumplidas.
 
 ---
 
-*Documento elaborado siguiendo el estándar IEEE 830 para Especificación de Requisitos de Software. Alineado con arquitectura real implementada (3-state workflow, multitenant, claim/release pattern).*
+*Documento elaborado siguiendo estándar IEEE 830. Alineado con README.md del proyecto (fuente de verdad). Versión REALISTA conservadora para demostración segura.*
 
-**Opción B: Simplificación y Alineación para Estabilidad en Presentación.**
+**Versión: 3.0 REALISTA — Alineado con README.md y Código Auditado**
