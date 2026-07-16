@@ -64,7 +64,7 @@ class UpdateUserRequest extends FormRequest
                 'email',
                 Rule::unique('users', 'email')->ignore($this->route('user')),
             ],
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:8|regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])/',
             'role_id' => 'sometimes|integer|exists:roles,id',
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'sometimes|string|max:100',
@@ -80,6 +80,7 @@ class UpdateUserRequest extends FormRequest
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'password.regex' => 'La contraseña debe incluir mayúscula, minúscula y dígito',
         ];
     }
 }

@@ -47,7 +47,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'email' => 'required|email|unique:users,email',
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:8|regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])/',
             'role_id' => 'required|integer|exists:roles,id',
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'required|string|max:100',
@@ -63,6 +63,7 @@ class StoreUserRequest extends FormRequest
             'email.unique' => 'Este correo electrónico ya está registrado',
             'role_id.exists' => 'El rol selecionnado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'password.regex' => 'La contraseña debe incluir mayúscula, minúscula y dígito',
         ];
     }
 }
