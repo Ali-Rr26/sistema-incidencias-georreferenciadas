@@ -980,7 +980,10 @@ function createBellPanel({
         } catch {
           // Non-fatal — still navigate even if marking as read failed.
         }
-        updateBadge();
+        // Refresh every wired bell, not just this one — the citizen bell
+        // also exists in the DOM (hidden by role CSS) and its badge would
+        // otherwise go stale until the next SSE event.
+        refreshBellBadges();
       }
       if (notif.incident?.id) {
         router.navigate(`${detailRoute}/${notif.incident.id}`);
@@ -1059,7 +1062,7 @@ function createBellPanel({
     } catch {
       return; // non-fatal — badge/list just stay as they were
     }
-    updateBadge();
+    refreshBellBadges();
     list
       .querySelectorAll('.app-shell-bell-panel__item--unread')
       .forEach((li) =>

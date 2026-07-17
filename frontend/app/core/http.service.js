@@ -172,6 +172,9 @@ class HttpService {
   put(path, body) {
     return this.request('PUT', path, body);
   }
+  patch(path, body) {
+    return this.request('PATCH', path, body);
+  }
   delete(path) {
     return this.request('DELETE', path);
   }

@@ -63,70 +63,89 @@ export default {
         role="alert"
       ></div>
 
-      <!-- Sidebar with filters -->
-      <aside id="mp-sidebar" class="mp-sidebar">
-        <button
-          id="mp-toggle-filters"
-          type="button"
-          class="mp-toggle-filters btn btn-sm btn-outline-secondary d-md-none mb-2"
-          aria-label="Mostrar filtros"
-        >
-          <i class="fas fa-filter"></i> Filtros
-        </button>
+      <!-- Floating filter panel (overlay on top of the map — collapses
+           into a small FAB when not needed). The IDs match what the
+           component JS looks up; only the layout changes. -->
+      <aside id="mp-sidebar" class="mp-filters-panel">
+        <header class="mp-filters-panel__header">
+          <h5 class="mp-filters-panel__title">
+            <i class="fas fa-filter me-2"></i>Filtros
+          </h5>
+          <button
+            id="mp-toggle-filters"
+            type="button"
+            class="mp-filters-panel__close"
+            aria-label="Cerrar filtros"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </header>
 
-        <h5 class="mp-sidebar-title"><i class="fas fa-filter me-2"></i>Filtros</h5>
-
-        <div class="mp-filter-group">
-          <label for="mp-filter-status" class="form-label">Estado</label>
-          <select id="mp-filter-status" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            <option value="pending">Pendiente</option>
-            <option value="pending_operator">Pendiente operador</option>
-            <option value="in_progress">En proceso</option>
-            <option value="resolved">Resuelto</option>
-          </select>
-        </div>
-
-        <div class="mp-filter-group">
-          <label for="mp-filter-priority" class="form-label">Prioridad</label>
-          <select id="mp-filter-priority" class="form-select form-select-sm">
-            <option value="">Todas</option>
-            <option value="high">Alta</option>
-            <option value="medium">Media</option>
-            <option value="low">Baja</option>
-          </select>
-        </div>
-
-        <div class="mp-filter-group">
-          <label for="mp-filter-category" class="form-label">Categoría</label>
-          <select id="mp-filter-category" class="form-select form-select-sm">
-            <option value="">Cargando...</option>
-          </select>
-        </div>
-
-        <button
-          id="mp-filter-reset"
-          type="button"
-          class="btn btn-sm btn-outline-secondary mt-3 w-100"
-        >
-          <i class="fas fa-undo me-1"></i>Limpiar filtros
-        </button>
-
-        <hr />
-
-        <div class="mp-sidebar-meta small text-muted">
-          <div>
-            <i class="fas fa-list me-1"></i
-            ><span id="mp-incident-count">0 incidencias</span>
+        <div class="mp-filters-panel__body">
+          <div class="mp-filter-group">
+            <label for="mp-filter-status" class="form-label">Estado</label>
+            <select id="mp-filter-status" class="form-select form-select-sm">
+              <option value="">Todos</option>
+              <option value="pending">Pendiente</option>
+              <option value="pending_operator">Pendiente operador</option>
+              <option value="in_progress">En proceso</option>
+              <option value="resolved">Resuelto</option>
+            </select>
           </div>
-          <div class="mt-1">
-            <i class="fas fa-sync me-1"></i
-            ><span id="mp-last-sync">Actualizando...</span>
+
+          <div class="mp-filter-group">
+            <label for="mp-filter-priority" class="form-label">Prioridad</label>
+            <select id="mp-filter-priority" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="high">Alta</option>
+              <option value="medium">Media</option>
+              <option value="low">Baja</option>
+            </select>
           </div>
+
+          <div class="mp-filter-group">
+            <label for="mp-filter-category" class="form-label">Categoría</label>
+            <select id="mp-filter-category" class="form-select form-select-sm">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+
+          <button
+            id="mp-filter-reset"
+            type="button"
+            class="btn btn-sm btn-outline-secondary mt-3 w-100"
+          >
+            <i class="fas fa-undo me-1"></i>Limpiar filtros
+          </button>
         </div>
       </aside>
 
-      <!-- Main map canvas -->
+      <!-- Floating "open filters" button — visible only when the panel
+           is collapsed, hidden while it is open. -->
+      <button
+        id="mp-filters-open"
+        type="button"
+        class="mp-filters-fab"
+        aria-label="Mostrar filtros"
+      >
+        <i class="fas fa-filter"></i>
+      </button>
+
+      <!-- Floating info card (bottom-right) — replaced the old sidebar
+           meta block; sits over the map as a small chip. -->
+      <div class="mp-info-chip">
+        <div>
+          <i class="fas fa-list me-1"></i
+          ><span id="mp-incident-count">0 incidencias</span>
+        </div>
+        <div>
+          <i class="fas fa-sync me-1"></i
+          ><span id="mp-last-sync">Actualizando...</span>
+        </div>
+      </div>
+
+      <!-- Main map canvas (now fills the entire layout — the filter panel
+           and chip overlay it). -->
       <div
         id="mp-canvas"
         class="mp-canvas"
@@ -262,14 +281,33 @@ export default {
         this._refresh();
       });
 
-    // ── Sidebar toggle (mobile) ──
+    // ── Filter panel toggle ──
+    // Panel and FAB are mutually exclusive; state is driven by a body
+    // class so CSS controls visibility in one place. Listeners are
+    // stored so onDestroy can detach them (avoid piling up handlers
+    // across remounts of this same view component).
+    const setPanelOpen = (open) => {
+      document.body.classList.toggle('mp-filters-open', open);
+    };
+
+    const onCloseClick = () => setPanelOpen(false);
+    const onOpenClick = () => setPanelOpen(true);
+    const onKeydown = (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('mp-filters-open')) {
+        setPanelOpen(false);
+      }
+    };
+    this._escHandler = onKeydown;
     document
       .getElementById('mp-toggle-filters')
-      ?.addEventListener('click', () => {
-        document
-          .getElementById('mp-sidebar')
-          ?.classList.toggle('mp-sidebar--collapsed');
-      });
+      ?.addEventListener('click', onCloseClick);
+    document
+      .getElementById('mp-filters-open')
+      ?.addEventListener('click', onOpenClick);
+    document.addEventListener('keydown', onKeydown);
+    // Start with the panel open — users expect filters visible by
+    // default on a dedicated /mapa route.
+    setPanelOpen(true);
   },
 
   // ── Private ───────────────────────────────────────────────────────
@@ -466,5 +504,10 @@ export default {
     // component (e.g. user navigates away then back) starts clean.
     mapaService.setUserId(null);
     document.body.classList.remove('mp-view');
+    document.body.classList.remove('mp-filters-open');
+    if (this._escHandler) {
+      document.removeEventListener('keydown', this._escHandler);
+      this._escHandler = null;
+    }
   },
 };
