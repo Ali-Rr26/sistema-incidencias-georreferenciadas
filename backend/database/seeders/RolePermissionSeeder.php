@@ -110,6 +110,7 @@ class RolePermissionSeeder extends Seeder
         // able to act on notifications.
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'view'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'assignments',         'action' => 'view'],
