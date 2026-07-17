@@ -11,7 +11,9 @@ use App\Domains\Comments\Repositories\EloquentCommentRepository;
 use App\Domains\IncidentCategories\Repositories\EloquentIncidentCategoryRepository;
 use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
@@ -187,6 +189,16 @@ class AppServiceProvider extends ServiceProvider
             Incident::observe(IncidentNotificationObserver::class);
         } catch (\Throwable) {
             // Notifications tables not ready yet — skip silently.
+        }
+
+        // Register AssignmentNotificationObserver to dispatch user notifications
+        // when an operator is formally assigned to an incident (responsable/apoyo)
+        // via the Assignment model. Companion to IncidentNotificationObserver but
+        // listens to the Assignment lifecycle (not Incident columns).
+        try {
+            Assignment::observe(AssignmentNotificationObserver::class);
+        } catch (\Throwable) {
+            // Assignments table not ready yet — skip silently.
         }
 
         // Register RedisCommentSync as observer for Comment model events
