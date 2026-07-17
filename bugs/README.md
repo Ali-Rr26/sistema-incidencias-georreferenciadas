@@ -7,7 +7,7 @@ Hallazgos del test E2E con Playwright (`frontend/e2e-flujo-incidencia.js`) ejecu
 | # | Bug | Impacto | Prioridad | Estado |
 |---|-----|---------|-----------|--------|
 | 1 | `comments.view` faltante en operador | El operador escribe comentarios que no ve | 🔴 Alta | ✅ Corregido |
-| 2 | `organization_id` no se asigna al crear incidencia | Ciudadano crea incidencias que nadie puede gestionar | 🔴 Alta | ❌ Pendiente |
+| 2 | `organization_id` no se asigna al crear incidencia | Ciudadano crea incidencias que nadie puede gestionar | 🔴 Alta | ✅ Corregido |
 | 3 | Admin_sistema no puede asignar operadores | El admin global no puede delegar trabajo | 🟡 Media | ❌ Pendiente |
 | 4 | Race condition en `setupComments()` | El comentario a veces no se envía | 🟡 Media | ❌ Pendiente |
 | 5 | Leaflet en headless frágil | No se puede testear creación de incidencias vía UI | 🔵 Baja (testing) | ❌ Pendiente |
@@ -41,28 +41,29 @@ Error al cargar comentarios: No tenés permiso para realizar esta acción.
 
 ---
 
-## 🔴 B-02: `organization_id` no se asigna automáticamente al crear incidencia
+## 🔴 B-02: `organization_id` no se asigna automáticamente al crear incidencia ✅ CORREGIDO
 
 ### Síntoma
 Un ciudadano crea una incidencia con `location_id: 284` (Quito). El backend no asigna `organization_id`, queda `null`. Cuando el admin de GAD Municipal del Cantón Quito (org con `location_id: 284`) intenta ver la incidencia, el backend responde 403.
 
 ### Causa
-El endpoint `POST /api/incidents` no vincula automáticamente la organización basada en la ubicación. Solo asigna `organization_id` si se envía explícitamente. Pero el ciudadano no puede enviar `organization_id` (el frontend no lo manda, y el backend rechazaría por permisos).
+El endpoint `POST /api/incidents` no vinculaba automáticamente la organización basada en la ubicación. Solo asignaba `organization_id` si se enviaba explícitamente. Pero el ciudadano no puede enviar `organization_id` (el frontend no lo manda, y el backend `StoreIncidentRequest::authorize()` lo rechaza para usuarios regulares).
 
 ### Evidencia
 ```
 Incidencia #309 creada con location_id=284, organization_id=null
 GET /api/incidents/309 con token admin_org_quito → 403
 ```
-El admin_org ve la página pero el contenido muestra "404 — Esta sección aún no está disponible".
 
 ### Archivos involucrados
-- `backend/app/Http/Controllers/IncidentController.php`
-- `backend/app/Services/IncidentService.php` (si existe)
-- Flujo de creación desde el frontend ciudadano (`feed/crear`)
+- `backend/app/Domains/Incidents/Http/IncidentController.php`
 
-### Solución propuesta
-En el backend, al crear una incidencia sin `organization_id`, buscar una organización cuyo `location_id` coincida (directa o jerárquicamente) con el `location_id` de la incidencia y asignarla automáticamente.
+### Solución aplicada
+- Agregada lógica en `IncidentController::store()`: si no se envió `organization_id` pero sí `location_id`, se busca una organización cuyo `location_id` coincida con la ubicación de la incidencia o con alguno de sus ancestros en la jerarquía de ubicaciones.
+- Verificado: ciudadano crea incidencia en Quito → `organization_id=1` auto-asignado.
+- Verificado con ubicación anidada (Belisario Quevedo → ancestro Quito → GAD Quito).
+- Validado con test E2E: flujo ciudadano → admin → operador completo.
+- Commit: `<pendiente>`
 
 ---
 

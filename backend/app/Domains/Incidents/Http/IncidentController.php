@@ -12,6 +12,8 @@ use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use App\Storage\StorageService;
@@ -102,6 +104,21 @@ class IncidentController extends Controller
 
         // Los archivos se manejan aparte — no mezclar con el create
         unset($data['images']);
+
+        // Auto-asignar organización basada en la ubicación (B-02)
+        // Si no se envió organization_id explícitamente, buscar una
+        // organización cuyo location_id coincida con la ubicación de la
+        // incidencia o con alguno de sus ancestros en la jerarquía.
+        if (empty($data['organization_id']) && ! empty($data['location_id'])) {
+            $location = Location::find($data['location_id']);
+            if ($location !== null) {
+                $locationIds = $location->ancestorsAndSelf()->pluck('id');
+                $org = Organization::whereIn('location_id', $locationIds)->first();
+                if ($org !== null) {
+                    $data['organization_id'] = $org->id;
+                }
+            }
+        }
 
         $incident = $this->incidents->create($data);
 

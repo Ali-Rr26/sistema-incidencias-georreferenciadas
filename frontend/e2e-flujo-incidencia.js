@@ -37,7 +37,6 @@ async function crearIncidenciaApi(token) {
       priority: 'high',
       incident_category_id: 2, // "Baches y Hundimientos" (leaf category)
       location_id: 284, // Quito
-      organization_id: 1, // GAD Municipal del Cantón Quito
       geom: JSON.stringify({ type: 'Point', coordinates: [-78.5, -0.22] }),
     }),
   });
@@ -214,11 +213,12 @@ async function cambiarEstadoYComentar(page, incidentId) {
 async function main() {
   console.log('🧪 E2E: Flujo completo de incidencia\n');
 
-  // ─── Step 0: Crear incidencia vía API como admin_org ───
+  // ─── Step 0: Crear incidencia vía API como ciudadano ───
+  // Sin organization_id — el backend lo asigna automáticamente (B-02).
   console.log('0️⃣  Preparar datos de prueba...');
-  const adminToken = await apiLogin('admin.gad-municipal-del-canton-quito@organizacion.com', 'Admin123!');
-  const incidentId = await crearIncidenciaApi(adminToken);
-  console.log(`  ✅ Incidencia #${incidentId} creada vía API (por admin_org)`);
+  const userToken = await apiLogin('usuario@test.com', 'Usuario123!');
+  const incidentId = await crearIncidenciaApi(userToken);
+  console.log(`  ✅ Incidencia #${incidentId} creada vía API (por ciudadano, org auto-asignada)`);
 
   const browser = await chromium.launch({
     headless: true,
