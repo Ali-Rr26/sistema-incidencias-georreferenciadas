@@ -9,8 +9,8 @@ Hallazgos del test E2E con Playwright (`frontend/e2e-flujo-incidencia.js`) ejecu
 | 1 | `comments.view` faltante en operador | El operador escribe comentarios que no ve | 🔴 Alta | ✅ Corregido |
 | 2 | `organization_id` no se asigna al crear incidencia | Ciudadano crea incidencias que nadie puede gestionar | 🔴 Alta | ✅ Corregido |
 | 3 | Admin_sistema no puede asignar operadores | El admin global no puede delegar trabajo | 🟡 Media | ✅ Corregido (por B-02) |
-| 4 | Race condition en `setupComments()` | El comentario a veces no se envía | 🟡 Media | ❌ Pendiente |
-| 5 | Leaflet en headless frágil | No se puede testear creación de incidencias vía UI | 🔵 Baja (testing) | ❌ Pendiente |
+| 4 | Race condition en `setupComments()` | El comentario a veces no se envía | 🟡 Media | ✅ Corregido |
+| 5 | Leaflet en headless frágil | No se puede testear creación de incidencias vía UI | 🔵 Baja (testing) | ✅ No reproduce |
 
 ---
 
@@ -37,7 +37,7 @@ Error al cargar comentarios: No tenés permiso para realizar esta acción.
 - Re-ejecutado `RolePermissionSeeder` en el contenedor Docker.
 - Verificado: el permiso aparece en `GET /api/permissions/my` del operador.
 - Validado con test E2E: "✅ Comentario visible en la lista", sin errores 403.
-- Commit: `<pendiente>`
+- Commit: `6f60ac58`
 
 ---
 
@@ -63,7 +63,7 @@ GET /api/incidents/309 con token admin_org_quito → 403
 - Verificado: ciudadano crea incidencia en Quito → `organization_id=1` auto-asignado.
 - Verificado con ubicación anidada (Belisario Quevedo → ancestro Quito → GAD Quito).
 - Validado con test E2E: flujo ciudadano → admin → operador completo.
-- Commit: `<pendiente>`
+- Commit: `108c959b`
 
 ---
 
@@ -81,7 +81,7 @@ El B-02 (auto-asignación de organización) resolvió este bug de raíz: ahora t
 
 ---
 
-## 🟡 B-04: Race condition en `setupComments()`
+## 🟡 B-04: Race condition en `setupComments()` ✅ CORREGIDO
 
 ### Síntoma
 Si el comentario se escribe y el botón se clickea antes de que `setupComments()` termine de inicializar, el evento `submit` del form no se dispara y el comentario no se envía.
@@ -89,38 +89,30 @@ Si el comentario se escribe y el botón se clickea antes de que `setupComments()
 ### Causa
 ```js
 async function setupComments(incidentId) {
-  // ...
   const user = await auth.me();  // ⏱️ Async antes de attachar listeners
-  // ...
-  form.addEventListener('submit', async (e) => { ... });  // 🔗 Listener attachado DESPUÉS
+  form.addEventListener('submit', async (e) => { ... });  // 🔗 Listener después
 }
 ```
-
-El `await auth.me()` es asíncrono. Hasta que no resuelve, el `submit` listener no existe. El test de Playwright llena el input y clickea durante esa ventana, el form hace submit nativo sin el handler, y la página se recarga sin enviar el comentario.
-
-### Evidencia
-(solo en condiciones de carrera — no siempre reproducible)
+El `await auth.me()` es asíncrono. Hasta que no resuelve, el `submit` listener no existe. El test de Playwright llena el input y clickea durante esa ventana, el form hace submit nativo sin el handler, y la página se recarga.
 
 ### Archivos involucrados
 - `frontend/app/incidencias/pages/detail/incidencias.detail.component.js` — función `setupComments`
 
-### Solución propuesta
-Mover la inicialización de los listeners de evento ANTES del `await auth.me()`, o marcar el formulario como "no listo" hasta que los listeners estén attachados.
+### Solución aplicada
+Movidos todos los `addEventListener` ANTES del `await auth.me()`. Los listeners existen sincrónicamente desde que `setupComments` arranca; `currentUserId` se resuelve después.
+- Commit: `93e73ff2`
 
 ---
 
-## 🔵 B-05: Leaflet no se inicializa en headless Chromium
+## 🔵 B-05: Leaflet no se inicializa en headless Chromium ✅ NO REPRODUCE
 
-### Síntoma
-El test Playwright no puede probar la creación de incidencias vía UI porque Leaflet no carga en modo headless.
+### Síntoma original
+El test Playwright no podía probar la creación de incidencias vía UI porque Leaflet no cargaba en modo headless. El contenedor tenía dimensiones pero `.leaflet-container` nunca se agregaba.
 
-### Causa
-Leaflet se carga dinámicamente desde CDN (`https://unpkg.com/leaflet@1.9.4/dist/leaflet.js`). En el entorno headless la inicialización falla intermitentemente sin errores claros. El contenedor del mapa tiene dimensiones, pero Leaflet nunca agrega la clase `.leaflet-container`.
+### Causa probable
+Leaflet se carga dinámicamente desde CDN cuando el SPA monta el componente. Si el contenedor del mapa no es visible aún — por ejemplo si el SPA no terminó de renderizar — `L.map()` falla. En headless esto ocurría más seguido por la falta de frames de animación.
 
-### Impacto
-No se puede probar el formulario de creación de incidencias (`/feed/crear` ni `/incidencias/crear`) vía UI.
-
-### Solución propuesta
-- Usar `headless: false` en entorno con display
-- O mockear Leaflet en el test
-- O crear incidencias vía API en el setup del test (como se hizo en el test actual)
+### Resolución
+El mecanismo `tryInvalidate` en `init-map-view.js` reintenta hasta 5 veces con `requestAnimationFrame` si el contenedor no es visible. Esto, junto con mejoras en Playwright/Chromium, resolvió el problema.
+- Verificado: mapa funciona en headless tanto en creación (`ici-map`, 854×360) como en detalle (`mapa-incidencia`).
+- Se mantiene la estrategia de crear incidencias vía API en el setup del test (separa datos de UI, independiente de Leaflet).

@@ -132,22 +132,12 @@ async function cambiarEstadoYComentar(page, incidentId) {
   }
 
   // Publicar comentario
-  // Esperar a que setupComments() termine de attachar el listener (auth.me())
+  // setupComments() attacha el listener sincrónicamente (B-04 corregido)
   await page.waitForSelector('#detalle-comment-input', { timeout: 10000 });
-  await page.waitForTimeout(1000); // dar tiempo a que auth.me() se complete
 
   // Usar type (no fill) para gatillar input events correctamente
   await page.click('#detalle-comment-input');
-  await page.type('#detalle-comment-input', 'El operador está revisando la incidencia. Comentario E2E.', { delay: 30 });
-
-  // El botón empieza disabled y se habilita con el input event
-  const submitBtn = page.locator('#detalle-comment-submit');
-  await submitBtn.waitFor({ state: 'attached', timeout: 5000 });
-  const isDisabled = await submitBtn.isDisabled();
-  if (isDisabled) {
-    console.log('  ⚠️ Botón sigue disabled después de escribir — pospongo 2s');
-    await page.waitForTimeout(2000);
-  }
+  await page.type('#detalle-comment-input', 'El operador está revisando la incidencia. Comentario E2E.', { delay: 15 });
 
   await page.click('#detalle-comment-submit');
 
