@@ -9,8 +9,8 @@
 .mp-layout {
   display: flex;
   flex-direction: row;
-  min-height: calc(100vh - 128px);
   width: 100%;
+  height: calc(100vh - 128px);
   background: #f4f6fa;
   position: relative;
 }
@@ -24,6 +24,16 @@
   border-right: 1px solid #e0e4ea;
   overflow-y: auto;
   transition: transform 0.2s ease;
+}
+
+/* Map canvas fills the remaining horizontal space inside the
+   flex row. Without this it collapses to 0px (only Firefox tolerates
+   the missing rule, Chrome respects the spec → invisible map). */
+.mp-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
 }
 
 .mp-sidebar--collapsed {
