@@ -16,10 +16,21 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message'   => ['nullable', 'string', 'max:5000'],
+            'message'   => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
             'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
             'image_ids' => ['nullable', 'array'],
             'image_ids.*' => ['integer', 'exists:comment_images,id'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->sometimes('message', 'required', function () {
+            return empty($this->input('image_ids'));
+        });
     }
 }

@@ -64,6 +64,6 @@ class CommentImageController
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_STORAGE_DISK', 's3');
+        return env('FILESYSTEM_DISK', 's3');
     }
 }
