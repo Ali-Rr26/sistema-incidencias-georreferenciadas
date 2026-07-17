@@ -1,10 +1,11 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo } from '../../../utils/format.js';
+import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo, getCommentImageUrl } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { bindView } from '../../../utils/dom.js';
 import { commentService } from '../../../shared/comment.service.js';
+import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
@@ -366,21 +367,54 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-function buildCommentLi(comment, currentUserId) {
+function buildCommentLi(comment, currentUserId, depth = 0) {
   const li = document.createElement('li');
   li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
 
   const userName = comment.user
     ? [comment.user.first_name, comment.user.last_name]
         .filter(Boolean)
-        .join(' ') || comment.user.email
+        .join(' ') || comment.user?.email
     : 'Usuario';
 
-  const isOwner = comment.user_id === currentUserId;
+  const isOwner = currentUserId != null && comment.user_id === currentUserId;
+
+  const replyBtn = currentUserId != null
+    ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
+        <i class="fas fa-reply"></i> Responder
+      </button>`
+    : '';
+
   const deleteBtn = isOwner
     ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-comentario" data-id="${escapeHtml(String(comment.id))}" title="Eliminar comentario">
         <i class="fas fa-trash-alt"></i>
       </button>`
+    : '';
+
+  const replyQuote = comment.parent
+    ? (() => {
+        const parentUser = comment.parent.user
+          ? [comment.parent.user.first_name, comment.parent.user.last_name].filter(Boolean).join(' ') || comment.parent.user.email
+          : 'Usuario';
+        const snippet = (comment.parent.message || '').slice(0, 100);
+        return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
+      })()
+    : '';
+
+  const imagesHtml = (comment.images && comment.images.length > 0)
+    ? `<div class="incid-detail__thumbnail-grid mt-1 mb-1">
+        ${comment.images.map(img => {
+          const src = escapeHtml(getCommentImageUrl(img.url));
+          const caption = escapeHtml(img.caption || img.original_name || '');
+          const delBtn = isOwner
+            ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
+            : '';
+          return `<div class="incid-detail__thumbnail-wrapper">
+            <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
+            ${delBtn}
+          </div>`;
+        }).join('')}
+       </div>`
     : '';
 
   li.innerHTML = `
@@ -388,10 +422,26 @@ function buildCommentLi(comment, currentUserId) {
       <span class="fw-semibold small">${escapeHtml(userName)}</span>
       <div class="d-flex gap-2 align-items-center">
         <small class="text-muted">${timeAgo(comment.created_at)}</small>
+        ${replyBtn}
         ${deleteBtn}
       </div>
     </div>
-    <div class="small">${escapeHtml(comment.message)}</div>`;
+    ${replyQuote}
+    <div class="small">${escapeHtml(comment.message)}</div>
+    ${imagesHtml}`;
+
+  if (comment.replies && comment.replies.length > 0) {
+    const replyDepth = depth >= 1 ? 1 : depth + 1;
+    const replyUl = document.createElement('ul');
+    replyUl.className = 'list-unstyled';
+    if (replyDepth > 0) {
+      replyUl.classList.add('incid-detail__nested');
+    }
+    for (const reply of comment.replies) {
+      replyUl.appendChild(buildCommentLi(reply, currentUserId, replyDepth));
+    }
+    li.appendChild(replyUl);
+  }
 
   return li;
 }
@@ -408,7 +458,7 @@ function renderComments(items, currentUserId) {
   }
 
   vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId)));
+  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId, 0)));
 }
 
 async function setupComments(incidentId) {
@@ -419,35 +469,124 @@ async function setupComments(incidentId) {
   const submitBtn = document.getElementById('detalle-comment-submit');
   const counterEl = document.getElementById('detalle-comment-counter');
   const listEl = document.getElementById('detalle-comments-list');
+  const fileInput = document.getElementById('detalle-comment-images');
+  const previewEl = document.getElementById('detalle-comment-previews');
+  const replyBadgeEl = document.getElementById('detalle-reply-badge');
+  const replyParentIdEl = document.getElementById('detalle-reply-parent-id');
 
   if (!form || !input) return;
 
   let currentUserId = null;
 
+  const replyState = { parentId: null, parentComment: null };
+  const selectedFiles = [];
+  const previewUrls = [];
+
   function updateCounter() {
     const len = input.value.length;
     if (counterEl) {
       counterEl.textContent = `${len}/5000`;
-      if (len >= 4000) {
-        counterEl.classList.add('text-danger');
-      } else {
-        counterEl.classList.remove('text-danger');
-      }
+      counterEl.classList.toggle('text-danger', len >= 4000);
     }
   }
 
   function updateSubmitBtn() {
-    const isEmpty = input.value.trim() === '';
-    if (submitBtn) submitBtn.disabled = isEmpty;
+    if (submitBtn) submitBtn.disabled = input.value.trim() === '';
   }
 
-  // Attach event listeners FIRST — sincrónicamente, antes de cualquier
-  // await. Esto elimina la race condition donde el usuario escribía y
-  // clickeaba antes de que el submit listener existiera (B-04).
+  function renderPreviews() {
+    if (!previewEl) return;
+    previewEl.innerHTML = selectedFiles
+      .map((_, i) => {
+        const url = previewUrls[i];
+        if (!url) return '';
+        return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
+          <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
+          <button type="button" class="incid-detail__preview-remove btn-quitar-preview" data-index="${i}">&times;</button>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function handleReply(comment) {
+    const parentUser = comment.user
+      ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ') || comment.user.email
+      : 'Usuario';
+    const prefix = `> @${parentUser}: `;
+    const current = input.value;
+    if (!current.startsWith(prefix)) {
+      input.value = prefix + current;
+    }
+    if (replyBadgeEl) {
+      replyBadgeEl.textContent = `Respondiendo a @${parentUser}`;
+      replyBadgeEl.classList.remove('d-none');
+    }
+    if (replyParentIdEl) replyParentIdEl.value = String(comment.id);
+    replyState.parentId = comment.id;
+    replyState.parentComment = comment;
+    updateSubmitBtn();
+  }
+
+  function cancelReply() {
+    const prefix = '> @';
+    if (input.value.startsWith(prefix)) {
+      const nlIdx = input.value.indexOf('\n');
+      input.value = nlIdx >= 0 ? input.value.slice(nlIdx + 1) : '';
+    }
+    if (replyBadgeEl) replyBadgeEl.classList.add('d-none');
+    if (replyParentIdEl) replyParentIdEl.value = '';
+    replyState.parentId = null;
+    replyState.parentComment = null;
+    updateSubmitBtn();
+  }
+
+  function handleFileSelect(files) {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      selectedFiles.push(file);
+      previewUrls.push(URL.createObjectURL(file));
+    }
+    renderPreviews();
+  }
+
+  function removeFile(index) {
+    if (index < 0 || index >= previewUrls.length) return;
+    URL.revokeObjectURL(previewUrls[index]);
+    previewUrls.splice(index, 1);
+    selectedFiles.splice(index, 1);
+    renderPreviews();
+  }
+
   input.addEventListener('input', () => {
     updateCounter();
     updateSubmitBtn();
   });
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      handleFileSelect(fileInput.files);
+      fileInput.value = '';
+    });
+  }
+
+  if (replyBadgeEl) {
+    replyBadgeEl.addEventListener('click', cancelReply);
+    replyBadgeEl.style.cursor = 'pointer';
+    replyBadgeEl.title = 'Clic para cancelar';
+  }
+
+  async function cargarComentarios() {
+    loadingEl?.classList.remove('d-none');
+    try {
+      const { data } = await commentService.list(incidentId, { perPage: 50 });
+      renderComments(data, currentUserId);
+    } catch (err) {
+      console.error('Error al cargar comentarios:', err);
+    } finally {
+      loadingEl?.classList.add('d-none');
+    }
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -464,15 +603,47 @@ async function setupComments(incidentId) {
 
     if (submitBtn) submitBtn.disabled = true;
     try {
-      await commentService.create(incidentId, message);
+      const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
+      let imageIds = [];
+
+      if (selectedFiles.length > 0) {
+        const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
+        const commentId = created?.id ?? created?.data?.id;
+        if (!commentId) throw new Error('No se pudo crear el comentario.');
+
+        const results = await Promise.allSettled(
+          selectedFiles.map(file => commentService.uploadImages(commentId, [file]))
+        );
+        const failed = results.filter(r => r.status === 'rejected' || r.status === 'fulfilled' && r.value?.status >= 400);
+        if (failed.length > 0) {
+          for (const url of previewUrls) URL.revokeObjectURL(url);
+          selectedFiles.length = 0;
+          previewUrls.length = 0;
+          renderPreviews();
+          if (errorEl) {
+            errorEl.textContent = 'Error al subir una o más imágenes. El comentario no fue publicado.';
+            errorEl.classList.remove('d-none');
+          }
+          await commentService.delete(commentId);
+          throw new Error('Upload failed');
+        }
+      } else {
+        await commentService.create(incidentId, { message, parentId, imageIds });
+      }
+
       input.value = '';
+      for (const url of previewUrls) URL.revokeObjectURL(url);
+      selectedFiles.length = 0;
+      previewUrls.length = 0;
+      renderPreviews();
+      cancelReply();
       updateCounter();
       updateSubmitBtn();
       await cargarComentarios();
     } catch (err) {
+      if (err.message === 'Upload failed') return;
       if (errorEl) {
-        errorEl.textContent =
-          err.message || 'No se pudo publicar el comentario.';
+        errorEl.textContent = err.message || 'No se pudo publicar el comentario.';
         errorEl.classList.remove('d-none');
       }
     } finally {
@@ -480,20 +651,86 @@ async function setupComments(incidentId) {
     }
   });
 
-  async function cargarComentarios() {
-    loadingEl?.classList.remove('d-none');
-    try {
-      const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data, currentUserId);
-    } catch (err) {
-      console.error('Error al cargar comentarios:', err);
-    } finally {
-      loadingEl?.classList.add('d-none');
-    }
+  if (listEl) {
+    listEl.addEventListener('click', async (e) => {
+      const deleteBtn = e.target.closest('.btn-eliminar-comentario');
+      if (deleteBtn) {
+        const commentId = deleteBtn.dataset.id;
+        if (!commentId) return;
+        if (!confirm('¿Eliminar este comentario?')) return;
+        deleteBtn.disabled = true;
+        try {
+          await commentService.delete(commentId);
+          await cargarComentarios();
+        } catch (err) {
+          console.error('Error al eliminar comentario:', err);
+          alert('No se pudo eliminar el comentario.');
+        } finally {
+          deleteBtn.disabled = false;
+        }
+        return;
+      }
+
+      const replyBtn = e.target.closest('.btn-respoder-comentario');
+      if (replyBtn) {
+        const commentId = Number(replyBtn.dataset.id);
+        const listItems = listEl.querySelectorAll(':scope > li');
+        const found = findCommentById(listItems, commentId);
+        if (found) handleReply(found);
+        return;
+      }
+
+      const previewRemoveBtn = e.target.closest('.btn-quitar-preview');
+      if (previewRemoveBtn) {
+        const index = Number(previewRemoveBtn.dataset.index);
+        removeFile(index);
+        return;
+      }
+
+      const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
+      if (thumb) {
+        const src = thumb.dataset.src;
+        const caption = thumb.dataset.caption || '';
+        openLightbox(src, caption);
+        return;
+      }
+
+      const delImgBtn = e.target.closest('.btn-eliminar-imagen');
+      if (delImgBtn) {
+        const commentId = Number(delImgBtn.dataset.commentId);
+        const imageId = Number(delImgBtn.dataset.imageId);
+        if (!confirm('¿Eliminar esta imagen?')) return;
+        delImgBtn.disabled = true;
+        try {
+          await commentService.deleteImage(commentId, imageId);
+          await cargarComentarios();
+        } catch (err) {
+          console.error('Error al eliminar imagen:', err);
+          alert('No se pudo eliminar la imagen.');
+        } finally {
+          delImgBtn.disabled = false;
+        }
+      }
+    });
   }
 
-  // Load user and comments asynchronously — los listeners ya están
-  // attachados arriba, el formulario es funcional desde este momento.
+  const lightboxEl = document.getElementById('incid-detail__lightbox');
+  const lightboxImg = document.getElementById('incid-detail__lightbox-img');
+  const lightboxCaption = document.getElementById('incid-detail__lightbox-caption');
+  const lightboxClose = document.getElementById('incid-detail__lightbox-close');
+
+  if (lightboxEl) {
+    lightboxClose?.addEventListener('click', closeLightbox);
+    lightboxEl.addEventListener('click', (e) => {
+      if (e.target === lightboxEl) closeLightbox();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightboxEl.classList.contains('d-none')) {
+        closeLightbox();
+      }
+    });
+  }
+
   try {
     const user = await auth.me();
     currentUserId = user?.id;
@@ -502,29 +739,21 @@ async function setupComments(incidentId) {
   }
 
   cargarComentarios();
+}
 
-  if (listEl) {
-    listEl.addEventListener('click', async (e) => {
-      const deleteBtn = e.target.closest('.btn-eliminar-comentario');
-      if (!deleteBtn) return;
-
-      const commentId = deleteBtn.dataset.id;
-      if (!commentId) return;
-
-      if (!confirm('¿Eliminar este comentario?')) return;
-
-      deleteBtn.disabled = true;
-      try {
-        await commentService.delete(commentId);
-        await cargarComentarios();
-      } catch (err) {
-        console.error('Error al eliminar comentario:', err);
-        alert('No se pudo eliminar el comentario.');
-      } finally {
-        deleteBtn.disabled = false;
-      }
-    });
+function findCommentById(listItems, id) {
+  for (const li of listItems) {
+    const commentId = li.querySelector('.btn-respoder-comentario, .btn-eliminar-comentario')?.dataset?.id;
+    if (commentId && Number(commentId) === id) {
+      const nameEl = li.querySelector('.fw-semibold');
+      const name = nameEl?.textContent?.trim() || 'Usuario';
+      const messageEl = li.querySelector('.small');
+      const message = messageEl ? messageEl.textContent : '';
+      const user = { first_name: name.split(' ')[0], last_name: name.split(' ').slice(1).join(' '), email: null };
+      return { id: Number(commentId), message, user };
+    }
   }
+  return null;
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────

@@ -61,3 +61,11 @@ export const PRIORITY_LABEL = Object.freeze({
   medium: 'Media',
   low: 'Baja',
 });
+
+const STORAGE_BASE = 'http://localhost:9000/incidencias';
+
+export function getCommentImageUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${STORAGE_BASE}/${path}`;
+}
