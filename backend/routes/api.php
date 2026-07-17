@@ -48,6 +48,12 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
 
+    // Comment images (nested under comments for image CRUD)
+    Route::post('/comments/{comment}/images', [\App\Domains\Comments\Http\CommentImageController::class, 'store'])
+        ->middleware('jwt.auth');
+    Route::delete('/comments/{comment}/images/{comment_image}', [\App\Domains\Comments\Http\CommentImageController::class, 'destroy'])
+        ->middleware('jwt.auth');
+
     // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
     // Explicit named routes instead of `apiResource` because we only expose
     // index/store/update/destroy — show is out of scope for this change.
