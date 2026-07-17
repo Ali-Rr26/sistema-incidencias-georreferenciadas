@@ -196,7 +196,7 @@ async function cambiarEstadoYComentar(page, incidentId) {
       console.log('  ⚠️ Comentario no encontrado vía API');
     }
   } catch (apiErr) {
-    console.log(`  ⚠️ Fallo al verificar comentarios API: ${apiErr.message}`);
+    console.log(`  ⚠️ Fallo al verificar comentarios vía API: ${apiErr.message}`);
   }
 }
 
