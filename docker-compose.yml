@@ -100,12 +100,24 @@ services:
   # ==========================================
   redis:
     image: ${REDIS_IMAGE:-redis:8-alpine}
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+      - "--appendonly"
+      - "yes"
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - -a
+        - "${REDIS_PASSWORD}"
+        - --no-auth-warning
+        - ping
       interval: 5s
       timeout: 3s
       retries: 10
