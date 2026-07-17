@@ -527,7 +527,7 @@ export default {
       if (submitBtn) submitBtn.disabled = true;
       try {
         const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
-        let imageIds = [];
+        const imageIds = [];
 
         if (selectedFiles.length > 0) {
           const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
