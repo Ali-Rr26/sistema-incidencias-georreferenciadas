@@ -226,8 +226,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Register RedisCommentSync as observer for Comment model events
         Comment::observe(RedisCommentSync::class);
-        // Cascade delete S3 image files when a comment is deleted
-        Comment::observe(\App\Domains\Comments\Observers\CommentObserver::class);
 
         // =====================================================================
         // Connection health checks — logged on every boot

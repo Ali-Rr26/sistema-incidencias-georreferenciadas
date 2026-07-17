@@ -12,7 +12,11 @@ class CommentObserver
 {
     public function deleting(Comment $comment): void
     {
-        $comment->loadMissing('images');
+        // Use load() instead of loadMissing() to ensure a fresh query.
+        // loadMissing() skips re-loading if the relationship was already
+        // accessed (e.g., by RedisCommentSync on the 'created' event),
+        // caching an empty collection before images exist.
+        $comment->load('images');
 
         foreach ($comment->images as $image) {
             try {
@@ -24,11 +28,12 @@ class CommentObserver
                     'error' => $e->getMessage(),
                 ]);
             }
+            $image->delete();
         }
     }
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_STORAGE_DISK', 's3');
+        return env('FILESYSTEM_DISK', 's3');
     }
 }

@@ -117,6 +117,8 @@ it('has images relationship', function (): void {
         'sort_order' => 0,
     ]);
 
+    // Refresh + load because RedisCommentSync accessed images on 'created'
+    $comment->refresh()->load('images');
     expect($comment->images)->toHaveCount(1);
 });
 
