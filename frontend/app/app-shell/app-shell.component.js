@@ -676,8 +676,8 @@ async function populateHeader() {
  * populateHeader() (init + auth change) and again in real time by
  * connectNotificationStream() when the SSE connection is alive.
  */
-function refreshBellBadges(force = false) {
-  _bellPanels.forEach((bell) => bell.updateBadge(force));
+function refreshBellBadges() {
+  _bellPanels.forEach((bell) => bell.updateBadge());
 }
 
 /**
@@ -980,7 +980,7 @@ function createBellPanel({
         } catch {
           // Non-fatal — still navigate even if marking as read failed.
         }
-        updateBadge(true);
+        updateBadge();
       }
       if (notif.incident?.id) {
         router.navigate(`${detailRoute}/${notif.incident.id}`);
@@ -1026,10 +1026,10 @@ function createBellPanel({
     await openPanel();
   }
 
-  function updateBadge(force = false) {
+  function updateBadge() {
     if (!badge) return;
     notificationService
-      .unreadCount({ force })
+      .unreadCount()
       .then((count) => {
         if (count > 0) {
           badge.textContent = String(count > 99 ? '99+' : count);
@@ -1045,7 +1045,7 @@ function createBellPanel({
 
   /** Called by the SSE handler on a live notification event. */
   function prependIfOpen(notif) {
-    updateBadge(true);
+    updateBadge();
     if (isOpen) {
       list.querySelector('.app-shell-bell-panel__empty')?.remove();
       list.prepend(buildItem(notif));
@@ -1059,7 +1059,7 @@ function createBellPanel({
     } catch {
       return; // non-fatal — badge/list just stay as they were
     }
-    updateBadge(true);
+    updateBadge();
     list
       .querySelectorAll('.app-shell-bell-panel__item--unread')
       .forEach((li) =>
