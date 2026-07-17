@@ -307,8 +307,7 @@ services:
   sonarqube:
     image: ${SONARQUBE_IMAGE:-sonarqube:26.7.0.124771-community}
     depends_on:
-      sonarqube_db:
-        condition: service_started
+      - sonarqube_db
     environment:
       SONAR_JDBC_URL: "jdbc:postgresql://sonarqube_db:5432/${SONARQUBE_DB_DATABASE:-sonarqube}"
       SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USERNAME:-sonarqube}
