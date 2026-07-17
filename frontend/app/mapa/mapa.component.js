@@ -193,9 +193,10 @@ export default {
 
     // ── Categories (for filter dropdown) ──
     try {
-      const resp = await http.get('/incident-categories?per_page=200');
-      const cats = resp.data ?? resp;
-      this._categories = Array.isArray(cats) ? cats : (cats.data ?? []);
+      const resp = await http.get('/map/filters');
+      const body = resp.data ?? resp;
+      const cats = body?.categories ?? [];
+      this._categories = Array.isArray(cats) ? cats : [];
     } catch {
       this._categories = [];
     }

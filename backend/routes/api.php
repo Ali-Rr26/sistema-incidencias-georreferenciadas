@@ -10,6 +10,7 @@ use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
+use App\Domains\Incidents\Http\MapFilterController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -68,6 +69,7 @@ Route::middleware('jwt')->group(function () {
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
 
     // Catálogos
+    Route::get('map/filters', MapFilterController::class);
     Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
