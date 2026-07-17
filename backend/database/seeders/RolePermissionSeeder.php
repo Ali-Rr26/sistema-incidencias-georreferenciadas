@@ -104,6 +104,7 @@ class RolePermissionSeeder extends Seeder
     private const OPERADOR_ORGANIZACION_PERMISSIONS = [
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'update'],
+        ['resource' => 'incident-categories', 'action' => 'view'],
         // Previously missing: the menu item Notificaciones was gated by
         // notifications.view, which this role never had. Granting it here
         // fixes the leak where the menu was hidden despite the role being

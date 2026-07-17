@@ -48,8 +48,17 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
         /** @var User|null $user */
         $user = Auth::user();
         if ($user !== null && ! $user->isSystemAdmin()) {
-            if ($user->isOrganizationAdmin() || $user->isOperator()) {
+            if ($user->isOrganizationAdmin()) {
                 $query->where('organization_id', $user->organization_id);
+            }
+            if ($user->isOperator()) {
+                $query->where('organization_id', $user->organization_id);
+                // Solo incidencias donde el operador está asignado explícitamente
+                $query->whereIn('id', function ($q) use ($user): void {
+                    $q->select('incident_id')
+                        ->from('assignments')
+                        ->where('user_id', $user->id);
+                });
             }
             if ($user->isRegularUser()) {
                 $query->whereRaw('1 = 0'); // no ven nada en index()
