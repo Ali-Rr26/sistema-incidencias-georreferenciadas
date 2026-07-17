@@ -422,13 +422,7 @@ async function setupComments(incidentId) {
 
   if (!form || !input) return;
 
-  let currentUserId;
-  try {
-    const user = await auth.me();
-    currentUserId = user?.id;
-  } catch {
-    currentUserId = null;
-  }
+  let currentUserId = null;
 
   function updateCounter() {
     const len = input.value.length;
@@ -447,24 +441,13 @@ async function setupComments(incidentId) {
     if (submitBtn) submitBtn.disabled = isEmpty;
   }
 
+  // Attach event listeners FIRST — sincrónicamente, antes de cualquier
+  // await. Esto elimina la race condition donde el usuario escribía y
+  // clickeaba antes de que el submit listener existiera (B-04).
   input.addEventListener('input', () => {
     updateCounter();
     updateSubmitBtn();
   });
-
-  async function cargarComentarios() {
-    loadingEl?.classList.remove('d-none');
-    try {
-      const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data, currentUserId);
-    } catch (err) {
-      console.error('Error al cargar comentarios:', err);
-    } finally {
-      loadingEl?.classList.add('d-none');
-    }
-  }
-
-  cargarComentarios();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -496,6 +479,29 @@ async function setupComments(incidentId) {
       if (submitBtn) submitBtn.disabled = false;
     }
   });
+
+  async function cargarComentarios() {
+    loadingEl?.classList.remove('d-none');
+    try {
+      const { data } = await commentService.list(incidentId, { perPage: 50 });
+      renderComments(data, currentUserId);
+    } catch (err) {
+      console.error('Error al cargar comentarios:', err);
+    } finally {
+      loadingEl?.classList.add('d-none');
+    }
+  }
+
+  // Load user and comments asynchronously — los listeners ya están
+  // attachados arriba, el formulario es funcional desde este momento.
+  try {
+    const user = await auth.me();
+    currentUserId = user?.id;
+  } catch {
+    currentUserId = null;
+  }
+
+  cargarComentarios();
 
   if (listEl) {
     listEl.addEventListener('click', async (e) => {
