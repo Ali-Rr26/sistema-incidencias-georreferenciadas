@@ -86,7 +86,7 @@ export default {
       this._renderAssignments(inc.assignments ?? []);
 
       // Comments — public, visible/postable by both citizens and operators
-      await this._setupComments(incidentId);
+      this._setupComments(incidentId);
 
       // Operations bar (print, export, share, report)
       this._setupOperations(inc);
@@ -404,7 +404,7 @@ export default {
    * them on the same `/incidents/{id}/comments` endpoint (R: "Public
    * Comments on Detail View").
    */
-  async _setupComments(incidentId) {
+  _setupComments(incidentId) {
     const loadingEl = document.getElementById('fd-comments-loading');
     const form = document.getElementById('fd-comment-form');
     const input = document.getElementById('fd-comment-input');
@@ -527,7 +527,7 @@ export default {
       if (submitBtn) submitBtn.disabled = true;
       try {
         const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
-        const imageIds = [];
+        let imageIds = [];
 
         if (selectedFiles.length > 0) {
           const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });

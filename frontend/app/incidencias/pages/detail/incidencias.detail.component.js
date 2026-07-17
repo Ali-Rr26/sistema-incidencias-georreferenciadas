@@ -604,7 +604,7 @@ async function setupComments(incidentId) {
     if (submitBtn) submitBtn.disabled = true;
     try {
       const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
-      const imageIds = [];
+      let imageIds = [];
 
       if (selectedFiles.length > 0) {
         const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
@@ -715,6 +715,8 @@ async function setupComments(incidentId) {
   }
 
   const lightboxEl = document.getElementById('incid-detail__lightbox');
+  const lightboxImg = document.getElementById('incid-detail__lightbox-img');
+  const lightboxCaption = document.getElementById('incid-detail__lightbox-caption');
   const lightboxClose = document.getElementById('incid-detail__lightbox-close');
 
   if (lightboxEl) {
@@ -1086,7 +1088,7 @@ function setupActionButtons(incidentId, inc) {
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
 
-function setupBuscarResponsables(_incidentId) {
+function setupBuscarResponsables(incidentId) {
   const inputEl = document.getElementById('buscar-responsables-input');
   const loadingEl = document.getElementById('buscar-responsables-loading');
   const resultsEl = document.getElementById('buscar-responsables-results');
