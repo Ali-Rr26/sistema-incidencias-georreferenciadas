@@ -136,10 +136,7 @@ return [
     |
     */
 
-    'mercure' => [
-        'anonymous' => false,
-        'publisher_jwt' => env('MERCURE_PUBLISHER_JWT_SECRET'),
-        'subscriber_jwt' => env('MERCURE_SUBSCRIBER_JWT_SECRET'),
-    ],
+    // Mercure config now lives in config/mercure.php. See
+    // docs/Security/secret-rotation.md for rotation guidance.
 
 ];
