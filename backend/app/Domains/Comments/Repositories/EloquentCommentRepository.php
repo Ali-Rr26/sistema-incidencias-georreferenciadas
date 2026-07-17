@@ -19,6 +19,16 @@ class EloquentCommentRepository extends EloquentRepository implements CommentRep
     {
         $query
             ->when($filters['incident_id'] ?? null, fn (Builder $q, $v) => $q->where('incident_id', $v))
+            ->with([
+                'user',
+                'images',
+                'replies',
+                'replies.user',
+                'replies.images',
+                'replies.replies',
+                'replies.replies.user',
+                'replies.replies.images',
+            ])
             ->orderBy('created_at', 'desc');
     }
 }

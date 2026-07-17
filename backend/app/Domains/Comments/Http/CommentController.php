@@ -50,13 +50,30 @@ class CommentController extends Controller
     {
         $this->authorizeIncidentOrgScope($incident);
 
+        $parentId = $request->input('parent_id');
+
+        if ($parentId !== null) {
+            $parent = Comment::with('parent')->findOrFail($parentId);
+
+            // Parent must belong to the same incident
+            if ($parent->incident_id !== $incident->id) {
+                abort(422, 'El comentario al que intentas responder pertenece a otra incidencia.');
+            }
+
+            // Depth must be < 2 (max 2 levels: top-level = 0, first reply = 1, second reply = 2)
+            if ($parent->depth >= 2) {
+                abort(422, 'No se puede responder a un comentario de segundo nivel.');
+            }
+        }
+
         $comment = $this->commentRepository->create([
             'incident_id' => $incident->id,
-            'user_id' => auth()->id(),
-            'message' => $request->input('message'),
+            'user_id'     => auth()->id(),
+            'message'     => $request->input('message'),
+            'parent_id'   => $parentId,
         ]);
 
-        $comment->load('user');
+        $comment->load(['user', 'images', 'parent', 'replies']);
 
         return (new CommentResource($comment))
             ->response()

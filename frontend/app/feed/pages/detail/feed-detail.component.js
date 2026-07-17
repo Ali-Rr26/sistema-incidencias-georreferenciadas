@@ -12,12 +12,15 @@ import {
   timeAgo,
   STATUS_LABEL,
   PRIORITY_LABEL,
+  getCommentImageUrl,
 } from '../../../utils/format.js';
 import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
+import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
+import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -83,7 +86,7 @@ export default {
       this._renderAssignments(inc.assignments ?? []);
 
       // Comments — public, visible/postable by both citizens and operators
-      this._setupComments(incidentId);
+      await this._setupComments(incidentId);
 
       // Operations bar (print, export, share, report)
       this._setupOperations(inc);
@@ -297,7 +300,7 @@ export default {
     this._detailMapRemove = remove;
   },
 
-  _buildCommentLi(comment) {
+  _buildCommentLi(comment, currentUserId, depth = 0) {
     const li = document.createElement('li');
     li.className = 'd-flex gap-3 py-3 border-bottom';
 
@@ -305,7 +308,6 @@ export default {
       ? getUserDisplayName(comment.user)
       : 'Usuario';
 
-    // Differentiate between internal/support actors and external citizens.
     const role = (comment.user?.role || '').toLowerCase();
     const isInternal = ['admin', 'operator', 'support', 'staff'].includes(role);
     const avatarClass = isInternal ? 'bg-info' : 'bg-primary';
@@ -316,21 +318,73 @@ export default {
       ? '<span class="badge bg-info-subtle text-info mb-1">Atención institucional</span>'
       : '';
 
+    const isOwner = currentUserId != null && comment.user_id === currentUserId;
+
+    const replyBtn = currentUserId != null
+      ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
+          <i class="fas fa-reply"></i> Responder
+        </button>`
+      : '';
+
+    const replyQuote = comment.parent
+      ? (() => {
+          const parentUser = comment.parent.user
+            ? getUserDisplayName(comment.parent.user)
+            : 'Usuario';
+          const snippet = (comment.parent.message || '').slice(0, 100);
+          return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
+        })()
+      : '';
+
+    const imagesHtml = (comment.images && comment.images.length > 0)
+      ? `<div class="incid-detail__thumbnail-grid mt-1 mb-1">
+          ${comment.images.map(img => {
+            const src = escapeHtml(getCommentImageUrl(img.url));
+            const caption = escapeHtml(img.caption || img.original_name || '');
+            const delBtn = isOwner
+              ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
+              : '';
+            return `<div class="incid-detail__thumbnail-wrapper">
+              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
+              ${delBtn}
+            </div>`;
+          }).join('')}
+         </div>`
+      : '';
+
     li.innerHTML = `
       <div class="rounded-circle ${avatarClass} d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px;height:36px;font-size:0.85rem" aria-hidden="true">${avatarIcon}</div>
       <div class="flex-grow-1">
         <div class="d-flex justify-content-between align-items-baseline mb-1">
           <span class="fw-bold" style="font-size:0.85rem">${escapeHtml(userName)}</span>
-          <small class="text-muted">${timeAgo(comment.created_at)}</small>
+          <div class="d-flex gap-2 align-items-center">
+            <small class="text-muted">${timeAgo(comment.created_at)}</small>
+            ${replyBtn}
+          </div>
         </div>
         ${actorTag}
+        ${replyQuote}
         <p class="mb-0 text-muted" style="font-size:0.875rem;white-space:pre-wrap">${escapeHtml(comment.message)}</p>
+        ${imagesHtml}
       </div>`;
+
+    if (comment.replies && comment.replies.length > 0) {
+      const replyDepth = depth >= 1 ? 1 : depth + 1;
+      const replyUl = document.createElement('ul');
+      replyUl.className = 'list-unstyled';
+      if (replyDepth > 0) {
+        replyUl.classList.add('incid-detail__nested');
+      }
+      for (const reply of comment.replies) {
+        replyUl.appendChild(this._buildCommentLi(reply, currentUserId, replyDepth));
+      }
+      li.appendChild(replyUl);
+    }
 
     return li;
   },
 
-  _renderComments(items) {
+  _renderComments(items, currentUserId) {
     const listEl = document.getElementById('fd-comments-list');
     const emptyEl = document.getElementById('fd-comments-empty');
     if (!listEl) return;
@@ -342,7 +396,7 @@ export default {
     }
 
     emptyEl?.classList.add('d-none');
-    listEl.replaceChildren(...items.map((c) => this._buildCommentLi(c)));
+    listEl.replaceChildren(...items.map((c) => this._buildCommentLi(c, currentUserId, 0)));
   },
 
   /**
@@ -350,14 +404,98 @@ export default {
    * them on the same `/incidents/{id}/comments` endpoint (R: "Public
    * Comments on Detail View").
    */
-  _setupComments(incidentId) {
+  async _setupComments(incidentId) {
     const loadingEl = document.getElementById('fd-comments-loading');
     const form = document.getElementById('fd-comment-form');
     const input = document.getElementById('fd-comment-input');
     const errorEl = document.getElementById('fd-comment-error');
     const submitBtn = document.getElementById('fd-comment-submit');
+    const fileInput = document.getElementById('fd-comment-images');
+    const previewEl = document.getElementById('fd-comment-previews');
+    const replyBadgeEl = document.getElementById('fd-reply-badge');
+    const replyParentIdEl = document.getElementById('fd-reply-parent-id');
 
     if (!form || !input) return;
+
+    let currentUserId = null;
+    const replyState = { parentId: null, parentComment: null };
+    const selectedFiles = [];
+    const previewUrls = [];
+
+    const self = this;
+
+    function renderPreviews() {
+      if (!previewEl) return;
+      previewEl.innerHTML = selectedFiles
+        .map((_, i) => {
+          const url = previewUrls[i];
+          if (!url) return '';
+          return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
+            <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
+            <button type="button" class="incid-detail__preview-remove btn-quitar-preview" data-index="${i}">&times;</button>
+          </div>`;
+        })
+        .join('');
+    }
+
+    function handleReply(comment) {
+      const parentUser = comment.user ? getUserDisplayName(comment.user) : 'Usuario';
+      const prefix = `> @${parentUser}: `;
+      const current = input.value;
+      if (!current.startsWith(prefix)) {
+        input.value = prefix + current;
+      }
+      if (replyBadgeEl) {
+        replyBadgeEl.textContent = `Respondiendo a @${parentUser}`;
+        replyBadgeEl.classList.remove('d-none');
+      }
+      if (replyParentIdEl) replyParentIdEl.value = String(comment.id);
+      replyState.parentId = comment.id;
+      replyState.parentComment = comment;
+    }
+
+    function cancelReply() {
+      const prefix = '> @';
+      if (input.value.startsWith(prefix)) {
+        const nlIdx = input.value.indexOf('\n');
+        input.value = nlIdx >= 0 ? input.value.slice(nlIdx + 1) : '';
+      }
+      if (replyBadgeEl) replyBadgeEl.classList.add('d-none');
+      if (replyParentIdEl) replyParentIdEl.value = '';
+      replyState.parentId = null;
+      replyState.parentComment = null;
+    }
+
+    function handleFileSelect(files) {
+      if (!files) return;
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) continue;
+        selectedFiles.push(file);
+        previewUrls.push(URL.createObjectURL(file));
+      }
+      renderPreviews();
+    }
+
+    function removeFile(index) {
+      if (index < 0 || index >= previewUrls.length) return;
+      URL.revokeObjectURL(previewUrls[index]);
+      previewUrls.splice(index, 1);
+      selectedFiles.splice(index, 1);
+      renderPreviews();
+    }
+
+    if (replyBadgeEl) {
+      replyBadgeEl.addEventListener('click', cancelReply);
+      replyBadgeEl.style.cursor = 'pointer';
+      replyBadgeEl.title = 'Clic para cancelar';
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        handleFileSelect(fileInput.files);
+        fileInput.value = '';
+      });
+    }
 
     const cargarComentarios = async () => {
       loadingEl?.classList.remove('d-none');
@@ -365,15 +503,13 @@ export default {
         const { data } = await commentService.list(incidentId, {
           perPage: 50,
         });
-        this._renderComments(data);
+        self._renderComments(data, currentUserId);
       } catch (err) {
         console.error('Error al cargar comentarios:', err);
       } finally {
         loadingEl?.classList.add('d-none');
       }
     };
-
-    cargarComentarios();
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -390,19 +526,134 @@ export default {
 
       if (submitBtn) submitBtn.disabled = true;
       try {
-        await commentService.create(incidentId, message);
+        const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
+        const imageIds = [];
+
+        if (selectedFiles.length > 0) {
+          const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
+          const commentId = created?.id ?? created?.data?.id;
+          if (!commentId) throw new Error('No se pudo crear el comentario.');
+
+          const results = await Promise.allSettled(
+            selectedFiles.map(file => commentService.uploadImages(commentId, [file]))
+          );
+          const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value?.status >= 400));
+          if (failed.length > 0) {
+            for (const url of previewUrls) URL.revokeObjectURL(url);
+            selectedFiles.length = 0;
+            previewUrls.length = 0;
+            renderPreviews();
+            if (errorEl) {
+              errorEl.textContent = 'Error al subir una o más imágenes. El comentario no fue publicado.';
+              errorEl.classList.remove('d-none');
+            }
+            await commentService.delete(commentId);
+            throw new Error('Upload failed');
+          }
+        } else {
+          await commentService.create(incidentId, { message, parentId, imageIds });
+        }
+
         input.value = '';
+        for (const url of previewUrls) URL.revokeObjectURL(url);
+        selectedFiles.length = 0;
+        previewUrls.length = 0;
+        renderPreviews();
+        cancelReply();
         await cargarComentarios();
       } catch (err) {
+        if (err.message === 'Upload failed') return;
         if (errorEl) {
-          errorEl.textContent =
-            err.message || 'No se pudo publicar el comentario.';
+          errorEl.textContent = err.message || 'No se pudo publicar el comentario.';
           errorEl.classList.remove('d-none');
         }
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
     });
+
+    const listEl = document.getElementById('fd-comments-list');
+    if (listEl) {
+      listEl.addEventListener('click', async (e) => {
+        const replyBtn = e.target.closest('.btn-respoder-comentario');
+        if (replyBtn) {
+          const commentId = Number(replyBtn.dataset.id);
+          const listItems = listEl.querySelectorAll(':scope > li');
+          const found = self._findCommentById(listItems, commentId);
+          if (found) handleReply(found);
+          return;
+        }
+
+        const previewRemoveBtn = e.target.closest('.btn-quitar-preview');
+        if (previewRemoveBtn) {
+          const index = Number(previewRemoveBtn.dataset.index);
+          removeFile(index);
+          return;
+        }
+
+        const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
+        if (thumb) {
+          const src = thumb.dataset.src;
+          const caption = thumb.dataset.caption || '';
+          openLightbox(src, caption);
+          return;
+        }
+
+        const delImgBtn = e.target.closest('.btn-eliminar-imagen');
+        if (delImgBtn) {
+          const commentId = Number(delImgBtn.dataset.commentId);
+          const imageId = Number(delImgBtn.dataset.imageId);
+          if (!confirm('¿Eliminar esta imagen?')) return;
+          delImgBtn.disabled = true;
+          try {
+            await commentService.deleteImage(commentId, imageId);
+            await cargarComentarios();
+          } catch (err) {
+            console.error('Error al eliminar imagen:', err);
+            alert('No se pudo eliminar la imagen.');
+          } finally {
+            delImgBtn.disabled = false;
+          }
+        }
+      });
+    }
+
+    const lightboxEl = document.getElementById('fd-lightbox');
+    if (lightboxEl) {
+      const lightboxClose = document.getElementById('fd-lightbox-close');
+      lightboxClose?.addEventListener('click', closeLightbox);
+      lightboxEl.addEventListener('click', (e) => {
+        if (e.target === lightboxEl) closeLightbox();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !lightboxEl.classList.contains('d-none')) {
+          closeLightbox();
+        }
+      });
+    }
+
+    try {
+      const user = await auth.me();
+      currentUserId = user?.id;
+    } catch {
+      currentUserId = null;
+    }
+
+    cargarComentarios();
+  },
+
+  _findCommentById(listItems, id) {
+    for (const li of listItems) {
+      const commentId = li.querySelector('.btn-respoder-comentario, .btn-eliminar-comentario')?.dataset?.id;
+      if (commentId && Number(commentId) === id) {
+        const nameEl = li.querySelector('.fw-bold');
+        const name = nameEl?.textContent?.trim() || 'Usuario';
+        const message = li.querySelector('p')?.textContent || '';
+        const user = { first_name: name.split(' ')[0], last_name: name.split(' ').slice(1).join(' '), email: null };
+        return { id: Number(commentId), message, user };
+      }
+    }
+    return null;
   },
 
   /**
@@ -768,6 +1019,8 @@ export default {
           <div class="gr-card mb-3 p-3">
             <h3 class="h6 fw-bold mb-3"><i class="fas fa-comments me-2"></i>Comentarios</h3>
             <form id="fd-comment-form" class="mb-3">
+              <div id="fd-reply-badge" class="alert alert-secondary py-1 px-2 small d-none mb-2" style="cursor:pointer" title="Clic para cancelar"></div>
+              <input type="hidden" id="fd-reply-parent-id" value="" />
               <textarea
                 id="fd-comment-input"
                 class="form-control mb-2"
@@ -776,6 +1029,14 @@ export default {
                 placeholder="Escribe un comentario público..."
               ></textarea>
               <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
+              <input
+                type="file"
+                id="fd-comment-images"
+                multiple
+                accept="image/*"
+                class="form-control form-control-sm mb-2"
+              />
+              <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
               <button
                 type="submit"
                 id="fd-comment-submit"
@@ -791,6 +1052,13 @@ export default {
             <p id="fd-comments-empty" class="text-muted d-none mb-0" style="font-size:0.875rem">
               Sin comentarios todavía.
             </p>
+          </div>
+
+          <!-- Lightbox overlay for comment images -->
+          <div id="fd-lightbox" class="incid-detail__lightbox d-none" role="dialog" aria-modal="true">
+            <img id="fd-lightbox-img" src="" alt="" />
+            <div id="fd-lightbox-caption" class="position-absolute text-white text-center w-100" style="bottom:40px;font-size:0.85rem"></div>
+            <button id="fd-lightbox-close" class="incid-detail__lightbox-close" aria-label="Cerrar">&times;</button>
           </div>
 
         </div><!-- /col-lg-8 -->

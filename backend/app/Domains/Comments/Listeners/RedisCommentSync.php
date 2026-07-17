@@ -37,7 +37,7 @@ class RedisCommentSync
     private function syncComment(Comment $comment): void
     {
         try {
-            $comment->loadMissing('user');
+            $comment->loadMissing(['user', 'images']);
 
             $commentSetKey = self::INCIDENT_HASH_PREFIX.$comment->incident_id.':comments';
             $commentHashKey = self::COMMENT_HASH_PREFIX.$comment->id;
@@ -49,6 +49,13 @@ class RedisCommentSync
                 'user_id' => (string) $comment->user_id,
                 'user_name' => ($comment->user?->first_name ?? '').' '.($comment->user?->last_name ?? ''),
                 'message' => $comment->message,
+                'parent_id' => $comment->parent_id !== null ? (string) $comment->parent_id : '',
+                'depth' => $comment->depth,
+                'images' => json_encode($comment->images->map(fn ($img) => [
+                    'id' => (string) $img->id,
+                    'url' => $img->url,
+                    'caption' => $img->caption ?? '',
+                ])->values()),
                 'created_at' => $comment->created_at?->toIso8601String(),
                 'updated_at' => $comment->updated_at?->toIso8601String(),
             ];
