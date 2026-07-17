@@ -8,7 +8,7 @@ Hallazgos del test E2E con Playwright (`frontend/e2e-flujo-incidencia.js`) ejecu
 |---|-----|---------|-----------|--------|
 | 1 | `comments.view` faltante en operador | El operador escribe comentarios que no ve | 🔴 Alta | ✅ Corregido |
 | 2 | `organization_id` no se asigna al crear incidencia | Ciudadano crea incidencias que nadie puede gestionar | 🔴 Alta | ✅ Corregido |
-| 3 | Admin_sistema no puede asignar operadores | El admin global no puede delegar trabajo | 🟡 Media | ❌ Pendiente |
+| 3 | Admin_sistema no puede asignar operadores | El admin global no puede delegar trabajo | 🟡 Media | ✅ Corregido (por B-02) |
 | 4 | Race condition en `setupComments()` | El comentario a veces no se envía | 🟡 Media | ❌ Pendiente |
 | 5 | Leaflet en headless frágil | No se puede testear creación de incidencias vía UI | 🔵 Baja (testing) | ❌ Pendiente |
 
@@ -67,25 +67,17 @@ GET /api/incidents/309 con token admin_org_quito → 403
 
 ---
 
-## 🟡 B-03: Admin_sistema no puede asignar operadores
+## 🟡 B-03: Admin_sistema no puede asignar operadores ✅ CORREGIDO (por B-02)
 
 ### Síntoma
 El admin global (`admin@sistema.com`) entra al detalle de una incidencia, ve el formulario de asignación, pero el dropdown de operadores aparece vacío.
 
-### Causa
-El admin_sistema no tiene `organization_id`. El endpoint que lista operadores disponibles filtra por organización. Como admin_sistema no pertenece a ninguna, no encuentra operadores.
+### Causa original
+El endpoint `available-operators` filtra operadores por `incident->organization_id`. Antes del B-02, las incidencias creadas por ciudadanos tenían `organization_id = null`, por lo que no se encontraban operadores.
 
-### Evidencia
-```
-Asignaciones form: exists=1, display="block"
-Operadores disponibles: 0
-```
-
-### Archivos involucrados
-- `backend/app/Http/Controllers/AssignmentController.php` (o el que lista usuarios asignables)
-
-### Solución propuesta (a discutir)
-¿El admin_sistema debería poder asignar operadores de cualquier organización? ¿O este comportamiento es intencional?
+### Solución
+El B-02 (auto-asignación de organización) resolvió este bug de raíz: ahora toda incidencia tiene `organization_id`, y el endpoint encuentra operadores sin importar quién hace la consulta.
+- Verificado: admin_sistema consulta `available-operators` y recibe 2 operadores de GAD Quito.
 
 ---
 
