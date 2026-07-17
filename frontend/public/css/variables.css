@@ -8,13 +8,13 @@
 
 :root {
   /* =============================================
-     Brand / Primary
+     Brand / Primary — Civic Pulse (Stitch design system)
      ============================================= */
-  --color-primary:        #6a5cf3;
-  --color-primary-rgb:    106, 92, 243;
-  --color-primary-light:  #a06bf5;
-  --color-primary-dark:   #5a4de0;
-  --color-accent:         #6a5cf3;
+  --color-primary:        #5e3bdb;
+  --color-primary-rgb:    94, 59, 219;
+  --color-primary-light:  #7858f5;
+  --color-primary-dark:   #4e2fc4;
+  --color-accent:         #5e3bdb;
 
   /* =============================================
      Text

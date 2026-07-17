@@ -1,8 +1,10 @@
-/* ── Layout ───────────────────────────────────────────────────────── */
+/* ── Mapa — minimal custom CSS ───────────────────────────────────
+   Leaflet map canvas, markers, sidebar collapse, loading overlay.
+   Bootstrap handles all general UI (buttons, forms, badges, etc.)
+   ─────────────────────────────────────────────────────────────── */
 
-.mp-view {
-  overflow: hidden;
-}
+/* ── Map canvas ─────────────────────────────────────────────── */
+.mp-view { overflow: hidden; }
 
 .mp-layout {
   display: flex;
@@ -13,8 +15,7 @@
   position: relative;
 }
 
-/* ── Sidebar ──────────────────────────────────────────────────────── */
-
+/* ── Sidebar (collapsible on mobile) ────────────────────────── */
 .mp-sidebar {
   width: 280px;
   flex-shrink: 0;
@@ -33,29 +34,14 @@
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.1);
 }
 
-.mp-sidebar-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #2c3e50;
+@media (max-width: 767.98px) {
+  .mp-sidebar {
+    width: 100%;
+    max-width: 320px;
+  }
 }
 
-.mp-filter-group {
-  margin-bottom: 12px;
-}
-
-.mp-toggle-filters {
-  width: 100%;
-}
-
-/* ── Map canvas ──────────────────────────────────────────────────── */
-
-.mp-canvas {
-  flex: 1;
-  position: relative;
-  min-height: 400px;
-}
-
+/* ── Loading overlay ─────────────────────────────────────────── */
 .mp-loading {
   position: absolute;
   inset: 0;
@@ -66,14 +52,14 @@
   z-index: 500;
 }
 
+/* ── Error banner ───────────────────────────────────────────── */
 .mp-error {
   margin: 12px;
   z-index: 700;
   position: relative;
 }
 
-/* ── Marker icons (divIcons, colored by status) ─────────────────── */
-
+/* ── Leaflet marker icons (divIcon — colored by status) ─────── */
 .mp-marker-wrapper {
   background: transparent !important;
   border: none !important;
@@ -93,29 +79,13 @@
   font-size: 14px;
 }
 
-.mp-marker--secondary {
-  background: #6c757d;
-}
+.mp-marker--secondary  { background: #6c757d; }
+.mp-marker--primary    { background: #0d6efd; }
+.mp-marker--success    { background: #198754; }
+.mp-marker--warning    { background: #ffc107; color: #212529; }
+.mp-marker--danger     { background: #dc3545; }
 
-.mp-marker--primary {
-  background: #0d6efd;
-}
-
-.mp-marker--success {
-  background: #198754;
-}
-
-.mp-marker--warning {
-  background: #ffc107;
-  color: #212529;
-}
-
-.mp-marker--danger {
-  background: #dc3545;
-}
-
-/* ── Popup ───────────────────────────────────────────────────────── */
-
+/* ── Leaflet popup customization ────────────────────────────── */
 .mp-marker-popup .leaflet-popup-content-wrapper {
   border-radius: 8px;
 }
@@ -124,13 +94,4 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 6px;
-}
-
-/* ── Responsive ──────────────────────────────────────────────────── */
-
-@media (max-width: 768px) {
-  .mp-sidebar {
-    width: 100%;
-    max-width: 320px;
-  }
 }

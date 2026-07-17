@@ -1,266 +1,14 @@
 /* ============================================================
-   FEED — Be Vietnam Pro styled premium layout
-   Single responsive template; CSS grid reflows 1-col → 2-col ≥ 992px.
+   FEED — Bootstrap 5 + minimal custom CSS
+   Kept only: gradients, shimmer, spinner, custom badge states
    ============================================================ */
 
-body.feed-view {
-  background: #f3f4f9;
-  font-family:
-    'Be Vietnam Pro',
-    -apple-system,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* --- Layout container (CSS grid) --- */
-.feed {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  padding: 22px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: start;
-}
-
-@media (min-width: 992px) {
-  .feed {
-    grid-template-columns: 1fr 280px;
-    gap: 24px;
-  }
-}
-
-.feed-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
-/* --- Right Sidebar Panel (hidden on mobile, visible ≥ 992px) --- */
-.feed-aside {
-  display: none;
-  flex-direction: column;
-  gap: 14px;
-  position: sticky;
-  top: 96px;
-}
-
-@media (min-width: 992px) {
-  .feed-aside {
-    display: flex;
-  }
-}
-
-/* --- Card Base (Right panel & generic cards) --- */
-.rp-card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 1px 3px rgba(20, 20, 50, 0.04);
-  border: 1px solid #eef0f5;
-}
-
-.rp-card-title {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: #23283b;
-  margin-bottom: 14px;
-}
-
-.rp-card-section-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #b3b8c6;
-  letter-spacing: 0.05em;
-  margin-bottom: 7px;
-}
-
-.rp-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.rp-category-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* --- Stats list --- */
-.rp-stat {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f5f6fa;
-}
-.rp-stat--last {
-  border-bottom: none;
-}
-
-.rp-stat-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.rp-stat-icon--purple {
-  background: #f0edff;
-  color: #6a5cf3;
-}
-.rp-stat-icon--green {
-  background: #e3f7ec;
-  color: #16a96b;
-}
-.rp-stat-icon--yellow {
-  background: #fff4d6;
-  color: #d99a00;
-}
-
-.rp-stat-value {
-  font-size: 18px;
-  font-weight: 800;
-  color: #23283b;
-  line-height: 1;
-}
-.rp-stat-label {
-  font-size: 11.5px;
-  color: #a3a8b8;
-}
-
-/* --- Zonas activas --- */
-.rp-zone {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-}
-.rp-zone-rank {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.rp-zone-rank--1 {
-  background: #6a5cf3;
-}
-.rp-zone-rank--2 {
-  background: #8a7af5;
-}
-.rp-zone-rank--3 {
-  background: #b0a6f8;
-}
-.rp-zone-name {
-  flex: 1;
-  font-size: 12.5px;
-  color: #5b6172;
-  font-weight: 500;
-}
-.rp-zone-count {
-  font-size: 12px;
-  font-weight: 700;
-  color: #23283b;
-}
-
-/* --- Checkboxes & filter inputs inside sidebar --- */
-.rp-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: #5b6172;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.rp-checkbox-box {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid #d6dae3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-.rp-checkbox-box i {
-  color: #fff;
-  font-size: 9px;
-}
-.rp-checkbox-box.checked {
-  background: #6a5cf3;
-  border-color: #6a5cf3;
-}
-
-/* --- Filter chips inside sidebar --- */
-.rp-filter-chip {
-  padding: 5px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #f3f4f9;
-  color: #8a90a0;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-}
-.rp-filter-chip:hover {
-  background: #eef0f5;
-  color: #6b7180;
-}
-.rp-filter-chip[data-status='in_progress'].active {
-  background: #e4e8ff;
-  color: #5a6ff0;
-}
-.rp-filter-chip[data-status='pending'].active {
-  background: #fff4d6;
-  color: #d99a00;
-}
-.rp-filter-chip[data-status='resolved'].active {
-  background: #d8f6e7;
-  color: #16a96b;
-}
-.rp-filter-chip[data-status=''].active {
-  background: #f0edff;
-  color: #6a5cf3;
-}
-
-/* --- Composer Bar --- */
-.composer-bar {
-  background: #fff;
-  border-radius: 18px;
-  padding: 16px 18px;
-  box-shadow: 0 1px 3px rgba(20, 20, 50, 0.04);
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  cursor: pointer;
-  border: 1px solid #eef0f5;
-  transition: border-color 0.2s;
-}
-.composer-bar:hover {
-  border-color: #dcdffd;
-}
-
+/* --- Composer avatar gradient --- */
 .composer-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #a06bf5, #6a5cf3);
+  background: linear-gradient(135deg, #a06bf5, #5e3bdb);
   color: #fff;
   font-size: 13px;
   font-weight: 700;
@@ -271,7 +19,6 @@ body.feed-view {
 }
 
 .composer-input-wrap {
-  flex: 1;
   height: 44px;
   border-radius: 22px;
   background: #f3f4f9;
@@ -286,11 +33,12 @@ body.feed-view {
   color: #b3b8c6;
 }
 
+/* --- Composer gradient button (custom gradient Bootstrap can't do) --- */
 .composer-btn {
   height: 44px;
   border-radius: 12px;
   padding: 0 18px;
-  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  background: linear-gradient(118deg, #5e3bdb, #a06bf5);
   color: #fff !important;
   font-size: 13.5px;
   font-weight: 600;
@@ -299,7 +47,7 @@ body.feed-view {
   gap: 8px;
   cursor: pointer;
   border: none;
-  box-shadow: 0 10px 20px -10px rgba(106, 92, 243, 0.6);
+  box-shadow: 0 10px 20px -10px rgba(94, 59, 219, 0.6);
   white-space: nowrap;
   transition:
     transform 0.2s,
@@ -307,76 +55,41 @@ body.feed-view {
 }
 .composer-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px -10px rgba(106, 92, 243, 0.7);
+  box-shadow: 0 12px 24px -10px rgba(94, 59, 219, 0.7);
 }
 
-/* --- Filter chips (main list header) --- */
-.feed-filters {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 4px 2px;
-}
-.feed-filters::-webkit-scrollbar {
-  display: none;
-}
-
-.feed-chip {
-  flex-shrink: 0;
-  border: 1px solid #eef0f5;
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  background: #fff;
-  color: #6b7180;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.feed-chip:hover {
-  background: #f8f9fc;
-}
+/* --- Filter chips active state (gradient + shadow Bootstrap can't do) --- */
 .feed-chip.active {
-  background: linear-gradient(118deg, #6a5cf3, #a06bf5);
+  background: linear-gradient(118deg, #5e3bdb, #a06bf5);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 10px rgba(106, 92, 243, 0.25);
+  box-shadow: 0 4px 10px rgba(94, 59, 219, 0.25);
 }
 
-/* --- Status badges (used inside cards) --- */
-.feed-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
+/* --- Sidebar filter chips active states --- */
+.rp-filter-chip.active {
+  background: linear-gradient(118deg, #5e3bdb, #a06bf5);
+  color: #fff;
 }
+
+/* --- Filter chips keyboard focus ring (a11y) --- */
+.feed-chip:focus-visible,
+.rp-filter-chip:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
+}
+
+.feed-chip.active:focus-visible {
+  outline-offset: 4px;
+}
+
+/* --- Status badges (dot indicator) --- */
 .feed-status-badge::before {
   content: '';
   width: 5px;
   height: 5px;
   border-radius: 50%;
-}
-.feed-status-pending {
-  background: #fff4d6;
-  color: #d99a00;
-}
-.feed-status-pending::before {
-  background: #d99a00;
-}
-.feed-status-in_progress {
-  background: #e4e8ff;
-  color: #5a6ff0;
-}
-.feed-status-in_progress::before {
-  background: #5a6ff0;
-}
-.feed-status-resolved {
-  background: #d8f6e7;
-  color: #16a96b;
+  display: inline-block;
 }
 .feed-status-resolved::before {
   content: '✓';
@@ -386,81 +99,135 @@ body.feed-view {
   font-size: 10px;
 }
 
-/* --- Priority badges (used inside cards) --- */
+/* --- Cards always white (override any cached priority backgrounds) --- */
+.feed-card {
+  background-color: #ffffff !important;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.feed-card.feed-priority-high,
+.feed-card.feed-priority-medium,
+.feed-card.feed-priority-low {
+  background-color: #ffffff !important;
+}
+
+/* --- Status badge: soft-fill + label-caps --- */
+.feed-status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.feed-status-pending {
+  background: #fff4d6;
+  color: #8a5800;
+}
+.feed-status-in_progress {
+  background: #e3e7ff;
+  color: #1a0f5c; /* WCAG AA: #1a0f5c on #e3e7ff ≈ 13:1 (was #2c1a8a ≈ 3.18:1, below 4.5:1) */
+}
+.feed-status-resolved {
+  background: #d8f6e7;
+  color: #1a7a4a;
+}
+.feed-status-default {
+  background: #eef0f5;
+  color: #4a4f60;
+}
+
+/* --- Priority badge: same soft-fill + label-caps language --- */
 .feed-priority-badge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 11px;
-  border-radius: 20px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 11.5px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  line-height: 1;
 }
-.feed-priority-high {
-  background: #ffe9ee;
-  color: #fa5a7d;
+.feed-priority-badge.feed-priority-high {
+  background: #fde2e7;
+  color: #a0183a;
 }
-.feed-priority-medium {
+.feed-priority-badge.feed-priority-medium {
   background: #fff4d6;
-  color: #d99a00;
+  color: #8a5800;
 }
-.feed-priority-low {
-  background: #f0f1f6;
-  color: #8a90a0;
+.feed-priority-badge.feed-priority-low {
+  background: #eef0f5;
+  color: #4a4f60;
 }
 
-/* --- Card elements --- */
+/* --- Card hover micro-interaction --- */
+.feed-card:hover {
+  box-shadow: 0 8px 20px rgba(94, 59, 219, 0.08);
+  transform: translateY(-2px);
+}
+.feed-card:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
+}
+
+/* --- Card footer divider (tokenized) --- */
+.feed-card-footer {
+  border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+/* --- Feed avatar (gradient for users without photo) --- */
 .feed-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #a06bf5, #6a5cf3);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  background: linear-gradient(135deg, #a06bf5, #5e3bdb);
 }
 
-.feed-card-preview {
-  margin: 0 18px 14px;
-  height: 180px;
-  border-radius: 12px;
-  background: linear-gradient(160deg, #dce4ee, #c8d4e2);
-  position: relative;
+/* --- Scrollable incidents region (vertical scroll only) --- */
+.feed-scroll-region {
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* When the feed is mounted we want the ONLY scrollable area to be
+   `.feed-scroll-region` — disable the app-shell-main's own overflow
+   so the user never sees two scrollbars on the same page. */
+body.feed-view {
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+}
+body.feed-view .app-shell-main {
+  overflow: hidden !important;
 }
 
-/* --- Action buttons hover --- */
+/* --- Card preview gradient background --- */
+.feed-card-preview {
+  background: linear-gradient(160deg, #dce4ee, #c8d4e2);
+}
+
+/* --- Action button hover --- */
 .feed-action-btn:hover {
   background: #f8f9fc !important;
   border-color: #dcdffd !important;
-  color: #6a5cf3 !important;
+  color: #5e3bdb !important;
 }
 
-/* --- Infinite scroll & skeleton --- */
-.feed-skeleton-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* --- Skeleton shimmer animation --- */
+@keyframes feed-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
-.feed-skeleton-card {
-  background: #fff;
-  border-radius: 18px;
-  border: 1px solid #eef0f5;
-  overflow: hidden;
-  padding: 16px 18px;
-}
-.feed-skel-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
+
 .feed-skel-avatar {
   width: 42px;
   height: 42px;
@@ -468,7 +235,9 @@ body.feed-view {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: feed-shimmer 1.4s infinite;
+  flex-shrink: 0;
 }
+
 .feed-skel-line {
   height: 12px;
   border-radius: 6px;
@@ -489,62 +258,72 @@ body.feed-view {
 .feed-skel-preview {
   height: 180px;
   border-radius: 12px;
-  margin-bottom: 12px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: feed-shimmer 1.4s infinite;
 }
-.feed-skel-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
-@keyframes feed-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.feed-sentinel {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-  height: 60px;
-}
-.feed-sentinel-spinner {
-  display: none;
-}
-.feed-sentinel.loading .feed-sentinel-spinner {
-  display: flex;
-}
-.feed-sentinel.done {
-  display: none;
-}
-.feed-spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #efefef;
-  border-top-color: #6a5cf3;
-  border-radius: 50%;
-  animation: feed-spin 0.7s linear infinite;
-}
+/* --- Spinner animation --- */
 @keyframes feed-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+.feed-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #efefef;
+  border-top-color: #5e3bdb;
+  border-radius: 50%;
+  animation: feed-spin 0.7s linear infinite;
+}
+
+/* --- Empty state --- */
 .feed-empty {
-  text-align: center;
-  padding: 60px 20px;
   color: #b3b8c6;
 }
-.feed-empty-icon {
-  font-size: 3rem;
-  margin-bottom: 12px;
-  opacity: 0.4;
+
+/* --- Stat icons (colored backgrounds) --- */
+.rp-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rp-stat-icon .fa-circle-plus {
+  color: #6a5cf3;
+}
+.rp-stat-icon .fa-circle-check {
+  color: #16a96b;
+}
+.rp-stat-icon .fa-clock {
+  color: #d99a00;
+}
+
+/* --- Zone rank badges --- */
+.rp-zone-rank--1 {
+  background: #5e3bdb;
+}
+.rp-zone-rank--2 {
+  background: #8a7af5;
+}
+.rp-zone-rank--3 {
+  background: #b0a6f8;
+}
+
+/* --- Checked checkbox state --- */
+.rp-checkbox-box:checked {
+  background-color: #5e3bdb;
+  border-color: #5e3bdb;
+}
+
+/* --- Focus styles for clickable wrappers promoted to buttons --- */
+.composer-btn:focus-visible,
+.composer-input-wrap:focus-visible,
+.feed-avatar-btn:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
 }

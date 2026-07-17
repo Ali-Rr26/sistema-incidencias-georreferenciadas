@@ -14,28 +14,57 @@ vi.mock('../utils/layout.js', () => layout);
 import { auth } from '../auth/auth.service.js';
 
 const FEED_TEMPLATE = `
-<div class="feed" id="feed">
-  <div class="feed-main">
-    <div class="composer-bar d-none" id="composer-bar">
-      <div class="composer-avatar" id="composer-avatar">?</div>
-      <div class="composer-input-wrap"><span class="composer-placeholder">¿Qué incidencia deseas reportar hoy?</span></div>
-      <a href="#/feed/crear" class="composer-btn"><i class="fas fa-location-dot"></i> Reportar</a>
+<div id="feed" class="row">
+  <div class="col-12 col-lg-8">
+    <div class="composer-bar d-none card mb-3" id="composer-bar">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="composer-avatar" id="composer-avatar">?</div>
+        <div class="composer-input-wrap flex-grow-1">
+          <span class="composer-placeholder">¿Qué incidencia deseas reportar hoy?</span>
+        </div>
+        <button class="composer-btn btn btn-primary">
+          <i class="fa-solid fa-location-dot"></i> Reportar
+        </button>
+      </div>
     </div>
-    <div class="feed-filters" id="feed-filters">
-      <button class="feed-chip active" data-status="">Todo</button>
-      <button class="feed-chip" data-status="pending">Pendientes</button>
-      <button class="feed-chip" data-status="in_progress">En proceso</button>
-      <button class="feed-chip" data-status="resolved">Resueltos</button>
+    <div class="feed-filters d-flex flex-wrap gap-2 mb-3" id="feed-filters">
+      <button class="feed-chip active btn btn-outline-primary btn-sm" data-status="">Todo</button>
+      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="pending">Pendientes</button>
+      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="in_progress">En proceso</button>
+      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="resolved">Resueltos</button>
     </div>
     <div id="feed-cargando" class="feed-skeleton-wrap d-none">
-      <div class="feed-skeleton-card"><div class="feed-skel-head"><div class="feed-skel-avatar"></div><div class="feed-skel-line w-40"></div></div><div class="feed-skel-map"></div><div class="feed-skel-body"><div class="feed-skel-line w-60"></div><div class="feed-skel-line w-30"></div></div></div>
+      <div class="feed-skeleton-card card">
+        <div class="card-body">
+          <div class="feed-skel-head d-flex align-items-center gap-2 mb-3">
+            <div class="feed-skel-avatar"></div>
+            <div class="feed-skel-line w-40"></div>
+          </div>
+          <div class="feed-skel-preview mb-3"></div>
+          <div class="feed-skel-body">
+            <div class="feed-skel-line w-60 mb-2"></div>
+            <div class="feed-skel-line w-30"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="feed-vacio" class="feed-empty d-none"><p>No hay incidencias publicadas.</p></div>
-    <div id="feed-list" class="feed-cards"></div>
-    <div id="feed-sentinel" class="feed-sentinel"></div>
+    <div id="feed-vacio" class="feed-empty d-none card text-center">
+      <div class="card-body">
+        <div class="feed-empty-icon">📭</div>
+        <p>No hay incidencias publicadas.</p>
+      </div>
+    </div>
+    <div id="feed-scroll-region" class="feed-scroll-region">
+      <div id="feed-list" class="feed-cards row g-3"></div>
+      <div id="feed-sentinel" class="feed-sentinel d-flex justify-content-center">
+        <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
+      </div>
+    </div>
   </div>
-  <aside class="feed-aside">
-    <div class="rp-card rp-map"><div class="rp-map-placeholder"></div></div>
+  <aside class="col-lg-4">
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
+    </div>
   </aside>
 </div>
 `;
@@ -149,10 +178,16 @@ describe('feed integration', () => {
     expect(cards[0].textContent).toContain('MG');
     expect(cards[0].textContent).toContain('Prioridad: Alta');
 
-    // Status badges
-    expect(cards[0].querySelector('.feed-status-pending')).not.toBeNull();
-    expect(cards[1].querySelector('.feed-status-in_progress')).not.toBeNull();
-    expect(cards[2].querySelector('.feed-status-resolved')).not.toBeNull();
+    // Status badges — soft-fill chip classes
+    expect(
+      cards[0].querySelector('.feed-status-chip.feed-status-pending'),
+    ).not.toBeNull();
+    expect(
+      cards[1].querySelector('.feed-status-chip.feed-status-in_progress'),
+    ).not.toBeNull();
+    expect(
+      cards[2].querySelector('.feed-status-chip.feed-status-resolved'),
+    ).not.toBeNull();
 
     // "Ver detalle" buttons
     const detailBtns = feedList.querySelectorAll(
@@ -160,11 +195,11 @@ describe('feed integration', () => {
     );
     expect(detailBtns.length).toBe(3);
 
-    // Single #feed container exists (viewport reflow handled by CSS, not JS)
+    // Single #feed container with Bootstrap row layout
     const feed = document.getElementById('feed');
     expect(feed).not.toBeNull();
-    expect(feed.querySelector('.feed-main')).not.toBeNull();
-    expect(feed.querySelector('.feed-aside')).not.toBeNull();
+    expect(feed.querySelector('.col-lg-8')).not.toBeNull();
+    expect(feed.querySelector('.col-lg-4')).not.toBeNull();
     expect(document.getElementById('feed-desktop')).toBeNull();
     expect(document.getElementById('feed-mobile')).toBeNull();
 
@@ -231,12 +266,15 @@ describe('feed integration', () => {
     expect(cards.length).toBeGreaterThan(0);
 
     const firstCard = cards[0];
-    expect(firstCard.querySelector('.feed-card-head')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-name')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-preview')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-body')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-card-actions')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-status-pending')).not.toBeNull();
+    expect(firstCard.querySelector('.card-header')).not.toBeNull();
+    expect(firstCard.querySelector('.fw-bold')).not.toBeNull();
+    // feed-minimap present (incidents have geom, no thumbnail_url)
+    expect(firstCard.querySelector('.feed-minimap')).not.toBeNull();
+    expect(firstCard.querySelector('.card-body')).not.toBeNull();
+    expect(firstCard.querySelector('.card-footer')).not.toBeNull();
+    expect(
+      firstCard.querySelector('.feed-status-chip.feed-status-pending'),
+    ).not.toBeNull();
     expect(firstCard.classList.contains('feed-priority-high')).toBe(true);
 
     feedComponent.onDestroy();

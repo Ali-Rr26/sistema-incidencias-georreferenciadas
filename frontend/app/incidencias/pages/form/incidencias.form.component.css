@@ -1,27 +1,8 @@
-/* ============================================================
-   Unified Create Incident Form
-   Single responsive template; CSS grid reflows field groups
-   1-col → 2-col ≥ 992px.
-   ============================================================ */
-
-/* ── Shared ─────────────────────────────────────────────── */
-
-.ici-thumb-wrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #dee2e6;
-  display: inline-block;
-}
-
-.ici-thumb-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ── Form layout (CSS grid field groups) ────────────────── */
+/* ── incidencias.form — minimal custom CSS ────────────────────────
+   Map height (clamp), a11y wrappers, form card body padding,
+   toast stacking, breadcrumb link style.
+   All form controls use Bootstrap (.form-control, .form-select, etc.)
+   ─────────────────────────────────────────────────────────────── */
 
 .incidencias-form {
   width: 100%;
@@ -48,105 +29,7 @@
   grid-column: 1 / -1;
 }
 
-/* ── Citizen form styles (kept for compatibility) ────────── */
-
-.ici-create {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 16px 80px;
-}
-
-.ici-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #efefef;
-  margin-bottom: 20px;
-}
-
-.ici-back-btn {
-  color: #262626;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: color 0.15s;
-}
-
-.ici-back-btn:hover {
-  color: #0095f6;
-}
-
-.ici-header-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #262626;
-}
-
-.ici-error {
-  background: #fce4ec;
-  color: #c62828;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  margin-bottom: 16px;
-}
-
-.ici-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.ici-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #262626;
-  margin-bottom: 2px;
-}
-
-.ici-input,
-.ici-select,
-.ici-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dbdbdb;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  background: #fff;
-  transition: border-color 0.15s;
-}
-
-.ici-input:focus,
-.ici-select:focus,
-.ici-textarea:focus {
-  outline: none;
-  border-color: #0095f6;
-  box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.15);
-}
-
-.ici-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.ici-field-error {
-  font-size: 0.78rem;
-  color: #e53935;
-  display: none;
-}
-
-.ici-char-counter {
-  font-size: 0.72rem;
-  color: #8e8e8e;
-}
-
-/* ── Map (responsive height via clamp) ──────────────────── */
-
+/* ── Map ──────────────────────────────────────────────────── */
 .ici-map {
   width: 100%;
   height: clamp(280px, 50vh, 360px);
@@ -155,73 +38,6 @@
   z-index: 1;
 }
 
-.ici-map-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.ici-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
-}
-
-.ici-btn-primary {
-  background: #0095f6;
-  color: #fff;
-}
-
-.ici-btn-primary:hover {
-  background: #1877f2;
-}
-
-.ici-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.ici-btn-outline {
-  background: #fff;
-  color: #262626;
-  border: 1px solid #dbdbdb;
-}
-
-.ici-btn-outline:hover {
-  background: #f5f5f5;
-}
-
-.ici-image-preview {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-/* ── Responsive ─────────────────────────────────────────── */
-
-@media (max-width: 768px) {
-  .ici-create {
-    padding: 0 12px 80px;
-    width: 100%;
-  }
-
-  .ici-map {
-    border-radius: 8px;
-  }
-}
-
-/* === A11y map wrapper (PR #3 H6) ───────────────────────── */
-
-/* The role=region wrapper is layout-transparent so the existing
-   CSS grid placement of the map canvas is preserved to ±2 px. */
 .incid-form__map-region {
   display: contents;
 }
@@ -235,26 +51,30 @@
   font-size: 13px;
 }
 
-/* === Lifted from inline (PR #3 H10) ─────────────────────── */
-
-/* Breadcrumb link that should look like the surrounding text but
-   still be navigable (no underline, inherit colour). */
+/* ── Breadcrumb link ─────────────────────────────────────── */
 .incid-form__breadcrumb-link {
   text-decoration: none;
   color: inherit;
 }
 
-/* Padding inside the outer form-card body. */
+/* ── Form card body padding ─────────────────────────────── */
 .incid-form__form-card-body {
   padding: 28px 32px;
 }
 
-/* Required-fields hint paragraph. */
+/* ── Required hint ──────────────────────────────────────── */
 .incid-form__required-hint {
   font-size: 13px;
 }
 
-/* Toast wrapper stacking context. */
+/* ── Toast stacking ─────────────────────────────────────── */
 .incid-form__toast-wrapper {
   z-index: 9999;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .ici-map {
+    border-radius: 8px;
+  }
 }

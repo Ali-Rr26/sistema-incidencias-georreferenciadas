@@ -82,9 +82,10 @@ describe('feed component — single responsive template', () => {
     expect(feedHtml).not.toMatch(/id="feed-vacio-mobile"/);
   });
 
-  it('template uses .feed-main + .feed-aside siblings under #feed', () => {
-    expect(feedHtml).toMatch(/id="feed"[^>]*>\s*<div class="feed-main"/);
-    expect(feedHtml).toMatch(/<aside class="feed-aside"/);
+  it('template uses Bootstrap row layout (col-lg-8 main + col-lg-4 aside) under #feed', () => {
+    expect(feedHtml).toMatch(/id="feed"[^>]*class="row"/);
+    expect(feedHtml).toMatch(/<div class="col-12 col-lg-8">/);
+    expect(feedHtml).toMatch(/class="col-lg-4/);
   });
 
   it('component does not probe #main-wrapper for context detection', () => {
