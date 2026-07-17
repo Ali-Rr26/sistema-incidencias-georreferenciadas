@@ -924,7 +924,14 @@ function teardownBellPanels() {
  * No-op (returns null) if the bell/panel/list markup isn't present in
  * the DOM (e.g. shell test fixtures that mount a trimmed-down header).
  */
-function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRoute }) {
+function createBellPanel({
+  btnId,
+  panelId,
+  listId,
+  badgeId,
+  markAllId,
+  detailRoute,
+}) {
   const btn = document.getElementById(btnId);
   const panel = document.getElementById(panelId);
   const list = document.getElementById(listId);
@@ -1055,7 +1062,9 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
     updateBadge(true);
     list
       .querySelectorAll('.app-shell-bell-panel__item--unread')
-      .forEach((li) => li.classList.remove('app-shell-bell-panel__item--unread'));
+      .forEach((li) =>
+        li.classList.remove('app-shell-bell-panel__item--unread'),
+      );
   }
 
   function init() {
@@ -1133,7 +1142,15 @@ function connectNotificationStream(userId) {
     };
 
     _notifStream.onerror = () => {
-      disconnectNotificationStream();
+      // EventSource.onerror fires for both transient blips (where the
+      // browser auto-reconnects, readyState === CONNECTING) and fatal
+      // closures (readyState === CLOSED, no more retries). SSE's killer
+      // feature vs. WebSocket is the auto-reconnect — we must only tear
+      // down on the fatal case, otherwise a single network hiccup kills
+      // the stream until the next page load.
+      if (_notifStream && _notifStream.readyState === EventSource.CLOSED) {
+        disconnectNotificationStream();
+      }
     };
   } catch {
     // Constructing EventSource itself threw — never let this take down

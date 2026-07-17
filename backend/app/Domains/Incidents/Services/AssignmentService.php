@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Services;
 
 use App\Domains\Incidents\Enums\AssignmentRole;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use Illuminate\Support\Facades\DB;
 
@@ -79,9 +80,18 @@ class AssignmentService
             }
         }
 
-        // Attach via the relation so the pivot schema (timestamps,
-        // bookkeeping) matches the rest of the app.
-        $incident->assignedUsers()->attach($userId, ['assignment_role' => $role]);
+            // Create the Assignment row directly so Eloquent dispatches the
+            // `created` event (BelongsToMany::attach() bypasses model events
+            // — it issues a raw INSERT on the pivot table — which is why the
+            // AssignmentNotificationObserver never fired for assignments
+            // made through this service in the past). The DB UNIQUE indexes
+            // already cover duplicate-user and one-responsable-per-incident
+            // guards as a backstop.
+            Assignment::create([
+                'incident_id' => $incident->id,
+                'user_id' => $userId,
+                'assignment_role' => $role,
+            ]);
     }
 
     /**

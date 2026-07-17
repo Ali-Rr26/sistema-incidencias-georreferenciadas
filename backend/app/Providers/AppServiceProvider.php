@@ -89,9 +89,22 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Mercure hub — see config/octane.php for why this replaced the
-        // manual SSE loop. Same FrankenPHP process serves the hub, so we
-        // publish to it over loopback.
+        // Mercure hub singleton. The backend publishes notifications
+        // through HubInterface; the app-shell frontend subscribes via
+        // an EventSource pointing at config('mercure.hub.url') (which
+        // defaults to the loopback in dev or to a docker-compose
+        // sidecar in production).
+        //
+        // The publisher JWT is signed with the LcobucciFactory using
+        // `jwtLifetime: $jwtLifetime` so each publish carries an
+        // `exp` claim. Without that cap, a captured token would stay
+        // valid forever — the cap limits blast radius to one hour.
+        //
+        // `publish: $allowedTopics` scopes the publisher to the
+        // patterns configured under `mercure.publisher.allowed_topics`
+        // (comma-separated globs in env; defaults to `['*']` for dev,
+        // should be narrowed to `user:*:notifications` in production
+        // so a leaked publisher secret can't poison arbitrary topics).
         $this->app->singleton(HubInterface::class, function () {
             // LcobucciFactory's Key\InMemory rejects an empty secret at
             // construction time — fall back to a placeholder so
@@ -100,14 +113,24 @@ class AppServiceProvider extends ServiceProvider
             // HubInterface) can still construct the container. Publishing
             // will fail at request time instead, which
             // NotificationService::publish() already swallows.
-            $secret = (string) config('octane.mercure.publisher_jwt');
+            $secret = (string) config('mercure.publisher.jwt');
+            $jwtLifetime = (int) config('mercure.publisher.jwt_ttl_seconds', 60 * 60);
             $jwtFactory = new LcobucciFactory(
-                $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
+                secret: $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
+                jwtLifetime: $jwtLifetime,
             );
-            $provider = new FactoryTokenProvider($jwtFactory, publish: ['*']);
+
+            // Build a provider scoped to the topics configured for
+            // publishers. ['*'] keeps existing behavior for envs that
+            // haven't opted into the restriction yet.
+            $allowedTopics = (array) config('mercure.publisher.allowed_topics', ['*']);
+            $provider = new FactoryTokenProvider(
+                $jwtFactory,
+                publish: $allowedTopics,
+            );
 
             return new Hub(
-                rtrim((string) env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000'), '/').'/.well-known/mercure',
+                rtrim((string) config('mercure.hub.url', env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000/.well-known/mercure')), '/'),
                 $provider,
             );
         });

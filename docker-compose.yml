@@ -40,6 +40,7 @@ services:
       # real deployments must set them.
       LOG_CHANNEL: stderr_json
       MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+      MERCURE_PUBLIC_URL: "http://mercure/.well-known/mercure"
       MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
       # Firebase Admin SDK — verifies Google sign-in ID tokens server-side
       # (see AppServiceProvider::FirebaseTokenVerifier). credentials_path
@@ -83,7 +84,11 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -95,12 +100,24 @@ services:
   # ==========================================
   redis:
     image: ${REDIS_IMAGE:-redis:8-alpine}
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+      - "--appendonly"
+      - "yes"
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - -a
+        - "${REDIS_PASSWORD}"
+        - --no-auth-warning
+        - ping
       interval: 5s
       timeout: 3s
       retries: 10
@@ -129,7 +146,11 @@ services:
       - "${RUSTFS_API_PORT:-9000}:9000"
       - "${RUSTFS_CONSOLE_PORT:-9001}:9001"
     healthcheck:
-      test: ["CMD-SHELL", "curl -s -o /dev/null -w \"%{http_code}\" http://localhost:9000/ | grep -qE '200|403'"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/ | grep -qE ''200|403''',
+        ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -180,16 +201,6 @@ services:
       - ./ops/dashboards-k6:/var/lib/grafana/dashboards-k6
       - ./ops/dashboards-e5:/var/lib/grafana/dashboards-e5
       - grafana_data:/var/lib/grafana
-    networks:
-      - dev-network
-
-  # Static file server for quality-metrics/data — read by the main `grafana`
-  # service's Infinity datasource (see ops/grafana/provisioning/datasources/
-  # e5-infinity.yml). Not a second Grafana instance.
-  e5-metrics-data:
-    image: nginx:1.27-alpine
-    volumes:
-      - ./quality-metrics/data:/usr/share/nginx/html:ro
     networks:
       - dev-network
 
@@ -247,7 +258,11 @@ services:
     volumes:
       - sonarqube_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -273,11 +288,50 @@ services:
       - sonarqube_extensions:/opt/sonarqube/extensions
       - sonarqube_logs:/opt/sonarqube/logs
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -s http://localhost:9000/api/system/status | grep -q ''"status":"UP"''',
+        ]
       interval: 30s
       timeout: 10s
       retries: 10
       start_period: 60s
+    networks:
+      - dev-network
+
+  # Mercure hub — real-time push for the notification bell.
+  # Lives in the same compose so `docker compose up -d` brings it online
+  # alongside the backend; the previous setup had a standalone container
+  # that drifted out of sync on every restart.
+  # Backend publishes to http://mercure/.well-known/mercure (config
+  # `MERCURE_PUBLIC_URL`); the frontend nginx proxies
+  # `/.well-known/mercure` to this same service.
+  mercure:
+    image: dunglas/mercure:latest
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+      MERCURE_PUBLISHER_JWT_ALG: HS256
+      MERCURE_SUBSCRIBER_JWT_ALG: HS256
+      ALLOW_ANONYMOUS: "1"
+      CORS_ALLOWED_ORIGINS: "*"
+    ports:
+      - "${MERCURE_PORT:-1337}:80"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost/mercure/health/ready",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - dev-network
 

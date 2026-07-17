@@ -60,19 +60,20 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       API_VERSION: ${API_VERSION:-1.0.0}
-      STORAGE_ENDPOINT: rustfs
-      STORAGE_PORT: "9000"
-      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:-rustfsadmin}
-      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:-rustfsadmin}
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_BUCKET: ${STORAGE_BUCKET:-incidencias}
-      AWS_ENDPOINT: http://rustfs:9000
-      AWS_USE_PATH_STYLE_ENDPOINT: "true"
-      FILESYSTEM_STORAGE_DISK: s3
+      # Storage: AWS_* is read by Laravel directly (S3 driver, filesystems
+      # cache, queue, StorageService). One source of truth, no rename.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID requerida}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY requerida}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_BUCKET: ${AWS_BUCKET:-incidencias}
+      AWS_ENDPOINT: ${AWS_ENDPOINT:-http://rustfs:9000}
+      AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-true}
+      FILESYSTEM_STORAGE_DISK: ${FILESYSTEM_STORAGE_DISK:-s3}
       OCTANE_SERVER: frankenphp
       LOG_CHANNEL: stderr_json
-      MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
-      MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+          MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-http://mercure/.well-known/mercure}
+          MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:?MERCURE_PUBLISHER_JWT_SECRET requerida}
+          MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:?MERCURE_SUBSCRIBER_JWT_SECRET requerida}
       FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_LEEWAY_SECONDS: ${FIREBASE_LEEWAY_SECONDS:-}
@@ -120,8 +121,22 @@ services:
 
   redis:
     image: redis:8-alpine
+    # CRITICAL: --requirepass protects Redis. The same secret is used
+    # by the backend via REDIS_PASSWORD. Without this any process with
+    # network access to the redis container can read every key in
+    # the cache (which includes the Mercure subscriber JWTs).
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD:?Variable REDIS_PASSWORD requerida}"
+      - "--appendonly"
+      - "yes"
     volumes:
       - redis_data:/data
+    # NOTE: deliberately no `ports:` in prod. Redis is reachable only
+    # from inside the incidencias-network. If you need to debug from
+    # the host, use `docker exec -it <redis-container> redis-cli -a $PWD`
+    # rather than exposing the port.
     networks:
       - incidencias-network
     deploy:
@@ -129,10 +144,51 @@ services:
       restart_policy:
         condition: any
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+        - CMD
+        - redis-cli
+        - -a
+        - "${REDIS_PASSWORD}"
+        - --no-auth-warning
+        - ping
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # ==========================================
+  # MERCURE HUB (real-time push for notifications)
+  # ==========================================
+  # Reuses the same publisher/subscriber JWT secrets as the backend so
+  # the credentials never fall out of sync. We pin the JWT alg to HS256
+  # explicitly because the default differs across dunglas/mercure
+  # image versions and the backend signs with HS256 too.
+  #
+  # 🔴 In prod, ALLOW_ANONYMOUS must be "0" so subscriptions require a
+  # signed mercureAuthorization cookie. The "1" value is for dev only.
+  # No `ports:` exposed to host; the backend (and the frontend nginx
+  # via the backend's /.well-known/mercure location) reach it over
+  # incidencias-network.
+  mercure:
+    image: dunglas/mercure:latest
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+      MERCURE_PUBLISHER_JWT_ALG: HS256
+      MERCURE_SUBSCRIBER_JWT_ALG: HS256
+      ALLOW_ANONYMOUS: "0"
+      CORS_ALLOWED_ORIGINS: "*"
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/mercure/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   rustfs:
     image: ${RUSTFS_IMAGE:-rustfs/rustfs:latest}
