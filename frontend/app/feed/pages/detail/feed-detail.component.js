@@ -86,7 +86,7 @@ export default {
       this._renderAssignments(inc.assignments ?? []);
 
       // Comments — public, visible/postable by both citizens and operators
-      this._setupComments(incidentId);
+      await this._setupComments(incidentId);
 
       // Operations bar (print, export, share, report)
       this._setupOperations(inc);
@@ -404,7 +404,7 @@ export default {
    * them on the same `/incidents/{id}/comments` endpoint (R: "Public
    * Comments on Detail View").
    */
-  _setupComments(incidentId) {
+  async _setupComments(incidentId) {
     const loadingEl = document.getElementById('fd-comments-loading');
     const form = document.getElementById('fd-comment-form');
     const input = document.getElementById('fd-comment-input');
