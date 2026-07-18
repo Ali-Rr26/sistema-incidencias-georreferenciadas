@@ -8,7 +8,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { clearAuthState, setAccessToken } from '../../../../core/http.service.js';
+import { clearAuthState, setAccessToken, http } from '../../../../core/http.service.js';
 
 // ---------------------------------------------------------------------------
 // Mocked module imports
@@ -601,7 +601,9 @@ describe('Double-click removal — Ver button replaces row double-click', () => 
 });
 
 describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => {
-  beforeEach(() => {
+  let componentModule;
+
+  beforeEach(async () => {
     clearAuthState();
     setAccessToken('test-token');
     vi.clearAllMocks();
@@ -613,6 +615,9 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
       return Promise.resolve({ data: [] });
     });
     mountUsuariosDom();
+    if (!componentModule) {
+      componentModule = await import('./usuarios.index.component.js');
+    }
   });
 
   it('renders FOTO column header at index 0', async () => {
@@ -623,7 +628,7 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
         return Promise.resolve({ data: [], meta: { total: 0 } });
       return Promise.resolve({ data: [] });
     });
-    await usuariosComponent.onInit();
+    await componentModule.default.onInit();
     const th = document.querySelector('th[data-testid="col-foto"]');
     expect(th).not.toBeNull();
     expect(th.textContent).toContain('FOTO');
@@ -645,7 +650,7 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
         return Promise.resolve({ data: [mockUser], meta: { total: 1 } });
       return Promise.resolve({ data: [] });
     });
-    await usuariosComponent.onInit();
+    await componentModule.default.onInit();
     const firstRow = document.querySelector('#tabla-body tr');
     expect(firstRow).not.toBeNull();
     const img = firstRow.querySelector('img[src="/storage/users/1/avatar.webp"]');
@@ -668,7 +673,7 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
         return Promise.resolve({ data: [mockUser], meta: { total: 1 } });
       return Promise.resolve({ data: [] });
     });
-    await usuariosComponent.onInit();
+    await componentModule.default.onInit();
     const firstRow = document.querySelector('#tabla-body tr');
     expect(firstRow).not.toBeNull();
     // Should contain initials "GH" inside a span (initials badge)
