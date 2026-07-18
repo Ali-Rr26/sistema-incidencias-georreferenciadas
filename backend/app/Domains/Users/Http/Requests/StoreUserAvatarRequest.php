@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http\Requests;
 
+use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,7 +24,7 @@ class StoreUserAvatarRequest extends FormRequest
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:5120', // 5 MB in KB
+                'max:'.User::AVATAR_MAX_KB,
             ],
         ];
     }
@@ -34,7 +35,7 @@ class StoreUserAvatarRequest extends FormRequest
             'avatar.required' => 'Debes subir una imagen de avatar.',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
             'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
-            'avatar.max' => 'La imagen no puede superar los 5 MB.',
+            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
         ];
     }
 }

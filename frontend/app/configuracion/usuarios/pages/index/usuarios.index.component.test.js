@@ -167,6 +167,55 @@ class MockModal {
   static getInstance() { return null; }
 }
 
+/**
+ * Build the slice of DOM that usuarios.index.component.js's onInit() reads
+ * with document.getElementById. The component is wired to a real Bootstrap
+ * template; here we just create the IDs it touches.
+ */
+function mountUsuariosDom() {
+  document.body.innerHTML = `
+    <input id="filtro-buscar" />
+    <select id="filtro-rol"><option value="">Todos</option></select>
+    <select id="filtro-org"><option value="">Todas</option></select>
+    <div id="estado-cargando"></div>
+    <div id="estado-vacio" class="d-none"></div>
+    <div id="estado-error" class="d-none"></div>
+    <div id="contenedor-tabla" class="d-none">
+      <small id="info-resultados"></small>
+      <ul id="paginacion"></ul>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 48px" data-testid="col-foto">FOTO</th>
+          <th style="width: 40px" class="text-center">
+            <input type="checkbox" class="form-check-input check-select-all" />
+          </th>
+          <th>NOMBRE</th>
+          <th>EMAIL</th>
+          <th style="width: 170px">ROL</th>
+          <th style="width: 200px">ORGANIZACI&#211;N</th>
+          <th style="width: 130px">TEL&#201;FONO</th>
+          <th style="width: 70px"></th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+    <div id="contenedor-cards"></div>
+    <button id="btn-filtrar"></button>
+    <button id="btn-limpiar"></button>
+    <button id="btn-reintentar"></button>
+    <div id="modal-eliminar"></div>
+    <strong id="modal-eliminar-nombre"></strong>
+    <button id="btn-confirmar-eliminar"></button>
+    <span id="eliminar-texto"></span>
+    <span id="eliminar-loading" class="d-none"></span>
+    <div id="toast-msg" class="toast align-items-center text-white border-0">
+      <div id="toast-msg-texto"></div>
+    </div>
+  `;
+}
+
 // ---------------------------------------------------------------------------
 // DOM fixture
 // ---------------------------------------------------------------------------
@@ -548,5 +597,81 @@ describe('Double-click removal — Ver button replaces row double-click', () => 
     row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
 
     expect(routerNavigateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => {
+  beforeEach(() => {
+    clearAuthState();
+    setAccessToken('test-token');
+    vi.clearAllMocks();
+    http.get.mockImplementation((path) => {
+      if (path.startsWith('/users/form-data'))
+        return Promise.resolve({ roles: [], organizations: [] });
+      if (path.startsWith('/users'))
+        return Promise.resolve({ data: [], meta: { total: 0 } });
+      return Promise.resolve({ data: [] });
+    });
+    mountUsuariosDom();
+  });
+
+  it('renders FOTO column header at index 0', async () => {
+    http.get.mockImplementation((path) => {
+      if (path.startsWith('/users/form-data'))
+        return Promise.resolve({ roles: [], organizations: [] });
+      if (path.startsWith('/users'))
+        return Promise.resolve({ data: [], meta: { total: 0 } });
+      return Promise.resolve({ data: [] });
+    });
+    await usuariosComponent.onInit();
+    const th = document.querySelector('th[data-testid="col-foto"]');
+    expect(th).not.toBeNull();
+    expect(th.textContent).toContain('FOTO');
+  });
+
+  it('renders avatar image when user has profile_image_path', async () => {
+    const mockUser = {
+      id: 1,
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      email: 'ada@example.com',
+      profile_image_path: 'users/1/avatar.webp',
+      role: { name: 'admin_sistema' },
+    };
+    http.get.mockImplementation((path) => {
+      if (path.startsWith('/users/form-data'))
+        return Promise.resolve({ roles: [], organizations: [] });
+      if (path.startsWith('/users'))
+        return Promise.resolve({ data: [mockUser], meta: { total: 1 } });
+      return Promise.resolve({ data: [] });
+    });
+    await usuariosComponent.onInit();
+    const firstRow = document.querySelector('#tabla-body tr');
+    expect(firstRow).not.toBeNull();
+    const img = firstRow.querySelector('img[src="/storage/users/1/avatar.webp"]');
+    expect(img).not.toBeNull();
+  });
+
+  it('renders initials when user has no profile_image_path', async () => {
+    const mockUser = {
+      id: 2,
+      first_name: 'Grace',
+      last_name: 'Hopper',
+      email: 'grace@example.com',
+      profile_image_path: null,
+      role: { name: 'operador_sistema' },
+    };
+    http.get.mockImplementation((path) => {
+      if (path.startsWith('/users/form-data'))
+        return Promise.resolve({ roles: [], organizations: [] });
+      if (path.startsWith('/users'))
+        return Promise.resolve({ data: [mockUser], meta: { total: 1 } });
+      return Promise.resolve({ data: [] });
+    });
+    await usuariosComponent.onInit();
+    const firstRow = document.querySelector('#tabla-body tr');
+    expect(firstRow).not.toBeNull();
+    // Should contain initials "GH" inside a span (initials badge)
+    expect(firstRow.textContent).toContain('GH');
   });
 });
