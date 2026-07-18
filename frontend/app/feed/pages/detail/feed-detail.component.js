@@ -318,6 +318,8 @@ export default {
       ? '<span class="badge bg-info-subtle text-info mb-1">Atención institucional</span>'
       : '';
 
+    const isOwner = currentUserId != null && comment.user_id === currentUserId;
+
     const replyBtn = currentUserId != null
       ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
           <i class="fas fa-reply"></i> Responder
@@ -339,11 +341,12 @@ export default {
           ${comment.images.map(img => {
             const src = escapeHtml(getCommentImageUrl(img.url));
             const caption = escapeHtml(img.caption || img.original_name || '');
-            return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
-              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" />
-              <div class="incid-detail__thumbnail-overlay">
-                ${caption ? `<span class="incid-detail__thumbnail-caption">${caption}</span>` : ''}
-              </div>
+            const delBtn = isOwner
+              ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
+              : '';
+            return `<div class="incid-detail__thumbnail-wrapper">
+              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
+              ${delBtn}
             </div>`;
           }).join('')}
          </div>`
@@ -588,7 +591,7 @@ export default {
           return;
         }
 
-        const thumb = e.target.closest('.incid-detail__thumbnail-wrapper[data-src]');
+        const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
         if (thumb) {
           const src = thumb.dataset.src;
           const caption = thumb.dataset.caption || '';
