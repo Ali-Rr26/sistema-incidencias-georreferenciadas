@@ -9,14 +9,13 @@
  * El rol se obtiene del UserResource como { id, name } — accede a name.
  */
 import { router } from '../core/router.js';
-import { getAccessToken } from '../core/http.service.js';
 import { auth } from './auth.service.js';
 import { resolveRoleName } from '../utils/role.js';
 
 export function roleGuard(allowedRoles) {
   return {
     async canActivate() {
-      if (!getAccessToken()) {
+      if (!auth.isAuthenticated()) {
         router.navigate('/login');
         return false;
       }
