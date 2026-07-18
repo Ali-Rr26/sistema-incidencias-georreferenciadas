@@ -1,5 +1,6 @@
 import { http } from '../../core/http.service.js';
 import { auth } from '../../auth/auth.service.js';
+import { AVATAR_MAX_KB, ACCEPTED_MIME_TYPES } from '../../utils/avatar.constants.js';
 
 /** Shared object URL for avatar preview — revoked on destroy/submit to avoid memory leaks */
 let _avatarObjectUrl = null;
@@ -96,6 +97,17 @@ export default {
       browseBtn.addEventListener('click', () => avatarInput.click());
     } else {
       console.warn('[Perfil] Browse button or avatar input not found in DOM');
+    }
+
+    // ─── Avatar constants (sourced from backend) ─────────────────
+    if (avatarInput) {
+      avatarInput.accept = ACCEPTED_MIME_TYPES.join(',');
+    }
+    const avatarHelpText = document.querySelector('#perfil-avatar').closest('.col-md-12').querySelector('.form-text');
+    if (avatarHelpText) {
+      const maxMb = (AVATAR_MAX_KB / 1024).toFixed(2).replace(/\.00$/, '0');
+      const exts = ACCEPTED_MIME_TYPES.map((t) => t.split('/')[1].toUpperCase()).join(', ').replace('JPEG', 'JPG');
+      avatarHelpText.textContent = `${exts}. Máximo ${maxMb} MB. La imagen se recortará a 512×512 px.`;
     }
 
     // ─── Submit ───────────────────────────────────────────────
