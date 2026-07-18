@@ -422,10 +422,10 @@ function buildCommentLi(comment, currentUserId, depth = 0) {
       <i class="fas fa-user text-white" aria-hidden="true"></i>
     </div>
     <div class="media-body">
-      <div class="d-flex justify-content-between align-items-baseline mb-1">
+      <div class="d-flex align-items-baseline mb-1">
         <h5 class="mt-0 mb-0 fw-bold" style="font-size:0.88rem;color:#212529">${escapeHtml(userName)}</h5>
-        <div class="d-flex gap-2 align-items-center">
-          <small class="text-muted">${timeAgo(comment.created_at)}</small>
+        <small class="text-muted ms-2" style="font-size:0.75rem">${timeAgo(comment.created_at)}</small>
+        <div class="ms-auto d-flex gap-2 align-items-center">
           ${replyBtn}
           ${deleteBtn}
         </div>
@@ -520,23 +520,72 @@ async function setupComments(incidentId) {
       .join('');
   }
 
-  function handleReply(comment) {
+  /**
+   * Open an inline reply form below the comment being replied to.
+   * Only one inline form is open at a time — opening a new one closes
+   * the previous. The form scrolls into view and focuses the textarea.
+   *
+   * Submitting the form posts to the same `commentService.create` API
+   * as the main form, then reloads the comments list.
+   */
+  function openInlineReplyForm(comment, li) {
+    // Close any previously open inline reply form (only one at a time)
+    document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
+
+    const mediaBody = li.querySelector('.media-body');
+    if (!mediaBody) return;
+
     const parentUser = comment.user
       ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ') || comment.user.email
       : 'Usuario';
-    const prefix = `> @${parentUser}: `;
-    const current = input.value;
-    if (!current.startsWith(prefix)) {
-      input.value = prefix + current;
-    }
-    if (replyBadgeEl) {
-      replyBadgeEl.textContent = `Respondiendo a @${parentUser}`;
-      replyBadgeEl.classList.remove('d-none');
-    }
-    if (replyParentIdEl) replyParentIdEl.value = String(comment.id);
-    replyState.parentId = comment.id;
-    replyState.parentComment = comment;
-    updateSubmitBtn();
+
+    const form = document.createElement('form');
+    form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
+    form.dataset.parentId = String(comment.id);
+    form.innerHTML = `
+      <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}..." required></textarea>
+      <div class="d-flex gap-2 mt-2 justify-content-end">
+        <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
+          <i class="fas fa-paper-plane me-1"></i>Responder
+        </button>
+      </div>
+    `;
+
+    mediaBody.appendChild(form);
+    const textarea = form.querySelector('textarea');
+    textarea.focus();
+
+    form
+      .querySelector('.fd-inline-reply-cancel')
+      .addEventListener('click', () => form.remove());
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = textarea.value.trim();
+      if (!message) return;
+
+      const submitBtn = form.querySelector('.fd-inline-reply-submit');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+
+      try {
+        await commentService.create(incidentId, {
+          message,
+          parentId: comment.id,
+          imageIds: [],
+        });
+        form.remove();
+        await cargarComentarios();
+      } catch (err) {
+        console.error('Error al enviar respuesta:', err);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML =
+          '<i class="fas fa-paper-plane me-1"></i>Responder';
+        alert('No se pudo enviar la respuesta. Intenta de nuevo.');
+      }
+    });
   }
 
   function cancelReply() {
@@ -688,7 +737,10 @@ async function setupComments(incidentId) {
         const commentId = Number(replyBtn.dataset.id);
         const listItems = listEl.querySelectorAll(':scope > li');
         const found = findCommentById(listItems, commentId);
-        if (found) handleReply(found);
+        if (found) {
+          const li = replyBtn.closest('li');
+          openInlineReplyForm(found, li);
+        }
         return;
       }
 

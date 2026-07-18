@@ -207,6 +207,17 @@
   margin-top: 1rem;
 }
 
+/* Inline reply form — appears below the comment being replied to */
+.fd-comment-inline-reply {
+  border-top-color: #eef0f5 !important;
+}
+
+.fd-comment-inline-reply textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-size: 0.875rem;
+}
+
 .incid-detail__reply-quote {
   font-size: 0.8rem;
   color: #6c757d;
