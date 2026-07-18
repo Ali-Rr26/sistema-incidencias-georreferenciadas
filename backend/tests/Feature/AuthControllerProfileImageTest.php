@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -124,4 +125,52 @@ it('PUT /auth/profile replaces existing avatar when uploading new one', function
     expect($newPath)->not->toBe('users/1/old.webp');
     Storage::disk('s3')->assertMissing('users/1/old.webp');
     Storage::disk('s3')->assertExists($newPath);
+});
+
+it('PUT /auth/profile S3 delete failure still saves new avatar and logs warning (SCEN-PIU-Replace-002)', function (): void {
+    $user = User::factory()->create([
+        'profile_image_path' => 'users/1/old-uuid.webp',
+    ]);
+    Storage::disk('s3')->put('users/1/old-uuid.webp', 'old content');
+
+    // Mock the S3 disk so that delete() throws on the old path but put()/exists() work.
+    $fakeDisk = Storage::disk('s3');
+    $mockDisk = Mockery::mock($fakeDisk);
+    // Specific old-path delete throws.
+    $mockDisk->shouldReceive('delete')
+        ->with('users/1/old-uuid.webp')
+        ->andThrow(new \RuntimeException('S3 delete failed: file not found'));
+    // All other delete calls (e.g. different path) fall through to the fake.
+    $mockDisk->shouldReceive('delete')
+        ->andReturnUsing(fn ($path) => $fakeDisk->delete($path));
+    // put/exists/etc. delegate to the real fake disk so new upload works.
+    $mockDisk->shouldReceive('put')->andReturnUsing(fn ($k, $d) => $fakeDisk->put($k, $d));
+    $mockDisk->shouldReceive('exists')->andReturnUsing(fn ($k) => $fakeDisk->exists($k));
+    $mockDisk->shouldReceive('assertExists')->andReturnUsing(fn ($k) => $fakeDisk->assertExists($k));
+    $mockDisk->shouldReceive('assertMissing')->andReturnUsing(fn ($k) => $fakeDisk->assertMissing($k));
+
+    Storage::shouldReceive('disk')
+        ->with('s3')
+        ->andReturn($mockDisk);
+
+    Log::spy();
+
+    $file = UploadedFile::fake()->image('new-avatar.jpg', 512, 512);
+
+    $response = $this->actingAs($user)->put('/api/auth/profile', [
+        'first_name' => 'Ana',
+        'avatar' => $file,
+    ]);
+
+    $response->assertStatus(200);
+    $newPath = $response->json('profile_image_path');
+    expect($newPath)->not->toBe('users/1/old-uuid.webp');
+
+    // New file must be stored (warn-and-continue: upload succeeds despite delete failure).
+    Storage::disk('s3')->assertExists($newPath);
+
+    // Warning must be logged with the failure context.
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message, $context) => str_contains($message, 'Failed to delete image file from S3')
+            && ($context['path'] ?? null) === 'users/1/old-uuid.webp');
 });

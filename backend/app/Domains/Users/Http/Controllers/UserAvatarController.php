@@ -6,9 +6,9 @@ namespace App\Domains\Users\Http\Controllers;
 
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Http\Requests\StoreUserAvatarRequest;
-use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Services\ProfileImageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 
 class UserAvatarController extends Controller
@@ -39,13 +39,11 @@ class UserAvatarController extends Controller
      *
      * Remove the user's avatar image.
      */
-    public function destroy(int $user): JsonResponse
+    public function destroy(int $user): Response
     {
         $targetUser = auth()->user();
         $this->profileImageService->removeAvatar($targetUser);
 
-        return response()->json(
-            new UserResource($targetUser->load(['role', 'organization'])),
-        );
+        return response()->noContent();
     }
 }
