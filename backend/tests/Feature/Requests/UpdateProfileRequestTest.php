@@ -58,11 +58,11 @@ it('multipart request with valid avatar passes file validation', function (): vo
     expect($validator->passes())->toBeTrue();
 });
 
-it('avatar file over 5MB is rejected', function (): void {
+it('avatar file over 800KB is rejected', function (): void {
     $user = User::factory()->create();
     $request = new UpdateProfileRequest;
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(6000); // 6MB
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(801); // 801KB
 
     $request->merge(['first_name' => 'Ana']);
     $request->files->set('avatar', $file);
@@ -71,6 +71,20 @@ it('avatar file over 5MB is rejected', function (): void {
 
     expect($validator->fails())->toBeTrue();
     expect($validator->errors()->has('avatar'))->toBeTrue();
+});
+
+it('avatar file at exactly 800KB is accepted', function (): void {
+    $user = User::factory()->create();
+    $request = new UpdateProfileRequest;
+
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(800); // 800KB
+
+    $request->merge(['first_name' => 'Ana']);
+    $request->files->set('avatar', $file);
+
+    $validator = validator($request->all(), $request->rules());
+
+    expect($validator->passes())->toBeTrue();
 });
 
 it('avatar file with wrong MIME is rejected', function (): void {

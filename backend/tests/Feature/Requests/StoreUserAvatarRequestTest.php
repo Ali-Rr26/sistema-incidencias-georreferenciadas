@@ -43,7 +43,7 @@ it('rejects oversized avatar file', function (): void {
     $user = User::factory()->create(['role_id' => 1]);
     $request = new StoreUserAvatarRequest;
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(6000);
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(801); // 801 KB (over 800 KB cap)
     $request->files->set('avatar', $file);
     $request->merge([]);
 
@@ -51,6 +51,19 @@ it('rejects oversized avatar file', function (): void {
 
     expect($validator->fails())->toBeTrue();
     expect($validator->errors()->has('avatar'))->toBeTrue();
+});
+
+it('accepts avatar file at exactly 800KB', function (): void {
+    $user = User::factory()->create(['role_id' => 1]);
+    $request = new StoreUserAvatarRequest;
+
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(800); // 800 KB (at cap)
+    $request->files->set('avatar', $file);
+    $request->merge([]);
+
+    $validator = validator($request->all(), $request->rules());
+
+    expect($validator->passes())->toBeTrue();
 });
 
 it('rejects wrong MIME type avatar', function (): void {
