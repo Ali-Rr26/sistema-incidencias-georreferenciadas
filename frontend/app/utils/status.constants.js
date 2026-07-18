@@ -3,9 +3,9 @@
 
 /** Map from incident status keys (string) to their canonical Spanish display label. */
 export const STATUS_LABEL = Object.freeze({
-  in_progress: 'En proceso',
-  pending: 'Pendiente',
-  resolved: 'Resuelto',
+  "in_progress": "En proceso",
+  "pending": "Pendiente",
+  "resolved": "Resuelto",
 });
 
 export default STATUS_LABEL;

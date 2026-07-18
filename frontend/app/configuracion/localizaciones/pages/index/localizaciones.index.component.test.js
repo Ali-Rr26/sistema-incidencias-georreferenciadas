@@ -168,13 +168,11 @@ const FIXTURE_HTML = `
 function mockMatchMediaDesktop() {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi
-      .fn()
-      .mockReturnValue({
-        matches: true,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
+    value: vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
   });
 }
 
@@ -409,13 +407,11 @@ describe('Mobile — actions render in card body', () => {
   it('at <768px actions render in card body', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi
-        .fn()
-        .mockReturnValue({
-          matches: false,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        }),
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
     });
 
     await renderIndexWithPermissions(
@@ -437,13 +433,11 @@ describe('Mobile — actions render in card body', () => {
   it('mobile Ver click navigates to /localizaciones/{id}', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi
-        .fn()
-        .mockReturnValue({
-          matches: false,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        }),
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
     });
 
     await renderIndexWithPermissions(
