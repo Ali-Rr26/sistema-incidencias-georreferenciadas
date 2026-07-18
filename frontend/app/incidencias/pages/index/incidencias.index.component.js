@@ -8,6 +8,7 @@ import {
   clearSelect,
   destroyAll,
 } from '../../../shared/select-search.js';
+import { mount } from '../../../shared/table-actions/table-actions.component.js';
 
 const POR_PAGINA = 10;
 
@@ -102,23 +103,24 @@ export default {
             <td class="small text-muted">${ubicacion}</td>
             <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
             <td class="text-center">
-              <div class="d-flex justify-content-center gap-1">
-                <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                  <i class="fas fa-eye"></i>
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
-                  data-id="${inc.id}" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                  data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
+              <table-actions id="ta-desktop-${inc.id}"></table-actions>
             </td>
           </tr>`;
           })
           .join('');
+
+        // Mount table-actions on each row (async — does not block DOM insertion)
+        datos.forEach((inc) => {
+          const el = document.getElementById('ta-desktop-' + inc.id);
+          if (el) {
+            mount(el, {
+              id: inc.id,
+              titulo: inc.title || 'Sin título',
+              slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+            });
+          }
+        });
+
         cards.innerHTML = '';
       } else {
         // Mobile: cards — compact layout sin scroll horizontal
@@ -157,16 +159,26 @@ export default {
                   </div>
                 </div>
 
-                <!-- Botón Ver en mobile solamente -->
+                <!-- table-actions component (Ver + kebab dropdown) -->
                 <div class="d-flex gap-1 justify-content-end">
-                  <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-primary" title="Ver detalle" style="padding:0.4rem 0.8rem;font-size:0.75rem;">
-                    Ver
-                  </a>
+                  <table-actions id="ta-mobile-${inc.id}"></table-actions>
                 </div>
               </div>
             </div>`;
           })
           .join('');
+
+        // Mount table-actions on each mobile card (async — does not block DOM insertion)
+        datos.forEach((inc) => {
+          const el = document.getElementById('ta-mobile-' + inc.id);
+          if (el) {
+            mount(el, {
+              id: inc.id,
+              titulo: inc.title || 'Sin título',
+              slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+            });
+          }
+        });
       }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
@@ -222,12 +234,41 @@ export default {
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
     }
 
+    // Delegated event listeners for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/incidencias/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/incidencias/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-titulo').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
+    }
+
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
     document
       .getElementById('tabla-body')
       .addEventListener('click', manejarClicks);
     document
       .getElementById('contenedor-cards')
       .addEventListener('click', manejarClicks);
+
+    // Delegate table-actions:view/edit/delete from both desktop table and mobile cards
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
 
     // Double-click handlers: abrir detalle
     function manejarDobleClic(e) {
