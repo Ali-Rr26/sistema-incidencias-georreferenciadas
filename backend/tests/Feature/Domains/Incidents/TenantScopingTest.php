@@ -132,6 +132,25 @@ it('OperadorOrg sees only incidents from their own organization', function (): v
         'role_id' => 4, // operador_organizacion
         'organization_id' => $this->orgB->id,
     ]);
+
+    // OperadorOrg scoping (EloquentIncidentRepository::applyFilters) ties
+    // operator visibility to the `assignments` pivot on top of the org
+    // filter — operators only see incidents they're formally assigned to,
+    // not every org incident. Assign the operator to all 3 Org B incidents
+    // so the assertion (total=3) still verifies org-scoping end-to-end.
+    DB::table('assignments')->insert(
+        Incident::where('organization_id', $this->orgB->id)
+            ->get(['id'])
+            ->map(fn ($incident) => [
+                'incident_id' => $incident->id,
+                'user_id' => $operator->id,
+                'assignment_role' => 'responsible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])
+            ->all()
+    );
+
     $this->actingAs($operator);
 
     $response = $this->getJson('/api/incidents');

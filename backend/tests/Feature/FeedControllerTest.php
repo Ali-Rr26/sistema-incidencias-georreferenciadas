@@ -21,6 +21,12 @@ beforeEach(function (): void {
 
     DB::table('roles')->insert(['id' => 5, 'name' => 'usuario']);
     $this->citizen = User::factory()->create(['role_id' => 5]);
+
+    // Skip JWT middleware — actingAs() bypasses the Auth guard but not
+    // the custom JwtAuthenticate middleware, which still rejects the
+    // request with 401 before the controller runs. Same seam used by
+    // CommentControllerTest and ClaimFlowTest.
+    $this->withoutMiddleware(\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class);
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {

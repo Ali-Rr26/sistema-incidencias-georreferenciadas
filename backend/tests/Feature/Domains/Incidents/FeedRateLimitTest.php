@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,11 @@ it('has a configured feed rate limiter', function (): void {
 
 it('returns 429 when requests exceed the feed rate limit', function (): void {
     putenv('FEED_RATE_LIMIT_PER_MIN=5');
+
+    // actingAs() bypasses the Auth guard but not the custom JwtAuthenticate
+    // middleware, which would 401 the loop before any rate-limit assertion
+    // can run. Same seam used by CommentControllerTest / ClaimFlowTest.
+    $this->withoutMiddleware(JwtAuthenticate::class);
 
     // Hit the endpoint enough times to trigger rate limiting
     // The FeedController falls back to PG when Redis is unavailable,
