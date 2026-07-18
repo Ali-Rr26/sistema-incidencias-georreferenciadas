@@ -124,18 +124,8 @@ class HttpService {
       );
       return result;
     } catch (err) {
-      // Refresh failed. Clear state and redirect to login. We redirect
-      // directly here instead of dispatching a custom event: there's exactly
-      // one consumer (the login redirect), and the indirection was hiding
-      // a memory leak (listener registered on every app boot, never
-      // removed). If a future feature needs to react to "session expired",
-      // it can subscribe to router's `currentRoute` change.
       clearAuthState();
-      // Use history.replaceState to avoid a hashchange loop with the router.
-      const target = '/login';
-      if (window.location.hash !== `#${target}`) {
-        window.location.hash = `#${target}`;
-      }
+      window.dispatchEvent(new CustomEvent('auth:expired'));
       // Reject all queued requests
       queue.forEach(({ reject }) =>
         reject(new Error('Sesión expirada. Inicia sesión nuevamente.')),
