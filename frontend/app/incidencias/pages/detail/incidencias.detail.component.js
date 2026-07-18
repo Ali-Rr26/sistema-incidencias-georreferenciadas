@@ -406,12 +406,11 @@ function buildCommentLi(comment, currentUserId, depth = 0) {
         ${comment.images.map(img => {
           const src = escapeHtml(getCommentImageUrl(img.url));
           const caption = escapeHtml(img.caption || img.original_name || '');
-          const delBtn = isOwner
-            ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
-            : '';
-          return `<div class="incid-detail__thumbnail-wrapper">
-            <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
-            ${delBtn}
+          return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
+            <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" />
+            <div class="incid-detail__thumbnail-overlay">
+              ${caption ? `<span class="incid-detail__thumbnail-caption">${caption}</span>` : ''}
+            </div>
           </div>`;
         }).join('')}
        </div>`
@@ -687,7 +686,7 @@ async function setupComments(incidentId) {
         return;
       }
 
-      const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
+      const thumb = e.target.closest('.incid-detail__thumbnail-wrapper[data-src]');
       if (thumb) {
         const src = thumb.dataset.src;
         const caption = thumb.dataset.caption || '';

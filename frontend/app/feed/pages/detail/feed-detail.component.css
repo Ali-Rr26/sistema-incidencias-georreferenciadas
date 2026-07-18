@@ -132,6 +132,65 @@
   justify-content: center;
 }
 
+/* ─── Comment image gallery ─── */
+.incid-detail__thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.incid-detail__thumbnail-wrapper {
+  position: relative;
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+
+.incid-detail__thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: none;
+  transition: transform 0.25s ease, filter 0.25s ease;
+  display: block;
+}
+
+.incid-detail__thumbnail:hover {
+  transform: scale(1.05);
+  filter: brightness(0.9);
+}
+
+.incid-detail__thumbnail-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  display: flex;
+  align-items: flex-end;
+  padding: 8px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.incid-detail__thumbnail-wrapper:hover .incid-detail__thumbnail-overlay {
+  opacity: 1;
+}
+
+.incid-detail__thumbnail-caption {
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
   .fd-map-container {
@@ -140,5 +199,9 @@
 
   .gr-page__title {
     font-size: 1.1rem;
+  }
+
+  .incid-detail__thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
 }
