@@ -1,124 +1,552 @@
 /**
- * usuarios.index.component — error differentiation tests (R-24).
+ * usuarios.index.component — tests
  *
- * The component's cargar() catch block must NOT show the same generic
- * error toast for a 403 (which means "you can see the route but not the
- * data" — usually a stale permission state) as for a network/server
- * failure. Defense-in-depth: even if the permissionGuard upstream lets a
- * user slip through, a 403 response is a clearer signal than a generic
- * "no se pudo conectar con el servidor".
+ * Two suites:
+ * 1. R-24 403 differentiation (pre-existing)
+ * 2. table-actions migration — permission-driven Ver + kebab actions
+ *
+ * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setAccessToken, clearAuthState } from '../../../../core/http.service.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { clearAuthState, setAccessToken } from '../../../../core/http.service.js';
 
+// ---------------------------------------------------------------------------
+// Mocked module imports
+// ---------------------------------------------------------------------------
+
+// Mock http.service
 vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
     http: {
       get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
       delete: vi.fn(),
     },
   };
 });
 
-import { http } from '../../../../core/http.service.js';
-import usuariosComponent from './usuarios.index.component.js';
+// Mock router
+const routerNavigateSpy = vi.fn();
+vi.mock('../../../../core/router.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    router: {
+      ...mod.router,
+      navigate: routerNavigateSpy,
+    },
+  };
+});
 
-/**
- * Build the slice of DOM that usuarios.index.component.js's onInit() reads
- * with document.getElementById. The component is wired to a real Bootstrap
- * template; here we just create the IDs it touches.
- */
-function mountUsuariosDom() {
-  document.body.innerHTML = `
-    <input id="filtro-buscar" />
-    <select id="filtro-rol"><option value="">Todos</option></select>
-    <select id="filtro-org"><option value="">Todas</option></select>
-    <div id="estado-cargando"></div>
-    <div id="estado-vacio" class="d-none"></div>
-    <div id="estado-error" class="d-none"></div>
-    <div id="contenedor-tabla" class="d-none">
-      <small id="info-resultados"></small>
-      <ul id="paginacion"></ul>
-    </div>
-    <table><tbody id="tabla-body"></tbody></table>
-    <div id="contenedor-cards"></div>
-    <button id="btn-filtrar"></button>
-    <button id="btn-limpiar"></button>
-    <button id="btn-reintentar"></button>
-    <div id="modal-eliminar"></div>
-    <strong id="modal-eliminar-nombre"></strong>
-    <button id="btn-confirmar-eliminar"></button>
-    <span id="eliminar-texto"></span>
-    <span id="eliminar-loading" class="d-none"></span>
-    <div id="toast-msg" class="toast align-items-center text-white border-0">
-      <div id="toast-msg-texto"></div>
-    </div>
-  `;
+// ---------------------------------------------------------------------------
+// Mocked external service — permissionService
+// ---------------------------------------------------------------------------
+import { permissionService } from '../../../../shared/permission.service.js';
+
+// ---------------------------------------------------------------------------
+// Mocked external component — table-actions
+// ---------------------------------------------------------------------------
+const tableActionsInstances = [];
+let getMyPermissionsMock = vi.fn().mockResolvedValue(new Set());
+
+vi.mock('../../../../shared/table-actions/table-actions.component.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    mount: vi.fn(async (el, ctx) => {
+      const perms = await getMyPermissionsMock();
+      const hasUpdate = perms.has(ctx.slugs.update);
+      const hasDelete = perms.has(ctx.slugs.delete);
+
+      const rehydrate = async () => {
+        const freshPerms = await getMyPermissionsMock();
+        const fHasUpdate = freshPerms.has(ctx.slugs.update);
+        const fHasDelete = freshPerms.has(ctx.slugs.delete);
+
+        const editItem = el.querySelector('.table-actions-edit-item');
+        const deleteItem = el.querySelector('.table-actions-delete-item');
+        const toggle = el.querySelector('.dropdown-toggle');
+
+        if (editItem) {
+          if (fHasUpdate) editItem.style.display = '';
+          else editItem.remove();
+        }
+        if (deleteItem) {
+          if (fHasDelete) deleteItem.style.display = '';
+          else deleteItem.remove();
+        }
+        if (toggle) {
+          if (fHasUpdate || fHasDelete) {
+            toggle.removeAttribute('disabled');
+            toggle.removeAttribute('title');
+          } else {
+            toggle.setAttribute('disabled', '');
+            toggle.setAttribute('title', 'No tenés acciones disponibles');
+          }
+        }
+      };
+
+      permissionService.onInvalidate(rehydrate);
+
+      el.innerHTML = `
+        <a class="btn-ver" href="#" data-action="view" title="Ver detalle">
+          <i class="fa-solid fa-eye"></i>
+        </a>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                  type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false" aria-label="Acciones"
+                  ${!hasUpdate && !hasDelete ? 'disabled title="No tenés acciones disponibles"' : ''}>
+            <i class="fa-solid fa-ellipsis-v"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            ${hasUpdate ? `
+            <li class="table-actions-edit-item">
+              <a class="dropdown-item table-actions-edit" href="#" data-action="edit">
+                <i class="fa-solid fa-edit"></i> Editar
+              </a>
+            </li>` : ''}
+            ${hasDelete ? `
+            <li class="table-actions-delete-item">
+              <a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete">
+                <i class="fa-solid fa-trash-alt"></i> Eliminar
+              </a>
+            </li>` : ''}
+          </ul>
+        </div>`;
+
+      const verBtn = el.querySelector('.btn-ver');
+      if (verBtn) {
+        verBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          el.dispatchEvent(new CustomEvent('table-actions:view', {
+            bubbles: true,
+            detail: { id: ctx.id, titulo: ctx.titulo },
+          }));
+        });
+      }
+
+      const editItem = el.querySelector('.table-actions-edit');
+      if (editItem) {
+        editItem.addEventListener('click', (e) => {
+          e.preventDefault();
+          el.dispatchEvent(new CustomEvent('table-actions:edit', {
+            bubbles: true,
+            detail: { id: ctx.id, titulo: ctx.titulo },
+          }));
+        });
+      }
+
+      const deleteItem = el.querySelector('.table-actions-delete');
+      if (deleteItem) {
+        deleteItem.addEventListener('click', (e) => {
+          e.preventDefault();
+          el.dispatchEvent(new CustomEvent('table-actions:delete', {
+            bubbles: true,
+            detail: { id: ctx.id, titulo: ctx.titulo },
+          }));
+        });
+      }
+
+      tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
+    }),
+    unmount: vi.fn((el) => { el.innerHTML = ''; }),
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Bootstrap Modal mock
+// ---------------------------------------------------------------------------
+let shownModalEl = null;
+
+class MockModal {
+  constructor(el) { this._el = el; }
+  show() { shownModalEl = this._el; }
+  hide() { shownModalEl = null; }
+  static getInstance() { return null; }
 }
 
-describe('usuarios.index.component — R-24 403 differentiation', () => {
-  beforeEach(() => {
-    clearAuthState();
-    setAccessToken('test-token');
-    vi.clearAllMocks();
-    // Roles/orgs fetches must return something so cargarFiltros doesn't throw.
-    http.get.mockImplementation((path) => {
-      if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
-      if (path.startsWith('/organizations'))
-        return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: [] });
-    });
-    mountUsuariosDom();
+// ---------------------------------------------------------------------------
+// DOM fixture
+// ---------------------------------------------------------------------------
+const FIXTURE_HTML = `
+  <input id="filtro-buscar" />
+  <select id="filtro-rol"><option value="">Todos</option></select>
+  <select id="filtro-org"><option value="">Todas</option></select>
+  <div id="estado-cargando"></div>
+  <div id="estado-vacio" class="d-none"></div>
+  <div id="estado-error" class="d-none"></div>
+  <div id="contenedor-tabla" class="d-none">
+    <small id="info-resultados"></small>
+    <ul id="paginacion"></ul>
+  </div>
+  <table><tbody id="tabla-body"></tbody></table>
+  <div id="contenedor-cards"></div>
+  <button id="btn-filtrar"></button>
+  <button id="btn-limpiar"></button>
+  <button id="btn-reintentar"></button>
+  <div id="modal-eliminar">
+    <strong id="modal-eliminar-nombre"></strong>
+  </div>
+  <button id="btn-confirmar-eliminar"></button>
+  <span id="eliminar-texto"></span>
+  <span id="eliminar-loading" class="d-none"></span>
+  <div id="toast-msg" class="toast align-items-center text-white border-0">
+    <div id="toast-msg-texto"></div>
+  </div>
+`;
+
+// ---------------------------------------------------------------------------
+// Helper: mock window.matchMedia
+// ---------------------------------------------------------------------------
+function mockMatchMediaDesktop() {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
+const MOCK_USUARIOS = [
+  {
+    id: '1',
+    first_name: 'Juan',
+    last_name: 'Pérez',
+    email: 'juan@example.com',
+    role: { name: 'admin_sistema' },
+    organization: { name: 'Municipio' },
+    phone: '0991234567',
+  },
+  {
+    id: '2',
+    first_name: 'María',
+    last_name: 'García',
+    email: 'maria@example.com',
+    role: { name: 'operador_sistema' },
+    organization: { name: 'ESSP' },
+    phone: '0987654321',
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Setup / teardown
+// ---------------------------------------------------------------------------
+let componentModule;
+
+beforeEach(async () => {
+  clearAuthState();
+  setAccessToken('test-token');
+
+  if (routerNavigateSpy.mock) {
+    routerNavigateSpy.mock.calls.length = 0;
+    routerNavigateSpy.mock.results.length = 0;
+  }
+
+  tableActionsInstances.length = 0;
+  shownModalEl = null;
+  permissionService.invalidateMyPermissions();
+  mockMatchMediaDesktop();
+
+  const permsToReturn = new Set(['users.update', 'users.delete']);
+  getMyPermissionsMock = vi.fn().mockImplementation(() => {
+    return Promise.resolve(new Set(permsToReturn));
+  });
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+  const { http } = await import('../../../../core/http.service.js');
+  http.get.mockImplementation((path) => {
+    if (path.startsWith('/users')) return Promise.resolve({ data: MOCK_USUARIOS, meta: { total: 2 } });
+    if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
+    if (path.startsWith('/organizations')) return Promise.resolve({ data: [] });
+    return Promise.resolve({ data: [] });
+  });
+  http.delete.mockResolvedValue({});
+
+  globalThis.bootstrap = {
+    ...globalThis.bootstrap,
+    Modal: MockModal,
+    Dropdown: class Dropdown {
+      constructor(el) { this._el = el; el._bootstrapDropdown = this; }
+      show() { this._el.setAttribute('aria-expanded', 'true'); }
+      hide() { this._el.setAttribute('aria-expanded', 'false'); }
+      dispose() { delete this._el._bootstrapDropdown; }
+      static getInstance(el) { return el._bootstrapDropdown || null; }
+    },
+    Toast: class Toast {
+      constructor(el) { this._el = el; }
+      show() {}
+    },
+  };
+
+  if (!componentModule) {
+    componentModule = await import('./usuarios.index.component.js');
+  }
+
+  document.body.innerHTML = FIXTURE_HTML;
+});
+
+afterEach(() => {
+  document.body.innerHTML = '';
+});
+
+// ---------------------------------------------------------------------------
+// Helper: render with given permissions
+// ---------------------------------------------------------------------------
+async function renderIndexWithPermissions(perms) {
+  getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  permissionService.invalidateMyPermissions();
+  await componentModule.default.onInit();
+}
+
+// ---------------------------------------------------------------------------
+// DESKTOP — permission-driven action rendering
+// ---------------------------------------------------------------------------
+
+describe('Desktop — permission-driven action rendering', () => {
+  it('renders Ver + Editar + Eliminar when user has both permissions', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const rows = document.querySelectorAll('#tabla-body tr');
+    expect(rows).toHaveLength(2);
+
+    const tableActions = document.querySelectorAll('#tabla-body table-actions');
+    expect(tableActions).toHaveLength(2);
+
+    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
+    expect(verBtns).toHaveLength(2);
+
+    const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
+    expect(toggles).toHaveLength(2);
+    toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
+
+    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(editItems).toHaveLength(2);
+    expect(deleteItems).toHaveLength(2);
   });
 
-  it('shows the "No tienes acceso" toast on a 403 from /users (R-24)', async () => {
-    // The first /users call rejects with a 403-shaped error.
-    http.get.mockImplementation((path) => {
-      if (path.startsWith('/users')) {
-        const err = new Error('This action is unauthorized.');
-        err.status = 403;
-        return Promise.reject(err);
-      }
-      if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
-      if (path.startsWith('/organizations'))
-        return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: [] });
-    });
+  it('renders only Ver + Editar (no Eliminar) when user lacks delete permission', async () => {
+    await renderIndexWithPermissions(new Set(['users.update']));
 
-    await usuariosComponent.onInit();
+    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    expect(tableActionsEls).toHaveLength(2);
 
-    // Microtask flush: toast mutation happens inside the awaited onInit.
-    expect(document.getElementById('toast-msg-texto').textContent).toContain(
-      'No tienes acceso',
-    );
-    // The generic error panel still shows so retry is possible.
-    expect(document.getElementById('estado-error').classList.contains('d-none'))
-      .toBe(false);
+    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
+    expect(verBtns).toHaveLength(2);
+
+    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    expect(editItems).toHaveLength(2);
+
+    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(deleteItems).toHaveLength(0);
   });
 
-  it('does NOT show the "No tienes acceso" toast on a network/server error', async () => {
-    // Generic 500-ish error.
-    http.get.mockImplementation((path) => {
-      if (path.startsWith('/users')) {
-        return Promise.reject(new Error('Network down'));
-      }
-      if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
-      if (path.startsWith('/organizations'))
-        return Promise.resolve({ data: [] });
-      return Promise.resolve({ data: [] });
+  it('renders only Ver + Eliminar (no Editar) when user lacks update permission', async () => {
+    await renderIndexWithPermissions(new Set(['users.delete']));
+
+    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    expect(tableActionsEls).toHaveLength(2);
+
+    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
+    expect(verBtns).toHaveLength(2);
+
+    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    expect(editItems).toHaveLength(0);
+
+    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(deleteItems).toHaveLength(2);
+  });
+
+  it('renders kebab disabled with tooltip when user has no action permissions', async () => {
+    await renderIndexWithPermissions(new Set(['users.view']));
+
+    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    expect(tableActionsEls).toHaveLength(2);
+
+    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
+    expect(verBtns).toHaveLength(2);
+
+    const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
+    expect(toggles).toHaveLength(2);
+    toggles.forEach((t) => {
+      expect(t.hasAttribute('disabled')).toBe(true);
+      expect(t.getAttribute('title')).toBe('No tenés acciones disponibles');
     });
 
-    await usuariosComponent.onInit();
+    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(editItems).toHaveLength(0);
+    expect(deleteItems).toHaveLength(0);
+  });
+});
 
-    expect(document.getElementById('toast-msg-texto').textContent).not.toContain(
-      'No tienes acceso',
-    );
-    // Generic error state still shown.
-    expect(document.getElementById('estado-error').classList.contains('d-none'))
-      .toBe(false);
+// ---------------------------------------------------------------------------
+// Action handlers
+// ---------------------------------------------------------------------------
+
+describe('Action handlers — CustomEvent delegation', () => {
+  it('clicking Ver navigates to /usuarios/{id}', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const verBtn = document.querySelector('#tabla-body .btn-ver');
+    verBtn.click();
+
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
+  });
+
+  it('clicking Editar navigates to /usuarios/crear?id={id}', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const firstRowActions = document.querySelector('#tabla-body table-actions');
+    const toggle = firstRowActions.querySelector('.dropdown-toggle');
+    toggle.click();
+
+    const editItem = firstRowActions.querySelector('.table-actions-edit');
+    editItem.click();
+
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/crear?id=1');
+  });
+
+  it('clicking Eliminar opens the Bootstrap Delete Modal', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const firstRowActions = document.querySelector('#tabla-body table-actions');
+    const toggle = firstRowActions.querySelector('.dropdown-toggle');
+    toggle.click();
+
+    const deleteItem = firstRowActions.querySelector('.table-actions-delete');
+    deleteItem.click();
+
+    expect(shownModalEl).not.toBeNull();
+    expect(shownModalEl.id).toBe('modal-eliminar');
+    expect(document.getElementById('modal-eliminar-nombre').textContent).toBe('Juan Pérez');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mobile rendering
+// ---------------------------------------------------------------------------
+
+describe('Mobile — actions render in card body', () => {
+  it('at <768px the table is hidden and actions render in card body', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    expect(document.getElementById('tabla-body').innerHTML).toBe('');
+
+    const cards = document.querySelectorAll('#contenedor-cards .card');
+    expect(cards).toHaveLength(2);
+
+    const tableActionsInCards = document.querySelectorAll('#contenedor-cards table-actions');
+    expect(tableActionsInCards).toHaveLength(2);
+
+    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
+    expect(verBtns).toHaveLength(2);
+
+    const toggles = document.querySelectorAll('#contenedor-cards .dropdown-toggle');
+    expect(toggles).toHaveLength(2);
+    toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
+  });
+
+  it('mobile Ver click navigates to /usuarios/{id}', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
+    verBtn.click();
+
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
+  });
+
+  it('mobile Editar click navigates to /usuarios/crear?id={id}', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const toggle = firstCardActions.querySelector('.dropdown-toggle');
+    toggle.click();
+    const editItem = firstCardActions.querySelector('.table-actions-edit');
+    editItem.click();
+
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/crear?id=1');
+  });
+
+  it('mobile Eliminar click opens the Bootstrap Delete Modal', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    });
+
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const toggle = firstCardActions.querySelector('.dropdown-toggle');
+    toggle.click();
+    const deleteItem = firstCardActions.querySelector('.table-actions-delete');
+    deleteItem.click();
+
+    expect(shownModalEl).not.toBeNull();
+    expect(shownModalEl.id).toBe('modal-eliminar');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Double-click removal — Ver button replaces row double-click
+// ---------------------------------------------------------------------------
+
+describe('Double-click removal — Ver button replaces row double-click', () => {
+  it('Ver button click navigates to /usuarios/{id}', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const verBtn = document.querySelector('#tabla-body .btn-ver');
+    verBtn.click();
+
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
+  });
+
+  it('double-clicking the row does NOT navigate (double-click handler removed)', async () => {
+    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+
+    const row = document.querySelector('#tabla-body tr');
+    row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    expect(routerNavigateSpy).not.toHaveBeenCalled();
   });
 });
