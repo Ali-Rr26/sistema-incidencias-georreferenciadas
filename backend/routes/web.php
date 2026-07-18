@@ -16,4 +16,11 @@ Route::get('/', fn () => response()->json([
  * Ej: /storage/images--42--uuid--jpg → key: images/42/uuid.jpg
  */
 Route::get('/storage/{path}', [StorageProxyController::class, 'serve'])
-    ->where('path', '.*');
+    ->where('path', '.*')
+    ->withoutMiddleware([
+        \Illuminate\Cookie\Middleware\EncryptCookies::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+    ]);

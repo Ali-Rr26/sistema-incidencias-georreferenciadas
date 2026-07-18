@@ -31,6 +31,10 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
       DB_HOST: db
+      # DB_PORT del contenedor `db` en la red docker — INTERNO, fijo.
+      # DB_PORT del .env controla el mapping host:container del servicio
+      # `db` (línea `${DB_PORT:-5432}:5432`); este `5432` es el puerto
+      # que Postgres escucha DENTRO de la red y NO cambia con DB_PORT.
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -87,7 +91,8 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}",
+          "pg_isready -U ${DB_USERNAME:-user}",
+          "-d ${DB_DATABASE:-incidencias_db}",
         ]
       interval: 5s
       timeout: 3s
@@ -149,7 +154,8 @@ services:
       test:
         [
           "CMD-SHELL",
-          'curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/ | grep -qE ''200|403''',
+          'curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/',
+          "| grep -qE '200|403'",
         ]
       interval: 30s
       timeout: 20s
@@ -225,7 +231,17 @@ services:
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
     environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USERNAME:-user}:${DB_PASSWORD:-password}@db:5432/${DB_DATABASE:-incidencias_db}?sslmode=disable"
+      # `db:5432` es el puerto INTERNO del contenedor en la red docker
+      # (fijo). DB_PORT del .env controla el mapping host:container.
+      # Conexión en vars separadas porque postgres_exporter acepta
+      # DATA_SOURCE_HOST/USER/PASS/DB/PORT/SSLMODE individualmente, y
+      # la URI completa DATA_SOURCE_NAME supera el límite de 80 chars.
+      DATA_SOURCE_HOST: db
+      DATA_SOURCE_PORT: "5432"
+      DATA_SOURCE_USER: ${DB_USERNAME:-user}
+      DATA_SOURCE_PASS: ${DB_PASSWORD:-password}
+      DATA_SOURCE_DB: ${DB_DATABASE:-incidencias_db}
+      DATA_SOURCE_SSLMODE: disable
     networks:
       - dev-network
 
@@ -251,6 +267,10 @@ services:
   # (or a drop-in under /etc/sysctl.d/).
   sonarqube_db:
     image: ${SONARQUBE_DB_IMAGE:-postgres:17-alpine}
+    # Override del puerto interno. La imagen `postgres:*-alpine` no expone
+    # `POSTGRES_PORT` como env var; hay que pasar `-p <puerto>` al binario.
+    # Si cambiás SONARQUBE_DB_PORT en .env, este `command` lo respeta.
+    command: ["postgres", "-p", "${SONARQUBE_DB_PORT:-5432}"]
     environment:
       POSTGRES_DB: ${SONARQUBE_DB_DATABASE:-sonarqube}
       POSTGRES_USER: ${SONARQUBE_DB_USERNAME:-sonarqube}
@@ -261,7 +281,9 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube}",
+          "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube}",
+          "-d ${SONARQUBE_DB_DATABASE:-sonarqube}",
+          "-p ${SONARQUBE_DB_PORT:-5432}",
         ]
       interval: 5s
       timeout: 3s
@@ -278,7 +300,10 @@ services:
       sonarqube_db:
         condition: service_healthy
     environment:
-      SONAR_JDBC_URL: "jdbc:postgresql://sonarqube_db:5432/${SONARQUBE_DB_DATABASE:-sonarqube}"
+      # `sonarqube_db:${SONARQUBE_DB_PORT:-5432}` usa el puerto INTERNO
+      # del contenedor sonarqube_db, parametrizable vía .env (default 5432).
+      # yamllint disable-line rule:line-length
+      SONAR_JDBC_URL: "jdbc:postgresql://sonarqube_db:${SONARQUBE_DB_PORT:-5432}/${SONARQUBE_DB_DATABASE:-sonarqube}"
       SONAR_JDBC_USERNAME: ${SONARQUBE_DB_USERNAME:-sonarqube}
       SONAR_JDBC_PASSWORD: ${SONARQUBE_DB_PASSWORD:-sonarqube}
     ports:
@@ -291,7 +316,8 @@ services:
       test:
         [
           "CMD-SHELL",
-          'curl -s http://localhost:9000/api/system/status | grep -q ''"status":"UP"''',
+          "curl -s http://localhost:9000/api/system/status",
+          '| grep -q ''"status":"UP"''',
         ]
       interval: 30s
       timeout: 10s
