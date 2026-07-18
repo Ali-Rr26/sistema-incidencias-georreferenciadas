@@ -96,7 +96,8 @@
     border-top: 1px solid #eef0f5;
     align-items: center;
     justify-content: space-around;
-    padding: 0 8px;
+    padding: 0 8px 8px 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* REQ-MR-8 */
   }
   /* T-4.2 + Concern A: display: contents makes the <ul> a layout-transparent
      wrapper so children participate in parent flex layout. Without this, the
@@ -105,6 +106,11 @@
   .app-shell-bottom-nav-list,
   .app-shell-citizen-bottom-nav-list {
     display: contents;
+  }
+  /* REQ-MR-1: toast offset above mobile bottom-nav (64px) */
+  .toast-container.position-fixed.bottom-0,
+  .position-fixed.bottom-0:has(.toast) {
+    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
   }
 }
 
@@ -767,5 +773,19 @@ body[data-role='guest']
     right: 8px;
     left: 8px;
     min-width: 0;
+  }
+}
+
+/* REQ-MR-5: admin header collapse at <=480px — search + name hidden, icons only */
+@media (max-width: 480px) {
+  body[data-role='admin'] .app-shell-header__search,
+  body[data-role='admin'] .app-shell-user-menu__name,
+  body[data-role='admin'] .app-shell-user-menu__arrow {
+    display: none !important;
+  }
+  body[data-role='admin'] .app-shell-header__icon-btn,
+  body[data-role='admin'] .app-shell-sidebar-toggle {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

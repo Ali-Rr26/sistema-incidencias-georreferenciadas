@@ -55,7 +55,8 @@
 
 .gr-select-wrap {
   position: relative;
-  min-width: 180px;
+  min-width: 0;
+  flex: 1 1 calc(50% - 5px);
 }
 
 .gr-select {

@@ -168,8 +168,12 @@ class Router {
     const htmlPromise = component.template
       ? Promise.resolve(component.template)
       : this._fetchText(component.templateUrl);
+    // Append ?raw so Vite's dev server returns the file's bytes verbatim
+    // instead of an HMR-wrapped JS module — wrapping corrupts the CSS
+    // parser when injected into a <style> tag. In production nginx serves
+    // the static CSS file ignoring query strings, so this is a no-op there.
     const cssPromise = component.styleUrl
-      ? this._fetchText(component.styleUrl)
+      ? this._fetchText(this._withRaw(component.styleUrl))
       : Promise.resolve(null);
 
     const [html, css] = await Promise.all([htmlPromise, cssPromise]);
@@ -194,11 +198,22 @@ class Router {
   }
 
   async _injectStyle(url, id) {
-    const css = await this._fetchText(url);
+    // See note in _mountPage: ?raw keeps the dev HMR JS wrapper out of the
+    // CSS we feed into the <style> tag, where it would otherwise break the
+    // CSS parser and silently disable every rule in this stylesheet.
+    const css = await this._fetchText(this._withRaw(url));
     const style = document.createElement('style');
     style.id = id;
     style.textContent = css;
     document.head.appendChild(style);
+  }
+
+  _withRaw(url) {
+    // Only append ?raw to actual CSS URLs — leaving HTML alone lets Vite
+    // wrap it with its HMR client (harmless for inline <body> injection).
+    return url.endsWith('.css') && !url.includes('?raw=')
+      ? url + (url.includes('?') ? '&raw=1' : '?raw=1')
+      : url;
   }
 
   _cleanupStyles() {

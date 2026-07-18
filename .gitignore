@@ -18,3 +18,11 @@ sdd/ok-arranquemos-entonces/verify-report.md
 .pi/APPEND_SYSTEM.md
 /.codebase-memory
 backend/storage/auth-92411-firebase-adminsdk-fbsvc-538415f630.json
+
+# Playwright E2E outputs (runtime artifacts)
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# node_modules internal state
+frontend/node_modules/.package-lock.json

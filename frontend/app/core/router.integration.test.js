@@ -75,16 +75,20 @@ describe('router integration (single-shell)', () => {
 
     window.location.hash = '#/dashboard';
     fetchMock = vi.fn(async (url) => {
-      if (url === '/templates/dashboard.html') {
+      // The router appends ?raw=1 to CSS URLs (Vite dev workaround — see
+      // _withRaw in router.js). Treat ?raw=1 URLs as the same resource.
+      const u = new URL(url, 'http://x');
+      const path = u.pathname;
+      if (path === '/templates/dashboard.html') {
         return htmlResponse('<section id="dashboard-page">Dashboard</section>');
       }
-      if (url === '/styles/dashboard.css') {
+      if (path === '/styles/dashboard.css') {
         return htmlResponse('#dashboard-page { color: rebeccapurple; }');
       }
-      if (url === '/templates/login.html') {
+      if (path === '/templates/login.html') {
         return htmlResponse('<form id="login-form"></form>');
       }
-      if (url === '/styles/login.css') {
+      if (path === '/styles/login.css') {
         return htmlResponse('/* */');
       }
       throw new Error(`Unexpected fetch: ${url}`);
@@ -128,7 +132,9 @@ describe('router integration (single-shell)', () => {
     expect(fetchMock).toHaveBeenCalledWith('/templates/dashboard.html', {
       cache: 'no-store',
     });
-    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css', {
+    // The router appends ?raw=1 to .css URLs (see _withRaw in router.js)
+    // so Vite's dev HMR wrapper doesn't corrupt the CSS parser.
+    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css?raw=1', {
       cache: 'no-store',
     });
   });

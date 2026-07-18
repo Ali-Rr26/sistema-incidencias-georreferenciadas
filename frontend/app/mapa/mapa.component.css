@@ -4,13 +4,20 @@
    ─────────────────────────────────────────────────────────────── */
 
 /* ── Layout ─────────────────────────────────────────────────── */
-.mp-view { overflow: hidden; }
+.mp-view {
+  overflow: hidden;
+}
 
 .mp-layout {
   width: 100%;
-  height: calc(100vh - 128px);
+  height: calc(100dvh - 128px);
   background: #f4f6fa;
   position: relative;
+}
+@supports not (height: 100dvh) {
+  .mp-layout {
+    height: calc(100vh - 128px);
+  }
 }
 
 /* Map canvas fills the entire layout (no sidebar column anymore
@@ -119,7 +126,9 @@ body:not(.mp-filters-open) .mp-filters-panel {
   cursor: pointer;
   color: #495057;
   font-size: 1rem;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .mp-filters-fab:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
@@ -192,11 +201,22 @@ body.mp-filters-open .mp-filters-fab {
   font-size: 14px;
 }
 
-.mp-marker--secondary  { background: #6c757d; }
-.mp-marker--primary    { background: #0d6efd; }
-.mp-marker--success    { background: #198754; }
-.mp-marker--warning    { background: #ffc107; color: #212529; }
-.mp-marker--danger     { background: #dc3545; }
+.mp-marker--secondary {
+  background: #6c757d;
+}
+.mp-marker--primary {
+  background: #0d6efd;
+}
+.mp-marker--success {
+  background: #198754;
+}
+.mp-marker--warning {
+  background: #ffc107;
+  color: #212529;
+}
+.mp-marker--danger {
+  background: #dc3545;
+}
 
 /* ── Leaflet popup customization ────────────────────────────── */
 .mp-marker-popup .leaflet-popup-content-wrapper {

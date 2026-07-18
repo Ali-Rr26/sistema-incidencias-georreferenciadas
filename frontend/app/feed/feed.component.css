@@ -191,9 +191,14 @@
 
 /* --- Scrollable incidents region (vertical scroll only) --- */
 .feed-scroll-region {
-  max-height: calc(100vh - 240px);
+  max-height: calc(100dvh - 240px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+@supports not (height: 100dvh) {
+  .feed-scroll-region {
+    max-height: calc(100vh - 240px);
+  }
 }
 
 /* When the feed is mounted we want the ONLY scrollable area to be

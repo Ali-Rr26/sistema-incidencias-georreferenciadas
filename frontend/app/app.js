@@ -108,30 +108,15 @@ router.addRoute(
   [permissionGuard],
   'admin',
 );
-router.addRoute(
-  '/categorias',
-  categoriasComponent,
-  [permissionGuard],
-  'admin',
-);
+router.addRoute('/categorias', categoriasComponent, [permissionGuard], 'admin');
 router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
   [permissionGuard],
   'admin',
 );
-router.addRoute(
-  '/roles',
-  rolesIndexComponent,
-  [permissionGuard],
-  'admin',
-);
-router.addRoute(
-  '/roles/:id',
-  rolesDetailComponent,
-  [permissionGuard],
-  'admin',
-);
+router.addRoute('/roles', rolesIndexComponent, [permissionGuard], 'admin');
+router.addRoute('/roles/:id', rolesDetailComponent, [permissionGuard], 'admin');
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
 // ─── Global listeners (cleaned up if app is ever re-booted in tests) ──
@@ -163,3 +148,10 @@ document.addEventListener(
   await auth.tryRestoreSession();
   router.init();
 })();
+
+// ─── Test helpers (used by Playwright E2E tests) ───────────────────
+// NOTE: auth is a module-level singleton. Exposing it on window allows
+// Playwright tests to call auth.login() / auth.me() via page.evaluate()
+// so the SPA's auth state is properly set before assertions run.
+window.__auth = auth;
+window.__router = router;

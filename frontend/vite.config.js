@@ -40,5 +40,14 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 5173,
+    proxy: {
+      // Proxy /api requests to the Laravel backend during development.
+      // This is required for Playwright E2E tests that need to authenticate
+      // (loginAsAdmin() calls POST /api/login and the SPA calls /api/me).
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
 });
