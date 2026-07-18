@@ -160,10 +160,7 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
   beforeEach(() => {
     vi.clearAllMocks();
     buildFormDom();
-    vi.stubGlobal(
-      'L',
-      { marker: vi.fn(() => makeFakeMarker()) },
-    );
+    vi.stubGlobal('L', { marker: vi.fn(() => makeFakeMarker()) });
     mockRouter.queryParams = new URLSearchParams();
     mockRouter.navigate.mockClear();
 
@@ -342,7 +339,7 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
   });
 
   describe('location cascade — Provincia → Cantón → Parroquia', () => {
-    it('renders the province select with the country node\'s direct children', async () => {
+    it("renders the province select with the country node's direct children", async () => {
       await component.onInit();
 
       const provinceSelect = document.getElementById('ici-location-province');
@@ -520,9 +517,9 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
         '200',
       );
       expect(document.getElementById('ici-location-city').value).toBe('300');
-      expect(
-        document.getElementById('ici-location-neighborhood').value,
-      ).toBe('400');
+      expect(document.getElementById('ici-location-neighborhood').value).toBe(
+        '400',
+      );
     });
   });
 });

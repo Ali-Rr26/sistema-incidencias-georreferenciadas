@@ -101,9 +101,11 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
   const avatarBgColor = isInternal ? '#4F6BED' : avatarBg(comment.user);
   const avatarHtml = `
     <div class="comment-avatar" style="background:${avatarBgColor}" aria-hidden="true">
-      ${isInternal
-        ? '<i class="fas fa-headset" style="font-size:0.85rem;color:#fff"></i>'
-        : `<span>${escapeHtml(initials)}</span>`}
+      ${
+        isInternal
+          ? '<i class="fas fa-headset" style="font-size:0.85rem;color:#fff"></i>'
+          : `<span>${escapeHtml(initials)}</span>`
+      }
     </div>`;
 
   const institutionalBadge = isInternal
@@ -113,7 +115,8 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
     : '';
 
   // ── Action buttons ────────────────────────────────────────────────────────
-  const canReply = currentUserId != null && (comment.depth ?? 0) < MAX_COMMENT_DEPTH;
+  const canReply =
+    currentUserId != null && (comment.depth ?? 0) < MAX_COMMENT_DEPTH;
   const replyBtn = canReply
     ? `<button type="button"
          class="comment-action-btn btn-respoder-comentario"
@@ -124,35 +127,40 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
     : '';
 
   const isOwner = currentUserId != null && comment.user_id === currentUserId;
-  const deleteBtn = canDelete && isOwner
-    ? `<span class="comment-action-sep" aria-hidden="true">•</span>
+  const deleteBtn =
+    canDelete && isOwner
+      ? `<span class="comment-action-sep" aria-hidden="true">•</span>
        <button type="button"
          class="comment-action-btn comment-action-btn--danger btn-eliminar-comentario"
          data-id="${escapeHtml(String(comment.id))}"
          title="Eliminar comentario">
          <i class="fas fa-trash-alt"></i> Eliminar
        </button>`
-    : '';
+      : '';
 
-  const actionsHtml = replyBtn || deleteBtn
-    ? `<div class="comment-actions">${replyBtn}${deleteBtn}</div>`
-    : '';
+  const actionsHtml =
+    replyBtn || deleteBtn
+      ? `<div class="comment-actions">${replyBtn}${deleteBtn}</div>`
+      : '';
 
   // ── Attached images ───────────────────────────────────────────────────────
-  const imagesHtml = comment.images && comment.images.length > 0
-    ? `<div class="incid-detail__thumbnail-grid mt-2">
-        ${comment.images.map((img) => {
-          const src = escapeHtml(getCommentImageUrl(img.url));
-          const caption = escapeHtml(img.caption || img.original_name || '');
-          return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
+  const imagesHtml =
+    comment.images && comment.images.length > 0
+      ? `<div class="incid-detail__thumbnail-grid mt-2">
+        ${comment.images
+          .map((img) => {
+            const src = escapeHtml(getCommentImageUrl(img.url));
+            const caption = escapeHtml(img.caption || img.original_name || '');
+            return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
                     <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" />
                     <div class="incid-detail__thumbnail-overlay">
                       ${caption ? `<span class="incid-detail__thumbnail-caption">${caption}</span>` : ''}
                     </div>
                   </div>`;
-        }).join('')}
+          })
+          .join('')}
        </div>`
-    : '';
+      : '';
 
   // ── Assemble ──────────────────────────────────────────────────────────────
   li.innerHTML = `

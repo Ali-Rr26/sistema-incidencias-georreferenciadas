@@ -213,9 +213,14 @@ it('R-15 denies comment creation for user without comments.create permission', f
 // (Existing "lists comments for an incident" test covers the allow path.)
 
 it('R-16 denies comment listing for user without comments.view permission', function (): void {
-    // operador_organizacion (role 4) has comments.create but NOT comments.view.
-    $operator = User::factory()->create(['role_id' => 4]);
-    $this->actingAs($operator);
+    // Fresh role with no pivot rows — mirrors R-15's seam. The original
+    // description referenced operador_organizacion (role 4), but that role
+    // now grants comments.view per RolePermissionSeeder, which would let
+    // the index route return 200. Use a no-permission role so the gate
+    // truly denies comments.view without ambiguity.
+    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
+    $this->actingAs($stranger);
 
     // Real comment so the 0-row case doesn't trivially satisfy assertForbidden.
     Comment::create([

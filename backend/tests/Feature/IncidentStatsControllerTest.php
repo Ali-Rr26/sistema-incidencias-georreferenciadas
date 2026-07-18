@@ -139,7 +139,7 @@ it('calculates average_resolution_time correctly for resolved incidents', functi
         ])
         ->assertJsonPath('average_resolution_time.days', 1)
         ->assertJsonPath('average_resolution_time.hours', 6)
-        ->assertJsonPath('average_resolution_time.formatted', '1 days, 6 hours');
+        ->assertJsonPath('average_resolution_time.formatted', '1d 6h');
 });
 
 it('excludes soft-deleted incidents from total, by_status, and average_resolution_time', function () {

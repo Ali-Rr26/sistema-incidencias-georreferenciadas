@@ -37,6 +37,7 @@ describe('router integration (single-shell)', () => {
     router.currentComponent = null;
     router.currentRoute = null;
     router._shellMounted = false;
+    router.setCurrentUserRole(null);
     layout.initPage.mockClear();
 
     document.body.innerHTML = `

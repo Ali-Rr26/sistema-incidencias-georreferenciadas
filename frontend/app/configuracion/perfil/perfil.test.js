@@ -583,13 +583,9 @@ describe('perfilComponent — avatar upload (C1)', () => {
       expect(grid).not.toBeNull();
       // Verify the grid class exists and CSS defines 160px + 1fr columns
       expect(grid.classList.contains('perfil-grid')).toBe(true);
-      // Verify the 2-column layout is in the CSS (CSS file must define this)
-      const cssContent = document.querySelector('style')?.textContent ?? '';
-      const hasGridCss =
-        cssContent.includes('grid-template-columns: 160px 1fr') ||
-        cssContent.includes('grid-template-columns:160px 1fr');
-      // The CSS file (perfil.component.css) defines this layout
-      // In jsdom we verify the class presence; CSS content verified at runtime
+      // The CSS file (perfil.component.css) defines the 2-column layout
+      // (grid-template-columns: 160px 1fr); CSS content is verified at
+      // runtime. In jsdom we verify the class presence only.
       expect(grid).toBeTruthy();
     });
 

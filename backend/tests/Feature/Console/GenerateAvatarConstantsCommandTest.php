@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Artisan;
 it('produces the generated file when run with no flags', function (): void {
     Artisan::call('avatar:generate-frontend-constants');
 
-    // `__DIR__` is backend/tests/Feature; the generated file lives in
+    // `__DIR__` is backend/tests/Feature/Console; the generated file lives in
     // sibling frontend/ four levels up (one above `backend/`).
-    $path = dirname(__DIR__, 3).'/frontend/app/utils/avatar.constants.js';
+    $path = dirname(__DIR__, 4).'/frontend/app/utils/avatar.constants.js';
     expect(file_exists($path))->toBeTrue();
 
     $contents = file_get_contents($path);
@@ -39,7 +39,7 @@ it('exits 0 in --check mode when the file is in sync', function (): void {
 });
 
 it('exits non-zero in --check mode on drift', function (): void {
-    $path = dirname(__DIR__, 3).'/frontend/app/utils/avatar.constants.js';
+    $path = dirname(__DIR__, 4).'/frontend/app/utils/avatar.constants.js';
     $original = file_get_contents($path);
 
     file_put_contents($path, $original."\n// tampered\n");
@@ -53,7 +53,7 @@ it('exits non-zero in --check mode on drift', function (): void {
 });
 
 it('writes the same content on repeated runs (idempotent)', function (): void {
-    $path = dirname(__DIR__, 3).'/frontend/app/utils/avatar.constants.js';
+    $path = dirname(__DIR__, 4).'/frontend/app/utils/avatar.constants.js';
 
     Artisan::call('avatar:generate-frontend-constants');
     $first = file_get_contents($path);

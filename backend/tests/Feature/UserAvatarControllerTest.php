@@ -5,9 +5,7 @@ declare(strict_types=1);
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -43,7 +41,7 @@ it('DELETE /api/users/{user}/avatar S3 delete failure still clears DB and logs w
     $mockDisk = Mockery::mock($fakeDisk);
     $mockDisk->shouldReceive('delete')
         ->with('users/1/existing.webp')
-        ->andThrow(new \RuntimeException('S3 delete failed'));
+        ->andThrow(new RuntimeException('S3 delete failed'));
     $mockDisk->shouldReceive('delete')
         ->andReturnUsing(fn ($path) => $fakeDisk->delete($path));
     $mockDisk->shouldReceive('put')->andReturnUsing(fn ($k, $d) => $fakeDisk->put($k, $d));

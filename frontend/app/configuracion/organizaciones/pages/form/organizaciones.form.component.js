@@ -260,7 +260,10 @@ export default {
       try {
         formCatalogs = await http.get('/organizations/form-data');
       } catch {
-        mostrarToast('No se pudieron cargar los datos del formulario.', 'danger');
+        mostrarToast(
+          'No se pudieron cargar los datos del formulario.',
+          'danger',
+        );
         return;
       }
       await Promise.all([

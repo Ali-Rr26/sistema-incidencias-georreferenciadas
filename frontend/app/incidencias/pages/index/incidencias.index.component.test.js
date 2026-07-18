@@ -61,60 +61,62 @@ import { permissionService } from '../../../shared/permission.service.js';
 // Mocked external component — table-actions
 // ---------------------------------------------------------------------------
 const tableActionsInstances = [];
-let getMyPermissionsMock = vi.fn().mockResolvedValue(
-  new Set(['incidents.update', 'incidents.delete']),
-);
+let getMyPermissionsMock = vi
+  .fn()
+  .mockResolvedValue(new Set(['incidents.update', 'incidents.delete']));
 
-vi.mock('../../../shared/table-actions/table-actions.component.js', async (importOriginal) => {
-  const mod = await importOriginal();
-  return {
-    ...mod,
-    mount: vi.fn(async (el, ctx) => {
-      // Determine which items to render based on user's CURRENT permissions
-      const perms = await getMyPermissionsMock();
-      const hasUpdate = perms.has(ctx.slugs.update);
-      const hasDelete = perms.has(ctx.slugs.delete);
+vi.mock(
+  '../../../shared/table-actions/table-actions.component.js',
+  async (importOriginal) => {
+    const mod = await importOriginal();
+    return {
+      ...mod,
+      mount: vi.fn(async (el, ctx) => {
+        // Determine which items to render based on user's CURRENT permissions
+        const perms = await getMyPermissionsMock();
+        const hasUpdate = perms.has(ctx.slugs.update);
+        const hasDelete = perms.has(ctx.slugs.delete);
 
-      // Re-hydration callback — re-fetches permissions and re-renders items
-      const rehydrate = async () => {
-        const freshPerms = await getMyPermissionsMock();
-        const fHasUpdate = freshPerms.has(ctx.slugs.update);
-        const fHasDelete = freshPerms.has(ctx.slugs.delete);
+        // Re-hydration callback — re-fetches permissions and re-renders items
+        const rehydrate = async () => {
+          const freshPerms = await getMyPermissionsMock();
+          const fHasUpdate = freshPerms.has(ctx.slugs.update);
+          const fHasDelete = freshPerms.has(ctx.slugs.delete);
 
-        const editItem = el.querySelector('.table-actions-edit-item');
-        const deleteItem = el.querySelector('.table-actions-delete-item');
-        const toggle = el.querySelector('.dropdown-toggle');
+          const editItem = el.querySelector('.table-actions-edit-item');
+          const deleteItem = el.querySelector('.table-actions-delete-item');
+          const toggle = el.querySelector('.dropdown-toggle');
 
-        if (editItem) {
-          if (fHasUpdate) {
-            editItem.style.display = '';
-          } else {
-            editItem.remove();
+          if (editItem) {
+            if (fHasUpdate) {
+              editItem.style.display = '';
+            } else {
+              editItem.remove();
+            }
           }
-        }
-        if (deleteItem) {
-          if (fHasDelete) {
-            deleteItem.style.display = '';
-          } else {
-            deleteItem.remove();
+          if (deleteItem) {
+            if (fHasDelete) {
+              deleteItem.style.display = '';
+            } else {
+              deleteItem.remove();
+            }
           }
-        }
-        if (toggle) {
-          if (fHasUpdate || fHasDelete) {
-            toggle.removeAttribute('disabled');
-            toggle.removeAttribute('title');
-          } else {
-            toggle.setAttribute('disabled', '');
-            toggle.setAttribute('title', 'No tenés acciones disponibles');
+          if (toggle) {
+            if (fHasUpdate || fHasDelete) {
+              toggle.removeAttribute('disabled');
+              toggle.removeAttribute('title');
+            } else {
+              toggle.setAttribute('disabled', '');
+              toggle.setAttribute('title', 'No tenés acciones disponibles');
+            }
           }
-        }
-      };
+        };
 
-      // Subscribe to permission invalidation (enables re-hydration tests)
-      permissionService.onInvalidate(rehydrate);
+        // Subscribe to permission invalidation (enables re-hydration tests)
+        permissionService.onInvalidate(rehydrate);
 
-      // Inject minimal stub that fires CustomEvents when buttons are clicked
-      el.innerHTML = `
+        // Inject minimal stub that fires CustomEvents when buttons are clicked
+        el.innerHTML = `
         <a class="btn-ver" href="#" data-action="view" title="Ver detalle">
           <i class="fa-solid fa-eye"></i>
         </a>
@@ -126,64 +128,79 @@ vi.mock('../../../shared/table-actions/table-actions.component.js', async (impor
             <i class="fa-solid fa-ellipsis-v"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            ${hasUpdate ? `
+            ${
+              hasUpdate
+                ? `
             <li class="table-actions-edit-item">
               <a class="dropdown-item table-actions-edit" href="#" data-action="edit">
                 <i class="fa-solid fa-edit"></i> Editar
               </a>
-            </li>` : ''}
-            ${hasDelete ? `
+            </li>`
+                : ''
+            }
+            ${
+              hasDelete
+                ? `
             <li class="table-actions-delete-item">
               <a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete">
                 <i class="fa-solid fa-trash-alt"></i> Eliminar
               </a>
-            </li>` : ''}
+            </li>`
+                : ''
+            }
           </ul>
         </div>`;
 
-      // Wire view
-      const verBtn = el.querySelector('.btn-ver');
-      if (verBtn) {
-        verBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:view', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        // Wire view
+        const verBtn = el.querySelector('.btn-ver');
+        if (verBtn) {
+          verBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:view', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      // Wire edit
-      const editItem = el.querySelector('.table-actions-edit');
-      if (editItem) {
-        editItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:edit', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        // Wire edit
+        const editItem = el.querySelector('.table-actions-edit');
+        if (editItem) {
+          editItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:edit', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      // Wire delete
-      const deleteItem = el.querySelector('.table-actions-delete');
-      if (deleteItem) {
-        deleteItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:delete', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        // Wire delete
+        const deleteItem = el.querySelector('.table-actions-delete');
+        if (deleteItem) {
+          deleteItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:delete', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
-    }),
-    unmount: vi.fn((el) => {
-      el.innerHTML = '';
-    }),
-  };
-});
+        tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
+      }),
+      unmount: vi.fn((el) => {
+        el.innerHTML = '';
+      }),
+    };
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Table-actions HTML template mock (fetch returns this)
@@ -362,7 +379,9 @@ beforeEach(async () => {
     // Return the current permsToReturn (can be updated per-test)
     return Promise.resolve(new Set(permsToReturn));
   });
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
   // HTTP mock for cargarIncidencias
@@ -375,14 +394,27 @@ beforeEach(async () => {
     ...globalThis.bootstrap,
     Modal: MockModal,
     Dropdown: class Dropdown {
-      constructor(el) { this._el = el; el._bootstrapDropdown = this; }
-      show() { this._el.setAttribute('aria-expanded', 'true'); }
-      hide() { this._el.setAttribute('aria-expanded', 'false'); }
-      dispose() { delete this._el._bootstrapDropdown; }
-      static getInstance(el) { return el._bootstrapDropdown || null; }
+      constructor(el) {
+        this._el = el;
+        el._bootstrapDropdown = this;
+      }
+      show() {
+        this._el.setAttribute('aria-expanded', 'true');
+      }
+      hide() {
+        this._el.setAttribute('aria-expanded', 'false');
+      }
+      dispose() {
+        delete this._el._bootstrapDropdown;
+      }
+      static getInstance(el) {
+        return el._bootstrapDropdown || null;
+      }
     },
     Toast: class Toast {
-      constructor(el) { this._el = el; }
+      constructor(el) {
+        this._el = el;
+      }
       show() {}
     },
   };
@@ -425,7 +457,9 @@ async function renderIndexWithPermissions(perms) {
   // even after vi.clearAllMocks() in the next test's beforeEach.
   getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
   // Update the existing spy's implementation to use the new mock
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   permissionService.invalidateMyPermissions();
   // Call onInit — it is async and returns a promise; await it so all
   // async operations (cargarIncidencias → renderTabla → mount) complete.
@@ -461,8 +495,12 @@ describe('Desktop — permission-driven action rendering', () => {
     });
 
     // Both Edit and Delete items are present in the dropdown menu
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(editItems).toHaveLength(2);
     expect(deleteItems).toHaveLength(2);
   });
@@ -470,7 +508,9 @@ describe('Desktop — permission-driven action rendering', () => {
   it('renders only Ver + Editar (no Eliminar) when user lacks delete permission', async () => {
     await renderIndexWithPermissions(new Set(['incidents.update']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     // Ver is present
@@ -478,18 +518,24 @@ describe('Desktop — permission-driven action rendering', () => {
     expect(verBtns).toHaveLength(2);
 
     // Edit item is present
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
     expect(editItems).toHaveLength(2);
 
     // Delete item is NOT in DOM
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(deleteItems).toHaveLength(0);
   });
 
   it('renders only Ver + Eliminar (no Editar) when user lacks update permission', async () => {
     await renderIndexWithPermissions(new Set(['incidents.delete']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     // Ver is present
@@ -497,18 +543,24 @@ describe('Desktop — permission-driven action rendering', () => {
     expect(verBtns).toHaveLength(2);
 
     // Edit item is NOT in DOM
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
     expect(editItems).toHaveLength(0);
 
     // Delete item is present
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(deleteItems).toHaveLength(2);
   });
 
   it('renders kebab disabled with tooltip when user has no action permissions', async () => {
     await renderIndexWithPermissions(new Set(['incidents.view']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     // Ver button is always present (even without action permissions)
@@ -524,8 +576,12 @@ describe('Desktop — permission-driven action rendering', () => {
     });
 
     // No edit or delete items
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(editItems).toHaveLength(0);
     expect(deleteItems).toHaveLength(0);
   });
@@ -579,7 +635,9 @@ describe('Action handlers — CustomEvent delegation', () => {
     expect(shownModalEl).not.toBeNull();
     expect(shownModalEl.id).toBe('modal-eliminar');
     // The modal title should be populated with the incidence title
-    expect(document.getElementById('modal-eliminar-titulo').textContent).toBe('Bache en Rivadavia');
+    expect(document.getElementById('modal-eliminar-titulo').textContent).toBe(
+      'Bache en Rivadavia',
+    );
   });
 });
 
@@ -611,7 +669,9 @@ describe('Mobile — actions render in card body', () => {
     expect(cards).toHaveLength(2);
 
     // Each card has a table-actions component
-    const tableActionsInCards = document.querySelectorAll('#contenedor-cards table-actions');
+    const tableActionsInCards = document.querySelectorAll(
+      '#contenedor-cards table-actions',
+    );
     expect(tableActionsInCards).toHaveLength(2);
 
     // Ver button is present in cards
@@ -619,7 +679,9 @@ describe('Mobile — actions render in card body', () => {
     expect(verBtns).toHaveLength(2);
 
     // Kebab toggle is NOT disabled
-    const toggles = document.querySelectorAll('#contenedor-cards .dropdown-toggle');
+    const toggles = document.querySelectorAll(
+      '#contenedor-cards .dropdown-toggle',
+    );
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
   });
@@ -658,7 +720,9 @@ describe('Mobile — actions render in card body', () => {
       new Set(['incidents.update', 'incidents.delete']),
     );
 
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const firstCardActions = document.querySelector(
+      '#contenedor-cards table-actions',
+    );
     const toggle = firstCardActions.querySelector('.dropdown-toggle');
     toggle.click();
     const editItem = firstCardActions.querySelector('.table-actions-edit');
@@ -681,7 +745,9 @@ describe('Mobile — actions render in card body', () => {
       new Set(['incidents.update', 'incidents.delete']),
     );
 
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const firstCardActions = document.querySelector(
+      '#contenedor-cards table-actions',
+    );
     const toggle = firstCardActions.querySelector('.dropdown-toggle');
     toggle.click();
     const deleteItem = firstCardActions.querySelector('.table-actions-delete');
@@ -707,16 +773,20 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
     // Verify initial state: kebab NOT disabled, Edit present, Delete present
     let toggle = document.querySelector('#tabla-body .dropdown-toggle');
     expect(toggle.hasAttribute('disabled')).toBe(false);
-    let editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    let deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    let editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
+    let deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(editItems).toHaveLength(2);
     expect(deleteItems).toHaveLength(2);
 
     // Simulate permission change: after re-hydration, only delete remains
     // Update the module-level getMyPermissionsMock so the mock's rehydrate uses it
-    getMyPermissionsMock = vi.fn().mockResolvedValue(
-      new Set(['incidents.delete']),
-    );
+    getMyPermissionsMock = vi
+      .fn()
+      .mockResolvedValue(new Set(['incidents.delete']));
 
     // Trigger re-hydration by calling ALL captured callbacks (one per instance)
     // NOTE: tableActionsInstances has an entry per mounted table-actions (2 rows × 2 instances = 4)
@@ -729,10 +799,14 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
     toggle = document.querySelector('#tabla-body .dropdown-toggle');
     expect(toggle.hasAttribute('disabled')).toBe(false);
 
-    editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
     expect(editItems).toHaveLength(0); // update permission gone
 
-    deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(deleteItems).toHaveLength(2); // delete still there
   });
 
@@ -748,13 +822,16 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
     expect(toggle.hasAttribute('disabled')).toBe(false);
 
     // Simulate: all action permissions revoked
-    getMyPermissionsMock = vi.fn().mockResolvedValue(new Set(['incidents.view']));
+    getMyPermissionsMock = vi
+      .fn()
+      .mockResolvedValue(new Set(['incidents.view']));
 
     await capturedRehydrateCb();
 
     await vi.waitFor(() => {
       const t = document.querySelector('#tabla-body .dropdown-toggle');
-      if (!t.hasAttribute('disabled')) throw new Error('toggle not disabled yet');
+      if (!t.hasAttribute('disabled'))
+        throw new Error('toggle not disabled yet');
     });
 
     // Kebab should now be disabled

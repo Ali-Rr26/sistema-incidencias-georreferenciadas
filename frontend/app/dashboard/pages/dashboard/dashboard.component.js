@@ -167,11 +167,15 @@ async function loadStats() {
   if (filterState.fin) params.append('fin', filterState.fin);
   if (filterState.tipo_id) params.append('tipo_id', filterState.tipo_id);
   if (filterState.ciudad_id) params.append('ciudad_id', filterState.ciudad_id);
-  if (filterState.provincia_id) params.append('provincia_id', filterState.provincia_id);
+  if (filterState.provincia_id)
+    params.append('provincia_id', filterState.provincia_id);
   if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
 
+  const query = params.toString();
   try {
-    const stats = await http.get(`/incidents/stats?${params}`);
+    const stats = await http.get(
+      query ? `/incidents/stats?${query}` : '/incidents/stats',
+    );
     return stats ?? {};
   } catch (e) {
     console.error('Error loading stats:', e);
@@ -227,7 +231,9 @@ async function refreshDashboard() {
   initDonut(pendientes, en_proceso, resueltas, total);
 
   // Cerrar modal de filtros si está abierto
-  const modal = bootstrap?.Modal?.getOrCreateInstance?.(document.getElementById('filter-modal'));
+  const modal = bootstrap?.Modal?.getOrCreateInstance?.(
+    document.getElementById('filter-modal'),
+  );
   if (modal) modal.hide();
 }
 
@@ -239,12 +245,14 @@ function setupFilterListeners() {
   Promise.all([
     http.get('/locations/tree'),
     http.get('/incident-categories/tree'),
-  ]).then(([locTree, catTree]) => {
-    filterState.locationTree = locTree ?? [];
-    filterState.categories = catTree ?? [];
-  }).catch(() => {
-    console.warn('Failed to load filter options');
-  });
+  ])
+    .then(([locTree, catTree]) => {
+      filterState.locationTree = locTree ?? [];
+      filterState.categories = catTree ?? [];
+    })
+    .catch(() => {
+      console.warn('Failed to load filter options');
+    });
 
   // Botón "Aplicar" — ejecuta refreshDashboard
   const btnAplicar = document.getElementById('btn-filter-apply');
@@ -272,14 +280,18 @@ function setupFilterListeners() {
   const selectTipo = document.getElementById('filter-tipo');
   if (selectTipo) {
     // Poblar con categorías raíz
-    filterState.categories.filter(c => !c.parent_id).forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat.id;
-      opt.textContent = cat.name;
-      selectTipo.appendChild(opt);
-    });
+    filterState.categories
+      .filter((c) => !c.parent_id)
+      .forEach((cat) => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.name;
+        selectTipo.appendChild(opt);
+      });
     selectTipo.addEventListener('change', (e) => {
-      filterState.tipo_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.tipo_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
     });
   }
 
@@ -287,32 +299,40 @@ function setupFilterListeners() {
   const selectPais = document.getElementById('filter-pais');
   if (selectPais) {
     // Poblar con raíces (países)
-    filterState.locationTree.filter(l => !l.parent_id).forEach(loc => {
-      const opt = document.createElement('option');
-      opt.value = loc.id;
-      opt.textContent = loc.name;
-      selectPais.appendChild(opt);
-    });
+    filterState.locationTree
+      .filter((l) => !l.parent_id)
+      .forEach((loc) => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.name;
+        selectPais.appendChild(opt);
+      });
     selectPais.addEventListener('change', (e) => {
-      filterState.pais_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.pais_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
       // Limpiar provincia y ciudad
       filterState.provincia_id = null;
       filterState.ciudad_id = null;
       const selectProvia = document.getElementById('filter-provincia');
       if (selectProvia) {
-        selectProvia.innerHTML = '<option value="">-- Seleccione provincia --</option>';
+        selectProvia.innerHTML =
+          '<option value="">-- Seleccione provincia --</option>';
         selectProvia.disabled = !filterState.pais_id;
       }
       const selectCiudad = document.getElementById('filter-ciudad');
       if (selectCiudad) {
-        selectCiudad.innerHTML = '<option value="">-- Seleccione ciudad --</option>';
+        selectCiudad.innerHTML =
+          '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = true;
       }
       // Poblar provincia si país seleccionado
       if (filterState.pais_id) {
-        const pais = filterState.locationTree.find(l => l.id === filterState.pais_id);
+        const pais = filterState.locationTree.find(
+          (l) => l.id === filterState.pais_id,
+        );
         if (pais && pais.children) {
-          pais.children.forEach(prov => {
+          pais.children.forEach((prov) => {
             const opt = document.createElement('option');
             opt.value = prov.id;
             opt.textContent = prov.name;
@@ -327,20 +347,23 @@ function setupFilterListeners() {
   const selectProvia = document.getElementById('filter-provincia');
   if (selectProvia) {
     selectProvia.addEventListener('change', (e) => {
-      filterState.provincia_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.provincia_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
       filterState.ciudad_id = null;
       const selectCiudad = document.getElementById('filter-ciudad');
       if (selectCiudad) {
-        selectCiudad.innerHTML = '<option value="">-- Seleccione ciudad --</option>';
+        selectCiudad.innerHTML =
+          '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = !filterState.provincia_id;
       }
       // Poblar ciudad si provincia seleccionada
       if (filterState.provincia_id) {
         const prov = filterState.locationTree
-          .flatMap(p => p.children || [])
-          .find(c => c.id === filterState.provincia_id);
+          .flatMap((p) => p.children || [])
+          .find((c) => c.id === filterState.provincia_id);
         if (prov && prov.children) {
-          prov.children.forEach(ciudad => {
+          prov.children.forEach((ciudad) => {
             const opt = document.createElement('option');
             opt.value = ciudad.id;
             opt.textContent = ciudad.name;
@@ -355,7 +378,9 @@ function setupFilterListeners() {
   const selectCiudad = document.getElementById('filter-ciudad');
   if (selectCiudad) {
     selectCiudad.addEventListener('change', (e) => {
-      filterState.ciudad_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.ciudad_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
     });
   }
 }

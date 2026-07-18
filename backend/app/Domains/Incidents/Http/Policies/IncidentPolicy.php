@@ -19,10 +19,6 @@ class IncidentPolicy extends PermissionPolicy
 
     public function view(User $user, Model $model): bool
     {
-        if ($user->isRegularUser()) {
-            return $user->can('feed.view');
-        }
-
         if (! parent::view($user, $model)) {
             return false;
         }

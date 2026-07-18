@@ -80,7 +80,10 @@ export default {
             mount(el, {
               id: org.id,
               titulo: org.name,
-              slugs: { update: 'organizations.update', delete: 'organizations.delete' },
+              slugs: {
+                update: 'organizations.update',
+                delete: 'organizations.delete',
+              },
             });
           }
         });
@@ -111,7 +114,10 @@ export default {
             mount(el, {
               id: org.id,
               titulo: org.name,
-              slugs: { update: 'organizations.update', delete: 'organizations.delete' },
+              slugs: {
+                update: 'organizations.update',
+                delete: 'organizations.delete',
+              },
             });
           }
         });
@@ -183,7 +189,10 @@ export default {
     tablaBody.addEventListener('table-actions:delete', manejarTableActions);
     contenedorCards.addEventListener('table-actions:view', manejarTableActions);
     contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener(
+      'table-actions:delete',
+      manejarTableActions,
+    );
 
     document
       .getElementById('btn-confirmar-eliminar')

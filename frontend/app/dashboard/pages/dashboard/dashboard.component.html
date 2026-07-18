@@ -12,7 +12,11 @@
       </nav>
     </div>
     <div class="gr-page__actions">
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filter-modal">
+      <button
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#filter-modal"
+      >
         <i class="fa-solid fa-filter"></i> Filtros
       </button>
     </div>
@@ -20,27 +24,35 @@
 
   <!-- Modal de Filtros -->
   <div class="modal fade" id="filter-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-fullscreen-sm-down modal-dialog-scrollable">
+    <div
+      class="modal-dialog modal-lg modal-fullscreen-sm-down modal-dialog-scrollable"
+    >
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Filtrar Dashboard</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+          ></button>
         </div>
         <div class="modal-body">
           <div class="row">
             <!-- Rango de fechas -->
             <div class="col-md-6 mb-3">
               <label for="filter-inicio" class="form-label">Fecha Inicio</label>
-              <input type="date" class="form-control" id="filter-inicio">
+              <input type="date" class="form-control" id="filter-inicio" />
             </div>
             <div class="col-md-6 mb-3">
               <label for="filter-fin" class="form-label">Fecha Fin</label>
-              <input type="date" class="form-control" id="filter-fin">
+              <input type="date" class="form-control" id="filter-fin" />
             </div>
 
             <!-- Tipo de Incidencia -->
             <div class="col-md-6 mb-3">
-              <label for="filter-tipo" class="form-label">Tipo de Incidencia</label>
+              <label for="filter-tipo" class="form-label"
+                >Tipo de Incidencia</label
+              >
               <select class="form-select" id="filter-tipo">
                 <option value="">-- Todos los tipos --</option>
               </select>
@@ -70,12 +82,19 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="btn-filter-apply">Aplicar Filtros</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-primary" id="btn-filter-apply">
+            Aplicar Filtros
+          </button>
         </div>
       </div>
     </div>
-  </div>
   </div>
 
   <!-- Stats row -->

@@ -293,7 +293,10 @@ export default {
     const onCloseClick = () => setPanelOpen(false);
     const onOpenClick = () => setPanelOpen(true);
     const onKeydown = (e) => {
-      if (e.key === 'Escape' && document.body.classList.contains('mp-filters-open')) {
+      if (
+        e.key === 'Escape' &&
+        document.body.classList.contains('mp-filters-open')
+      ) {
         setPanelOpen(false);
       }
     };

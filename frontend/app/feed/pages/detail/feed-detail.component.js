@@ -9,6 +9,7 @@
  */
 import {
   escapeHtml,
+  timeAgo,
   STATUS_LABEL,
   PRIORITY_LABEL,
 } from '../../../utils/format.js';
@@ -19,7 +20,10 @@ import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
-import { buildCommentItem, MAX_COMMENT_DEPTH } from '../../../shared/comment-item.js';
+import {
+  buildCommentItem,
+  MAX_COMMENT_DEPTH,
+} from '../../../shared/comment-item.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -113,9 +117,7 @@ export default {
     const incId = `INC-${String(inc.id).padStart(4, '0')}`;
     const locCode =
       inc.location?.code || inc.location_code || inc.city_code || '';
-    const titlePrefix = locCode
-      ? `${escapeHtml(locCode)} ${incId}`
-      : incId;
+    const titlePrefix = locCode ? `${escapeHtml(locCode)} ${incId}` : incId;
 
     const priorityIcon =
       inc.priority === 'high'
@@ -126,17 +128,19 @@ export default {
     if (!el) return;
 
     // Status and priority badges using existing gr-* classes
-    const statusBadgeClass = inc.status === 'pending'
-      ? 'gr-status gr-status--pendiente'
-      : inc.status === 'in_progress'
-        ? 'gr-status gr-status--proceso'
-        : 'gr-status gr-status--resuelto';
+    const statusBadgeClass =
+      inc.status === 'pending'
+        ? 'gr-status gr-status--pendiente'
+        : inc.status === 'in_progress'
+          ? 'gr-status gr-status--proceso'
+          : 'gr-status gr-status--resuelto';
 
-    const priorityBadgeClass = inc.priority === 'high'
-      ? 'badge bg-danger ms-2'
-      : inc.priority === 'medium'
-        ? 'badge bg-warning text-dark ms-2'
-        : 'badge bg-success ms-2';
+    const priorityBadgeClass =
+      inc.priority === 'high'
+        ? 'badge bg-danger ms-2'
+        : inc.priority === 'medium'
+          ? 'badge bg-warning text-dark ms-2'
+          : 'badge bg-success ms-2';
 
     // Only admins/operators see action buttons
     const isAdmin = ['admin', 'operator'].includes(this._role);
@@ -198,14 +202,16 @@ export default {
       if (resolveBtn) {
         resolveBtn.addEventListener('click', async () => {
           resolveBtn.disabled = true;
-          resolveBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Resolviendo…';
+          resolveBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Resolviendo…';
           try {
             await http.patch(`/incidents/${inc.id}`, { status: 'resolved' });
             // Refresh the view
             window.location.reload();
           } catch {
             resolveBtn.disabled = false;
-            resolveBtn.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> Resolver';
+            resolveBtn.innerHTML =
+              '<i class="fas fa-check-circle" aria-hidden="true"></i> Resolver';
             alert('No se pudo resolver la incidencia. Intente de nuevo.');
           }
         });
@@ -343,7 +349,9 @@ export default {
     }
 
     emptyEl?.classList.add('d-none');
-    listEl.replaceChildren(...items.map((c) => this._buildCommentLi(c, currentUserId, 0)));
+    listEl.replaceChildren(
+      ...items.map((c) => this._buildCommentLi(c, currentUserId, 0)),
+    );
   },
 
   /**
@@ -410,12 +418,16 @@ export default {
       if ((comment.depth ?? 0) >= MAX_COMMENT_DEPTH) return;
 
       // Close any previously open inline reply form (only one at a time)
-      document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
+      document
+        .querySelectorAll('.fd-comment-inline-reply')
+        .forEach((f) => f.remove());
 
       const commentBody = li.querySelector('.comment-body');
       if (!commentBody) return;
 
-      const parentUser = comment.user ? getUserDisplayName(comment.user) : 'Usuario';
+      const parentUser = comment.user
+        ? getUserDisplayName(comment.user)
+        : 'Usuario';
 
       const form = document.createElement('form');
       form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
@@ -566,32 +578,49 @@ export default {
 
       if (submitBtn) submitBtn.disabled = true;
       try {
-        const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
+        const parentId = replyParentIdEl?.value
+          ? Number(replyParentIdEl.value)
+          : null;
         const imageIds = [];
 
         if (selectedFiles.length > 0) {
-          const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
+          const created = await commentService.create(incidentId, {
+            message,
+            parentId,
+            imageIds: [],
+          });
           const commentId = created?.id ?? created?.data?.id;
           if (!commentId) throw new Error('No se pudo crear el comentario.');
 
           const results = await Promise.allSettled(
-            selectedFiles.map(file => commentService.uploadImages(commentId, [file]))
+            selectedFiles.map((file) =>
+              commentService.uploadImages(commentId, [file]),
+            ),
           );
-          const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value?.status >= 400));
+          const failed = results.filter(
+            (r) =>
+              r.status === 'rejected' ||
+              (r.status === 'fulfilled' && r.value?.status >= 400),
+          );
           if (failed.length > 0) {
             for (const url of previewUrls) URL.revokeObjectURL(url);
             selectedFiles.length = 0;
             previewUrls.length = 0;
             renderPreviews();
             if (errorEl) {
-              errorEl.textContent = 'Error al subir una o más imágenes. El comentario no fue publicado.';
+              errorEl.textContent =
+                'Error al subir una o más imágenes. El comentario no fue publicado.';
               errorEl.classList.remove('d-none');
             }
             await commentService.delete(commentId);
             throw new Error('Upload failed');
           }
         } else {
-          await commentService.create(incidentId, { message, parentId, imageIds });
+          await commentService.create(incidentId, {
+            message,
+            parentId,
+            imageIds,
+          });
         }
 
         input.value = '';
@@ -604,7 +633,8 @@ export default {
       } catch (err) {
         if (err.message === 'Upload failed') return;
         if (errorEl) {
-          errorEl.textContent = err.message || 'No se pudo publicar el comentario.';
+          errorEl.textContent =
+            err.message || 'No se pudo publicar el comentario.';
           errorEl.classList.remove('d-none');
         }
       } finally {
@@ -633,7 +663,9 @@ export default {
           return;
         }
 
-        const thumb = e.target.closest('.incid-detail__thumbnail-wrapper[data-src]');
+        const thumb = e.target.closest(
+          '.incid-detail__thumbnail-wrapper[data-src]',
+        );
         if (thumb) {
           const src = thumb.dataset.src;
           const caption = thumb.dataset.caption || '';
@@ -809,10 +841,8 @@ export default {
       const now = new Date();
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
-      const isToday =
-        date.toDateString() === now.toDateString();
-      const isYesterday =
-        date.toDateString() === yesterday.toDateString();
+      const isToday = date.toDateString() === now.toDateString();
+      const isYesterday = date.toDateString() === yesterday.toDateString();
       if (isToday) return 'Hoy';
       if (isYesterday) return 'Ayer';
       return date.toLocaleDateString('es-EC', {
@@ -899,8 +929,10 @@ export default {
     }
 
     const roleBadge = {
-      responsable: '<span class="badge bg-primary-subtle text-primary">Responsable</span>',
-      apoyo: '<span class="badge bg-secondary-subtle text-secondary">Apoyo</span>',
+      responsable:
+        '<span class="badge bg-primary-subtle text-primary">Responsable</span>',
+      apoyo:
+        '<span class="badge bg-secondary-subtle text-secondary">Apoyo</span>',
     };
 
     listEl.innerHTML = items
@@ -909,7 +941,8 @@ export default {
           ? [a.user.first_name, a.user.last_name].filter(Boolean).join(' ')
           : 'Usuario';
         const badge =
-          roleBadge[a.role] ?? `<span class="badge bg-light text-muted">${escapeHtml(String(a.role ?? ''))}</span>`;
+          roleBadge[a.role] ??
+          `<span class="badge bg-light text-muted">${escapeHtml(String(a.role ?? ''))}</span>`;
         const avatarUrl = a.user?.avatar_url || a.user?.avatar?.url || null;
         const initials = getInitials(a.user);
         const avatarHtml = avatarUrl
@@ -935,7 +968,8 @@ export default {
       const addBtn = document.createElement('button');
       addBtn.className = 'btn btn-outline-primary btn-sm w-100 mt-3';
       addBtn.id = 'fd-btn-add-member';
-      addBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Asignar Personal';
+      addBtn.innerHTML =
+        '<i class="fas fa-user-plus me-2"></i>Asignar Personal';
       addBtn.addEventListener('click', () => {
         router.navigate(`/incidencias/assign/${this._incidentId}`);
       });

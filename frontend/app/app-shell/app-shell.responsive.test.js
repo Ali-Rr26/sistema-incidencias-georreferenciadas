@@ -182,11 +182,13 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       // Class selectors begin with `.` followed by an identifier char.
       // The root grid container is intentionally `.app-shell` (no dash)
       // so we allow either `.app-shell` standalone OR `.app-shell-...`.
+      // Bootstrap utility classes (toast / position-fixed / bottom-0 etc.)
+      // are external framework tokens and live in the allowlist below.
       const customClasses = cssNoComments.match(/\.[a-z][\w-]*/g) || [];
       const offenders = customClasses.filter(
         (cls) =>
           !/^\.app-shell(-|_|$)/.test(cls) &&
-          !/^\.(d-|form-control|fa-|active|is-|show|hide|nav-|text-|btn|gr-)/.test(
+          !/^\.(d-|form-control|fa-|active|is-|show|hide|nav-|text-|btn|gr-|toast|toast-|position-|bottom-)/.test(
             cls,
           ),
       );

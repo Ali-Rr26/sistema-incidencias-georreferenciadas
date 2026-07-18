@@ -139,7 +139,7 @@ it('PUT /auth/profile S3 delete failure still saves new avatar and logs warning 
     // Specific old-path delete throws.
     $mockDisk->shouldReceive('delete')
         ->with('users/1/old-uuid.webp')
-        ->andThrow(new \RuntimeException('S3 delete failed: file not found'));
+        ->andThrow(new RuntimeException('S3 delete failed: file not found'));
     // All other delete calls (e.g. different path) fall through to the fake.
     $mockDisk->shouldReceive('delete')
         ->andReturnUsing(fn ($path) => $fakeDisk->delete($path));

@@ -201,7 +201,8 @@ export default {
         if (!organizaciones.length) {
           organizaciones = data.organizations ?? [];
           const selOrg = document.getElementById('filtro-org');
-          selOrg.innerHTML = '<option value="">Todas las organizaciones</option>';
+          selOrg.innerHTML =
+            '<option value="">Todas las organizaciones</option>';
           organizaciones.forEach((o) => {
             const opt = document.createElement('option');
             opt.value = o.id;
@@ -240,7 +241,10 @@ export default {
     tablaBody.addEventListener('table-actions:delete', manejarTableActions);
     contenedorCards.addEventListener('table-actions:view', manejarTableActions);
     contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener(
+      'table-actions:delete',
+      manejarTableActions,
+    );
 
     document
       .getElementById('btn-confirmar-eliminar')

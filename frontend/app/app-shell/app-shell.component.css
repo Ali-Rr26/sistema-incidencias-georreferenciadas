@@ -462,7 +462,7 @@ body[data-role='guest']
   background: #e7e1ff;
 }
 
-.app-shell-bell-panel__item .message-title {
+.app-shell-bell-panel__item .app-shell-bell-panel__title {
   font-size: 0.88rem;
   font-weight: 600;
   color: #23283b;

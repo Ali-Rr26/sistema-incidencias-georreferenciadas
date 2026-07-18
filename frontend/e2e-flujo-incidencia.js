@@ -42,7 +42,9 @@ async function crearIncidenciaApi(token) {
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}));
-    throw new Error(`Create incident API failed: ${resp.status} ${JSON.stringify(err)}`);
+    throw new Error(
+      `Create incident API failed: ${resp.status} ${JSON.stringify(err)}`,
+    );
   }
   const data = await resp.json();
   return data.data?.id ?? data.id;
@@ -62,14 +64,22 @@ async function loginAndWait(page, email, password) {
  * Admin de organización asigna un operador a la incidencia.
  */
 async function asignarOperador(page, incidentId) {
-  await page.goto(`${BASE}/#/incidencias/${incidentId}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#detalle-asignaciones-form:not(.d-none)', { timeout: 15000 });
+  await page.goto(`${BASE}/#/incidencias/${incidentId}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await page.waitForSelector('#detalle-asignaciones-form:not(.d-none)', {
+    timeout: 15000,
+  });
   await page.waitForTimeout(2000);
 
   // Seleccionar primer operador disponible
-  const opValues = await page.locator('#detalle-asignaciones-select').evaluate((sel) =>
-    Array.from(sel.options).filter((o) => o.value !== '').map((o) => o.value)
-  );
+  const opValues = await page
+    .locator('#detalle-asignaciones-select')
+    .evaluate((sel) =>
+      Array.from(sel.options)
+        .filter((o) => o.value !== '')
+        .map((o) => o.value),
+    );
   if (opValues.length === 0) {
     console.log('  ⚠️ No hay operadores disponibles para asignar');
     return;
@@ -85,7 +95,10 @@ async function asignarOperador(page, incidentId) {
   await page.waitForTimeout(2000);
 
   // Verificar que la asignación se reflejó
-  const listText = await page.locator('#detalle-asignaciones-list').textContent().catch(() => '');
+  const listText = await page
+    .locator('#detalle-asignaciones-list')
+    .textContent()
+    .catch(() => '');
   if (listText && listText.trim()) {
     console.log(`  ✅ Asignación visible: ${listText.trim().substring(0, 60)}`);
   } else {
@@ -97,7 +110,9 @@ async function asignarOperador(page, incidentId) {
  * Operador cambia el estado a "En Proceso" y publica un comentario.
  */
 async function cambiarEstadoYComentar(page, incidentId) {
-  await page.goto(`${BASE}/#/incidencias/${incidentId}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/#/incidencias/${incidentId}`, {
+    waitUntil: 'domcontentloaded',
+  });
 
   // Capturar errores de consola del navegador
   const pageErrors = [];
@@ -137,14 +152,21 @@ async function cambiarEstadoYComentar(page, incidentId) {
 
   // Usar type (no fill) para gatillar input events correctamente
   await page.click('#detalle-comment-input');
-  await page.type('#detalle-comment-input', 'El operador está revisando la incidencia. Comentario E2E.', { delay: 15 });
+  await page.type(
+    '#detalle-comment-input',
+    'El operador está revisando la incidencia. Comentario E2E.',
+    { delay: 15 },
+  );
 
   await page.click('#detalle-comment-submit');
 
   // Interceptar respuesta del POST de comentario
   const commentPosted = new Promise((resolve) => {
     page.on('response', (resp) => {
-      if (resp.url().includes('/comments') && resp.request().method() === 'POST') {
+      if (
+        resp.url().includes('/comments') &&
+        resp.request().method() === 'POST'
+      ) {
         console.log(`  POST /comments → status=${resp.status()}`);
         resolve(resp.status());
       }
@@ -166,7 +188,9 @@ async function cambiarEstadoYComentar(page, incidentId) {
     if (text && text.includes('Comentario E2E')) {
       console.log('  ✅ Comentario visible en la lista');
     } else {
-      console.log(`  ⚠️ Contenido lista: "${(text || '').trim().substring(0, 120)}"`);
+      console.log(
+        `  ⚠️ Contenido lista: "${(text || '').trim().substring(0, 120)}"`,
+      );
     }
   } catch (e) {
     console.log('  ⚠️ La lista no se actualizó en UI');
@@ -180,23 +204,34 @@ async function cambiarEstadoYComentar(page, incidentId) {
 
   // Fallback: verificar comentario vía API directa (con token de admin que SÍ puede listar)
   try {
-    const adminToken = await apiLogin('admin.gad-municipal-del-canton-quito@organizacion.com', 'Admin123!');
+    const adminToken = await apiLogin(
+      'admin.gad-municipal-del-canton-quito@organizacion.com',
+      'Admin123!',
+    );
     const resp = await fetch(`${API}/incidents/${incidentId}/comments`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
     const comments = await resp.json();
     const data = comments.data || comments;
-    const items = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-    const hasComment = items.some(c =>
-      (c.message || c.content || '').includes('Comentario E2E')
+    const items = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+    const hasComment = items.some((c) =>
+      (c.message || c.content || '').includes('Comentario E2E'),
     );
     if (hasComment) {
-      console.log('  ✅ Comentario verificado vía API (usando token admin_org)');
+      console.log(
+        '  ✅ Comentario verificado vía API (usando token admin_org)',
+      );
     } else {
       console.log('  ⚠️ Comentario no encontrado vía API');
     }
   } catch (apiErr) {
-    console.log(`  ⚠️ Fallo al verificar comentarios vía API: ${apiErr.message}`);
+    console.log(
+      `  ⚠️ Fallo al verificar comentarios vía API: ${apiErr.message}`,
+    );
   }
 }
 
@@ -208,7 +243,9 @@ async function main() {
   console.log('0️⃣  Preparar datos de prueba...');
   const userToken = await apiLogin('usuario@test.com', 'Usuario123!');
   const incidentId = await crearIncidenciaApi(userToken);
-  console.log(`  ✅ Incidencia #${incidentId} creada vía API (por ciudadano, org auto-asignada)`);
+  console.log(
+    `  ✅ Incidencia #${incidentId} creada vía API (por ciudadano, org auto-asignada)`,
+  );
 
   const browser = await chromium.launch({
     headless: true,
@@ -218,8 +255,14 @@ async function main() {
   try {
     // ─── Step 1: Admin organización asigna operador ───
     console.log('\n1️⃣  Admin organización asigna operador...');
-    const adminPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await loginAndWait(adminPage, 'admin.gad-municipal-del-canton-quito@organizacion.com', 'Admin123!');
+    const adminPage = await browser.newPage({
+      viewport: { width: 1280, height: 800 },
+    });
+    await loginAndWait(
+      adminPage,
+      'admin.gad-municipal-del-canton-quito@organizacion.com',
+      'Admin123!',
+    );
     console.log('  ✅ Login como admin_organizacion');
     await asignarOperador(adminPage, incidentId);
     console.log('  ✅ Asignación completada');
@@ -227,8 +270,14 @@ async function main() {
 
     // ─── Step 2: Operador cambia estado y comenta ───
     console.log('\n2️⃣  Operador cambia estado y comenta...');
-    const operPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await loginAndWait(operPage, 'operador.gad-municipal-del-canton-quito@organizacion.com', 'Operador123!');
+    const operPage = await browser.newPage({
+      viewport: { width: 1280, height: 800 },
+    });
+    await loginAndWait(
+      operPage,
+      'operador.gad-municipal-del-canton-quito@organizacion.com',
+      'Operador123!',
+    );
     console.log('  ✅ Login como operador_organizacion');
     await cambiarEstadoYComentar(operPage, incidentId);
     console.log('  ✅ Estado y comentario completados');

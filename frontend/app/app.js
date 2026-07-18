@@ -143,6 +143,23 @@ document.addEventListener(
   { signal: appAbort.signal },
 );
 
+document.addEventListener(
+  'auth:expired',
+  () => {
+    // Dispatched by http.service.js after a refresh-token rotation fails
+    // (http 401 on /auth/refresh). The service has already cleared the
+    // access token + session id; we just need to send the user to /login.
+    // Using hash navigation (instead of `window.location.assign`) keeps
+    // the SPA's router in charge of the transition and avoids triggering
+    // a full-page reload.
+    const target = '#/login';
+    if (window.location.hash !== target) {
+      window.location.hash = '/login';
+    }
+  },
+  { signal: appAbort.signal },
+);
+
 // ─── Boot: restore session, then start router. ─────────────────────
 (async () => {
   await auth.tryRestoreSession();

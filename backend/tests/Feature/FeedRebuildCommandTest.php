@@ -35,6 +35,14 @@ beforeEach(function (): void {
 });
 
 it('rebuilds the Redis feed from PostgreSQL', function (): void {
+    // Wipe-first pattern: FeedRebuildCommand must be authoritative, so it
+    // calls Redis::del on both v2 keys before repopulating. Without this
+    // expectation the Mockery facade throws BadMethodCallException because
+    // del() isn't on the partial mock otherwise configured below.
+    Redis::shouldReceive('del')
+        ->once()
+        ->with('feed:v2:items', 'feed:v2:index');
+
     // Pipeline for incidents: hset + zadd
     Redis::shouldReceive('pipeline')
         ->once()

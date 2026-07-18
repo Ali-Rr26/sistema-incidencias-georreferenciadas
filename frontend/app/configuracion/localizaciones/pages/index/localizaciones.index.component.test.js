@@ -7,7 +7,10 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { clearAuthState, setAccessToken } from '../../../../core/http.service.js';
+import {
+  clearAuthState,
+  setAccessToken,
+} from '../../../../core/http.service.js';
 
 vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
@@ -25,33 +28,44 @@ import { permissionService } from '../../../../shared/permission.service.js';
 const tableActionsInstances = [];
 let getMyPermissionsMock = vi.fn().mockResolvedValue(new Set());
 
-vi.mock('../../../../shared/table-actions/table-actions.component.js', async (importOriginal) => {
-  const mod = await importOriginal();
-  return {
-    ...mod,
-    mount: vi.fn(async (el, ctx) => {
-      const perms = await getMyPermissionsMock();
-      const hasUpdate = perms.has(ctx.slugs.update);
-      const hasDelete = perms.has(ctx.slugs.delete);
+vi.mock(
+  '../../../../shared/table-actions/table-actions.component.js',
+  async (importOriginal) => {
+    const mod = await importOriginal();
+    return {
+      ...mod,
+      mount: vi.fn(async (el, ctx) => {
+        const perms = await getMyPermissionsMock();
+        const hasUpdate = perms.has(ctx.slugs.update);
+        const hasDelete = perms.has(ctx.slugs.delete);
 
-      const rehydrate = async () => {
-        const freshPerms = await getMyPermissionsMock();
-        const fHasUpdate = freshPerms.has(ctx.slugs.update);
-        const fHasDelete = freshPerms.has(ctx.slugs.delete);
-        const editItem = el.querySelector('.table-actions-edit-item');
-        const deleteItem = el.querySelector('.table-actions-delete-item');
-        const toggle = el.querySelector('.dropdown-toggle');
-        if (editItem) { fHasUpdate ? editItem.style.display = '' : editItem.remove(); }
-        if (deleteItem) { fHasDelete ? deleteItem.style.display = '' : deleteItem.remove(); }
-        if (toggle) {
-          if (fHasUpdate || fHasDelete) { toggle.removeAttribute('disabled'); toggle.removeAttribute('title'); }
-          else { toggle.setAttribute('disabled', ''); toggle.setAttribute('title', 'No tenés acciones disponibles'); }
-        }
-      };
+        const rehydrate = async () => {
+          const freshPerms = await getMyPermissionsMock();
+          const fHasUpdate = freshPerms.has(ctx.slugs.update);
+          const fHasDelete = freshPerms.has(ctx.slugs.delete);
+          const editItem = el.querySelector('.table-actions-edit-item');
+          const deleteItem = el.querySelector('.table-actions-delete-item');
+          const toggle = el.querySelector('.dropdown-toggle');
+          if (editItem) {
+            fHasUpdate ? (editItem.style.display = '') : editItem.remove();
+          }
+          if (deleteItem) {
+            fHasDelete ? (deleteItem.style.display = '') : deleteItem.remove();
+          }
+          if (toggle) {
+            if (fHasUpdate || fHasDelete) {
+              toggle.removeAttribute('disabled');
+              toggle.removeAttribute('title');
+            } else {
+              toggle.setAttribute('disabled', '');
+              toggle.setAttribute('title', 'No tenés acciones disponibles');
+            }
+          }
+        };
 
-      permissionService.onInvalidate(rehydrate);
+        permissionService.onInvalidate(rehydrate);
 
-      el.innerHTML = `
+        el.innerHTML = `
         <a class="btn-ver" href="#" data-action="view" title="Ver detalle"><i class="fa-solid fa-eye"></i></a>
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
@@ -65,42 +79,68 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
           </ul>
         </div>`;
 
-      const verBtn = el.querySelector('.btn-ver');
-      if (verBtn) {
-        verBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:view', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
-        });
-      }
+        const verBtn = el.querySelector('.btn-ver');
+        if (verBtn) {
+          verBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:view', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      const editItem = el.querySelector('.table-actions-edit');
-      if (editItem) {
-        editItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:edit', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
-        });
-      }
+        const editItem = el.querySelector('.table-actions-edit');
+        if (editItem) {
+          editItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:edit', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      const deleteItem = el.querySelector('.table-actions-delete');
-      if (deleteItem) {
-        deleteItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:delete', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
-        });
-      }
+        const deleteItem = el.querySelector('.table-actions-delete');
+        if (deleteItem) {
+          deleteItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:delete', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
-    }),
-    unmount: vi.fn((el) => { el.innerHTML = ''; }),
-  };
-});
+        tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
+      }),
+      unmount: vi.fn((el) => {
+        el.innerHTML = '';
+      }),
+    };
+  },
+);
 
 let shownModalEl = null;
 class MockModal {
-  constructor(el) { this._el = el; }
-  show() { shownModalEl = this._el; }
-  hide() { shownModalEl = null; }
-  static getInstance() { return null; }
+  constructor(el) {
+    this._el = el;
+  }
+  show() {
+    shownModalEl = this._el;
+  }
+  hide() {
+    shownModalEl = null;
+  }
+  static getInstance() {
+    return null;
+  }
 }
 
 const FIXTURE_HTML = `
@@ -128,15 +168,31 @@ const FIXTURE_HTML = `
 function mockMatchMediaDesktop() {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+    value: vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
   });
 }
 
 // Flat list mock data — 3 locations in flat mode
 const MOCK_LOCATIONS = [
   { id: '1', name: 'Ecuador', code: 'EC', level: 'country', parent: null },
-  { id: '2', name: 'Pichincha', code: 'EC-PI', level: 'province', parent: { name: 'Ecuador' } },
-  { id: '3', name: 'Quito', code: 'EC-PI-QT', level: 'city', parent: { name: 'Pichincha' } },
+  {
+    id: '2',
+    name: 'Pichincha',
+    code: 'EC-PI',
+    level: 'province',
+    parent: { name: 'Ecuador' },
+  },
+  {
+    id: '3',
+    name: 'Quito',
+    code: 'EC-PI-QT',
+    level: 'city',
+    parent: { name: 'Pichincha' },
+  },
 ];
 
 // Tree mock data (what /locations/tree returns)
@@ -145,12 +201,27 @@ const MOCK_LOCATIONS = [
 // So treeRoots after getProvinces = [Pichincha, Quito], giving 2 rendered rows.
 const MOCK_TREE = [
   {
-    id: '1', name: 'Ecuador', code: 'EC', level: 'country', parent_id: null,
+    id: '1',
+    name: 'Ecuador',
+    code: 'EC',
+    level: 'country',
+    parent_id: null,
     children: [
       {
-        id: '2', name: 'Pichincha', code: 'EC-PI', level: 'province', parent_id: '1',
+        id: '2',
+        name: 'Pichincha',
+        code: 'EC-PI',
+        level: 'province',
+        parent_id: '1',
         children: [
-          { id: '3', name: 'Quito', code: 'EC-PI-QT', level: 'city', parent_id: '2', children: [] },
+          {
+            id: '3',
+            name: 'Quito',
+            code: 'EC-PI-QT',
+            level: 'city',
+            parent_id: '2',
+            children: [],
+          },
         ],
       },
     ],
@@ -174,14 +245,19 @@ beforeEach(async () => {
   mockMatchMediaDesktop();
 
   const permsToReturn = new Set(['locations.update', 'locations.delete']);
-  getMyPermissionsMock = vi.fn().mockImplementation(() => Promise.resolve(new Set(permsToReturn)));
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  getMyPermissionsMock = vi
+    .fn()
+    .mockImplementation(() => Promise.resolve(new Set(permsToReturn)));
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
   const { http } = await import('../../../../core/http.service.js');
   http.get.mockImplementation((path) => {
     if (path === '/locations/tree') return Promise.resolve({ data: MOCK_TREE });
-    if (path.startsWith('/locations')) return Promise.resolve({ data: MOCK_LOCATIONS, meta: { total: 3 } });
+    if (path.startsWith('/locations'))
+      return Promise.resolve({ data: MOCK_LOCATIONS, meta: { total: 3 } });
     return Promise.resolve({ data: [] });
   });
   http.delete.mockResolvedValue({});
@@ -190,13 +266,29 @@ beforeEach(async () => {
     ...globalThis.bootstrap,
     Modal: MockModal,
     Dropdown: class Dropdown {
-      constructor(el) { this._el = el; el._bootstrapDropdown = this; }
-      show() { this._el.setAttribute('aria-expanded', 'true'); }
-      hide() { this._el.setAttribute('aria-expanded', 'false'); }
-      dispose() { delete this._el._bootstrapDropdown; }
-      static getInstance(el) { return el._bootstrapDropdown || null; }
+      constructor(el) {
+        this._el = el;
+        el._bootstrapDropdown = this;
+      }
+      show() {
+        this._el.setAttribute('aria-expanded', 'true');
+      }
+      hide() {
+        this._el.setAttribute('aria-expanded', 'false');
+      }
+      dispose() {
+        delete this._el._bootstrapDropdown;
+      }
+      static getInstance(el) {
+        return el._bootstrapDropdown || null;
+      }
     },
-    Toast: class Toast { constructor(el) { this._el = el; } show() {} },
+    Toast: class Toast {
+      constructor(el) {
+        this._el = el;
+      }
+      show() {}
+    },
   };
 
   if (!componentModule) {
@@ -212,14 +304,18 @@ afterEach(() => {
 
 async function renderIndexWithPermissions(perms) {
   getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   permissionService.invalidateMyPermissions();
   await componentModule.default.onInit();
 }
 
 describe('TREE MODE — permission-driven action rendering', () => {
   it('renders table-actions in tree mode (desktop)', async () => {
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const rows = document.querySelectorAll('#tabla-body tr');
     expect(rows.length).toBeGreaterThan(0);
@@ -232,7 +328,9 @@ describe('TREE MODE — permission-driven action rendering', () => {
   });
 
   it('renders only Ver + kebab (no direct buttons) in tree mode', async () => {
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     // No old-style btn-editar/btn-eliminar
     const oldEditar = document.querySelectorAll('#tabla-body .btn-editar');
@@ -248,7 +346,9 @@ describe('FLAT MODE — permission-driven action rendering', () => {
     // Trigger flat mode by setting a search filter
     document.getElementById('filtro-buscar').value = ' Quito';
 
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const rows = document.querySelectorAll('#tabla-body tr');
     expect(rows.length).toBeGreaterThan(0);
@@ -263,7 +363,9 @@ describe('FLAT MODE — permission-driven action rendering', () => {
 
 describe('Action handlers — CustomEvent delegation', () => {
   it('clicking Ver on first row navigates to /localizaciones/{firstLocationId}', async () => {
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const verBtn = document.querySelector('#tabla-body .btn-ver');
     verBtn.click();
@@ -274,17 +376,23 @@ describe('Action handlers — CustomEvent delegation', () => {
   });
 
   it('clicking Editar on first row navigates to /localizaciones/crear?id={firstLocationId}', async () => {
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const firstRowActions = document.querySelector('#tabla-body table-actions');
     firstRowActions.querySelector('.dropdown-toggle').click();
     firstRowActions.querySelector('.table-actions-edit').click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/localizaciones/crear?id=2');
+    expect(routerNavigateSpy).toHaveBeenCalledWith(
+      '/localizaciones/crear?id=2',
+    );
   });
 
   it('clicking Eliminar opens the Bootstrap Delete Modal', async () => {
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const firstRowActions = document.querySelector('#tabla-body table-actions');
     firstRowActions.querySelector('.dropdown-toggle').click();
@@ -299,15 +407,23 @@ describe('Mobile — actions render in card body', () => {
   it('at <768px actions render in card body', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
     });
 
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const cards = document.querySelectorAll('#contenedor-cards .card');
     expect(cards.length).toBeGreaterThan(0);
 
-    const tableActionsInCards = document.querySelectorAll('#contenedor-cards table-actions');
+    const tableActionsInCards = document.querySelectorAll(
+      '#contenedor-cards table-actions',
+    );
     expect(tableActionsInCards.length).toBeGreaterThan(0);
 
     const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
@@ -317,10 +433,16 @@ describe('Mobile — actions render in card body', () => {
   it('mobile Ver click navigates to /localizaciones/{id}', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+      value: vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
     });
 
-    await renderIndexWithPermissions(new Set(['locations.update', 'locations.delete']));
+    await renderIndexWithPermissions(
+      new Set(['locations.update', 'locations.delete']),
+    );
 
     const verBtn = document.querySelector('#contenedor-cards .btn-ver');
     verBtn.click();

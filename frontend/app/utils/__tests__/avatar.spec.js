@@ -117,9 +117,7 @@ describe('resolveAvatar', () => {
 
   it('accepts a plain string path and returns it as-is', () => {
     // SCEN-PIU-Test-001: plain string path (storage key shape)
-    expect(resolveAvatar('users/5/abc123.webp')).toBe(
-      'users/5/abc123.webp',
-    );
+    expect(resolveAvatar('users/5/abc123.webp')).toBe('users/5/abc123.webp');
   });
 
   it('prefers profile_image_path string over avatar object (SCEN-PIU-Test-001)', () => {
@@ -127,7 +125,6 @@ describe('resolveAvatar', () => {
     // When profile_image_path is a non-empty string, it short-circuits.
     // This tests the canonical resolveAvatar behavior directly.
     const profilePath = 'users/5/abc123.webp';
-    const legacyAvatar = { urls: ['https://lh3.googleusercontent.com/photo.jpg'] };
     expect(resolveAvatar(profilePath)).toBe(profilePath);
     // The function itself is shape-agnostic — string input is returned as-is.
     // The precedence contract (profile_image_path wins over avatar) is

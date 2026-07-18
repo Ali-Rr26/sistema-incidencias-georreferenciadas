@@ -24,13 +24,26 @@ class FeedService
         int $page = 1,
         int $perPage = 12,
     ): array {
-        $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+        // The citizen feed is the highest-traffic read in the app and the one
+        // we cache in Redis specifically to insulate it from Postgres. If
+        // Redis is unreachable we MUST NOT 500 the whole map view — degrade
+        // to an empty response so the frontend still renders the shell
+        // (and can show a stale-data banner if it wants). Logged so ops sees
+        // the Redis outage rather than silently swallowing it.
+        try {
+            $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+            $allItems = $candidateIds === []
+                ? []
+                : Redis::hgetall(self::V2_ITEMS_KEY);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $this->emptyResponse($page, $perPage);
+        }
 
         if ($candidateIds === []) {
             return $this->emptyResponse($page, $perPage);
         }
-
-        $allItems = Redis::hgetall(self::V2_ITEMS_KEY);
 
         $incidents = [];
         foreach ($candidateIds as $id) {

@@ -8,7 +8,11 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { clearAuthState, setAccessToken, http } from '../../../../core/http.service.js';
+import {
+  clearAuthState,
+  setAccessToken,
+  http,
+} from '../../../../core/http.service.js';
 
 // ---------------------------------------------------------------------------
 // Mocked module imports
@@ -50,46 +54,48 @@ import { permissionService } from '../../../../shared/permission.service.js';
 const tableActionsInstances = [];
 let getMyPermissionsMock = vi.fn().mockResolvedValue(new Set());
 
-vi.mock('../../../../shared/table-actions/table-actions.component.js', async (importOriginal) => {
-  const mod = await importOriginal();
-  return {
-    ...mod,
-    mount: vi.fn(async (el, ctx) => {
-      const perms = await getMyPermissionsMock();
-      const hasUpdate = perms.has(ctx.slugs.update);
-      const hasDelete = perms.has(ctx.slugs.delete);
+vi.mock(
+  '../../../../shared/table-actions/table-actions.component.js',
+  async (importOriginal) => {
+    const mod = await importOriginal();
+    return {
+      ...mod,
+      mount: vi.fn(async (el, ctx) => {
+        const perms = await getMyPermissionsMock();
+        const hasUpdate = perms.has(ctx.slugs.update);
+        const hasDelete = perms.has(ctx.slugs.delete);
 
-      const rehydrate = async () => {
-        const freshPerms = await getMyPermissionsMock();
-        const fHasUpdate = freshPerms.has(ctx.slugs.update);
-        const fHasDelete = freshPerms.has(ctx.slugs.delete);
+        const rehydrate = async () => {
+          const freshPerms = await getMyPermissionsMock();
+          const fHasUpdate = freshPerms.has(ctx.slugs.update);
+          const fHasDelete = freshPerms.has(ctx.slugs.delete);
 
-        const editItem = el.querySelector('.table-actions-edit-item');
-        const deleteItem = el.querySelector('.table-actions-delete-item');
-        const toggle = el.querySelector('.dropdown-toggle');
+          const editItem = el.querySelector('.table-actions-edit-item');
+          const deleteItem = el.querySelector('.table-actions-delete-item');
+          const toggle = el.querySelector('.dropdown-toggle');
 
-        if (editItem) {
-          if (fHasUpdate) editItem.style.display = '';
-          else editItem.remove();
-        }
-        if (deleteItem) {
-          if (fHasDelete) deleteItem.style.display = '';
-          else deleteItem.remove();
-        }
-        if (toggle) {
-          if (fHasUpdate || fHasDelete) {
-            toggle.removeAttribute('disabled');
-            toggle.removeAttribute('title');
-          } else {
-            toggle.setAttribute('disabled', '');
-            toggle.setAttribute('title', 'No tenés acciones disponibles');
+          if (editItem) {
+            if (fHasUpdate) editItem.style.display = '';
+            else editItem.remove();
           }
-        }
-      };
+          if (deleteItem) {
+            if (fHasDelete) deleteItem.style.display = '';
+            else deleteItem.remove();
+          }
+          if (toggle) {
+            if (fHasUpdate || fHasDelete) {
+              toggle.removeAttribute('disabled');
+              toggle.removeAttribute('title');
+            } else {
+              toggle.setAttribute('disabled', '');
+              toggle.setAttribute('title', 'No tenés acciones disponibles');
+            }
+          }
+        };
 
-      permissionService.onInvalidate(rehydrate);
+        permissionService.onInvalidate(rehydrate);
 
-      el.innerHTML = `
+        el.innerHTML = `
         <a class="btn-ver" href="#" data-action="view" title="Ver detalle">
           <i class="fa-solid fa-eye"></i>
         </a>
@@ -101,59 +107,76 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
             <i class="fa-solid fa-ellipsis-v"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            ${hasUpdate ? `
+            ${
+              hasUpdate
+                ? `
             <li class="table-actions-edit-item">
               <a class="dropdown-item table-actions-edit" href="#" data-action="edit">
                 <i class="fa-solid fa-edit"></i> Editar
               </a>
-            </li>` : ''}
-            ${hasDelete ? `
+            </li>`
+                : ''
+            }
+            ${
+              hasDelete
+                ? `
             <li class="table-actions-delete-item">
               <a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete">
                 <i class="fa-solid fa-trash-alt"></i> Eliminar
               </a>
-            </li>` : ''}
+            </li>`
+                : ''
+            }
           </ul>
         </div>`;
 
-      const verBtn = el.querySelector('.btn-ver');
-      if (verBtn) {
-        verBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:view', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        const verBtn = el.querySelector('.btn-ver');
+        if (verBtn) {
+          verBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:view', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      const editItem = el.querySelector('.table-actions-edit');
-      if (editItem) {
-        editItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:edit', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        const editItem = el.querySelector('.table-actions-edit');
+        if (editItem) {
+          editItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:edit', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      const deleteItem = el.querySelector('.table-actions-delete');
-      if (deleteItem) {
-        deleteItem.addEventListener('click', (e) => {
-          e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:delete', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
-        });
-      }
+        const deleteItem = el.querySelector('.table-actions-delete');
+        if (deleteItem) {
+          deleteItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            el.dispatchEvent(
+              new CustomEvent('table-actions:delete', {
+                bubbles: true,
+                detail: { id: ctx.id, titulo: ctx.titulo },
+              }),
+            );
+          });
+        }
 
-      tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
-    }),
-    unmount: vi.fn((el) => { el.innerHTML = ''; }),
-  };
-});
+        tableActionsInstances.push({ el, ctx, _rehydrate: rehydrate });
+      }),
+      unmount: vi.fn((el) => {
+        el.innerHTML = '';
+      }),
+    };
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Bootstrap Modal mock
@@ -161,10 +184,18 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
 let shownModalEl = null;
 
 class MockModal {
-  constructor(el) { this._el = el; }
-  show() { shownModalEl = this._el; }
-  hide() { shownModalEl = null; }
-  static getInstance() { return null; }
+  constructor(el) {
+    this._el = el;
+  }
+  show() {
+    shownModalEl = this._el;
+  }
+  hide() {
+    shownModalEl = null;
+  }
+  static getInstance() {
+    return null;
+  }
 }
 
 /**
@@ -307,12 +338,15 @@ beforeEach(async () => {
   getMyPermissionsMock = vi.fn().mockImplementation(() => {
     return Promise.resolve(new Set(permsToReturn));
   });
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
   const { http } = await import('../../../../core/http.service.js');
   http.get.mockImplementation((path) => {
-    if (path.startsWith('/users')) return Promise.resolve({ data: MOCK_USUARIOS, meta: { total: 2 } });
+    if (path.startsWith('/users'))
+      return Promise.resolve({ data: MOCK_USUARIOS, meta: { total: 2 } });
     if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
     if (path.startsWith('/organizations')) return Promise.resolve({ data: [] });
     return Promise.resolve({ data: [] });
@@ -323,14 +357,27 @@ beforeEach(async () => {
     ...globalThis.bootstrap,
     Modal: MockModal,
     Dropdown: class Dropdown {
-      constructor(el) { this._el = el; el._bootstrapDropdown = this; }
-      show() { this._el.setAttribute('aria-expanded', 'true'); }
-      hide() { this._el.setAttribute('aria-expanded', 'false'); }
-      dispose() { delete this._el._bootstrapDropdown; }
-      static getInstance(el) { return el._bootstrapDropdown || null; }
+      constructor(el) {
+        this._el = el;
+        el._bootstrapDropdown = this;
+      }
+      show() {
+        this._el.setAttribute('aria-expanded', 'true');
+      }
+      hide() {
+        this._el.setAttribute('aria-expanded', 'false');
+      }
+      dispose() {
+        delete this._el._bootstrapDropdown;
+      }
+      static getInstance(el) {
+        return el._bootstrapDropdown || null;
+      }
     },
     Toast: class Toast {
-      constructor(el) { this._el = el; }
+      constructor(el) {
+        this._el = el;
+      }
       show() {}
     },
   };
@@ -351,7 +398,9 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 async function renderIndexWithPermissions(perms) {
   getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
-  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
   permissionService.invalidateMyPermissions();
   await componentModule.default.onInit();
 }
@@ -377,8 +426,12 @@ describe('Desktop — permission-driven action rendering', () => {
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
 
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(editItems).toHaveLength(2);
     expect(deleteItems).toHaveLength(2);
   });
@@ -386,39 +439,53 @@ describe('Desktop — permission-driven action rendering', () => {
   it('renders only Ver + Editar (no Eliminar) when user lacks delete permission', async () => {
     await renderIndexWithPermissions(new Set(['users.update']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
     expect(verBtns).toHaveLength(2);
 
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
     expect(editItems).toHaveLength(2);
 
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(deleteItems).toHaveLength(0);
   });
 
   it('renders only Ver + Eliminar (no Editar) when user lacks update permission', async () => {
     await renderIndexWithPermissions(new Set(['users.delete']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
     expect(verBtns).toHaveLength(2);
 
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
     expect(editItems).toHaveLength(0);
 
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(deleteItems).toHaveLength(2);
   });
 
   it('renders kebab disabled with tooltip when user has no action permissions', async () => {
     await renderIndexWithPermissions(new Set(['users.view']));
 
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
+    const tableActionsEls = document.querySelectorAll(
+      '#tabla-body table-actions',
+    );
     expect(tableActionsEls).toHaveLength(2);
 
     const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
@@ -431,8 +498,12 @@ describe('Desktop — permission-driven action rendering', () => {
       expect(t.getAttribute('title')).toBe('No tenés acciones disponibles');
     });
 
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    const editItems = document.querySelectorAll(
+      '#tabla-body .table-actions-edit-item',
+    );
+    const deleteItems = document.querySelectorAll(
+      '#tabla-body .table-actions-delete-item',
+    );
     expect(editItems).toHaveLength(0);
     expect(deleteItems).toHaveLength(0);
   });
@@ -477,7 +548,9 @@ describe('Action handlers — CustomEvent delegation', () => {
 
     expect(shownModalEl).not.toBeNull();
     expect(shownModalEl.id).toBe('modal-eliminar');
-    expect(document.getElementById('modal-eliminar-nombre').textContent).toBe('Juan Pérez');
+    expect(document.getElementById('modal-eliminar-nombre').textContent).toBe(
+      'Juan Pérez',
+    );
   });
 });
 
@@ -503,13 +576,17 @@ describe('Mobile — actions render in card body', () => {
     const cards = document.querySelectorAll('#contenedor-cards .card');
     expect(cards).toHaveLength(2);
 
-    const tableActionsInCards = document.querySelectorAll('#contenedor-cards table-actions');
+    const tableActionsInCards = document.querySelectorAll(
+      '#contenedor-cards table-actions',
+    );
     expect(tableActionsInCards).toHaveLength(2);
 
     const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
     expect(verBtns).toHaveLength(2);
 
-    const toggles = document.querySelectorAll('#contenedor-cards .dropdown-toggle');
+    const toggles = document.querySelectorAll(
+      '#contenedor-cards .dropdown-toggle',
+    );
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
   });
@@ -544,7 +621,9 @@ describe('Mobile — actions render in card body', () => {
 
     await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
 
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const firstCardActions = document.querySelector(
+      '#contenedor-cards table-actions',
+    );
     const toggle = firstCardActions.querySelector('.dropdown-toggle');
     toggle.click();
     const editItem = firstCardActions.querySelector('.table-actions-edit');
@@ -565,7 +644,9 @@ describe('Mobile — actions render in card body', () => {
 
     await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
 
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
+    const firstCardActions = document.querySelector(
+      '#contenedor-cards table-actions',
+    );
     const toggle = firstCardActions.querySelector('.dropdown-toggle');
     toggle.click();
     const deleteItem = firstCardActions.querySelector('.table-actions-delete');
@@ -653,7 +734,9 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
     await componentModule.default.onInit();
     const firstRow = document.querySelector('#tabla-body tr');
     expect(firstRow).not.toBeNull();
-    const img = firstRow.querySelector('img[src="/storage/users/1/avatar.webp"]');
+    const img = firstRow.querySelector(
+      'img[src="/storage/users/1/avatar.webp"]',
+    );
     expect(img).not.toBeNull();
   });
 

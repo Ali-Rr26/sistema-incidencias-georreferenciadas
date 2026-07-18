@@ -57,7 +57,9 @@ const CHILD_ROUTE_PERMISSIONS = {
  */
 export const permissionGuard = {
   async canActivate(_ctx) {
-    const [requestedPath, queryString] = (window.location.hash.slice(1) || '/').split('?');
+    const [requestedPath, queryString] = (
+      window.location.hash.slice(1) || '/'
+    ).split('?');
 
     let allowed;
     try {
@@ -94,7 +96,10 @@ async function isAllowed(requestedPath, queryString = '') {
       // so when `id` is present this must also accept the `.update`
       // grant — otherwise a role that's allowed to edit gets bounced
       // to /not-found for lacking a permission editing never needed.
-      if (permission.endsWith('.create') && new URLSearchParams(queryString).has('id')) {
+      if (
+        permission.endsWith('.create') &&
+        new URLSearchParams(queryString).has('id')
+      ) {
         const updatePermission = permission.replace(/\.create$/, '.update');
 
         return perms.has(permission) || perms.has(updatePermission);

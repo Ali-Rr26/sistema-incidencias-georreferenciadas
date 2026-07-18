@@ -116,10 +116,12 @@
   padding: 4px 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #4F6BED;
+  color: #4f6bed;
   cursor: pointer;
   border-radius: 6px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .comment-action-btn:hover {

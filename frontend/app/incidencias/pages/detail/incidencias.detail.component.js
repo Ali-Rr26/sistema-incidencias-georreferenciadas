@@ -1,4 +1,8 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml } from '../../../utils/format.js';
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  escapeHtml,
+} from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
@@ -8,7 +12,10 @@ import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
-import { buildCommentItem, MAX_COMMENT_DEPTH } from '../../../shared/comment-item.js';
+import {
+  buildCommentItem,
+  MAX_COMMENT_DEPTH,
+} from '../../../shared/comment-item.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
@@ -52,7 +59,7 @@ export default {
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
     setupComments(id);
-    setupAssignments(id, inc, inc.assignments ?? []);
+    setupAssignments(id, inc, inc.assignments);
   },
 
   onDestroy() {
@@ -346,9 +353,7 @@ function renderHistorial(items) {
         STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
       const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
       const user = item.user
-        ? [item.user.first_name, item.user.last_name]
-            .filter(Boolean)
-            .join(' ')
+        ? [item.user.first_name, item.user.last_name].filter(Boolean).join(' ')
         : 'Sistema';
       const fecha = new Date(item.created_at).toLocaleString('es-EC', {
         year: 'numeric',
@@ -423,7 +428,9 @@ function renderComments(items, currentUserId) {
   }
 
   vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId, 0)));
+  listEl.replaceChildren(
+    ...items.map((c) => buildCommentLi(c, currentUserId, 0)),
+  );
 }
 
 async function setupComments(incidentId) {
@@ -498,13 +505,17 @@ async function setupComments(incidentId) {
     if ((comment.depth ?? 0) >= MAX_COMMENT_DEPTH) return;
 
     // Close any previously open inline reply form (only one at a time)
-    document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
+    document
+      .querySelectorAll('.fd-comment-inline-reply')
+      .forEach((f) => f.remove());
 
     const commentBody = li.querySelector('.comment-body');
     if (!commentBody) return;
 
     const parentUser = comment.user
-      ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ') || comment.user.email
+      ? [comment.user.first_name, comment.user.last_name]
+          .filter(Boolean)
+          .join(' ') || comment.user.email
       : 'Usuario';
 
     const form = document.createElement('form');
@@ -660,32 +671,49 @@ async function setupComments(incidentId) {
 
     if (submitBtn) submitBtn.disabled = true;
     try {
-      const parentId = replyParentIdEl?.value ? Number(replyParentIdEl.value) : null;
+      const parentId = replyParentIdEl?.value
+        ? Number(replyParentIdEl.value)
+        : null;
       const imageIds = [];
 
       if (selectedFiles.length > 0) {
-        const created = await commentService.create(incidentId, { message, parentId, imageIds: [] });
+        const created = await commentService.create(incidentId, {
+          message,
+          parentId,
+          imageIds: [],
+        });
         const commentId = created?.id ?? created?.data?.id;
         if (!commentId) throw new Error('No se pudo crear el comentario.');
 
         const results = await Promise.allSettled(
-          selectedFiles.map(file => commentService.uploadImages(commentId, [file]))
+          selectedFiles.map((file) =>
+            commentService.uploadImages(commentId, [file]),
+          ),
         );
-        const failed = results.filter(r => r.status === 'rejected' || r.status === 'fulfilled' && r.value?.status >= 400);
+        const failed = results.filter(
+          (r) =>
+            r.status === 'rejected' ||
+            (r.status === 'fulfilled' && r.value?.status >= 400),
+        );
         if (failed.length > 0) {
           for (const url of previewUrls) URL.revokeObjectURL(url);
           selectedFiles.length = 0;
           previewUrls.length = 0;
           renderPreviews();
           if (errorEl) {
-            errorEl.textContent = 'Error al subir una o más imágenes. El comentario no fue publicado.';
+            errorEl.textContent =
+              'Error al subir una o más imágenes. El comentario no fue publicado.';
             errorEl.classList.remove('d-none');
           }
           await commentService.delete(commentId);
           throw new Error('Upload failed');
         }
       } else {
-        await commentService.create(incidentId, { message, parentId, imageIds });
+        await commentService.create(incidentId, {
+          message,
+          parentId,
+          imageIds,
+        });
       }
 
       input.value = '';
@@ -700,7 +728,8 @@ async function setupComments(incidentId) {
     } catch (err) {
       if (err.message === 'Upload failed') return;
       if (errorEl) {
-        errorEl.textContent = err.message || 'No se pudo publicar el comentario.';
+        errorEl.textContent =
+          err.message || 'No se pudo publicar el comentario.';
         errorEl.classList.remove('d-none');
       }
     } finally {
@@ -892,7 +921,8 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
     const usuarios = resp.data ?? [];
 
     if (usuarios.length === 0) {
-      selectEl.innerHTML = '<option value="">Sin operadores disponibles</option>';
+      selectEl.innerHTML =
+        '<option value="">Sin operadores disponibles</option>';
       return;
     }
 
@@ -1004,7 +1034,7 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
   }
 
   // Initial render — use embedded data if available, otherwise fetch.
-  if (initialAssignments !== null) {
+  if (initialAssignments != null) {
     loadingEl?.classList.add('d-none');
     renderAssignments(initialAssignments, puedeEliminar);
   } else {
@@ -1138,7 +1168,9 @@ function setupBuscarResponsables(_incidentId) {
   const vacioEl = document.getElementById('buscar-responsables-vacio');
   const errorEl = document.getElementById('buscar-responsables-error');
   const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
-  const operatorSelectEl = document.getElementById('detalle-asignaciones-select');
+  const operatorSelectEl = document.getElementById(
+    'detalle-asignaciones-select',
+  );
   const formEl = document.getElementById('detalle-asignaciones-form');
 
   if (!inputEl) return;
@@ -1167,8 +1199,7 @@ function setupBuscarResponsables(_incidentId) {
     listEl.replaceChildren(
       ...users.map((user) => {
         const li = document.createElement('li');
-        li.className =
-          'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
+        li.className = 'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
         li.style.cursor = 'pointer';
 
         const name = responsablesService.formatUserName(user);
@@ -1209,7 +1240,7 @@ function setupBuscarResponsables(_incidentId) {
         });
 
         return li;
-      })
+      }),
     );
   }
 
