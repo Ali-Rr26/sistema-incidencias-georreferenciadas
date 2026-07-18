@@ -17,7 +17,6 @@ use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
-use App\Domains\Users\Http\Controllers\UserAvatarController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
@@ -37,9 +36,9 @@ Route::middleware('jwt')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
-    // Avatar management
-    Route::post('/users/{user}/avatar', [UserAvatarController::class, 'store'])->where('user', '\d+');
-    Route::delete('/users/{user}/avatar', [UserAvatarController::class, 'destroy'])->where('user', '\d+');
+    // Avatar handling is owned by PUT /users/{user} now (avatar file or
+    // `_delete_avatar` flag in the same FormData/JSON payload) — see
+    // UserController::update and UpdateUserRequest.
 
     // Operator tracking
     Route::post('/operator/location', [OperatorLocationController::class, 'update']);

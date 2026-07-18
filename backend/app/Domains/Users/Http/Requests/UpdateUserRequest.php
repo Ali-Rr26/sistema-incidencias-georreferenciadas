@@ -70,7 +70,11 @@ class UpdateUserRequest extends FormRequest
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
             'phone' => 'nullable|string|max:50',
-            'avatar' => 'nullable|array',
+            // Avatar handling: the user form sends multipart when a new avatar
+            // is selected, OR a `_delete_avatar=true` flag when removing the
+            // existing one. Both are processed by UserController::update.
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:'.User::AVATAR_MAX_KB,
+            '_delete_avatar' => 'nullable|boolean',
         ];
     }
 
@@ -80,6 +84,9 @@ class UpdateUserRequest extends FormRequest
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'avatar.image' => 'El archivo debe ser una imagen válida.',
+            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
+            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
         ];
     }
 }

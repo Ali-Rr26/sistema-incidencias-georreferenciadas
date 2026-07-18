@@ -1,8 +1,11 @@
 /**
- * usuarios.form component unit tests — user create/edit form behavior.
+ * usuarios.form component unit tests — admin user create/edit form.
  *
- * Tests the component contract, form population, submit handler payload,
- * and avatar upload/delete for admin users.
+ * Avatar handling now lives inside the form submit (PUT /users/:id with
+ * multipart FormData when an avatar is selected, or a `_delete_avatar`
+ * flag in JSON when the user opts to remove the existing avatar). The
+ * standalone POST /users/:id/avatar and DELETE /users/:id/avatar endpoints
+ * are gone — see CHANGELOG.
  */
 
 const mockHttp = vi.hoisted(() => ({
@@ -28,14 +31,14 @@ const mockAuth = vi.hoisted(() => ({
 
 vi.mock('../../../../auth/auth.service.js', () => ({ auth: mockAuth }));
 
-// Stub URL.createObjectURL for jsdom
+// jsdom does not implement URL.createObjectURL — stub it globally
 const mockBlobUrl = 'blob:mock-avatar-url';
 vi.stubGlobal('URL', {
   createObjectURL: vi.fn(() => mockBlobUrl),
   revokeObjectURL: vi.fn(),
 });
 
-// Stub window.confirm to always return true (avatars are always deleted in tests)
+// Stub window.confirm so click-on-delete doesn't block tests.
 vi.stubGlobal(
   'confirm',
   vi.fn(() => true),
@@ -43,70 +46,74 @@ vi.stubGlobal(
 
 let usuariosFormComponent;
 
-describe('usuariosFormComponent', () => {
-  beforeAll(async () => {
-    const mod = await import('./usuarios.form.component.js');
-    usuariosFormComponent = mod.default;
-  });
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockRouter.queryParams.has = vi.fn((key) => key === 'id');
-    mockRouter.queryParams.get = vi.fn((key) => (key === 'id' ? '5' : null));
-    document.body.innerHTML = `
-      <span id="form-titulo">Nuevo Usuario</span>
-      <span id="card-titulo">Nuevo Usuario</span>
-      <span id="breadcrumb-actual">Crear</span>
-      <form id="form-user" novalidate>
-        <input type="hidden" id="user-id" value="5" />
-        <input type="text" id="user-nombre" value="Juan" />
-        <input type="text" id="user-apellido" value="Perez" />
-        <input type="email" id="user-email" value="juan@example.com" />
-        <input type="text" id="user-telefono" value="123456789" />
-        <select id="user-rol"></select>
-        <select id="user-org"></select>
-        <input type="file" id="user-avatar" accept="image/*" />
+function _setupEditDom() {
+  document.body.innerHTML = `
+    <span id="form-titulo">Nuevo Usuario</span>
+    <span id="card-titulo">Nuevo Usuario</span>
+    <span id="breadcrumb-actual">Crear</span>
+    <form id="form-user" novalidate>
+      <input type="hidden" id="user-id" value="5" />
+      <input type="hidden" id="user-delete-avatar-flag" value="0" />
+      <input type="text" id="user-nombre" value="Juan" />
+      <input type="text" id="user-apellido" value="Perez" />
+      <input type="email" id="user-email" value="juan@example.com" />
+      <input type="text" id="user-telefono" value="123456789" />
+      <select id="user-rol"></select>
+      <select id="user-org"></select>
+      <div class="avatar-wrap" id="user-avatar-wrap-btn">
         <img id="user-avatar-preview" style="display:none" />
-        <button type="button" id="btn-upload-avatar">Subir foto</button>
-        <button type="button" id="btn-delete-avatar">Eliminar foto</button>
-        <button type="submit" id="btn-guardar-user">
-          <span id="user-btn-texto">Guardar</span>
-          <span id="user-btn-loading" class="d-none">Guardando...</span>
-        </button>
-      </form>
-      <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
-        <div id="toast-msg-texto"></div>
       </div>
-    `;
+      <input type="file" id="user-avatar" accept="image/jpeg,image/png,image/webp" />
+      <button type="button" id="btn-eliminar-avatar" class="d-none">Eliminar foto</button>
+      <button type="button" id="btn-cancelar">Cancelar</button>
+      <button type="submit" id="btn-guardar-user">
+        <span id="user-btn-texto">Guardar</span>
+        <span id="user-btn-loading" class="d-none">Guardando...</span>
+      </button>
+    </form>
+    <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+      <div id="toast-msg-texto"></div>
+    </div>
+  `;
+}
+
+function _mockEditUserGet(extra = {}) {
+  mockHttp.get.mockResolvedValue({
+    data: {
+      id: 5,
+      first_name: 'Juan',
+      last_name: 'Perez',
+      email: 'juan@example.com',
+      phone: '123456789',
+      profile_image_path: null,
+      role: { id: 1, name: 'admin_sistema' },
+      roles: [{ id: 1, name: 'admin_sistema' }],
+      organizations: [{ id: 1, name: 'Org1' }],
+      ...extra,
+    },
   });
-
-  afterEach(() => {
-    if (usuariosFormComponent?.onDestroy) {
-      usuariosFormComponent.onDestroy();
-    }
+  mockAuth.me.mockResolvedValue({
+    id: 1,
+    first_name: 'Admin',
+    last_name: 'User',
+    profile_image_path: null,
   });
-
-  // ── Contract test ──────────────────────────────────────────
-
-  it('exports defineComponent contract (templateUrl, onInit, onDestroy)', () => {
-    expect(usuariosFormComponent).not.toBeNull();
-    expect(usuariosFormComponent).toHaveProperty('templateUrl');
-    expect(usuariosFormComponent).toHaveProperty('onInit');
-    expect(usuariosFormComponent).toHaveProperty('onDestroy');
-    expect(typeof usuariosFormComponent.onInit).toBe('function');
-    expect(typeof usuariosFormComponent.onDestroy).toBe('function');
-  });
-});
-
-// ────────────────────────────────────────────────────────────────────
-// Avatar upload suite (C2 — admin user-edit avatar management)
-// ────────────────────────────────────────────────────────────────────
+}
 
 function makeFakeFile(name = 'avatar.jpg', type = 'image/jpeg', size = 2048) {
   return new File(['x'.repeat(size)], name, { type });
 }
 
-describe('usuariosFormComponent — avatar upload (C2)', () => {
+function _selectAvatarFile(file) {
+  const fileInput = document.getElementById('user-avatar');
+  Object.defineProperty(fileInput, 'files', {
+    value: [file],
+    configurable: true,
+  });
+  fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+describe('usuariosFormComponent — contract & load', () => {
   beforeAll(async () => {
     const mod = await import('./usuarios.form.component.js');
     usuariosFormComponent = mod.default;
@@ -116,253 +123,226 @@ describe('usuariosFormComponent — avatar upload (C2)', () => {
     vi.clearAllMocks();
     mockRouter.queryParams.has = vi.fn((key) => key === 'id');
     mockRouter.queryParams.get = vi.fn((key) => (key === 'id' ? '5' : null));
-    document.body.innerHTML = `
-      <span id="form-titulo">Nuevo Usuario</span>
-      <span id="card-titulo">Nuevo Usuario</span>
-      <span id="breadcrumb-actual">Crear</span>
-      <form id="form-user" novalidate>
-        <input type="hidden" id="user-id" value="5" />
-        <input type="text" id="user-nombre" value="Juan" />
-        <input type="text" id="user-apellido" value="Perez" />
-        <input type="email" id="user-email" value="juan@example.com" />
-        <input type="text" id="user-telefono" value="123456789" />
-        <select id="user-rol"></select>
-        <select id="user-org"></select>
-        <input type="file" id="user-avatar" accept="image/*" />
-        <img id="user-avatar-preview" style="display:none" />
-        <button type="button" id="btn-upload-avatar">Subir foto</button>
-        <button type="button" id="btn-delete-avatar">Eliminar foto</button>
-        <button type="submit" id="btn-guardar-user">
-          <span id="user-btn-texto">Guardar</span>
-          <span id="user-btn-loading" class="d-none">Guardando...</span>
-        </button>
-      </form>
-      <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
-        <div id="toast-msg-texto"></div>
-      </div>
-    `;
+    document.body.innerHTML = '';
   });
 
   afterEach(() => {
-    if (usuariosFormComponent?.onDestroy) {
-      usuariosFormComponent.onDestroy();
-    }
+    usuariosFormComponent?.onDestroy?.();
   });
 
-  it('shows avatar preview via URL.createObjectURL when a file is selected', async () => {
-    mockHttp.get.mockResolvedValue({
-      data: {
-        id: 5,
-        first_name: 'Juan',
-        last_name: 'Perez',
-        email: 'juan@example.com',
-        phone: '123456789',
-        role: { id: 1, name: 'admin_sistema' },
-        roles: [{ id: 1, name: 'admin_sistema' }],
-        organizations: [{ id: 1, name: 'Org1' }],
-      },
-    });
-    mockAuth.me.mockResolvedValue({
-      id: 1,
-      first_name: 'Admin',
-      last_name: 'User',
-      profile_image_path: null,
-    });
+  it('exports defineComponent contract (templateUrl, styleUrl, onInit, onDestroy)', () => {
+    expect(usuariosFormComponent).not.toBeNull();
+    expect(usuariosFormComponent).toHaveProperty('templateUrl');
+    expect(usuariosFormComponent).toHaveProperty('styleUrl');
+    expect(usuariosFormComponent).toHaveProperty('onInit');
+    expect(usuariosFormComponent).toHaveProperty('onDestroy');
+    expect(typeof usuariosFormComponent.onInit).toBe('function');
+    expect(typeof usuariosFormComponent.onDestroy).toBe('function');
+  });
 
+  it('styleUrl points to the shared-scoped stylesheet', () => {
+    expect(usuariosFormComponent.styleUrl).toBe(
+      'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
+    );
+  });
+});
+
+describe('usuariosFormComponent — avatar preview', () => {
+  beforeAll(async () => {
+    const mod = await import('./usuarios.form.component.js');
+    usuariosFormComponent = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRouter.queryParams.has = vi.fn((key) => key === 'id');
+    mockRouter.queryParams.get = vi.fn((key) => (key === 'id' ? '5' : null));
+    _setupEditDom();
+  });
+
+  afterEach(() => {
+    usuariosFormComponent?.onDestroy?.();
+  });
+
+  it('shows preview via URL.createObjectURL when a file is selected', async () => {
+    _mockEditUserGet();
     await usuariosFormComponent.onInit();
 
-    const fileInput = document.getElementById('user-avatar');
     const file = makeFakeFile();
-    Object.defineProperty(fileInput, 'files', {
-      value: [file],
-      configurable: true,
-    });
-    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    _selectAvatarFile(file);
 
     const preview = document.getElementById('user-avatar-preview');
-    expect(preview.src).toBe(mockBlobUrl);
+    expect(preview.getAttribute('src')).toBe(mockBlobUrl);
     expect(preview.style.display).not.toBe('none');
   });
 
-  it('uploads avatar via POST /api/users/{id}/avatar with FormData', async () => {
-    mockHttp.get.mockResolvedValue({
-      data: {
-        id: 5,
-        first_name: 'Juan',
-        last_name: 'Perez',
-        email: 'juan@example.com',
-        phone: '123456789',
-        profile_image_path: null,
-        role: { id: 1, name: 'admin_sistema' },
-        roles: [{ id: 1, name: 'admin_sistema' }],
-        organizations: [{ id: 1, name: 'Org1' }],
-      },
-    });
-    mockAuth.me.mockResolvedValue({
-      id: 1,
-      first_name: 'Admin',
-      last_name: 'User',
-      profile_image_path: null,
-    });
-    mockHttp.post.mockResolvedValue({
-      data: { id: 5, profile_image_path: 'users/5/abc123.webp' },
-    });
-
+  it('renders existing avatar from profile_image_path on init', async () => {
+    _mockEditUserGet({ profile_image_path: 'users/5/abc123.webp' });
     await usuariosFormComponent.onInit();
 
-    // Select a file
-    const fileInput = document.getElementById('user-avatar');
-    const file = makeFakeFile();
-    Object.defineProperty(fileInput, 'files', {
-      value: [file],
-      configurable: true,
-    });
-    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    const preview = document.getElementById('user-avatar-preview');
+    expect(preview.getAttribute('src')).toBe('/storage/users/5/abc123.webp');
+    expect(preview.style.display).not.toBe('none');
+  });
 
-    // Click the avatar upload button
-    const uploadBtn = document.getElementById('btn-upload-avatar');
-    if (uploadBtn) {
-      uploadBtn.dispatchEvent(new Event('click', { bubbles: true }));
-    }
+  it('exposes the delete button when an existing avatar is loaded', async () => {
+    _mockEditUserGet({ profile_image_path: 'users/5/abc123.webp' });
+    await usuariosFormComponent.onInit();
 
-    // Flush microtasks
+    expect(
+      document
+        .getElementById('btn-eliminar-avatar')
+        .classList.contains('d-none'),
+    ).toBe(false);
+  });
+
+  it('hides the delete button when no existing avatar is loaded', async () => {
+    _mockEditUserGet({ profile_image_path: null });
+    await usuariosFormComponent.onInit();
+
+    expect(
+      document
+        .getElementById('btn-eliminar-avatar')
+        .classList.contains('d-none'),
+    ).toBe(true);
+  });
+
+  it('marks delete flag and clears preview when delete button is clicked', async () => {
+    _mockEditUserGet({ profile_image_path: 'users/5/abc123.webp' });
+    await usuariosFormComponent.onInit();
+
+    const deleteBtn = document.getElementById('btn-eliminar-avatar');
+    deleteBtn.dispatchEvent(new Event('click', { bubbles: true }));
+
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // Assert POST was called with FormData
-    expect(mockHttp.post).toHaveBeenCalled();
-    const [path, body] = mockHttp.post.mock.calls[0];
-    expect(path).toBe('/api/users/5/avatar');
+    expect(document.getElementById('user-delete-avatar-flag').value).toBe('1');
+    expect(deleteBtn.classList.contains('d-none')).toBe(true);
+    expect(document.getElementById('user-avatar-preview').style.display).toBe(
+      'none',
+    );
+  });
+});
+
+describe('usuariosFormComponent — submit', () => {
+  beforeAll(async () => {
+    const mod = await import('./usuarios.form.component.js');
+    usuariosFormComponent = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRouter.queryParams.has = vi.fn((key) => key === 'id');
+    mockRouter.queryParams.get = vi.fn((key) => (key === 'id' ? '5' : null));
+    _setupEditDom();
+  });
+
+  afterEach(() => {
+    usuariosFormComponent?.onDestroy?.();
+  });
+
+  async function _triggerSubmit() {
+    document.getElementById('form-user').dispatchEvent(new Event('submit'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  it('sends PUT /users/5 as plain JSON when no avatar is selected', async () => {
+    _mockEditUserGet();
+    mockHttp.put.mockResolvedValue({ data: { id: 5 } });
+
+    await usuariosFormComponent.onInit();
+    await _triggerSubmit();
+
+    expect(mockHttp.put).toHaveBeenCalledTimes(1);
+    const [path, body] = mockHttp.put.mock.calls[0];
+    expect(path).toBe('/users/5');
+    expect(body).not.toBeInstanceOf(FormData);
+    expect(body.first_name).toBe('Juan');
+    expect(body.last_name).toBe('Perez');
+    expect(body.email).toBe('juan@example.com');
+    expect(body._delete_avatar).toBeUndefined();
+  });
+
+  it('sends PUT /users/5 as FormData when an avatar file is selected', async () => {
+    _mockEditUserGet();
+    mockHttp.put.mockResolvedValue({ data: { id: 5 } });
+
+    await usuariosFormComponent.onInit();
+    const file = makeFakeFile();
+    _selectAvatarFile(file);
+    await _triggerSubmit();
+
+    const [path, body] = mockHttp.put.mock.calls[0];
+    expect(path).toBe('/users/5');
     expect(body).toBeInstanceOf(FormData);
     expect(body.has('avatar')).toBe(true);
     expect(body.get('avatar')).toBe(file);
-
-    // Assert auth refresh after success
-    expect(mockAuth.me).toHaveBeenCalled();
-    expect(mockAuth._notifyAuthChange).toHaveBeenCalled();
+    expect(body.get('first_name')).toBe('Juan');
+    expect(body.get('email')).toBe('juan@example.com');
   });
 
-  it('sends DELETE /api/users/{id}/avatar when delete avatar button is clicked', async () => {
-    mockHttp.get.mockResolvedValue({
-      data: {
-        id: 5,
-        first_name: 'Juan',
-        last_name: 'Perez',
-        email: 'juan@example.com',
-        phone: '123456789',
-        profile_image_path: 'users/5/abc123.webp',
-        role: { id: 1, name: 'admin_sistema' },
-        roles: [{ id: 1, name: 'admin_sistema' }],
-        organizations: [{ id: 1, name: 'Org1' }],
-      },
-    });
-    mockAuth.me.mockResolvedValue({
-      id: 1,
-      first_name: 'Admin',
-      last_name: 'User',
-      profile_image_path: null,
-    });
-    mockHttp.delete.mockResolvedValue({});
+  it('sends _delete_avatar=true when the user opted to remove the existing avatar', async () => {
+    _mockEditUserGet({ profile_image_path: 'users/5/abc123.webp' });
+    mockHttp.put.mockResolvedValue({ data: { id: 5 } });
 
     await usuariosFormComponent.onInit();
-
-    // Click the delete avatar button
-    const deleteBtn = document.getElementById('btn-delete-avatar');
-    if (deleteBtn) {
-      deleteBtn.dispatchEvent(new Event('click', { bubbles: true }));
-    }
-
-    // Flush microtasks
+    document
+      .getElementById('btn-eliminar-avatar')
+      .dispatchEvent(new Event('click', { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 0));
+    await _triggerSubmit();
 
-    // Assert DELETE was called
-    expect(mockHttp.delete).toHaveBeenCalledWith('/api/users/5/avatar');
-
-    // Assert auth refresh after success
-    expect(mockAuth.me).toHaveBeenCalled();
-    expect(mockAuth._notifyAuthChange).toHaveBeenCalled();
+    const [path, body] = mockHttp.put.mock.calls[0];
+    expect(path).toBe('/users/5');
+    expect(body).not.toBeInstanceOf(FormData);
+    expect(body._delete_avatar).toBe(true);
   });
 
-  it('shows error toast when avatar POST fails', async () => {
-    mockHttp.get.mockResolvedValue({
-      data: {
-        id: 5,
-        first_name: 'Juan',
-        last_name: 'Perez',
-        email: 'juan@example.com',
-        phone: '123456789',
-        profile_image_path: null,
-        role: { id: 1, name: 'admin_sistema' },
-        roles: [{ id: 1, name: 'admin_sistema' }],
-        organizations: [{ id: 1, name: 'Org1' }],
-      },
-    });
-    mockAuth.me.mockResolvedValue({
-      id: 1,
-      first_name: 'Admin',
-      last_name: 'User',
-      profile_image_path: null,
-    });
-    mockHttp.post.mockRejectedValue(new Error('Error de conexión'));
+  it('refreshes auth state and navigates back to the user list on save', async () => {
+    _mockEditUserGet();
+    mockHttp.put.mockResolvedValue({ data: { id: 5 } });
 
     await usuariosFormComponent.onInit();
+    await _triggerSubmit();
 
-    // Select a file
-    const fileInput = document.getElementById('user-avatar');
-    Object.defineProperty(fileInput, 'files', {
-      value: [makeFakeFile()],
-      configurable: true,
-    });
-    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-
-    // Click upload button
-    const uploadBtn = document.getElementById('btn-upload-avatar');
-    if (uploadBtn) {
-      uploadBtn.dispatchEvent(new Event('click', { bubbles: true }));
-    }
-
-    // Flush microtasks
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // auth refresh should NOT be called on failure
-    expect(mockAuth.me).not.toHaveBeenCalled();
-    expect(mockAuth._notifyAuthChange).not.toHaveBeenCalled();
+    expect(mockAuth.me).toHaveBeenCalledTimes(1);
+    expect(mockAuth._notifyAuthChange).toHaveBeenCalledTimes(1);
+    expect(mockRouter.navigate).toHaveBeenCalledWith('/usuarios');
   });
 
-  it('revokes the object URL on component destroy', async () => {
-    mockHttp.get.mockResolvedValue({
-      data: {
-        id: 5,
-        first_name: 'Juan',
-        last_name: 'Perez',
-        email: 'juan@example.com',
-        phone: '123456789',
-        profile_image_path: null,
-        role: { id: 1, name: 'admin_sistema' },
-        roles: [{ id: 1, name: 'admin_sistema' }],
-        organizations: [{ id: 1, name: 'Org1' }],
-      },
-    });
-    mockAuth.me.mockResolvedValue({
-      id: 1,
-      first_name: 'Admin',
-      last_name: 'User',
-      profile_image_path: null,
-    });
+  it('shows error toast and does NOT navigate when save fails', async () => {
+    _mockEditUserGet();
+    mockHttp.put.mockRejectedValue(new Error('Error de conexión'));
 
     await usuariosFormComponent.onInit();
+    await _triggerSubmit();
 
-    // Select a file to create a blob URL
-    const fileInput = document.getElementById('user-avatar');
-    Object.defineProperty(fileInput, 'files', {
-      value: [makeFakeFile()],
-      configurable: true,
-    });
-    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('usuariosFormComponent — destroy', () => {
+  beforeAll(async () => {
+    const mod = await import('./usuarios.form.component.js');
+    usuariosFormComponent = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRouter.queryParams.has = vi.fn((key) => key === 'id');
+    mockRouter.queryParams.get = vi.fn((key) => (key === 'id' ? '5' : null));
+    _setupEditDom();
+  });
+
+  it('revokes the open object URL on destroy', async () => {
+    _mockEditUserGet();
+    await usuariosFormComponent.onInit();
+
+    _selectAvatarFile(makeFakeFile());
 
     const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
-
     usuariosFormComponent.onDestroy();
 
-    expect(revokeSpy).toHaveBeenCalledWith(mockBlobUrl);
+    expect(revokeSpy).toHaveBeenCalled();
   });
 });

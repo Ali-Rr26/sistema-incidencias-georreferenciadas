@@ -12,6 +12,7 @@ use App\Domains\Users\Http\Resources\UserCollection;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\UserRepository;
+use App\Domains\Users\Services\ProfileImageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,8 +23,10 @@ class UserController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly UserRepository $users)
-    {
+    public function __construct(
+        private readonly UserRepository $users,
+        private readonly ProfileImageService $profileImageService,
+    ) {
         $this->authorizeResource(User::class, 'user');
     }
 
@@ -55,9 +58,36 @@ class UserController extends Controller
         return (new UserResource($user))->withCatalog()->response();
     }
 
+    /**
+     * Update a user record.
+     *
+     * Profile image is owned by this endpoint now (previously a separate
+     * POST /users/{user}/avatar + DELETE /users/{user}/avatar pair, removed).
+     * The update picks one of three paths based on the multipart payload:
+     *
+     *   - `avatar` file present           -> replaceAvatar() (deletes old, stores new)
+     *   - `_delete_avatar=true`, no file  -> removeAvatar()   (deletes file, clears column)
+     *   - neither present                 -> leave profile_image_path untouched
+     */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $user = $this->users->update($user->id, $request->validated());
+        $data = $request->validated();
+
+        // Strip non-fillable helper fields; the controller decides avatar fate.
+        unset($data['avatar'], $data['_delete_avatar']);
+
+        if ($request->hasFile('avatar')) {
+            $newPath = $this->profileImageService->replaceAvatar(
+                $user,
+                $request->file('avatar'),
+            );
+            $data['profile_image_path'] = $newPath;
+        } elseif ($request->boolean('_delete_avatar')) {
+            $this->profileImageService->removeAvatar($user);
+            $data['profile_image_path'] = null;
+        }
+
+        $user = $this->users->update($user->id, $data);
         $user->load(['role', 'organization']);
 
         return new UserResource($user)->response();
@@ -72,8 +102,8 @@ class UserController extends Controller
 
     /**
      * Returns the catalogs needed to render the user create/edit form
-     * and the user index filter bar — roles and organizations — in a
-     * single request instead of two parallel ones.
+     * and the user index filter bar — roles and organizations — in a single
+     * request instead of two parallel ones.
      *
      * Authorization: requires users.view so only admins with user
      * management access can retrieve the catalog.
