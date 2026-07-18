@@ -43,6 +43,36 @@ class ImageProcessingService
         return $path;
     }
 
+    /**
+     * Process a user profile image: centered 512×512 WebP crop.
+     */
+    public function processUserImage(UploadedFile $file, int $userId): string
+    {
+        $manager = new ImageManager(Driver::class);
+
+        $uuid = (string) Str::uuid();
+
+        $path = sprintf('users/%d/%s.webp', $userId, $uuid);
+
+        try {
+            $image = $manager->decodePath($file->getRealPath());
+
+            // Center-crop to exactly 512×512
+            $image->cover(512, 512);
+
+            $encoded = $image->encodeUsingFormat(Format::WEBP, self::WEBP_QUALITY);
+
+            Storage::disk($this->storageDisk())->put($path, (string) $encoded);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException(
+                sprintf('Failed to process user image for user %d: %s', $userId, $e->getMessage()),
+                previous: $e
+            );
+        }
+
+        return $path;
+    }
+
     private function storageDisk(): string
     {
         return env('FILESYSTEM_STORAGE_DISK', 's3');

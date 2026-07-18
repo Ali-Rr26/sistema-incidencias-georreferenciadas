@@ -4,6 +4,7 @@ use App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
 use App\Domains\Comments\Http\CommentController;
+use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\Controllers\AssignmentController;
 use App\Domains\Incidents\Http\FeedController;
@@ -16,6 +17,7 @@ use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
+use App\Domains\Users\Http\Controllers\UserAvatarController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
@@ -35,6 +37,10 @@ Route::middleware('jwt')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
+    // Avatar management
+    Route::post('/users/{user}/avatar', [UserAvatarController::class, 'store'])->where('user', '\d+');
+    Route::delete('/users/{user}/avatar', [UserAvatarController::class, 'destroy'])->where('user', '\d+');
+
     // Operator tracking
     Route::post('/operator/location', [OperatorLocationController::class, 'update']);
     Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
@@ -49,8 +55,8 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
 
     // Comment images (nested under comments for image CRUD) — inherits jwt group middleware
-    Route::post('/comments/{comment}/images', [\App\Domains\Comments\Http\CommentImageController::class, 'store']);
-    Route::delete('/comments/{comment}/images/{image}', [\App\Domains\Comments\Http\CommentImageController::class, 'destroy']);
+    Route::post('/comments/{comment}/images', [CommentImageController::class, 'store']);
+    Route::delete('/comments/{comment}/images/{image}', [CommentImageController::class, 'destroy']);
 
     // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
     // Explicit named routes instead of `apiResource` because we only expose

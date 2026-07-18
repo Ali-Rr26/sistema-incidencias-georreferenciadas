@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace App\Domains\Auth\Local\Http\Controllers;
 
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
+use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
 use App\Domains\Auth\Mercure\Services\MercureCookieService;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
+use App\Domains\Users\Services\ProfileImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -29,6 +30,7 @@ class AuthController
     public function __construct(
         private readonly AuthService $authService,
         private readonly MercureCookieService $mercureCookies,
+        private readonly ProfileImageService $profileImageService,
     ) {}
 
     /**
@@ -99,7 +101,7 @@ class AuthController
             'message' => 'Sesión cerrada exitosamente.',
         ])
             ->withCookie($this->expiredCookie())
-                ->withCookie($this->mercureCookies->expire());
+            ->withCookie($this->mercureCookies->expire());
     }
 
     /**
@@ -114,30 +116,17 @@ class AuthController
 
     /**
      * PUT /api/auth/profile
+     *
+     * Dual-mode:
+     * - JSON (application/json): accepts avatar as { urls: [...] } legacy object.
+     * - Multipart (multipart/form-data): accepts avatar as an uploaded file.
      */
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        if ($user === null) {
-            return response()->json(['message' => 'No autenticado'], Response::HTTP_UNAUTHORIZED);
-        }
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'first_name' => 'sometimes|string|max:100',
-            'last_name' => 'sometimes|string|max:100',
-            'phone' => 'sometimes|nullable|string|max:50',
-            'password' => 'sometimes|nullable|string|min:8',
-            'avatar' => ['sometimes', 'array'],
-            'avatar.urls' => Rule::when(
-                $request->has('avatar.urls'),
-                ['array', 'max:5'],
-            ),
-            'avatar.urls.*' => Rule::when(
-                $request->has('avatar.urls'),
-                ['string', 'url'],
-            ),
-        ]);
-
+        // Handle password hashing (never mass-assign raw password)
         if (array_key_exists('password', $validated)) {
             if ($validated['password'] !== null && $validated['password'] !== '') {
                 $validated['password'] = Hash::make($validated['password']);
@@ -146,7 +135,18 @@ class AuthController
             }
         }
 
-        $user->update($validated);
+        // Handle avatar file upload via ProfileImageService
+        if ($request->hasFile('avatar')) {
+            $newPath = $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
+            $validated['profile_image_path'] = $newPath;
+            // Remove legacy avatar array from text update — file upload replaces it
+            unset($validated['avatar']);
+        }
+
+        // Update text fields
+        if ($validated !== []) {
+            $user->update($validated);
+        }
 
         return response()->json(
             new UserResource($user->load(['role', 'organization'])),
