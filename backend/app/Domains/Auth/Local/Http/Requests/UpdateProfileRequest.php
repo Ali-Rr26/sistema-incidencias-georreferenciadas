@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Requests;
 
+use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,7 +30,7 @@ class UpdateProfileRequest extends FormRequest
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:800', // 800 KB
+                'max:'.User::AVATAR_MAX_KB,
             ];
         } else {
             // JSON: avatar as legacy { urls: [...] } object
@@ -53,7 +54,7 @@ class UpdateProfileRequest extends FormRequest
             'avatar.required' => 'Debes subir una imagen de avatar.',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
             'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
-            'avatar.max' => 'La imagen no puede superar los 800 KB.',
+            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
         ];
     }
 }
