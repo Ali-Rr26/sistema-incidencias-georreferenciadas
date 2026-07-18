@@ -84,6 +84,7 @@ export default {
                 update: 'organizations.update',
                 delete: 'organizations.delete',
               },
+              showView: false,
             });
           }
         });
@@ -118,6 +119,7 @@ export default {
                 update: 'organizations.update',
                 delete: 'organizations.delete',
               },
+              showView: false,
             });
           }
         });

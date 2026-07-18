@@ -96,6 +96,7 @@ export default {
               id: u.id,
               titulo: `${u.first_name ?? ''} ${u.last_name ?? ''}`,
               slugs: { update: 'users.update', delete: 'users.delete' },
+              showView: false,
             });
           }
         });
@@ -133,6 +134,7 @@ export default {
               id: u.id,
               titulo: `${u.first_name ?? ''} ${u.last_name ?? ''}`,
               slugs: { update: 'users.update', delete: 'users.delete' },
+              showView: false,
             });
           }
         });

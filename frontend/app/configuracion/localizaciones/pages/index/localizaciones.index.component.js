@@ -108,7 +108,7 @@ export default {
           <th>NOMBRE</th>
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
       const flat = buildFlatList(treeRoots, 0, []);
@@ -149,6 +149,7 @@ export default {
               id: loc.id,
               titulo: loc.name,
               slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
             });
           }
         });
@@ -180,6 +181,7 @@ export default {
               id: loc.id,
               titulo: loc.name,
               slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
             });
           }
         });
@@ -229,7 +231,7 @@ export default {
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
           <th style="width:130px">PADRE</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
       if (esDesktop) {
@@ -256,6 +258,7 @@ export default {
               id: loc.id,
               titulo: loc.name,
               slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
             });
           }
         });
@@ -288,6 +291,7 @@ export default {
               id: loc.id,
               titulo: loc.name,
               slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
             });
           }
         });

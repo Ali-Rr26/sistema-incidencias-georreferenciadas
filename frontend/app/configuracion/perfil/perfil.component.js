@@ -101,13 +101,15 @@ export default {
       console.warn('[Perfil] Avatar input/preview elements not found in DOM');
     }
 
-    // ─── Browse button wires to hidden file input ──────────────
+    // ─── Click on avatar wrap wires to hidden file input ──────────────
 
-    const browseBtn = document.getElementById('perfil-browse-btn');
-    if (browseBtn && avatarInput) {
-      browseBtn.addEventListener('click', () => avatarInput.click());
+    const avatarWrapBtn = document.getElementById('perfil-avatar-wrap-btn');
+    if (avatarWrapBtn && avatarInput) {
+      avatarWrapBtn.addEventListener('click', () => avatarInput.click());
     } else {
-      console.warn('[Perfil] Browse button or avatar input not found in DOM');
+      console.warn(
+        '[Perfil] Avatar wrap button or avatar input not found in DOM',
+      );
     }
 
     // ─── Avatar constants (sourced from backend) ─────────────────
@@ -116,8 +118,7 @@ export default {
     }
     const avatarHelpText = document
       .querySelector('#perfil-avatar')
-      ?.closest('.col-md-12')
-      ?.querySelector('.form-text');
+      ?.parentElement?.querySelector('.form-text');
     if (avatarHelpText) {
       const maxMb = (AVATAR_MAX_KB / 1024).toFixed(2).replace(/\.00$/, '0');
       const exts = ACCEPTED_MIME_TYPES.map((t) => t.split('/')[1].toUpperCase())
@@ -183,14 +184,17 @@ export default {
           await auth.me();
           auth._notifyAuthChange();
 
-          // Reset avatar preview after successful upload
+          // Reset avatar input and update preview to newly uploaded image URL
           if (avatarFile && _avatarObjectUrl) {
             URL.revokeObjectURL(_avatarObjectUrl);
             _avatarObjectUrl = null;
             const preview = document.getElementById('perfil-avatar-preview');
-            if (preview) {
-              preview.style.display = 'none';
-              preview.src = '';
+            const data = res.data ?? res;
+            const newPath =
+              data?.user?.profile_image_path ?? data?.profile_image_path;
+            if (preview && newPath) {
+              preview.src = '/storage/' + newPath;
+              preview.style.display = 'block';
             }
             avatarInput.value = '';
           }

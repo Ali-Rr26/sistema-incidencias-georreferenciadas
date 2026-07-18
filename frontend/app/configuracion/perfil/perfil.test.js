@@ -264,7 +264,7 @@ describe('perfilComponent — avatar upload (C1)', () => {
         <input type="text" id="perfil-apellido" value="Perez" />
         <input type="text" id="perfil-telefono" value="123456789" />
         <input type="file" id="perfil-avatar" accept="image/*" />
-        <div class="perfil-avatar-wrap">
+        <div class="perfil-avatar-wrap" id="perfil-avatar-wrap-btn">
           <img id="perfil-avatar-preview" src="#" style="display:none" />
         </div>
         <button type="submit" id="btn-guardar-perfil">
@@ -547,7 +547,7 @@ describe('perfilComponent — avatar upload (C1)', () => {
       document.body.innerHTML = `
         <nav class="perfil-breadcrumb" aria-label="breadcrumb">Configuración / Mi Perfil</nav>
         <div class="perfil-grid">
-          <div class="perfil-avatar-wrap">
+          <div class="perfil-avatar-wrap" id="perfil-avatar-wrap-btn">
             <img id="perfil-avatar-preview" src="#" alt="avatar" style="display:none" />
           </div>
           <div>
@@ -557,7 +557,6 @@ describe('perfilComponent — avatar upload (C1)', () => {
               <input type="text" id="perfil-telefono" value="123456789" />
               <input type="email" id="perfil-email" class="perfil-input" readonly />
               <input type="file" id="perfil-avatar" accept="image/jpeg,image/png,image/webp" style="display:none" />
-              <button type="button" class="perfil-browse btn btn-primary" id="perfil-browse-btn">Browse…</button>
               <span class="perfil-updated-at" id="perfil-updated-at"></span>
               <button type="submit" id="btn-guardar-perfil">
                 <span id="perfil-btn-texto">Guardar</span>
@@ -643,7 +642,7 @@ describe('perfilComponent — avatar upload (C1)', () => {
       expect(emailInput.hasAttribute('readonly')).toBe(true);
     });
 
-    it('browse button triggers hidden file input click', async () => {
+    it('avatar wrap click triggers hidden file input click', async () => {
       mockHttp.get.mockResolvedValue({
         data: {
           id: 1,
@@ -657,11 +656,11 @@ describe('perfilComponent — avatar upload (C1)', () => {
 
       await perfilComponent.onInit();
 
-      const fileInput = document.getElementById('perfil-avatar');
-      const browseBtn = document.getElementById('perfil-browse-btn');
-      const clickSpy = vi.spyOn(fileInput, 'click');
+      const avatarInput = document.getElementById('perfil-avatar');
+      const clickSpy = vi.spyOn(avatarInput, 'click');
 
-      browseBtn.click();
+      const avatarWrapBtn = document.getElementById('perfil-avatar-wrap-btn');
+      avatarWrapBtn.click();
 
       expect(clickSpy).toHaveBeenCalledTimes(1);
     });

@@ -184,7 +184,9 @@ export async function mount(el, ctx) {
     // can listen on a parent container (e.g. <tbody>, .cards-container) via
     // event delegation. Without bubbling, clicks appear to do nothing.
     const verBtn = el.querySelector('.btn-ver');
-    if (verBtn) {
+    if (ctx.showView === false && verBtn) {
+      verBtn.remove();
+    } else if (verBtn) {
       verBtn.addEventListener('click', (e) => {
         e.preventDefault();
         el.dispatchEvent(

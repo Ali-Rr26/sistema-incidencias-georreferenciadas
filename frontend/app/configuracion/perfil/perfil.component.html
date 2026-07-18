@@ -31,13 +31,29 @@
         <!-- 2-column grid: avatar left, form fields right -->
         <div class="perfil-grid">
           <!-- Avatar column -->
-          <div class="perfil-avatar-wrap">
-            <img
-              id="perfil-avatar-preview"
-              src="#"
-              alt="Vista previa de avatar"
+          <!-- Avatar column -->
+          <div>
+            <label class="form-label fw-semibold text-center d-block"
+              >Foto de perfil</label
+            >
+            <div class="perfil-avatar-wrap mx-auto" id="perfil-avatar-wrap-btn">
+              <img
+                id="perfil-avatar-preview"
+                src="#"
+                alt="Vista previa de avatar"
+                style="display: none"
+              />
+            </div>
+            <input
+              type="file"
+              id="perfil-avatar"
+              accept="image/jpeg,image/png,image/webp"
               style="display: none"
             />
+            <div class="form-text text-center mt-3" style="font-size: 12px">
+              JPG, PNG, WEBP. Máximo 0.78 MB. La imagen se recortará a 512×512
+              px.
+            </div>
           </div>
 
           <!-- Fields column -->
@@ -96,34 +112,6 @@
                   readonly
                   placeholder="correo@ejemplo.com"
                 />
-              </div>
-            </div>
-
-            <!-- Avatar upload row -->
-            <div class="row g-3 mb-3">
-              <div class="col-md-12">
-                <label for="perfil-avatar" class="form-label fw-semibold">
-                  Foto de Perfil
-                </label>
-                <div class="d-flex align-items-center gap-3">
-                  <input
-                    type="file"
-                    id="perfil-avatar"
-                    accept="image/jpeg,image/png,image/webp"
-                    style="display: none"
-                  />
-                  <button
-                    type="button"
-                    class="perfil-browse btn btn-primary"
-                    id="perfil-browse-btn"
-                  >
-                    Browse…
-                  </button>
-                  <div class="form-text" style="font-size: 12px">
-                    JPG, PNG o WebP. Máximo 5 MB. La imagen se recortará a
-                    512×512 px.
-                  </div>
-                </div>
               </div>
             </div>
 

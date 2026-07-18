@@ -78,6 +78,7 @@ export default {
                 update: 'incident-categories.update',
                 delete: 'incident-categories.delete',
               },
+              showView: false,
             });
           }
         });
@@ -115,6 +116,7 @@ export default {
                 update: 'incident-categories.update',
                 delete: 'incident-categories.delete',
               },
+              showView: false,
             });
           }
         });
