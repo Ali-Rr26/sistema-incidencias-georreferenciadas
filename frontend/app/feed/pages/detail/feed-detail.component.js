@@ -330,7 +330,7 @@ export default {
             ? getUserDisplayName(comment.parent.user)
             : 'Usuario';
           const snippet = (comment.parent.message || '').slice(0, 100);
-          return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
+          return `<div class="incid-detail__reply-quote"><strong>${escapeHtml(parentUser)}</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
         })()
       : '';
 

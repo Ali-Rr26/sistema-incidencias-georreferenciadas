@@ -397,7 +397,7 @@ function buildCommentLi(comment, currentUserId, depth = 0) {
           ? [comment.parent.user.first_name, comment.parent.user.last_name].filter(Boolean).join(' ') || comment.parent.user.email
           : 'Usuario';
         const snippet = (comment.parent.message || '').slice(0, 100);
-        return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
+        return `<div class="incid-detail__reply-quote"><strong>${escapeHtml(parentUser)}</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
       })()
     : '';
 
