@@ -57,6 +57,22 @@ function avatarBg(user) {
 }
 
 /**
+ * Maximum nesting depth for comment replies (0-based).
+ *
+ * The backend enforces the same limit in
+ * `backend/app/Domains/Comments/Http/CommentController.php` — replies
+ * whose parent already has `depth >= MAX_COMMENT_DEPTH` are rejected
+ * with HTTP 422 (see the `parent->depth >= 2` check around line 64).
+ *
+ * Keep this constant in sync with the backend rule. The frontend uses
+ * it to hide the "Responder" button when a reply would fail, and to
+ * short-circuit `openInlineReplyForm` before any network call.
+ *
+ * @type {number}
+ */
+export const MAX_COMMENT_DEPTH = 2;
+
+/**
  * Build a single `<li>` element for a comment (and its nested replies).
  *
  * @param {object}             comment  - Comment data from the API.
@@ -97,7 +113,7 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
     : '';
 
   // ── Action buttons ────────────────────────────────────────────────────────
-  const canReply = currentUserId != null && (comment.depth ?? 0) < 2;
+  const canReply = currentUserId != null && (comment.depth ?? 0) < MAX_COMMENT_DEPTH;
   const replyBtn = canReply
     ? `<button type="button"
          class="comment-action-btn btn-respoder-comentario"
