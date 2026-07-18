@@ -28,12 +28,21 @@ class Router {
     this.routeParams = {};
     this.queryParams = new URLSearchParams();
     this._shellMounted = false; // first-time mount only
+    this._currentUserRole = null; // the bucket consulted by the role-mismatch short-circuit in resolve()
   }
 
   // ─── Public API ──────────────────────────────────────────────────────
 
   setShell(shell) {
     this.shell = shell;
+  }
+
+  setCurrentUserRole(role) {
+    // Stores the user's classified role ('guest' | 'citizen' | 'admin' | …).
+    // Login flow sets this synchronously with the user returned by /me,
+    // BEFORE changing the hash, so resolve() can short-circuit role
+    // mismatches without invoking roleGuard's heavier /me fetch path.
+    this._currentUserRole = role;
   }
 
   addRoute(pattern, component, guards = [], role = undefined) {
@@ -86,6 +95,22 @@ class Router {
     // Each guard receives the same context the component will receive,
     // so role-based checks can run with the matched route info.
     const ctx = { params, query: this.queryParams, role: route.role };
+
+    // Role-bucket short-circuit: when the login flow has classified the
+    // user and stashed the role on the router, resolve() can redirect to
+    // /feed without waiting for roleGuard to fetch /me. Only fires when
+    // the bucket is set AND the route carries a role tag — falls through
+    // to the external guards (which handle token + /me + allowedRoles)
+    // for the first navigation, where the bucket is still null.
+    if (
+      route.role !== undefined &&
+      this._currentUserRole &&
+      this._currentUserRole !== route.role
+    ) {
+      this.navigate('/feed');
+      return;
+    }
+
     for (const guard of route.guards) {
       if ((await guard.canActivate(ctx)) === false) return;
     }
@@ -129,6 +154,13 @@ class Router {
       }
     }
     return params;
+  }
+
+  // Public-by-convention alias for tests that want pattern matching without
+  // route lookup. Same signature as _matchPattern: returns a params object
+  // on hit, null on miss.
+  _matchRoute(pattern, path) {
+    return this._matchPattern(pattern, path);
   }
 
   async _mountShell() {
