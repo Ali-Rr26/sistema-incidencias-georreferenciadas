@@ -114,6 +114,30 @@ describe('Ver button', () => {
 
     unmount(el);
   });
+
+  it('hides the Ver button when ctx.showView is false', async () => {
+    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+      new Set(),
+    );
+    vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+    const { mount, unmount } = await import('./table-actions.component.js');
+
+    const el = document.createElement('table-actions');
+    document.body.appendChild(el);
+
+    await mount(el, {
+      id: '5',
+      titulo: 'Bache en Rivadavia',
+      slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+      showView: false,
+    });
+
+    const verBtn = el.querySelector('.btn-ver');
+    expect(verBtn).toBeNull();
+
+    unmount(el);
+  });
 });
 
 // ---------------------------------------------------------------------------
