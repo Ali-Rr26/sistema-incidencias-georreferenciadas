@@ -4,9 +4,10 @@ import {
   AVATAR_MAX_KB,
   ACCEPTED_MIME_TYPES,
 } from '../../utils/avatar.constants.js';
+import { mountAvatarUploader } from '../../shared/avatar-uploader.js';
 
-/** Shared object URL for avatar preview — revoked on destroy/submit to avoid memory leaks */
-let _avatarObjectUrl = null;
+/** Module-scope so onDestroy can clean it up after the latest onInit. */
+let _avatar = null;
 
 function mostrarToast(mensaje, tipo) {
   const el = document.getElementById('toast-msg');
@@ -15,119 +16,83 @@ function mostrarToast(mensaje, tipo) {
   new bootstrap.Toast(el, { delay: 3000 }).show();
 }
 
+/** Render the localized help text (extensions + max size). */
+function renderAvatarHelp() {
+  const avatarHelpText = document
+    .querySelector('#perfil-avatar')
+    ?.parentElement?.querySelector('.form-text');
+  if (!avatarHelpText) return;
+  const maxMb = (AVATAR_MAX_KB / 1024).toFixed(2).replace(/\.00$/, '0');
+  const exts = ACCEPTED_MIME_TYPES.map((t) =>
+    t.split('/')[1].toUpperCase(),
+  )
+    .join(', ')
+    .replace('JPEG', 'JPG');
+  avatarHelpText.textContent = `${exts}. Máximo ${maxMb} MB. La imagen se recortará a 512×512 px.`;
+}
+
 export default {
   templateUrl: 'app/configuracion/perfil/perfil.component.html',
-  // Scoped CSS — the custom router in core/router.js injects this <style>
-  // when styleUrl is set. Without it, .perfil-grid / .perfil-card /
-  // .perfil-avatar-wrap / .perfil-input etc. never load and the page
-  // renders with the pre-redesign look (HTML keeps the new classes but no
-  // styles apply). All other scoped-CSS components in the codebase
-  // (mapa, feed, login, dashboard, …) declare this; perfil was the only
-  // omission.
   styleUrl: 'app/configuracion/perfil/perfil.component.css',
 
   async onInit() {
     console.log('[Perfil] onInit called');
 
-    // ─── Cargar perfil ────────────────────────────────────────
+    // ─── Load current profile ────────────────────────────────────────
 
+    let userData = {};
     try {
       console.log('[Perfil] Fetching /me');
       const resp = await http.get('/me');
       console.log('[Perfil] Response:', resp);
-      const u = resp.data ?? resp;
-      console.log('[Perfil] User data:', u);
-      document.getElementById('perfil-nombre').value = u.first_name ?? '';
-      document.getElementById('perfil-apellido').value = u.last_name ?? '';
-      document.getElementById('perfil-telefono').value = u.phone ?? '';
-      const emailEl = document.getElementById('perfil-email');
-      if (emailEl) {
-        emailEl.value = u.email ?? '';
-      }
-      console.log('[Perfil] Fields populated');
-
-      // Last updated timestamp (gated on D4 — only show if backend returns updated_at)
-      const updatedAtEl = document.getElementById('perfil-updated-at');
-      if (updatedAtEl) {
-        if (u.updated_at) {
-          updatedAtEl.textContent =
-            'Última actualización: ' +
-            new Date(u.updated_at).toLocaleString('es-EC');
-          updatedAtEl.classList.remove('d-none');
-        } else {
-          updatedAtEl.classList.add('d-none');
-        }
-      }
-
-      // Show existing avatar preview if profile_image_path is set
-      if (u.profile_image_path) {
-        const preview = document.getElementById('perfil-avatar-preview');
-        if (preview) {
-          preview.src = '/storage/' + u.profile_image_path;
-          preview.style.display = 'block';
-        }
-      }
+      userData = resp.data ?? resp;
+      console.log('[Perfil] User data:', userData);
     } catch (err) {
       console.error('[Perfil] Error loading profile:', err);
       mostrarToast('Error al cargar el perfil.', 'danger');
     }
 
-    // ─── Avatar preview ────────────────────────────────────────
+    const u = userData ?? {};
+    document.getElementById('perfil-nombre').value = u.first_name ?? '';
+    document.getElementById('perfil-apellido').value = u.last_name ?? '';
+    document.getElementById('perfil-telefono').value = u.phone ?? '';
+    const emailEl = document.getElementById('perfil-email');
+    if (emailEl) {
+      emailEl.value = u.email ?? '';
+    }
+    console.log('[Perfil] Fields populated');
 
-    const avatarInput = document.getElementById('perfil-avatar');
-    const avatarPreview = document.getElementById('perfil-avatar-preview');
-
-    if (avatarInput && avatarPreview) {
-      avatarInput.addEventListener('change', function () {
-        // Revoke previous blob URL to avoid memory leaks
-        if (_avatarObjectUrl) {
-          URL.revokeObjectURL(_avatarObjectUrl);
-          _avatarObjectUrl = null;
-        }
-
-        const file = this.files && this.files[0];
-        if (!file) {
-          avatarPreview.style.display = 'none';
-          avatarPreview.src = '';
-          return;
-        }
-
-        _avatarObjectUrl = URL.createObjectURL(file);
-        avatarPreview.src = _avatarObjectUrl;
-        avatarPreview.style.display = 'block';
-      });
-    } else {
-      // Defensive: when avatar elements are absent (legacy DOM), treat as no file
-      console.warn('[Perfil] Avatar input/preview elements not found in DOM');
+    // Last updated timestamp (gated on D4 — only show if backend returns updated_at)
+    const updatedAtEl = document.getElementById('perfil-updated-at');
+    if (updatedAtEl) {
+      if (u.updated_at) {
+        updatedAtEl.textContent =
+          'Última actualización: ' +
+          new Date(u.updated_at).toLocaleString('es-EC');
+        updatedAtEl.classList.remove('d-none');
+      } else {
+        updatedAtEl.classList.add('d-none');
+      }
     }
 
-    // ─── Click on avatar wrap wires to hidden file input ──────────────
+    // ─── Avatar uploader (shared helper) ────────────────────────────
 
-    const avatarWrapBtn = document.getElementById('perfil-avatar-wrap-btn');
-    if (avatarWrapBtn && avatarInput) {
-      avatarWrapBtn.addEventListener('click', () => avatarInput.click());
-    } else {
-      console.warn(
-        '[Perfil] Avatar wrap button or avatar input not found in DOM',
-      );
+    if (_avatar) {
+      _avatar.destroy();
+    }
+    _avatar = mountAvatarUploader({
+      wrap: '#perfil-avatar-wrap-btn',
+      preview: '#perfil-avatar-preview',
+      input: '#perfil-avatar',
+    });
+
+    if (u.profile_image_path) {
+      _avatar?.setPreviewFromUrl('/storage/' + u.profile_image_path);
     }
 
-    // ─── Avatar constants (sourced from backend) ─────────────────
-    if (avatarInput) {
-      avatarInput.accept = ACCEPTED_MIME_TYPES.join(',');
-    }
-    const avatarHelpText = document
-      .querySelector('#perfil-avatar')
-      ?.parentElement?.querySelector('.form-text');
-    if (avatarHelpText) {
-      const maxMb = (AVATAR_MAX_KB / 1024).toFixed(2).replace(/\.00$/, '0');
-      const exts = ACCEPTED_MIME_TYPES.map((t) => t.split('/')[1].toUpperCase())
-        .join(', ')
-        .replace('JPEG', 'JPG');
-      avatarHelpText.textContent = `${exts}. Máximo ${maxMb} MB. La imagen se recortará a 512×512 px.`;
-    }
+    renderAvatarHelp();
 
-    // ─── Submit ───────────────────────────────────────────────
+    // ─── Submit ─────────────────────────────────────────────────────
 
     document
       .getElementById('form-perfil')
@@ -138,10 +103,8 @@ export default {
           return;
         }
 
-        const avatarFile =
-          document.getElementById('perfil-avatar')?.files?.[0] ?? null;
+        const avatarFile = _avatar?.getFile() ?? null;
 
-        // Build payload — FormData when avatar is present, plain object otherwise
         let body;
         if (avatarFile) {
           body = new FormData();
@@ -185,18 +148,17 @@ export default {
           auth._notifyAuthChange();
 
           // Reset avatar input and update preview to newly uploaded image URL
-          if (avatarFile && _avatarObjectUrl) {
-            URL.revokeObjectURL(_avatarObjectUrl);
-            _avatarObjectUrl = null;
-            const preview = document.getElementById('perfil-avatar-preview');
+          if (avatarFile) {
             const data = res.data ?? res;
             const newPath =
               data?.user?.profile_image_path ?? data?.profile_image_path;
-            if (preview && newPath) {
-              preview.src = '/storage/' + newPath;
-              preview.style.display = 'block';
+            if (_avatar) {
+              if (newPath) {
+                _avatar.setPreviewFromUrl('/storage/' + newPath);
+              } else {
+                _avatar.clear();
+              }
             }
-            avatarInput.value = '';
           }
         } catch (err) {
           console.error('[Perfil] Update error:', err);
@@ -212,9 +174,7 @@ export default {
   },
 
   onDestroy() {
-    if (_avatarObjectUrl) {
-      URL.revokeObjectURL(_avatarObjectUrl);
-      _avatarObjectUrl = null;
-    }
+    _avatar?.destroy();
+    _avatar = null;
   },
 };

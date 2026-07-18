@@ -6,13 +6,16 @@ import {
   getSelect,
   destroyAll,
 } from '../../../../shared/select-search.js';
+import { mountAvatarUploader } from '../../../../shared/avatar-uploader.js';
 
-/** Shared object URL for avatar preview — revoked on destroy to avoid memory leaks */
-let _avatarObjectUrl = null;
+/** Module-scope so onDestroy can clean it up after the latest onInit. */
+let _avatar = null;
 
 export default {
   templateUrl:
     'app/configuracion/usuarios/pages/form/usuarios.form.component.html',
+  styleUrl:
+    'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
 
   async onInit() {
     const esEdicion = router.queryParams.has('id');
@@ -58,43 +61,50 @@ export default {
       });
     }
 
+    // ─── Cancel link ─────────────────────────────────────────────────
+
+    const btnCancelar = document.getElementById('btn-cancelar');
+    if (btnCancelar) {
+      btnCancelar.addEventListener('click', () => router.navigate('/usuarios'));
+    }
+
     // ─── Carga inicial ────────────────────────────────────────────────
     // Edit:   GET /users/:id  →  user data + catalog (single request)
     // Create: GET /users/form-data  →  catalog only
 
+    let currentUser = null;
+
     if (esEdicion) {
       try {
         const resp = await http.get('/users/' + userId);
-        const u = resp.data ?? resp;
+        currentUser = resp.data ?? resp;
 
         poblarCombos({
-          roles: u.roles ?? [],
-          organizations: u.organizations ?? [],
+          roles: currentUser.roles ?? [],
+          organizations: currentUser.organizations ?? [],
         });
 
         // Tom Select must be initialized AFTER options are in the DOM.
         initSelect('user-rol', { placeholder: 'Buscar rol...' });
         initSelect('user-org', { placeholder: 'Buscar organización...' });
 
-        document.getElementById('user-id').value = u.id;
-        document.getElementById('user-nombre').value = u.first_name ?? '';
-        document.getElementById('user-apellido').value = u.last_name ?? '';
-        document.getElementById('user-email').value = u.email;
-        document.getElementById('user-telefono').value = u.phone ?? '';
+        document.getElementById('user-id').value = currentUser.id;
+        document.getElementById('user-nombre').value =
+          currentUser.first_name ?? '';
+        document.getElementById('user-apellido').value =
+          currentUser.last_name ?? '';
+        document.getElementById('user-email').value = currentUser.email;
+        document.getElementById('user-telefono').value =
+          currentUser.phone ?? '';
 
-        getSelect('user-rol')?.setValue(u.role?.id ? String(u.role.id) : '');
-        getSelect('user-org')?.setValue(
-          u.organization?.id ? String(u.organization.id) : '',
+        getSelect('user-rol')?.setValue(
+          currentUser.role?.id ? String(currentUser.role.id) : '',
         );
-
-        // Show existing avatar preview if profile_image_path is set
-        if (u.profile_image_path) {
-          const preview = document.getElementById('user-avatar-preview');
-          if (preview) {
-            preview.src = '/storage/' + u.profile_image_path;
-            preview.style.display = 'block';
-          }
-        }
+        getSelect('user-org')?.setValue(
+          currentUser.organization?.id
+            ? String(currentUser.organization.id)
+            : '',
+        );
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
@@ -110,111 +120,44 @@ export default {
       initSelect('user-org', { placeholder: 'Buscar organización...' });
     }
 
-    // ─── Avatar preview ──────────────────────────────────────────────
+    // ─── Avatar uploader (shared helper) ────────────────────────────
 
-    const avatarInput = document.getElementById('user-avatar');
-    const avatarPreview = document.getElementById('user-avatar-preview');
+    if (_avatar) {
+      _avatar.destroy();
+    }
+    _avatar = mountAvatarUploader({
+      wrap: '#user-avatar-wrap-btn',
+      preview: '#user-avatar-preview',
+      input: '#user-avatar',
+    });
 
-    if (avatarInput && avatarPreview) {
-      avatarInput.addEventListener('change', function () {
-        if (_avatarObjectUrl) {
-          URL.revokeObjectURL(_avatarObjectUrl);
-          _avatarObjectUrl = null;
-        }
+    const eliminarBtn = document.getElementById('btn-eliminar-avatar');
+    const deleteFlagInput = document.getElementById('user-delete-avatar-flag');
 
-        const file = this.files && this.files[0];
-        if (!file) {
-          avatarPreview.style.display = 'none';
-          avatarPreview.src = '';
-          return;
-        }
-
-        _avatarObjectUrl = URL.createObjectURL(file);
-        avatarPreview.src = _avatarObjectUrl;
-        avatarPreview.style.display = 'block';
-      });
+    const showEliminarBtn = currentUser?.profile_image_path !== null &&
+      currentUser?.profile_image_path !== undefined;
+    if (eliminarBtn) {
+      eliminarBtn.classList.toggle('d-none', !showEliminarBtn);
     }
 
-    // ─── Avatar upload button ─────────────────────────────────────────
-
-    const uploadBtn = document.getElementById('btn-upload-avatar');
-    if (uploadBtn) {
-      uploadBtn.addEventListener('click', async function () {
-        const file = avatarInput?.files?.[0];
-        if (!file) {
-          mostrarToast('Seleccioná una imagen primero.', 'warning');
-          return;
-        }
-
-        uploadBtn.disabled = true;
-        try {
-          const formData = new FormData();
-          formData.append('avatar', file);
-
-          const updatedUser = await http.post(
-            '/api/users/' + userId + '/avatar',
-            formData,
-          );
-          const u = updatedUser.data ?? updatedUser;
-
-          mostrarToast('Foto actualizada correctamente.', 'success');
-
-          // Refresh auth state so header re-renders with new avatar
-          await auth.me();
-          auth._notifyAuthChange();
-
-          // Update preview with new image
-          if (avatarPreview && u.profile_image_path) {
-            avatarPreview.src = '/storage/' + u.profile_image_path;
-            avatarPreview.style.display = 'block';
-          }
-
-          // Clear file input and revoke preview URL
-          if (_avatarObjectUrl) {
-            URL.revokeObjectURL(_avatarObjectUrl);
-            _avatarObjectUrl = null;
-          }
-          if (avatarInput) avatarInput.value = '';
-        } catch (err) {
-          mostrarToast(err.message ?? 'No se pudo subir la foto.', 'danger');
-        } finally {
-          uploadBtn.disabled = false;
-        }
-      });
+    if (currentUser?.profile_image_path) {
+      _avatar?.setPreviewFromUrl(
+        '/storage/' + currentUser.profile_image_path,
+      );
+      if (deleteFlagInput) deleteFlagInput.value = '0';
     }
 
-    // ─── Avatar delete button ────────────────────────────────────────
-
-    const deleteBtn = document.getElementById('btn-delete-avatar');
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async function () {
+    if (eliminarBtn && _avatar) {
+      eliminarBtn.addEventListener('click', function () {
         if (!confirm('¿Eliminar la foto de perfil?')) return;
-
-        deleteBtn.disabled = true;
-        try {
-          await http.delete('/api/users/' + userId + '/avatar');
-
-          mostrarToast('Foto eliminada.', 'success');
-
-          // Refresh auth state so header re-renders
-          await auth.me();
-          auth._notifyAuthChange();
-
-          // Clear preview
-          if (_avatarObjectUrl) {
-            URL.revokeObjectURL(_avatarObjectUrl);
-            _avatarObjectUrl = null;
-          }
-          if (avatarPreview) {
-            avatarPreview.style.display = 'none';
-            avatarPreview.src = '';
-          }
-          if (avatarInput) avatarInput.value = '';
-        } catch (err) {
-          mostrarToast(err.message ?? 'No se pudo eliminar la foto.', 'danger');
-        } finally {
-          deleteBtn.disabled = false;
-        }
+        _avatar.clear();
+        // Mark the form for deletion; applied only on submit.
+        if (deleteFlagInput) deleteFlagInput.value = '1';
+        eliminarBtn.classList.add('d-none');
+        mostrarToast(
+          'La foto se eliminará al guardar los cambios.',
+          'success',
+        );
       });
     }
 
@@ -232,19 +175,41 @@ export default {
         const id = document.getElementById('user-id').value;
         const orgVal = document.getElementById('user-org').value;
 
-        const payload = {
+        const avatarFile = _avatar?.getFile() ?? null;
+        const wantsDelete =
+          deleteFlagInput && deleteFlagInput.value === '1';
+
+        const basePayload = {
           first_name: document.getElementById('user-nombre').value.trim(),
           last_name: document.getElementById('user-apellido').value.trim(),
           email: document.getElementById('user-email').value.trim(),
           role_id: parseInt(document.getElementById('user-rol').value),
           organization_id: orgVal ? parseInt(orgVal) : null,
-          phone: document.getElementById('user-telefono').value.trim() || null,
+          phone:
+            document.getElementById('user-telefono').value.trim() || null,
+          ...(wantsDelete ? { _delete_avatar: true } : {}),
         };
 
         if (!id) {
           // Generar una contraseña temporal de invitación
-          payload.password =
-            'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
+          basePayload.password =
+            'Invite_' +
+            Math.random().toString(36).substring(2, 10) +
+            '!';
+        }
+
+        let payload;
+        if (avatarFile) {
+          // Multipart when an avatar file is present.
+          payload = new FormData();
+          Object.entries(basePayload).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) {
+              payload.append(k, String(v));
+            }
+          });
+          payload.append('avatar', avatarFile);
+        } else {
+          payload = basePayload;
         }
 
         document.getElementById('user-btn-texto').classList.add('d-none');
@@ -261,12 +226,20 @@ export default {
             id ? 'Usuario actualizado.' : 'Usuario creado.',
             'success',
           );
+
+          // Refresh auth state so app-shell header shows the new avatar
+          // when the admin edits their own row.
+          await auth.me();
+          auth._notifyAuthChange();
+
           router.navigate('/usuarios');
         } catch (err) {
           mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
         } finally {
           document.getElementById('user-btn-texto').classList.remove('d-none');
-          document.getElementById('user-btn-loading').classList.add('d-none');
+          document
+            .getElementById('user-btn-loading')
+            .classList.add('d-none');
           document.getElementById('btn-guardar-user').disabled = false;
         }
       });
@@ -274,9 +247,7 @@ export default {
 
   onDestroy() {
     destroyAll();
-    if (_avatarObjectUrl) {
-      URL.revokeObjectURL(_avatarObjectUrl);
-      _avatarObjectUrl = null;
-    }
+    _avatar?.destroy();
+    _avatar = null;
   },
 };
