@@ -952,21 +952,61 @@ function createBellPanel({
   }
 
   /**
+   * Map a NotificationType enum value to a (icon, color) pair that
+   * matches the FreeDash template's colored btn-circle pattern.
+   *
+   * NotificationType: claim | assignment | status_change | assigned |
+   *                   comment | legacy
+   */
+  const _NOTIF_META = {
+    claim: { icon: 'fa-flag', color: 'btn-danger' },
+    assignment: { icon: 'fa-user-plus', color: 'btn-info' },
+    assigned: { icon: 'fa-user-check', color: 'btn-info' },
+    status_change: { icon: 'fa-exchange-alt', color: 'btn-success' },
+    comment: { icon: 'fa-comment', color: 'btn-primary' },
+    legacy: { icon: 'fa-bell', color: 'btn-secondary' },
+  };
+  function notifIconMeta(type) {
+    return _NOTIF_META[type] || _NOTIF_META.legacy;
+  }
+
+  /**
    * Build a single notification <li>. Clicking it marks the notification
    * as read (if unread) and redirects to this instance's detail route.
+   *
+   * Layout follows the FreeDash "ui-notification.html" pattern: a colored
+   * icon circle on the left, then a vertical stack with the message
+   * (h6), the linked incident title, and the relative time.
    */
   function buildItem(notif) {
     const li = document.createElement('li');
-    li.className = `app-shell-bell-panel__item${notif.read ? '' : ' app-shell-bell-panel__item--unread'}`;
+    li.className = `message-item app-shell-bell-panel__item d-flex align-items-center border-bottom px-3 py-2${notif.read ? '' : ' app-shell-bell-panel__item--unread'}`;
     li.dataset.id = String(notif.id);
 
-    const body = document.createElement('div');
-    const msg = document.createElement('span');
-    msg.textContent = notif.message ?? '';
-    body.appendChild(msg);
+    const meta = notifIconMeta(notif.type);
 
-    const time = document.createElement('small');
-    time.className = 'app-shell-bell-panel__item-time';
+    const iconWrap = document.createElement('span');
+    iconWrap.className = `btn ${meta.color} rounded-circle btn-circle d-flex align-items-center justify-content-center flex-shrink-0`;
+    iconWrap.style.width = '38px';
+    iconWrap.style.height = '38px';
+    iconWrap.innerHTML = `<i class="fa-solid ${meta.icon} text-white" aria-hidden="true"></i>`;
+    li.appendChild(iconWrap);
+
+    const body = document.createElement('div');
+    body.className = 'w-75 d-inline-block v-middle ps-2';
+
+    const title = document.createElement('h6');
+    title.className = 'message-title mb-0 mt-1';
+    title.textContent = notif.message ?? '';
+    body.appendChild(title);
+
+    const sub = document.createElement('span');
+    sub.className = 'font-12 text-nowrap d-block text-muted text-truncate';
+    sub.textContent = notif.incident?.title ?? notif.data?.title ?? '';
+    body.appendChild(sub);
+
+    const time = document.createElement('span');
+    time.className = 'font-12 text-nowrap d-block text-muted';
     time.textContent = timeAgo(notif.created_at);
     body.appendChild(time);
 
