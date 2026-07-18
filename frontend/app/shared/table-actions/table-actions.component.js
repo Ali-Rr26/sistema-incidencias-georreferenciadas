@@ -180,12 +180,18 @@ export async function mount(el, ctx) {
     el.appendChild(fragment);
 
     // Wire Ver button (REL-1: defensive — log and skip if missing)
+    // Note: events are dispatched with `bubbles: true` so that index pages
+    // can listen on a parent container (e.g. <tbody>, .cards-container) via
+    // event delegation. Without bubbling, clicks appear to do nothing.
     const verBtn = el.querySelector('.btn-ver');
     if (verBtn) {
       verBtn.addEventListener('click', (e) => {
         e.preventDefault();
         el.dispatchEvent(
-          new CustomEvent('table-actions:view', { detail: eventDetail(ctx) }),
+          new CustomEvent('table-actions:view', {
+            bubbles: true,
+            detail: eventDetail(ctx),
+          }),
         );
       });
     } else {
@@ -200,7 +206,10 @@ export async function mount(el, ctx) {
       editItem.addEventListener('click', (e) => {
         e.preventDefault();
         el.dispatchEvent(
-          new CustomEvent('table-actions:edit', { detail: eventDetail(ctx) }),
+          new CustomEvent('table-actions:edit', {
+            bubbles: true,
+            detail: eventDetail(ctx),
+          }),
         );
       });
     } else {
@@ -211,7 +220,10 @@ export async function mount(el, ctx) {
       deleteItem.addEventListener('click', (e) => {
         e.preventDefault();
         el.dispatchEvent(
-          new CustomEvent('table-actions:delete', { detail: eventDetail(ctx) }),
+          new CustomEvent('table-actions:delete', {
+            bubbles: true,
+            detail: eventDetail(ctx),
+          }),
         );
       });
     } else {

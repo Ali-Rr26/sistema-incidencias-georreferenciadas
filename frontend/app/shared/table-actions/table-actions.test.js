@@ -345,6 +345,97 @@ describe('CustomEvent emission', () => {
 });
 
 // ---------------------------------------------------------------------------
+// CustomEvent bubbling for delegated listeners (REQ-FRONTEND-EVENTS)
+// ---------------------------------------------------------------------------
+// Index pages attach `table-actions:*` listeners to a parent container
+// (the <tbody> or a card container) and rely on event delegation. The
+// component MUST dispatch with `bubbles: true` — otherwise the events
+// stay on the <table-actions> host and the parent listener never fires,
+// so clicks on Ver / Editar / Eliminar appear to do nothing.
+//
+// These tests mount the component inside a wrapper parent (the realistic
+// wiring) and assert the event reaches the parent AND that the event
+// itself is marked bubbles:true.
+
+describe('CustomEvent bubbling for delegated listeners', () => {
+  async function mountInParent() {
+    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+      new Set(['incidents.update', 'incidents.delete']),
+    );
+    vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+    const { mount, unmount } = await import('./table-actions.component.js');
+
+    const parent = document.createElement('tbody');
+    parent.id = 'parent-tbody';
+    const host = document.createElement('table-actions');
+    parent.appendChild(host);
+    document.body.appendChild(parent);
+
+    await mount(host, {
+      id: '5',
+      titulo: 'Bache en Rivadavia',
+      slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+    });
+
+    return { parent, host, unmount };
+  }
+
+  it('table-actions:view bubbles from host to parent listener', async () => {
+    const { parent, host, unmount } = await mountInParent();
+    const received = [];
+    parent.addEventListener('table-actions:view', (e) => received.push(e));
+
+    host.querySelector('.btn-ver').click();
+
+    expect(received).toHaveLength(1);
+    expect(received[0].bubbles).toBe(true);
+    expect(received[0].detail).toEqual({
+      id: '5',
+      titulo: 'Bache en Rivadavia',
+    });
+
+    unmount(host);
+  });
+
+  it('table-actions:edit bubbles from host to parent listener', async () => {
+    const { parent, host, unmount } = await mountInParent();
+    const received = [];
+    parent.addEventListener('table-actions:edit', (e) => received.push(e));
+
+    host.querySelector('.dropdown-toggle').click();
+    host.querySelector('.table-actions-edit').click();
+
+    expect(received).toHaveLength(1);
+    expect(received[0].bubbles).toBe(true);
+    expect(received[0].detail).toEqual({
+      id: '5',
+      titulo: 'Bache en Rivadavia',
+    });
+
+    unmount(host);
+  });
+
+  it('table-actions:delete bubbles from host to parent listener', async () => {
+    const { parent, host, unmount } = await mountInParent();
+    const received = [];
+    parent.addEventListener('table-actions:delete', (e) => received.push(e));
+
+    host.querySelector('.dropdown-toggle').click();
+    host.querySelector('.table-actions-delete').click();
+
+    expect(received).toHaveLength(1);
+    expect(received[0].bubbles).toBe(true);
+    expect(received[0].detail).toEqual({
+      id: '5',
+      titulo: 'Bache en Rivadavia',
+    });
+
+    unmount(host);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Eliminar styling
 // ---------------------------------------------------------------------------
 
