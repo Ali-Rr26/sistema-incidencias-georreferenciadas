@@ -2,6 +2,7 @@ import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+import { renderAvatarCell } from '../../../../utils/avatar.js';
 
 const POR_PAGINA = 15;
 
@@ -58,11 +59,10 @@ export default {
         .map(
           (u) => `
                 <tr>
+                    ${renderAvatarCell(u)}
                     <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${u.id}" /></td>
                     <td>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center text-white"
-                                style="width:32px;height:32px;font-size:12px;">${iniciales(u)}</span>
                             <span class="fw-semibold">${u.first_name ?? ''} ${u.last_name ?? ''}</span>
                         </div>
                     </td>
