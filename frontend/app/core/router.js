@@ -257,7 +257,10 @@ class Router {
   }
 
   async _fetchText(url) {
-    const res = await fetch(url);
+    // `cache: 'no-store'` keeps the browser from serving stale template/CSS
+    // bytes between edits — important for HMR-style dev loops where a hash
+    // stays the same but the file content changes.
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok)
       throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();
