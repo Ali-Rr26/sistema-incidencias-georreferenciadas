@@ -219,21 +219,6 @@ export default {
       }
     }
 
-    // Click handlers: editar y eliminar
-    function manejarClicks(e) {
-      const editar = e.target.closest('.btn-editar');
-      if (editar) {
-        router.navigate('/incidencias/crear?id=' + editar.dataset.id);
-        return;
-      }
-      const eliminar = e.target.closest('.btn-eliminar');
-      if (!eliminar) return;
-      idEliminar = eliminar.dataset.id;
-      document.getElementById('modal-eliminar-titulo').textContent =
-        eliminar.dataset.titulo;
-      new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-    }
-
     // Delegated event listeners for table-actions custom events
     function manejarTableActions(e) {
       const { id, titulo } = e.detail;
@@ -254,13 +239,6 @@ export default {
 
     const tablaBody = document.getElementById('tabla-body');
     const contenedorCards = document.getElementById('contenedor-cards');
-
-    document
-      .getElementById('tabla-body')
-      .addEventListener('click', manejarClicks);
-    document
-      .getElementById('contenedor-cards')
-      .addEventListener('click', manejarClicks);
 
     // Delegate table-actions:view/edit/delete from both desktop table and mobile cards
     tablaBody.addEventListener('table-actions:view', manejarTableActions);
