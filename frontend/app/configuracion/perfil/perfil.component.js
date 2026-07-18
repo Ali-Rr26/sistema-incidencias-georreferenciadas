@@ -29,6 +29,15 @@ export default {
       document.getElementById('perfil-apellido').value = u.last_name ?? '';
       document.getElementById('perfil-telefono').value = u.phone ?? '';
       console.log('[Perfil] Fields populated');
+
+      // Show existing avatar preview if profile_image_path is set
+      if (u.profile_image_path) {
+        const preview = document.getElementById('perfil-avatar-preview');
+        if (preview) {
+          preview.src = '/storage/' + u.profile_image_path;
+          preview.style.display = 'block';
+        }
+      }
     } catch (err) {
       console.error('[Perfil] Error loading profile:', err);
       mostrarToast('Error al cargar el perfil.', 'danger');

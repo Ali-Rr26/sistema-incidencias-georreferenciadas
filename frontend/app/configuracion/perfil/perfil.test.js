@@ -523,6 +523,46 @@ describe('perfilComponent — avatar upload (C1)', () => {
       phone: '123456789',
     });
   });
+
+  // ── onInit existing avatar display ─────────────────────────────
+
+  it('shows existing profile_image_path on page load', async () => {
+    mockHttp.get.mockResolvedValue({
+      data: {
+        id: 1,
+        first_name: 'Juan',
+        last_name: 'Perez',
+        phone: '123456789',
+        profile_image_path: 'users/1/abc.webp',
+        role: { id: 1, name: 'admin_sistema' },
+      },
+    });
+
+    await perfilComponent.onInit();
+
+    const preview = document.getElementById('perfil-avatar-preview');
+    expect(preview.src).toContain('/storage/users/1/abc.webp');
+    expect(preview.style.display).toBe('block');
+  });
+
+  it('shows initials when no profile_image_path', async () => {
+    mockHttp.get.mockResolvedValue({
+      data: {
+        id: 1,
+        first_name: 'Ana',
+        last_name: 'Lopez',
+        phone: '123456789',
+        profile_image_path: null,
+        role: { id: 1, name: 'admin_sistema' },
+      },
+    });
+
+    await perfilComponent.onInit();
+
+    const preview = document.getElementById('perfil-avatar-preview');
+    // Preview should be hidden (no image to show)
+    expect(preview.style.display).toBe('none');
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────
