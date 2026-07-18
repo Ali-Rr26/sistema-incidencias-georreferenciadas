@@ -2,6 +2,10 @@ import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { mount } from '../../../../shared/table-actions/table-actions.component.js';
+import { renderAvatarCell } from '../../../../utils/avatar.js';
 
 const POR_PAGINA = 15;
 
@@ -48,21 +52,29 @@ export default {
       return n + a || 'U';
     }
 
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px)').matches;
+    }
+
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
       }
 
-      document.getElementById('tabla-body').innerHTML = datos
-        .map(
-          (u) => `
+      const esDesktop = isDesktop();
+      const tbody = document.getElementById('tabla-body');
+      const cards = document.getElementById('contenedor-cards');
+
+      if (esDesktop) {
+        tbody.innerHTML = datos
+          .map(
+            (u) => `
                 <tr>
+                    ${renderAvatarCell(u)}
                     <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${u.id}" /></td>
                     <td>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center text-white"
-                                style="width:32px;height:32px;font-size:12px;">${iniciales(u)}</span>
                             <span class="fw-semibold">${u.first_name ?? ''} ${u.last_name ?? ''}</span>
                         </div>
                     </td>
@@ -71,23 +83,29 @@ export default {
                     <td class="small text-muted">${u.organization?.name ?? '—'}</td>
                     <td class="small text-muted">${u.phone ?? '—'}</td>
                     <td class="text-center">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${u.id}" title="Editar">
-                                <i class="fa-solid fa-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar"
-                                data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}" title="Eliminar">
-                                <i class="fa-solid fa-trash-alt"></i>
-                            </button>
-                        </div>
+                      <table-actions id="ta-desktop-${u.id}"></table-actions>
                     </td>
                 </tr>`,
-        )
-        .join('');
+          )
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = datos
-        .map(
-          (u) => `
+        datos.forEach((u) => {
+          const el = document.getElementById('ta-desktop-' + u.id);
+          if (el) {
+            mount(el, {
+              id: u.id,
+              titulo: `${u.first_name ?? ''} ${u.last_name ?? ''}`,
+              slugs: { update: 'users.update', delete: 'users.delete' },
+            });
+          }
+        });
+
+        cards.innerHTML = '';
+      } else {
+        tbody.innerHTML = '';
+        cards.innerHTML = datos
+          .map(
+            (u) => `
                 <div class="card mb-2 shadow-sm">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center">
@@ -101,20 +119,24 @@ export default {
                                     ${u.organization ? `<br><small class="text-muted">Org: ${u.organization.name}</small>` : ''}
                                 </div>
                             </div>
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${u.id}">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger btn-eliminar"
-                                    data-id="${u.id}" data-nombre="${u.first_name ?? ''} ${u.last_name ?? ''}">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                            <table-actions id="ta-mobile-${u.id}"></table-actions>
                         </div>
                     </div>
                 </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        datos.forEach((u) => {
+          const el = document.getElementById('ta-mobile-' + u.id);
+          if (el) {
+            mount(el, {
+              id: u.id,
+              titulo: `${u.first_name ?? ''} ${u.last_name ?? ''}`,
+              slugs: { update: 'users.update', delete: 'users.delete' },
+            });
+          }
+        });
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -193,24 +215,33 @@ export default {
       }
     }
 
-    function delegarClicks(contenedor) {
-      contenedor.addEventListener('click', async (e) => {
-        const editar = e.target.closest('.btn-editar');
-        const eliminar = e.target.closest('.btn-eliminar');
-        if (editar) {
-          router.navigate('/usuarios/crear?id=' + editar.dataset.id);
-        }
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated event handlers for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/usuarios/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/usuarios/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
 
     document
       .getElementById('btn-confirmar-eliminar')

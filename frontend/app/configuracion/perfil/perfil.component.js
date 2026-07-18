@@ -28,7 +28,31 @@ export default {
       document.getElementById('perfil-nombre').value = u.first_name ?? '';
       document.getElementById('perfil-apellido').value = u.last_name ?? '';
       document.getElementById('perfil-telefono').value = u.phone ?? '';
+      const emailEl = document.getElementById('perfil-email');
+      if (emailEl) {
+        emailEl.value = u.email ?? '';
+      }
       console.log('[Perfil] Fields populated');
+
+      // Last updated timestamp (gated on D4 — only show if backend returns updated_at)
+      const updatedAtEl = document.getElementById('perfil-updated-at');
+      if (updatedAtEl) {
+        if (u.updated_at) {
+          updatedAtEl.textContent = 'Última actualización: ' + new Date(u.updated_at).toLocaleString('es-EC');
+          updatedAtEl.classList.remove('d-none');
+        } else {
+          updatedAtEl.classList.add('d-none');
+        }
+      }
+
+      // Show existing avatar preview if profile_image_path is set
+      if (u.profile_image_path) {
+        const preview = document.getElementById('perfil-avatar-preview');
+        if (preview) {
+          preview.src = '/storage/' + u.profile_image_path;
+          preview.style.display = 'block';
+        }
+      }
     } catch (err) {
       console.error('[Perfil] Error loading profile:', err);
       mostrarToast('Error al cargar el perfil.', 'danger');
@@ -61,6 +85,15 @@ export default {
     } else {
       // Defensive: when avatar elements are absent (legacy DOM), treat as no file
       console.warn('[Perfil] Avatar input/preview elements not found in DOM');
+    }
+
+    // ─── Browse button wires to hidden file input ──────────────
+
+    const browseBtn = document.getElementById('perfil-browse-btn');
+    if (browseBtn && avatarInput) {
+      browseBtn.addEventListener('click', () => avatarInput.click());
+    } else {
+      console.warn('[Perfil] Browse button or avatar input not found in DOM');
     }
 
     // ─── Submit ───────────────────────────────────────────────
