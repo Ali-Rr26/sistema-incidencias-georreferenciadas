@@ -2,6 +2,12 @@
   <!-- Header -->
   <div class="gr-page__header">
     <div>
+      <nav
+        class="perfil-breadcrumb"
+        aria-label="breadcrumb"
+      >
+        Configuración / Mi Perfil
+      </nav>
       <h1 class="gr-page__title">Mi Perfil</h1>
       <nav class="gr-breadcrumb">
         <span class="gr-breadcrumb__item">Configuración</span>
@@ -16,7 +22,7 @@
   </div>
 
   <!-- Form Card -->
-  <div class="gr-card gr-form-card">
+  <div class="gr-card gr-form-card perfil-card">
     <div style="padding: 28px 32px">
       <h5 class="mb-1 fw-bold text-dark">Información Personal</h5>
       <p class="text-muted mb-4" style="font-size: 13px">
@@ -25,99 +31,128 @@
       </p>
 
       <form id="form-perfil" novalidate>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label for="perfil-nombre" class="form-label fw-semibold">
-              Nombre <span class="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              class="form-control form-control-lg"
-              id="perfil-nombre"
-              maxlength="100"
-              required
-              placeholder="Ej: Juan"
-            />
-            <div class="invalid-feedback">El nombre es obligatorio.</div>
-          </div>
-          <div class="col-md-6">
-            <label for="perfil-apellido" class="form-label fw-semibold">
-              Apellido <span class="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              class="form-control form-control-lg"
-              id="perfil-apellido"
-              maxlength="100"
-              required
-              placeholder="Ej: Pérez"
-            />
-            <div class="invalid-feedback">El apellido es obligatorio.</div>
-          </div>
-          <div class="col-md-6">
-            <label for="perfil-telefono" class="form-label fw-semibold">
-              Teléfono
-            </label>
-            <input
-              type="tel"
-              inputmode="tel"
-              pattern="[+0-9 ()-]{6,20}"
-              class="form-control form-control-lg"
-              id="perfil-telefono"
-              maxlength="50"
-              placeholder="Ej: +593 99 999 9999"
+        <!-- 2-column grid: avatar left, form fields right -->
+        <div class="perfil-grid">
+          <!-- Avatar column -->
+          <div class="perfil-avatar-wrap">
+            <img
+              id="perfil-avatar-preview"
+              src="#"
+              alt="Vista previa de avatar"
+              style="display: none"
             />
           </div>
-        </div>
 
-        <!-- Avatar upload -->
-        <div class="row g-3 mb-4">
-          <div class="col-md-12">
-            <label for="perfil-avatar" class="form-label fw-semibold">
-              Foto de Perfil
-            </label>
-            <div class="d-flex align-items-center gap-3">
-              <img
-                id="perfil-avatar-preview"
-                src="#"
-                alt="Vista previa de avatar"
-                class="rounded-circle"
-                style="
-                  width: 80px;
-                  height: 80px;
-                  object-fit: cover;
-                  display: none;
-                  border: 2px solid #dee2e6;
-                "
-              />
-              <div>
+          <!-- Fields column -->
+          <div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label for="perfil-nombre" class="form-label fw-semibold">
+                  Nombre <span class="text-danger">*</span>
+                </label>
                 <input
-                  type="file"
-                  class="form-control"
-                  id="perfil-avatar"
-                  accept="image/jpeg,image/png,image/webp"
-                  style="max-width: 280px"
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="perfil-nombre"
+                  maxlength="100"
+                  required
+                  placeholder="Ej: Juan"
                 />
-                <div class="form-text" style="font-size: 12px">
-                  JPG, PNG o WebP. Máximo 5 MB. La imagen se recortará a 512×512
-                  px.
+                <div class="invalid-feedback">El nombre es obligatorio.</div>
+              </div>
+              <div class="col-md-6">
+                <label for="perfil-apellido" class="form-label fw-semibold">
+                  Apellido <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control form-control-lg"
+                  id="perfil-apellido"
+                  maxlength="100"
+                  required
+                  placeholder="Ej: Pérez"
+                />
+                <div class="invalid-feedback">El apellido es obligatorio.</div>
+              </div>
+              <div class="col-md-6">
+                <label for="perfil-telefono" class="form-label fw-semibold">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  inputmode="tel"
+                  pattern="[+0-9 ()-]{6,20}"
+                  class="form-control form-control-lg"
+                  id="perfil-telefono"
+                  maxlength="50"
+                  placeholder="Ej: +593 99 999 9999"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="perfil-email" class="form-label fw-semibold">
+                  Correo electrónico
+                </label>
+                <input
+                  type="email"
+                  id="perfil-email"
+                  class="form-control form-control-lg perfil-input"
+                  readonly
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+            </div>
+
+            <!-- Avatar upload row -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-12">
+                <label for="perfil-avatar" class="form-label fw-semibold">
+                  Foto de Perfil
+                </label>
+                <div class="d-flex align-items-center gap-3">
+                  <input
+                    type="file"
+                    id="perfil-avatar"
+                    accept="image/jpeg,image/png,image/webp"
+                    style="display: none"
+                  />
+                  <button
+                    type="button"
+                    class="perfil-browse btn btn-primary"
+                    id="perfil-browse-btn"
+                  >
+                    Browse…
+                  </button>
+                  <div class="form-text" style="font-size: 12px">
+                    JPG, PNG o WebP. Máximo 5 MB. La imagen se recortará a
+                    512×512 px.
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Acciones -->
-        <div class="d-flex gap-2 pt-2 border-top">
-          <button type="submit" class="gr-btn-primary" id="btn-guardar-perfil">
-            <span id="perfil-btn-texto"
-              ><i class="fas fa-save me-1"></i>Guardar Cambios</span
-            >
-            <span id="perfil-btn-loading" class="d-none">
-              <span class="spinner-border spinner-border-sm me-1"></span
-              >Guardando...
-            </span>
-          </button>
+            <!-- Última actualización -->
+            <span
+              class="perfil-updated-at d-none"
+              id="perfil-updated-at"
+            ></span>
+
+            <!-- Acciones -->
+            <div class="d-flex gap-2 pt-2 border-top">
+              <button
+                type="submit"
+                class="gr-btn-primary"
+                id="btn-guardar-perfil"
+              >
+                <span id="perfil-btn-texto"
+                  ><i class="fas fa-save me-1"></i>Guardar Cambios</span
+                >
+                <span id="perfil-btn-loading" class="d-none">
+                  <span class="spinner-border spinner-border-sm me-1"></span
+                  >Guardando...
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
