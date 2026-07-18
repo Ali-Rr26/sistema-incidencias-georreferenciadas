@@ -34,6 +34,8 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'avatar' => $this->avatar,
             'profile_image_path' => $this->profile_image_path,
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
             'role' => $this->whenLoaded('role', fn () => [
                 'id' => $this->role->id,
                 'name' => $this->role->name,
