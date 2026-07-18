@@ -179,7 +179,8 @@ export default {
         if (!organizaciones.length) {
           organizaciones = data.organizations ?? [];
           const selOrg = document.getElementById('filtro-org');
-          selOrg.innerHTML = '<option value="">Todas las organizaciones</option>';
+          selOrg.innerHTML =
+            '<option value="">Todas las organizaciones</option>';
           organizaciones.forEach((o) => {
             const opt = document.createElement('option');
             opt.value = o.id;

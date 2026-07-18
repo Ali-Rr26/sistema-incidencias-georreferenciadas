@@ -9,7 +9,10 @@
  * "no se pudo conectar con el servidor".
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setAccessToken, clearAuthState } from '../../../../core/http.service.js';
+import {
+  setAccessToken,
+  clearAuthState,
+} from '../../../../core/http.service.js';
 
 vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
@@ -96,8 +99,9 @@ describe('usuarios.index.component — R-24 403 differentiation', () => {
       'No tienes acceso',
     );
     // The generic error panel still shows so retry is possible.
-    expect(document.getElementById('estado-error').classList.contains('d-none'))
-      .toBe(false);
+    expect(
+      document.getElementById('estado-error').classList.contains('d-none'),
+    ).toBe(false);
   });
 
   it('does NOT show the "No tienes acceso" toast on a network/server error', async () => {
@@ -114,11 +118,12 @@ describe('usuarios.index.component — R-24 403 differentiation', () => {
 
     await usuariosComponent.onInit();
 
-    expect(document.getElementById('toast-msg-texto').textContent).not.toContain(
-      'No tienes acceso',
-    );
+    expect(
+      document.getElementById('toast-msg-texto').textContent,
+    ).not.toContain('No tienes acceso');
     // Generic error state still shown.
-    expect(document.getElementById('estado-error').classList.contains('d-none'))
-      .toBe(false);
+    expect(
+      document.getElementById('estado-error').classList.contains('d-none'),
+    ).toBe(false);
   });
 });
