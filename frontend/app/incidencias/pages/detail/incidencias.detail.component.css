@@ -181,10 +181,9 @@
   justify-content: center;
 }
 
-.incid-detail__nested {
-  margin-left: 24px;
-  border-left: 2px solid #d1d5db;
-  padding-left: 12px;
+/* Nested replies — same media object layout as parent, just mt-3 for spacing */
+.incid-detail__nested > li {
+  margin-top: 1rem;
 }
 
 .incid-detail__lightbox {

@@ -196,6 +196,11 @@
   border-bottom: none !important;
 }
 
+/* Nested replies — same media object layout as parent, just mt-3 for spacing */
+.incid-detail__nested > li {
+  margin-top: 1rem;
+}
+
 .incid-detail__reply-quote {
   font-size: 0.8rem;
   color: #6c757d;
