@@ -2,6 +2,9 @@ import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { mount } from '../../../../shared/table-actions/table-actions.component.js';
 
 const POR_PAGINA = 15;
 
@@ -41,41 +44,53 @@ export default {
       });
     }
 
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px)').matches;
+    }
+
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
       }
 
+      const esDesktop = isDesktop();
       const tbody = document.getElementById('tabla-body');
-      tbody.innerHTML = datos
-        .map(
-          (org) => `
+      const cards = document.getElementById('contenedor-cards');
+
+      if (esDesktop) {
+        tbody.innerHTML = datos
+          .map(
+            (org) => `
                 <tr>
                     <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${org.id}" /></td>
                     <td class="fw-semibold">${org.name}</td>
                     <td class="text-muted small">${org.location?.name ?? '—'}</td>
                     <td class="small text-muted">${formatearFecha(org.created_at)}</td>
                     <td class="text-center">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-outline-secondary btn-editar"
-                                data-id="${org.id}" title="Editar">
-                                <i class="fa-solid fa-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger btn-eliminar"
-                                data-id="${org.id}" data-nombre="${org.name}" title="Eliminar">
-                                <i class="fa-solid fa-trash-alt"></i>
-                            </button>
-                        </div>
+                        <table-actions id="ta-desktop-${org.id}"></table-actions>
                     </td>
                 </tr>`,
-        )
-        .join('');
+          )
+          .join('');
 
-      const cards = document.getElementById('contenedor-cards');
-      cards.innerHTML = datos
-        .map(
-          (org) => `
+        datos.forEach((org) => {
+          const el = document.getElementById('ta-desktop-' + org.id);
+          if (el) {
+            mount(el, {
+              id: org.id,
+              titulo: org.name,
+              slugs: { update: 'organizations.update', delete: 'organizations.delete' },
+            });
+          }
+        });
+
+        cards.innerHTML = '';
+      } else {
+        tbody.innerHTML = '';
+        cards.innerHTML = datos
+          .map(
+            (org) => `
                 <div class="card mb-2 shadow-sm">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center">
@@ -83,21 +98,24 @@ export default {
                                 <h6 class="mb-0">${org.name}</h6>
                                 <small class="text-muted">${org.location?.name ?? '—'}</small>
                             </div>
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-sm btn-outline-secondary btn-editar"
-                                    data-id="${org.id}">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger btn-eliminar"
-                                    data-id="${org.id}" data-nombre="${org.name}">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                            <table-actions id="ta-mobile-${org.id}"></table-actions>
                         </div>
                     </div>
                 </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        datos.forEach((org) => {
+          const el = document.getElementById('ta-mobile-' + org.id);
+          if (el) {
+            mount(el, {
+              id: org.id,
+              titulo: org.name,
+              slugs: { update: 'organizations.update', delete: 'organizations.delete' },
+            });
+          }
+        });
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -139,25 +157,33 @@ export default {
       }
     }
 
-    function delegarClicks(contenedor) {
-      if (!contenedor) return;
-      contenedor.addEventListener('click', (e) => {
-        const editar = e.target.closest('.btn-editar');
-        const eliminar = e.target.closest('.btn-eliminar');
-        if (editar) {
-          router.navigate('/organizaciones/crear?id=' + editar.dataset.id);
-        }
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated event handlers for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/organizaciones/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/organizaciones/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
 
     document
       .getElementById('btn-confirmar-eliminar')

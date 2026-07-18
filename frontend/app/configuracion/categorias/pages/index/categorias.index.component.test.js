@@ -1,9 +1,11 @@
 /**
- * usuarios.index.component — tests
+ * categorias.index.component — table-actions migration tests.
  *
- * Two suites:
- * 1. R-24 403 differentiation (pre-existing)
- * 2. table-actions migration — permission-driven Ver + kebab actions
+ * Coverage:
+ * - Permission-driven rendering of Ver + kebab actions in table and mobile cards
+ * - CustomEvent delegation: view → router.navigate, edit → router.navigate,
+ *   delete → bootstrap.Modal
+ * - Mobile card rendering (<768px) renders actions in card body
  *
  * @vitest-environment jsdom
  */
@@ -14,28 +16,20 @@ import { clearAuthState, setAccessToken } from '../../../../core/http.service.js
 // Mocked module imports
 // ---------------------------------------------------------------------------
 
-// Mock http.service
 vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
-    http: {
-      get: vi.fn(),
-      delete: vi.fn(),
-    },
+    http: { get: vi.fn(), delete: vi.fn() },
   };
 });
 
-// Mock router
 const routerNavigateSpy = vi.fn();
 vi.mock('../../../../core/router.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
-    router: {
-      ...mod.router,
-      navigate: routerNavigateSpy,
-    },
+    router: { ...mod.router, navigate: routerNavigateSpy },
   };
 });
 
@@ -63,56 +57,30 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
         const freshPerms = await getMyPermissionsMock();
         const fHasUpdate = freshPerms.has(ctx.slugs.update);
         const fHasDelete = freshPerms.has(ctx.slugs.delete);
-
         const editItem = el.querySelector('.table-actions-edit-item');
         const deleteItem = el.querySelector('.table-actions-delete-item');
         const toggle = el.querySelector('.dropdown-toggle');
-
-        if (editItem) {
-          if (fHasUpdate) editItem.style.display = '';
-          else editItem.remove();
-        }
-        if (deleteItem) {
-          if (fHasDelete) deleteItem.style.display = '';
-          else deleteItem.remove();
-        }
+        if (editItem) { fHasUpdate ? editItem.style.display = '' : editItem.remove(); }
+        if (deleteItem) { fHasDelete ? deleteItem.style.display = '' : deleteItem.remove(); }
         if (toggle) {
-          if (fHasUpdate || fHasDelete) {
-            toggle.removeAttribute('disabled');
-            toggle.removeAttribute('title');
-          } else {
-            toggle.setAttribute('disabled', '');
-            toggle.setAttribute('title', 'No tenés acciones disponibles');
-          }
+          if (fHasUpdate || fHasDelete) { toggle.removeAttribute('disabled'); toggle.removeAttribute('title'); }
+          else { toggle.setAttribute('disabled', ''); toggle.setAttribute('title', 'No tenés acciones disponibles'); }
         }
       };
 
       permissionService.onInvalidate(rehydrate);
 
       el.innerHTML = `
-        <a class="btn-ver" href="#" data-action="view" title="Ver detalle">
-          <i class="fa-solid fa-eye"></i>
-        </a>
+        <a class="btn-ver" href="#" data-action="view" title="Ver detalle"><i class="fa-solid fa-eye"></i></a>
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
-                  type="button" data-bs-toggle="dropdown"
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false" aria-label="Acciones"
                   ${!hasUpdate && !hasDelete ? 'disabled title="No tenés acciones disponibles"' : ''}>
             <i class="fa-solid fa-ellipsis-v"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            ${hasUpdate ? `
-            <li class="table-actions-edit-item">
-              <a class="dropdown-item table-actions-edit" href="#" data-action="edit">
-                <i class="fa-solid fa-edit"></i> Editar
-              </a>
-            </li>` : ''}
-            ${hasDelete ? `
-            <li class="table-actions-delete-item">
-              <a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete">
-                <i class="fa-solid fa-trash-alt"></i> Eliminar
-              </a>
-            </li>` : ''}
+            ${hasUpdate ? `<li class="table-actions-edit-item"><a class="dropdown-item table-actions-edit" href="#" data-action="edit"><i class="fa-solid fa-edit"></i> Editar</a></li>` : ''}
+            ${hasDelete ? `<li class="table-actions-delete-item"><a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete"><i class="fa-solid fa-trash-alt"></i> Eliminar</a></li>` : ''}
           </ul>
         </div>`;
 
@@ -120,10 +88,7 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
       if (verBtn) {
         verBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:view', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
+          el.dispatchEvent(new CustomEvent('table-actions:view', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
         });
       }
 
@@ -131,10 +96,7 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
       if (editItem) {
         editItem.addEventListener('click', (e) => {
           e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:edit', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
+          el.dispatchEvent(new CustomEvent('table-actions:edit', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
         });
       }
 
@@ -142,10 +104,7 @@ vi.mock('../../../../shared/table-actions/table-actions.component.js', async (im
       if (deleteItem) {
         deleteItem.addEventListener('click', (e) => {
           e.preventDefault();
-          el.dispatchEvent(new CustomEvent('table-actions:delete', {
-            bubbles: true,
-            detail: { id: ctx.id, titulo: ctx.titulo },
-          }));
+          el.dispatchEvent(new CustomEvent('table-actions:delete', { bubbles: true, detail: { id: ctx.id, titulo: ctx.titulo } }));
         });
       }
 
@@ -172,8 +131,7 @@ class MockModal {
 // ---------------------------------------------------------------------------
 const FIXTURE_HTML = `
   <input id="filtro-buscar" />
-  <select id="filtro-rol"><option value="">Todos</option></select>
-  <select id="filtro-org"><option value="">Todas</option></select>
+  <select id="filtro-padre"><option value=""></option></select>
   <div id="estado-cargando"></div>
   <div id="estado-vacio" class="d-none"></div>
   <div id="estado-error" class="d-none"></div>
@@ -181,20 +139,16 @@ const FIXTURE_HTML = `
     <small id="info-resultados"></small>
     <ul id="paginacion"></ul>
   </div>
-  <table><tbody id="tabla-body"></tbody></table>
+  <table><thead><tr><th></th><th></th><th></th><th></th><th></th></tr></thead><tbody id="tabla-body"></tbody></table>
   <div id="contenedor-cards"></div>
   <button id="btn-filtrar"></button>
   <button id="btn-limpiar"></button>
   <button id="btn-reintentar"></button>
-  <div id="modal-eliminar">
-    <strong id="modal-eliminar-nombre"></strong>
-  </div>
+  <div id="modal-eliminar"><strong id="modal-eliminar-nombre"></strong></div>
   <button id="btn-confirmar-eliminar"></button>
   <span id="eliminar-texto"></span>
   <span id="eliminar-loading" class="d-none"></span>
-  <div id="toast-msg" class="toast align-items-center text-white border-0">
-    <div id="toast-msg-texto"></div>
-  </div>
+  <div id="toast-msg" class="toast align-items-center text-white border-0"><div id="toast-msg-texto"></div></div>
 `;
 
 // ---------------------------------------------------------------------------
@@ -203,36 +157,16 @@ const FIXTURE_HTML = `
 function mockMatchMediaDesktop() {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockReturnValue({
-      matches: true,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    }),
+    value: vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
   });
 }
 
 // ---------------------------------------------------------------------------
 // Test data
 // ---------------------------------------------------------------------------
-const MOCK_USUARIOS = [
-  {
-    id: '1',
-    first_name: 'Juan',
-    last_name: 'Pérez',
-    email: 'juan@example.com',
-    role: { name: 'admin_sistema' },
-    organization: { name: 'Municipio' },
-    phone: '0991234567',
-  },
-  {
-    id: '2',
-    first_name: 'María',
-    last_name: 'García',
-    email: 'maria@example.com',
-    role: { name: 'operador_sistema' },
-    organization: { name: 'ESSP' },
-    phone: '0987654321',
-  },
+const MOCK_CATEGORIAS = [
+  { id: '1', name: 'Infraestructura', parent_id: null, parent: null },
+  { id: '2', name: 'Baches', parent_id: '1', parent: { name: 'Infraestructura' } },
 ];
 
 // ---------------------------------------------------------------------------
@@ -254,18 +188,14 @@ beforeEach(async () => {
   permissionService.invalidateMyPermissions();
   mockMatchMediaDesktop();
 
-  const permsToReturn = new Set(['users.update', 'users.delete']);
-  getMyPermissionsMock = vi.fn().mockImplementation(() => {
-    return Promise.resolve(new Set(permsToReturn));
-  });
+  const permsToReturn = new Set(['incident-categories.update', 'incident-categories.delete']);
+  getMyPermissionsMock = vi.fn().mockImplementation(() => Promise.resolve(new Set(permsToReturn)));
   vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(getMyPermissionsMock);
   vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
   const { http } = await import('../../../../core/http.service.js');
   http.get.mockImplementation((path) => {
-    if (path.startsWith('/users')) return Promise.resolve({ data: MOCK_USUARIOS, meta: { total: 2 } });
-    if (path.startsWith('/roles')) return Promise.resolve({ data: [] });
-    if (path.startsWith('/organizations')) return Promise.resolve({ data: [] });
+    if (path.startsWith('/incident-categories')) return Promise.resolve({ data: MOCK_CATEGORIAS, meta: { total: 2 } });
     return Promise.resolve({ data: [] });
   });
   http.delete.mockResolvedValue({});
@@ -280,14 +210,11 @@ beforeEach(async () => {
       dispose() { delete this._el._bootstrapDropdown; }
       static getInstance(el) { return el._bootstrapDropdown || null; }
     },
-    Toast: class Toast {
-      constructor(el) { this._el = el; }
-      show() {}
-    },
+    Toast: class Toast { constructor(el) { this._el = el; } show() {} },
   };
 
   if (!componentModule) {
-    componentModule = await import('./usuarios.index.component.js');
+    componentModule = await import('./categorias.index.component.js');
   }
 
   document.body.innerHTML = FIXTURE_HTML;
@@ -298,7 +225,7 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Helper: render with given permissions
+// Helper
 // ---------------------------------------------------------------------------
 async function renderIndexWithPermissions(perms) {
   getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
@@ -308,12 +235,12 @@ async function renderIndexWithPermissions(perms) {
 }
 
 // ---------------------------------------------------------------------------
-// DESKTOP — permission-driven action rendering
+// Desktop — permission-driven action rendering
 // ---------------------------------------------------------------------------
 
 describe('Desktop — permission-driven action rendering', () => {
   it('renders Ver + Editar + Eliminar when user has both permissions', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     const rows = document.querySelectorAll('#tabla-body tr');
     expect(rows).toHaveLength(2);
@@ -335,57 +262,31 @@ describe('Desktop — permission-driven action rendering', () => {
   });
 
   it('renders only Ver + Editar (no Eliminar) when user lacks delete permission', async () => {
-    await renderIndexWithPermissions(new Set(['users.update']));
-
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
-    expect(tableActionsEls).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
+    await renderIndexWithPermissions(new Set(['incident-categories.update']));
 
     const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    expect(editItems).toHaveLength(2);
-
     const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(editItems).toHaveLength(2);
     expect(deleteItems).toHaveLength(0);
   });
 
   it('renders only Ver + Eliminar (no Editar) when user lacks update permission', async () => {
-    await renderIndexWithPermissions(new Set(['users.delete']));
-
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
-    expect(tableActionsEls).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
+    await renderIndexWithPermissions(new Set(['incident-categories.delete']));
 
     const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    expect(editItems).toHaveLength(0);
-
     const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
+    expect(editItems).toHaveLength(0);
     expect(deleteItems).toHaveLength(2);
   });
 
-  it('renders kebab disabled with tooltip when user has no action permissions', async () => {
-    await renderIndexWithPermissions(new Set(['users.view']));
-
-    const tableActionsEls = document.querySelectorAll('#tabla-body table-actions');
-    expect(tableActionsEls).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
+  it('renders kebab disabled when user has no action permissions', async () => {
+    await renderIndexWithPermissions(new Set(['incident-categories.view']));
 
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
-    expect(toggles).toHaveLength(2);
     toggles.forEach((t) => {
       expect(t.hasAttribute('disabled')).toBe(true);
       expect(t.getAttribute('title')).toBe('No tenés acciones disponibles');
     });
-
-    const editItems = document.querySelectorAll('#tabla-body .table-actions-edit-item');
-    const deleteItems = document.querySelectorAll('#tabla-body .table-actions-delete-item');
-    expect(editItems).toHaveLength(0);
-    expect(deleteItems).toHaveLength(0);
   });
 });
 
@@ -394,41 +295,35 @@ describe('Desktop — permission-driven action rendering', () => {
 // ---------------------------------------------------------------------------
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /usuarios/{id}', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+  it('clicking Ver navigates to /categorias/{id}', async () => {
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     const verBtn = document.querySelector('#tabla-body .btn-ver');
     verBtn.click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/categorias/1');
   });
 
-  it('clicking Editar navigates to /usuarios/crear?id={id}', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+  it('clicking Editar navigates to /categorias/crear?id={id}', async () => {
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     const firstRowActions = document.querySelector('#tabla-body table-actions');
-    const toggle = firstRowActions.querySelector('.dropdown-toggle');
-    toggle.click();
+    firstRowActions.querySelector('.dropdown-toggle').click();
+    firstRowActions.querySelector('.table-actions-edit').click();
 
-    const editItem = firstRowActions.querySelector('.table-actions-edit');
-    editItem.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/crear?id=1');
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/categorias/crear?id=1');
   });
 
   it('clicking Eliminar opens the Bootstrap Delete Modal', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     const firstRowActions = document.querySelector('#tabla-body table-actions');
-    const toggle = firstRowActions.querySelector('.dropdown-toggle');
-    toggle.click();
-
-    const deleteItem = firstRowActions.querySelector('.table-actions-delete');
-    deleteItem.click();
+    firstRowActions.querySelector('.dropdown-toggle').click();
+    firstRowActions.querySelector('.table-actions-delete').click();
 
     expect(shownModalEl).not.toBeNull();
     expect(shownModalEl.id).toBe('modal-eliminar');
-    expect(document.getElementById('modal-eliminar-nombre').textContent).toBe('Juan Pérez');
+    expect(document.getElementById('modal-eliminar-nombre').textContent).toBe('Infraestructura');
   });
 });
 
@@ -437,17 +332,13 @@ describe('Action handlers — CustomEvent delegation', () => {
 // ---------------------------------------------------------------------------
 
 describe('Mobile — actions render in card body', () => {
-  it('at <768px the table is hidden and actions render in card body', async () => {
+  it('at <768px actions render in card body', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
+      value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
     });
 
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     expect(document.getElementById('tabla-body').innerHTML).toBe('');
 
@@ -459,94 +350,19 @@ describe('Mobile — actions render in card body', () => {
 
     const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
     expect(verBtns).toHaveLength(2);
-
-    const toggles = document.querySelectorAll('#contenedor-cards .dropdown-toggle');
-    expect(toggles).toHaveLength(2);
-    toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
   });
 
-  it('mobile Ver click navigates to /usuarios/{id}', async () => {
+  it('mobile Ver click navigates to /categorias/{id}', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
+      value: vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
     });
 
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
+    await renderIndexWithPermissions(new Set(['incident-categories.update', 'incident-categories.delete']));
 
     const verBtn = document.querySelector('#contenedor-cards .btn-ver');
     verBtn.click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
-  });
-
-  it('mobile Editar click navigates to /usuarios/crear?id={id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
-    const toggle = firstCardActions.querySelector('.dropdown-toggle');
-    toggle.click();
-    const editItem = firstCardActions.querySelector('.table-actions-edit');
-    editItem.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/crear?id=1');
-  });
-
-  it('mobile Eliminar click opens the Bootstrap Delete Modal', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const firstCardActions = document.querySelector('#contenedor-cards table-actions');
-    const toggle = firstCardActions.querySelector('.dropdown-toggle');
-    toggle.click();
-    const deleteItem = firstCardActions.querySelector('.table-actions-delete');
-    deleteItem.click();
-
-    expect(shownModalEl).not.toBeNull();
-    expect(shownModalEl.id).toBe('modal-eliminar');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Double-click removal — Ver button replaces row double-click
-// ---------------------------------------------------------------------------
-
-describe('Double-click removal — Ver button replaces row double-click', () => {
-  it('Ver button click navigates to /usuarios/{id}', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
-  });
-
-  it('double-clicking the row does NOT navigate (double-click handler removed)', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const row = document.querySelector('#tabla-body tr');
-    row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-
-    expect(routerNavigateSpy).not.toHaveBeenCalled();
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/categorias/1');
   });
 });

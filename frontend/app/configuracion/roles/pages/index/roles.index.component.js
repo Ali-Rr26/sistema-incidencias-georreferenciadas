@@ -2,127 +2,11 @@ import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { mount } from '../../../../shared/table-actions/table-actions.component.js';
 
 const POR_PAGINA = 15;
-
-/**
- * Crea un <i> con clase FontAwesome.
- * @param {string} cls
- */
-function faIcon(cls) {
-  const i = document.createElement('i');
-  i.className = cls;
-  return i;
-}
-
-/**
- * Crea un <a> tipo botón (Bootstrap btn) con icono y label accesible.
- */
-function btnLink(href, iconClass, title) {
-  const a = document.createElement('a');
-  a.href = href;
-  a.className = 'btn btn-sm btn-outline-secondary';
-  a.title = title;
-  a.setAttribute('aria-label', title);
-  a.appendChild(faIcon(iconClass));
-  return a;
-}
-
-/**
- * Crea la fila de tabla para un rol.
- */
-function buildRolRow(rol) {
-  const tr = document.createElement('tr');
-
-  const tdName = document.createElement('td');
-  tdName.className = 'fw-semibold';
-  const link = document.createElement('a');
-  link.href = `#/roles/${rol.id}`;
-  link.className = 'text-decoration-none';
-  link.textContent = rol.name;
-  tdName.appendChild(link);
-
-  const tdCount = document.createElement('td');
-  tdCount.className = 'text-center';
-  const badge = document.createElement('span');
-  badge.className = 'badge bg-secondary';
-  badge.textContent = String(rol.permissions_count ?? '—');
-  tdCount.appendChild(badge);
-
-  const tdActions = document.createElement('td');
-  tdActions.className = 'text-center';
-  const btnGroup = document.createElement('div');
-  btnGroup.className = 'd-flex gap-1 justify-content-center';
-  btnGroup.appendChild(
-    btnLink(`#/roles/${rol.id}`, 'fa-solid fa-key', 'Editar permisos'),
-  );
-
-  const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.className = 'btn btn-sm btn-outline-danger btn-eliminar';
-  delBtn.dataset.id = String(rol.id);
-  delBtn.dataset.nombre = rol.name;
-  delBtn.title = 'Eliminar';
-  delBtn.setAttribute('aria-label', 'Eliminar rol');
-  delBtn.appendChild(faIcon('fa-solid fa-trash-alt'));
-  btnGroup.appendChild(delBtn);
-
-  tdActions.appendChild(btnGroup);
-
-  tr.appendChild(tdName);
-  tr.appendChild(tdCount);
-  tr.appendChild(tdActions);
-  return tr;
-}
-
-/**
- * Crea la card mobile para un rol.
- */
-function buildRolCard(rol) {
-  const card = document.createElement('div');
-  card.className = 'card mb-2 shadow-sm';
-
-  const body = document.createElement('div');
-  body.className = 'card-body p-3';
-
-  const row = document.createElement('div');
-  row.className = 'd-flex justify-content-between align-items-center';
-
-  const left = document.createElement('div');
-  const title = document.createElement('h6');
-  title.className = 'mb-0';
-  const link = document.createElement('a');
-  link.href = `#/roles/${rol.id}`;
-  link.className = 'text-decoration-none';
-  link.textContent = rol.name;
-  title.appendChild(link);
-  left.appendChild(title);
-
-  const subtitle = document.createElement('small');
-  subtitle.className = 'text-muted';
-  subtitle.textContent = `${rol.permissions_count ?? 0} permisos`;
-  left.appendChild(subtitle);
-
-  const right = document.createElement('div');
-  right.className = 'd-flex gap-1';
-  right.appendChild(
-    btnLink(`#/roles/${rol.id}`, 'fas fa-key', 'Editar permisos'),
-  );
-
-  const delBtn = document.createElement('button');
-  delBtn.type = 'button';
-  delBtn.className = 'btn btn-sm btn-outline-danger btn-eliminar';
-  delBtn.dataset.id = String(rol.id);
-  delBtn.dataset.nombre = rol.name;
-  delBtn.appendChild(faIcon('fas fa-trash-alt'));
-  right.appendChild(delBtn);
-
-  row.appendChild(left);
-  row.appendChild(right);
-  body.appendChild(row);
-  card.appendChild(body);
-  return card;
-}
 
 export default {
   templateUrl: 'app/configuracion/roles/pages/index/roles.index.component.html',
@@ -135,9 +19,8 @@ export default {
     function mostrarToast(mensaje, tipo) {
       const el = document.getElementById('toast-msg');
       if (!el) return;
-      el.className = `toast align-items-center text-white border-0 bg-${tipo} position-fixed bottom-0 end-0 m-4`;
+      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
       document.getElementById('toast-msg-texto').textContent = mensaje;
-      // eslint-disable-next-line no-undef
       new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
@@ -150,17 +33,75 @@ export default {
       });
     }
 
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px)').matches;
+    }
+
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
       }
 
+      const esDesktop = isDesktop();
       const tbody = document.getElementById('tabla-body');
-      tbody.replaceChildren(...datos.map(buildRolRow));
-
       const cards = document.getElementById('contenedor-cards');
-      cards.replaceChildren(...datos.map(buildRolCard));
+
+      if (esDesktop) {
+        tbody.innerHTML = datos
+          .map(
+            (rol) => `
+                <tr>
+                    <td class="fw-semibold">${rol.name}</td>
+                    <td class="text-center"><span class="badge bg-secondary">${rol.permissions_count ?? 0}</span></td>
+                    <td class="text-center">
+                        <table-actions id="ta-desktop-${rol.id}"></table-actions>
+                    </td>
+                </tr>`,
+          )
+          .join('');
+
+        datos.forEach((rol) => {
+          const el = document.getElementById('ta-desktop-' + rol.id);
+          if (el) {
+            mount(el, {
+              id: rol.id,
+              titulo: rol.name,
+              slugs: { update: 'roles.update', delete: 'roles.delete' },
+            });
+          }
+        });
+
+        cards.innerHTML = '';
+      } else {
+        tbody.innerHTML = '';
+        cards.innerHTML = datos
+          .map(
+            (rol) => `
+                <div class="card mb-2 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">${rol.name} <span class="badge bg-secondary ms-1">${rol.permissions_count ?? 0}</span></h6>
+                            </div>
+                            <table-actions id="ta-mobile-${rol.id}"></table-actions>
+                        </div>
+                    </div>
+                </div>`,
+          )
+          .join('');
+
+        datos.forEach((rol) => {
+          const el = document.getElementById('ta-mobile-' + rol.id);
+          if (el) {
+            mount(el, {
+              id: rol.id,
+              titulo: rol.name,
+              slugs: { update: 'roles.update', delete: 'roles.delete' },
+            });
+          }
+        });
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -202,26 +143,37 @@ export default {
       }
     }
 
-    function delegarClicks(contenedor) {
-      if (!contenedor) return;
-      contenedor.addEventListener('click', (e) => {
-        const eliminar = e.target.closest('.btn-eliminar');
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          // eslint-disable-next-line no-undef
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated event handlers for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/roles/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/roles/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
+
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
 
     document.getElementById('btn-nuevo-rol').addEventListener('click', () => {
       router.navigate('/roles/0');
     });
-
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
 
     document
       .getElementById('btn-confirmar-eliminar')
@@ -232,7 +184,6 @@ export default {
         this.disabled = true;
         try {
           await http.delete('/roles/' + idEliminar);
-          // eslint-disable-next-line no-undef
           bootstrap.Modal.getInstance(
             document.getElementById('modal-eliminar'),
           ).hide();

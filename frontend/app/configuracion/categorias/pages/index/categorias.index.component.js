@@ -2,6 +2,9 @@ import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { mount } from '../../../../shared/table-actions/table-actions.component.js';
 
 const POR_PAGINA = 15;
 
@@ -31,15 +34,24 @@ export default {
       });
     }
 
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px)').matches;
+    }
+
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
       }
 
-      document.getElementById('tabla-body').innerHTML = datos
-        .map(
-          (cat) => `
+      const esDesktop = isDesktop();
+      const tbody = document.getElementById('tabla-body');
+      const cards = document.getElementById('contenedor-cards');
+
+      if (esDesktop) {
+        tbody.innerHTML = datos
+          .map(
+            (cat) => `
             <tr>
               <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${cat.id}" /></td>
               <td class="fw-semibold">${cat.name}</td>
@@ -49,23 +61,30 @@ export default {
                 </span>
               </td>
               <td class="text-muted">${cat.parent?.name ?? '—'}</td>
-              <td>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${cat.id}" title="Editar">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${cat.id}" data-nombre="${cat.name}" title="Eliminar">
-                    <i class="fa-solid fa-trash-alt"></i>
-                  </button>
-                </div>
+              <td class="text-center">
+                <table-actions id="ta-desktop-${cat.id}"></table-actions>
               </td>
             </tr>`,
-        )
-        .join('');
+          )
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = datos
-        .map(
-          (cat) => `
+        datos.forEach((cat) => {
+          const el = document.getElementById('ta-desktop-' + cat.id);
+          if (el) {
+            mount(el, {
+              id: cat.id,
+              titulo: cat.name,
+              slugs: { update: 'incident-categories.update', delete: 'incident-categories.delete' },
+            });
+          }
+        });
+
+        cards.innerHTML = '';
+      } else {
+        tbody.innerHTML = '';
+        cards.innerHTML = datos
+          .map(
+            (cat) => `
             <div class="card mb-2 shadow-sm">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -76,19 +95,24 @@ export default {
                     </span>
                     ${cat.parent ? `<br><small class="text-muted">Padre: ${cat.parent.name}</small>` : ''}
                   </div>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${cat.id}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${cat.id}" data-nombre="${cat.name}">
-                      <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                  </div>
+                  <table-actions id="ta-mobile-${cat.id}"></table-actions>
                 </div>
               </div>
             </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        datos.forEach((cat) => {
+          const el = document.getElementById('ta-mobile-' + cat.id);
+          if (el) {
+            mount(el, {
+              id: cat.id,
+              titulo: cat.name,
+              slugs: { update: 'incident-categories.update', delete: 'incident-categories.delete' },
+            });
+          }
+        });
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -148,26 +172,33 @@ export default {
       });
     }
 
-    function delegarClicks(contenedor) {
-      contenedor.addEventListener('click', (e) => {
-        const editar = e.target.closest('.btn-editar');
-        const eliminar = e.target.closest('.btn-eliminar');
-
-        if (editar) {
-          router.navigate('/categorias/crear?id=' + editar.dataset.id);
-        }
-
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated event handlers for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/categorias/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/categorias/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
 
     document
       .getElementById('btn-confirmar-eliminar')
