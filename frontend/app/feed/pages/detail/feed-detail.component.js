@@ -302,7 +302,7 @@ export default {
 
   _buildCommentLi(comment, currentUserId, depth = 0) {
     const li = document.createElement('li');
-    li.className = 'incid-detail__comment-item d-flex gap-3';
+    li.className = 'media d-flex align-items-start py-3 border-bottom';
 
     const userName = comment.user
       ? getUserDisplayName(comment.user)
@@ -315,14 +315,14 @@ export default {
       ? '<i class="fas fa-headset text-white" aria-hidden="true"></i>'
       : '<i class="fas fa-user text-white" aria-hidden="true"></i>';
     const actorTag = isInternal
-      ? '<span class="badge bg-info-subtle text-info" style="font-size:0.72rem">Atención institucional</span>'
+      ? '<span class="badge bg-info-subtle text-info mb-1">Atención institucional</span>'
       : '';
 
     const isOwner = currentUserId != null && comment.user_id === currentUserId;
 
     const replyBtn = currentUserId != null
-      ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder" style="font-size:0.78rem">
-          <i class="fas fa-reply me-1"></i>Responder
+      ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
+          <i class="fas fa-reply"></i> Responder
         </button>`
       : '';
 
@@ -332,8 +332,6 @@ export default {
             ? getUserDisplayName(comment.parent.user)
             : 'Usuario';
           const snippet = (comment.parent.message || '').slice(0, 100);
-          const isSelfReply = currentUserId != null && comment.parent.user_id === currentUserId;
-          if (isSelfReply) return '';
           return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
         })()
       : '';
@@ -355,21 +353,19 @@ export default {
       : '';
 
     li.innerHTML = `
-      <div class="rounded-circle ${avatarClass} d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px;font-size:0.85rem" aria-hidden="true">${avatarIcon}</div>
-      <div class="flex-grow-1">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="fw-bold" style="font-size:0.88rem;color:#212529">${escapeHtml(userName)}</span>
-            ${actorTag}
-            <small class="text-muted" style="font-size:0.75rem">${timeAgo(comment.created_at)}</small>
+      <div class="rounded-circle ${avatarClass} d-flex align-items-center justify-content-center flex-shrink-0 me-3" style="width:40px;height:40px;font-size:0.9rem" aria-hidden="true">${avatarIcon}</div>
+      <div class="media-body">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <h5 class="mt-0 mb-0 fw-bold" style="font-size:0.88rem;color:#212529">${escapeHtml(userName)}</h5>
+          <div class="d-flex gap-2 align-items-center">
+            <small class="text-muted">${timeAgo(comment.created_at)}</small>
+            ${replyBtn}
           </div>
-          ${replyBtn}
         </div>
+        ${actorTag}
         ${replyQuote}
-        <div class="incid-detail__comment-body">
-          <p class="mb-0 text-muted" style="font-size:0.875rem;white-space:pre-wrap">${escapeHtml(comment.message)}</p>
-          ${imagesHtml}
-        </div>
+        <p class="mb-0 text-muted" style="font-size:0.875rem;white-space:pre-wrap">${escapeHtml(comment.message)}</p>
+        ${imagesHtml}
       </div>`;
 
     if (comment.replies && comment.replies.length > 0) {

@@ -218,38 +218,17 @@
 }
 
 .incid-detail__reply-quote {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: #6c757d;
   border-left: 3px solid #dee2e6;
-  padding-left: 10px;
-  margin: 8px 0;
+  padding-left: 8px;
+  margin-bottom: 6px;
   font-style: italic;
-  background: #f8f9fa;
-  padding: 8px 10px;
-  border-radius: 0 6px 6px 0;
 }
 
 .incid-detail__reply-quote strong {
   font-weight: 600;
   color: #495057;
-}
-
-.incid-detail__comment-item {
-  padding: 16px 0;
-  border-bottom: 1px solid #f0edff;
-}
-
-.incid-detail__comment-item:first-child {
-  padding-top: 0;
-}
-
-.incid-detail__comment-item:last-child {
-  border-bottom: none;
-}
-
-.incid-detail__comment-body {
-  margin-top: 6px;
-  line-height: 1.6;
 }
 
 
