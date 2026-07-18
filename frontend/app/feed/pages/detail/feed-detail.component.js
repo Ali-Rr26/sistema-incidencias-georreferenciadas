@@ -9,10 +9,8 @@
  */
 import {
   escapeHtml,
-  timeAgo,
   STATUS_LABEL,
   PRIORITY_LABEL,
-  getCommentImageUrl,
 } from '../../../utils/format.js';
 import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
@@ -21,6 +19,7 @@ import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
+import { buildCommentItem } from '../../../shared/comment-item.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -301,91 +300,15 @@ export default {
   },
 
   _buildCommentLi(comment, currentUserId, depth = 0) {
-    const li = document.createElement('li');
-    li.className = 'media d-flex align-items-start py-3 border-bottom';
-
-    const userName = comment.user
-      ? getUserDisplayName(comment.user)
-      : 'Usuario';
-
-    const role = (comment.user?.role || '').toLowerCase();
-    const isInternal = ['admin', 'operator', 'support', 'staff'].includes(role);
-    const avatarClass = isInternal ? 'bg-info' : 'bg-primary';
-    const avatarIcon = isInternal
-      ? '<i class="fas fa-headset text-white" aria-hidden="true"></i>'
-      : '<i class="fas fa-user text-white" aria-hidden="true"></i>';
-    const actorTag = isInternal
-      ? '<span class="badge bg-info-subtle text-info mb-1">Atención institucional</span>'
-      : '';
-
-    const replyBtn = currentUserId != null && (comment.depth ?? 0) < 2
-      ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
-          <i class="fas fa-reply"></i> Responder
-        </button>`
-      : '';
-
-    const replyQuote = comment.parent
-      ? (() => {
-          const parentUser = comment.parent.user
-            ? getUserDisplayName(comment.parent.user)
-            : 'Usuario';
-          const snippet = (comment.parent.message || '').slice(0, 100);
-          return `<div class="incid-detail__reply-quote"><strong>${escapeHtml(parentUser)}</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
-        })()
-      : '';
-
-    const imagesHtml = (comment.images && comment.images.length > 0)
-      ? `<div class="incid-detail__thumbnail-grid mt-1 mb-1">
-          ${comment.images.map(img => {
-            const src = escapeHtml(getCommentImageUrl(img.url));
-            const caption = escapeHtml(img.caption || img.original_name || '');
-            return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
-              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" />
-              <div class="incid-detail__thumbnail-overlay">
-                ${caption ? `<span class="incid-detail__thumbnail-caption">${caption}</span>` : ''}
-              </div>
-            </div>`;
-          }).join('')}
-         </div>`
-      : '';
-
-    li.innerHTML = `
-      <div class="rounded-circle ${avatarClass} d-flex align-items-center justify-content-center flex-shrink-0 me-3" style="width:40px;height:40px;font-size:0.9rem" aria-hidden="true">${avatarIcon}</div>
-      <div class="media-body">
-        <div class="d-flex align-items-baseline mb-1">
-          <h5 class="mt-0 mb-0 fw-bold" style="font-size:0.88rem;color:#212529">${escapeHtml(userName)}</h5>
-          <small class="text-muted ms-2" style="font-size:0.75rem">${timeAgo(comment.created_at)}</small>
-          <div class="ms-auto d-flex gap-2 align-items-center">
-            ${replyBtn}
-          </div>
-        </div>
-        ${actorTag}
-        ${replyQuote}
-        <p class="mb-0 text-muted" style="font-size:0.875rem;white-space:pre-wrap">${escapeHtml(comment.message)}</p>
-        ${imagesHtml}
-      </div>`;
-
-    if (comment.replies && comment.replies.length > 0) {
-      const replyDepth = depth >= 1 ? 1 : depth + 1;
-      const replyUl = document.createElement('ul');
-      replyUl.className = 'list-unstyled';
-      if (replyDepth > 0) {
-        replyUl.classList.add('incid-detail__nested');
-      }
-      for (const reply of comment.replies) {
-        replyUl.appendChild(this._buildCommentLi(reply, currentUserId, replyDepth));
-      }
-      // Append the replies <ul> INSIDE the media-body so it doesn't become
-      // a third flex child of the <li> (which would break the layout).
-      const mediaBody = li.querySelector('.media-body');
-      if (mediaBody) {
-        mediaBody.appendChild(replyUl);
-      } else {
-        li.appendChild(replyUl);
-      }
-    }
-
-    return li;
+    return buildCommentItem(
+      comment,
+      {
+        currentUserId,
+        canDelete: false,
+        getUserName: (u) => (u ? getUserDisplayName(u) : 'Usuario'),
+      },
+      depth,
+    );
   },
 
   _renderComments(items, currentUserId) {
@@ -461,8 +384,8 @@ export default {
       // Close any previously open inline reply form (only one at a time)
       document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
 
-      const mediaBody = li.querySelector('.media-body');
-      if (!mediaBody) return;
+      const commentBody = li.querySelector('.comment-body');
+      if (!commentBody) return;
 
       const parentUser = comment.user ? getUserDisplayName(comment.user) : 'Usuario';
 
@@ -470,7 +393,7 @@ export default {
       form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
       form.dataset.parentId = String(comment.id);
       form.innerHTML = `
-        <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}..." required></textarea>
+        <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}... (Enter para enviar, Shift+Enter para nueva línea)" required></textarea>
         <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
         <div class="d-flex gap-2 mt-2 justify-content-end">
           <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
@@ -480,10 +403,18 @@ export default {
         </div>
       `;
 
-      mediaBody.appendChild(form);
+      commentBody.appendChild(form);
       const textarea = form.querySelector('textarea');
       const errorBox = form.querySelector('.fd-comment-inline-reply__error');
       textarea.focus();
+
+      // Enter without Shift submits; Shift+Enter inserts a new line.
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
 
       form
         .querySelector('.fd-inline-reply-cancel')
@@ -1122,7 +1053,7 @@ export default {
             <div id="fd-comments-loading" class="d-flex justify-content-center py-2">
               <div class="spinner-border spinner-border-sm text-primary"></div>
             </div>
-            <ul id="fd-comments-list" class="list-unstyled mb-0"></ul>
+            <ul id="fd-comments-list" class="list-unstyled mb-0 comment-list"></ul>
             <p id="fd-comments-empty" class="text-muted d-none mb-0" style="font-size:0.875rem">
               Sin comentarios todavía.
             </p>
