@@ -16,7 +16,7 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'message'   => [
+            'message' => [
                 'nullable',
                 'string',
                 'max:5000',

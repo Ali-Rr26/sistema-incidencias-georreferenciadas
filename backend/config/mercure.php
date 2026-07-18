@@ -39,8 +39,8 @@ return [
     |
     */
     'cookie' => [
-        'name'        => env('MERCURE_COOKIE_NAME', 'mercureAuthorization'),
-        'path'        => env('MERCURE_COOKIE_PATH', '/'),
+        'name' => env('MERCURE_COOKIE_NAME', 'mercureAuthorization'),
+        'path' => env('MERCURE_COOKIE_PATH', '/'),
         // 30 days by default — aligned with the refresh_token cookie so the
         // SSE connection survives between sessions. Drop this if you want
         // a tighter idle-disconnect window.
@@ -68,9 +68,9 @@ return [
     |
     */
     'publisher' => [
-        'jwt'             => env('MERCURE_PUBLISHER_JWT_SECRET'),
+        'jwt' => env('MERCURE_PUBLISHER_JWT_SECRET'),
         'jwt_ttl_seconds' => (int) env('MERCURE_PUBLISHER_JWT_TTL', 60 * 60),
-        'allowed_topics'  => str_contains((string) env('MERCURE_PUBLISHER_ALLOWED_TOPICS', '*'), '*')
+        'allowed_topics' => str_contains((string) env('MERCURE_PUBLISHER_ALLOWED_TOPICS', '*'), '*')
             ? ['*']
             : array_map('trim', explode(',', (string) env('MERCURE_PUBLISHER_ALLOWED_TOPICS'))),
     ],
@@ -109,10 +109,10 @@ return [
     |
     */
     'topics_by_role' => [
-        'admin_sistema'         => ['user:*:notifications'],
-        'admin_organizacion'    => ['user:*:notifications'],
+        'admin_sistema' => ['user:*:notifications'],
+        'admin_organizacion' => ['user:*:notifications'],
         'operador_organizacion' => ['user:*:notifications'],
-        'usuario'               => ['user:*:notifications'],
+        'usuario' => ['user:*:notifications'],
     ],
 
     /*

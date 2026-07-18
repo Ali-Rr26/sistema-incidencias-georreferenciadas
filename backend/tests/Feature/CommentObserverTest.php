@@ -12,6 +12,7 @@ use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -35,11 +36,11 @@ beforeEach(function (): void {
 
     // Role-permission grants for admin_sistema (role_id = 1)
     foreach (Permission::all() as $perm) {
-        \Illuminate\Support\Facades\DB::table('role_permission')->insert([
-            'role_id'       => 1,
+        DB::table('role_permission')->insert([
+            'role_id' => 1,
             'permission_id' => $perm->permission_id,
-            'created_at'    => now(),
-            'updated_at'    => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 
@@ -51,17 +52,17 @@ beforeEach(function (): void {
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $incident = Incident::create([
         'incident_category_id' => $category->id,
-        'organization_id'     => $org->id,
-        'user_id'             => $this->user->id,
-        'location_id'         => $location->id,
-        'title'               => 'Test Incident',
-        'status'              => Incident::STATUS_PENDING,
-        'priority'            => Incident::PRIORITY_MEDIUM,
+        'organization_id' => $org->id,
+        'user_id' => $this->user->id,
+        'location_id' => $location->id,
+        'title' => 'Test Incident',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
     ]);
     $this->comment = Comment::create([
         'incident_id' => $incident->id,
-        'user_id'     => $this->user->id,
-        'message'     => 'Comment with images',
+        'user_id' => $this->user->id,
+        'message' => 'Comment with images',
     ]);
 });
 

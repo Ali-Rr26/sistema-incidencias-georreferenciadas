@@ -54,7 +54,7 @@ it('belongs to comment', function (): void {
 });
 
 it('has correct fillable attributes', function (): void {
-    $fillable = (new CommentImage())->getFillable();
+    $fillable = (new CommentImage)->getFillable();
 
     expect($fillable)->toContain('comment_id')
         ->toContain('url')

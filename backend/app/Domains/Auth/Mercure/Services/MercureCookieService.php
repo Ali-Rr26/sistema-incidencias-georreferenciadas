@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Mercure\Services;
 
+use App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController;
+use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Testing\TestResponse;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -23,8 +26,8 @@ use Symfony\Component\HttpFoundation\Cookie;
  *   - the security flags (HttpOnly, SameSite=Strict, Secure when isProduction)
  *   - the `mercure.subscribe` claim shape (currently `["user:{id}:notifications"]`)
  *
- * Both {@see \App\Domains\Auth\Local\Http\Controllers\AuthController} and
- * {@see \App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController}
+ * Both {@see AuthController} and
+ * {@see GoogleAuthController}
  * inject this service and delegate to `build()` (login + refresh) and
  * `expire()` (logout). Future changes — longer TTL, multi-topic claims
  * per role, key rotation hooks — only touch this file.
@@ -90,7 +93,7 @@ class MercureCookieService
      *
      * We use a negative maxAge (-60s) so Laravel writes an Expires
      * timestamp strictly in the past — this matches the framework's
-     * {@see \Illuminate\Testing\TestResponse::assertCookieExpired()}
+     * {@see TestResponse::assertCookieExpired()}
      * assertion and the behavior of the previous in-controller
      * `expiredMercureAuthCookie()` before this service extracted it.
      */

@@ -68,9 +68,9 @@ class CommentController extends Controller
 
         $comment = $this->commentRepository->create([
             'incident_id' => $incident->id,
-            'user_id'     => auth()->id(),
-            'message'     => $request->input('message'),
-            'parent_id'   => $parentId,
+            'user_id' => auth()->id(),
+            'message' => $request->input('message'),
+            'parent_id' => $parentId,
         ]);
 
         $comment->load(['user', 'images', 'parent', 'replies']);
