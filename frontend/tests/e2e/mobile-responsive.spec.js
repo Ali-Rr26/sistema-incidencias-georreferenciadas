@@ -144,7 +144,7 @@ test('perfil — phone field has type=tel (REQ-MR-7)', async ({ page }) => {
   if (exists) {
     await expect(phoneLocator).toHaveAttribute('type', 'tel');
     await expect(phoneLocator).toHaveAttribute('inputmode', 'tel');
-    await expect(phoneLocator).toHaveAttribute('pattern', '[+0-9 ()-]{6,20}');
+    await expect(phoneLocator).toHaveAttribute('pattern', '[+0-9 \\(\\)\\-]{6,20}');
   } else {
     // Profile page requires auth — verify the HTML source instead
     expect(true).toBe(true); // Pass if auth required
