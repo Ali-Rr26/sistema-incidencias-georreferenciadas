@@ -127,7 +127,6 @@ describe('resolveAvatar', () => {
     // When profile_image_path is a non-empty string, it short-circuits.
     // This tests the canonical resolveAvatar behavior directly.
     const profilePath = 'users/5/abc123.webp';
-    const legacyAvatar = { urls: ['https://lh3.googleusercontent.com/photo.jpg'] };
     expect(resolveAvatar(profilePath)).toBe(profilePath);
     // The function itself is shape-agnostic — string input is returned as-is.
     // The precedence contract (profile_image_path wins over avatar) is
