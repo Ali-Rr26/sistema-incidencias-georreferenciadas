@@ -38,7 +38,9 @@ export default {
       const updatedAtEl = document.getElementById('perfil-updated-at');
       if (updatedAtEl) {
         if (u.updated_at) {
-          updatedAtEl.textContent = 'Última actualización: ' + new Date(u.updated_at).toLocaleString('es-EC');
+          updatedAtEl.textContent =
+            'Última actualización: ' +
+            new Date(u.updated_at).toLocaleString('es-EC');
           updatedAtEl.classList.remove('d-none');
         } else {
           updatedAtEl.classList.add('d-none');

@@ -385,7 +385,10 @@ export default {
     tablaBody.addEventListener('table-actions:delete', manejarTableActions);
     contenedorCards.addEventListener('table-actions:view', manejarTableActions);
     contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener(
+      'table-actions:delete',
+      manejarTableActions,
+    );
 
     document
       .getElementById('btn-confirmar-eliminar')

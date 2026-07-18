@@ -103,7 +103,9 @@ describe('permissionService PubSub extension', () => {
     });
 
     it('returns fresh data after invalidateMyPermissions when a new fetch completes', async () => {
-      http.get.mockResolvedValue({ data: ['incidents.update', 'incidents.delete'] });
+      http.get.mockResolvedValue({
+        data: ['incidents.update', 'incidents.delete'],
+      });
 
       // First load
       const result1 = await permissionService.getMyPermissions();

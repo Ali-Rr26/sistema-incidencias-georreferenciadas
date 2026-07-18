@@ -20,7 +20,8 @@
 
 import { permissionService } from '../permission.service.js';
 
-export const templateUrl = 'app/shared/table-actions/table-actions.component.html';
+export const templateUrl =
+  'app/shared/table-actions/table-actions.component.html';
 
 // WeakMap: host element → instance data
 const INSTANCES = new WeakMap();
@@ -79,7 +80,9 @@ function renderDropdownItems(el, perms, slugs) {
       editLi.remove();
     }
   } else if (slugs.update) {
-    console.warn('table-actions: .table-actions-edit-item missing from template');
+    console.warn(
+      'table-actions: .table-actions-edit-item missing from template',
+    );
   }
   if (deleteLi) {
     if (hasDelete) {
@@ -88,7 +91,9 @@ function renderDropdownItems(el, perms, slugs) {
       deleteLi.remove();
     }
   } else if (slugs.delete) {
-    console.warn('table-actions: .table-actions-delete-item missing from template');
+    console.warn(
+      'table-actions: .table-actions-delete-item missing from template',
+    );
   }
 
   if (!toggle) {
@@ -166,7 +171,9 @@ export async function mount(el, ctx) {
     const fragment = doc.body.children[0];
 
     if (!fragment) {
-      throw new Error(`table-actions: template "${templateUrl}" returned no body content`);
+      throw new Error(
+        `table-actions: template "${templateUrl}" returned no body content`,
+      );
     }
 
     // Append to host
@@ -177,7 +184,9 @@ export async function mount(el, ctx) {
     if (verBtn) {
       verBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        el.dispatchEvent(new CustomEvent('table-actions:view', { detail: eventDetail(ctx) }));
+        el.dispatchEvent(
+          new CustomEvent('table-actions:view', { detail: eventDetail(ctx) }),
+        );
       });
     } else {
       console.warn('table-actions: .btn-ver missing from template');
@@ -190,7 +199,9 @@ export async function mount(el, ctx) {
     if (editItem) {
       editItem.addEventListener('click', (e) => {
         e.preventDefault();
-        el.dispatchEvent(new CustomEvent('table-actions:edit', { detail: eventDetail(ctx) }));
+        el.dispatchEvent(
+          new CustomEvent('table-actions:edit', { detail: eventDetail(ctx) }),
+        );
       });
     } else {
       console.warn('table-actions: .table-actions-edit missing from template');
@@ -199,10 +210,14 @@ export async function mount(el, ctx) {
     if (deleteItem) {
       deleteItem.addEventListener('click', (e) => {
         e.preventDefault();
-        el.dispatchEvent(new CustomEvent('table-actions:delete', { detail: eventDetail(ctx) }));
+        el.dispatchEvent(
+          new CustomEvent('table-actions:delete', { detail: eventDetail(ctx) }),
+        );
       });
     } else {
-      console.warn('table-actions: .table-actions-delete missing from template');
+      console.warn(
+        'table-actions: .table-actions-delete missing from template',
+      );
     }
 
     // Initialize Bootstrap Dropdown (REL-1: defensive — skip wiring if missing)
@@ -245,7 +260,9 @@ export async function mount(el, ctx) {
     // partial DOM. Clean up and re-throw so the caller sees a meaningful error
     // and the next mount() on the same el starts from a clean slate.
     clearChildren(el);
-    throw new Error(`table-actions: mount failed: ${err.message}`, { cause: err });
+    throw new Error(`table-actions: mount failed: ${err.message}`, {
+      cause: err,
+    });
   }
 }
 

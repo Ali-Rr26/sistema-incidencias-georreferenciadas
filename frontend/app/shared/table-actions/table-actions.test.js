@@ -92,7 +92,9 @@ afterEach(() => {
 
 describe('Ver button', () => {
   it('renders the Ver button always, regardless of permissions', async () => {
-    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+      new Set(),
+    );
     vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
     const { mount, unmount } = await import('./table-actions.component.js');
@@ -169,7 +171,9 @@ describe('Permission filtering', () => {
   });
 
   it('renders kebab disabled with tooltip when user has no actions', async () => {
-    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+      new Set(),
+    );
     vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
     const { mount, unmount } = await import('./table-actions.component.js');
@@ -406,7 +410,9 @@ describe('Cleanup', () => {
     vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
       new Set(['incidents.update', 'incidents.delete']),
     );
-    vi.spyOn(permissionService, 'onInvalidate').mockImplementation(() => unsubscribe);
+    vi.spyOn(permissionService, 'onInvalidate').mockImplementation(
+      () => unsubscribe,
+    );
 
     const { mount, unmount } = await import('./table-actions.component.js');
 
@@ -488,7 +494,9 @@ describe('Live re-hydration', () => {
 describe('Robustness regressions (PR1 review)', () => {
   describe('RES-1: double mount guard', () => {
     it('throws when mount is called twice on the same element', async () => {
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(),
+      );
       vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
       const { mount, unmount } = await import('./table-actions.component.js');
@@ -517,7 +525,9 @@ describe('Robustness regressions (PR1 review)', () => {
       const onInvalidateSpy = vi
         .spyOn(permissionService, 'onInvalidate')
         .mockReturnValue(() => {});
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(),
+      );
 
       const { mount, unmount } = await import('./table-actions.component.js');
 
@@ -587,7 +597,9 @@ describe('Robustness regressions (PR1 review)', () => {
         return Promise.reject(new Error('Unexpected fetch URL'));
       });
 
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(),
+      );
       vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
       const { mount } = await import('./table-actions.component.js');
@@ -620,7 +632,9 @@ describe('Robustness regressions (PR1 review)', () => {
         return Promise.reject(new Error('Unexpected fetch URL'));
       });
 
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(),
+      );
       vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
       const { mount } = await import('./table-actions.component.js');
