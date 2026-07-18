@@ -17,6 +17,14 @@ function mostrarToast(mensaje, tipo) {
 
 export default {
   templateUrl: 'app/configuracion/perfil/perfil.component.html',
+  // Scoped CSS — the custom router in core/router.js injects this <style>
+  // when styleUrl is set. Without it, .perfil-grid / .perfil-card /
+  // .perfil-avatar-wrap / .perfil-input etc. never load and the page
+  // renders with the pre-redesign look (HTML keeps the new classes but no
+  // styles apply). All other scoped-CSS components in the codebase
+  // (mapa, feed, login, dashboard, …) declare this; perfil was the only
+  // omission.
+  styleUrl: 'app/configuracion/perfil/perfil.component.css',
 
   async onInit() {
     console.log('[Perfil] onInit called');
