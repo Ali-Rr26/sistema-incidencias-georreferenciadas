@@ -378,7 +378,14 @@ export default {
       for (const reply of comment.replies) {
         replyUl.appendChild(this._buildCommentLi(reply, currentUserId, replyDepth));
       }
-      li.appendChild(replyUl);
+      // Append the replies <ul> INSIDE the media-body so it doesn't become
+      // a third flex child of the <li> (which would break the layout).
+      const mediaBody = li.querySelector('.media-body');
+      if (mediaBody) {
+        mediaBody.appendChild(replyUl);
+      } else {
+        li.appendChild(replyUl);
+      }
     }
 
     return li;

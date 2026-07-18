@@ -186,6 +186,12 @@
   margin-top: 1rem;
 }
 
+/* Bootstrap 5 dropped .media / .media-body — restore the BS4 Media object
+   behavior so the ui-list-media.html pattern works correctly. */
+.media-body {
+  flex: 1;
+}
+
 .incid-detail__lightbox {
   position: fixed;
   inset: 0;
