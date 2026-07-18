@@ -1,4 +1,4 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo, getCommentImageUrl } from '../../../utils/format.js';
+import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
@@ -8,6 +8,7 @@ import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { buildCommentItem, MAX_COMMENT_DEPTH } from '../../../shared/comment-item.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
@@ -368,88 +369,52 @@ function renderHistorial(items) {
 // ── Comentarios públicos ────────────────────────────────────
 
 function buildCommentLi(comment, currentUserId, depth = 0) {
-  const li = document.createElement('li');
-  li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
+  return buildCommentItem(
+    comment,
+    {
+      currentUserId,
+      canDelete: true,
+      getUserName: (u) => {
+        if (!u) return 'Usuario';
+        return (
+          [u.first_name, u.last_name].filter(Boolean).join(' ') ||
+          u.email ||
+          'Usuario'
+        );
+      },
+    },
+    depth,
+  );
+}
 
-  const userName = comment.user
-    ? [comment.user.first_name, comment.user.last_name]
-        .filter(Boolean)
-        .join(' ') || comment.user?.email
-    : 'Usuario';
+// Module-scoped index of commentId → full comment object. Populated by
+// renderComments and read by the inline-reply click handler in
+// setupComments. Replaces the previous DOM-scraping helper which broke
+// whenever the comment-item CSS classes were renamed.
+let commentById = new Map();
 
-  const isOwner = currentUserId != null && comment.user_id === currentUserId;
-
-  const replyBtn = currentUserId != null
-    ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
-        <i class="fas fa-reply"></i> Responder
-      </button>`
-    : '';
-
-  const deleteBtn = isOwner
-    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-comentario" data-id="${escapeHtml(String(comment.id))}" title="Eliminar comentario">
-        <i class="fas fa-trash-alt"></i>
-      </button>`
-    : '';
-
-  const replyQuote = comment.parent
-    ? (() => {
-        const parentUser = comment.parent.user
-          ? [comment.parent.user.first_name, comment.parent.user.last_name].filter(Boolean).join(' ') || comment.parent.user.email
-          : 'Usuario';
-        const snippet = (comment.parent.message || '').slice(0, 100);
-        return `<div class="incid-detail__reply-quote"><strong>@${escapeHtml(parentUser)}:</strong> ${escapeHtml(snippet)}${(comment.parent.message || '').length > 100 ? '…' : ''}</div>`;
-      })()
-    : '';
-
-  const imagesHtml = (comment.images && comment.images.length > 0)
-    ? `<div class="incid-detail__thumbnail-grid mt-1 mb-1">
-        ${comment.images.map(img => {
-          const src = escapeHtml(getCommentImageUrl(img.url));
-          const caption = escapeHtml(img.caption || img.original_name || '');
-          const delBtn = isOwner
-            ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
-            : '';
-          return `<div class="incid-detail__thumbnail-wrapper">
-            <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
-            ${delBtn}
-          </div>`;
-        }).join('')}
-       </div>`
-    : '';
-
-  li.innerHTML = `
-    <div class="d-flex justify-content-between">
-      <span class="fw-semibold small">${escapeHtml(userName)}</span>
-      <div class="d-flex gap-2 align-items-center">
-        <small class="text-muted">${timeAgo(comment.created_at)}</small>
-        ${replyBtn}
-        ${deleteBtn}
-      </div>
-    </div>
-    ${replyQuote}
-    <div class="small">${escapeHtml(comment.message)}</div>
-    ${imagesHtml}`;
-
-  if (comment.replies && comment.replies.length > 0) {
-    const replyDepth = depth >= 1 ? 1 : depth + 1;
-    const replyUl = document.createElement('ul');
-    replyUl.className = 'list-unstyled';
-    if (replyDepth > 0) {
-      replyUl.classList.add('incid-detail__nested');
+function flattenCommentsIntoMap(items, map) {
+  if (!items) return;
+  for (const c of items) {
+    map.set(c.id, c);
+    if (c.replies && c.replies.length > 0) {
+      flattenCommentsIntoMap(c.replies, map);
     }
-    for (const reply of comment.replies) {
-      replyUl.appendChild(buildCommentLi(reply, currentUserId, replyDepth));
-    }
-    li.appendChild(replyUl);
   }
-
-  return li;
 }
 
 function renderComments(items, currentUserId) {
   const listEl = document.getElementById('detalle-comments-list');
   const vacioEl = document.getElementById('detalle-comments-vacio');
   if (!listEl) return;
+
+  // Index every comment (root + nested replies) by id so the click
+  // handler in setupComments can look up the full comment object —
+  // including the backend-provided `.depth`, `.user`, and `.message` —
+  // instead of scraping the rendered DOM (which used to break every
+  // time CSS classes were renamed).
+  commentById = new Map();
+  flattenCommentsIntoMap(items, commentById);
 
   if (!items || items.length === 0) {
     listEl.replaceChildren();
@@ -508,23 +473,115 @@ async function setupComments(incidentId) {
       .join('');
   }
 
-  function handleReply(comment) {
+  /**
+   * Open an inline reply form below the comment being replied to.
+   * Only one inline form is open at a time — opening a new one closes
+   * the previous. The form scrolls into view and focuses the textarea.
+   *
+   * Submitting the form posts to the same `commentService.create` API
+   * as the main form, then reloads the comments list.
+   *
+   * Comments at the backend's max depth (depth >= MAX_COMMENT_DEPTH)
+   * cannot be replied to, so this function returns silently and the
+   * caller should not show a form.
+   *
+   * NOTE: image attachment is intentionally NOT supported on inline
+   * replies (CRITICAL #6 from PR review). The main comment form at the
+   * top of the page is the only path that can attach images to a
+   * comment. Adding uploader UI here would require ~50 extra lines
+   * (preview, upload progress, error handling) and was out of budget
+   * for this correction. Tracked as follow-up work.
+   */
+  function openInlineReplyForm(comment, li) {
+    // Backend rejects replies to comments at depth >= MAX_COMMENT_DEPTH
+    // (3 levels max: root → reply → reply-to-reply).
+    if ((comment.depth ?? 0) >= MAX_COMMENT_DEPTH) return;
+
+    // Close any previously open inline reply form (only one at a time)
+    document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
+
+    const commentBody = li.querySelector('.comment-body');
+    if (!commentBody) return;
+
     const parentUser = comment.user
       ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ') || comment.user.email
       : 'Usuario';
-    const prefix = `> @${parentUser}: `;
-    const current = input.value;
-    if (!current.startsWith(prefix)) {
-      input.value = prefix + current;
-    }
-    if (replyBadgeEl) {
-      replyBadgeEl.textContent = `Respondiendo a @${parentUser}`;
-      replyBadgeEl.classList.remove('d-none');
-    }
-    if (replyParentIdEl) replyParentIdEl.value = String(comment.id);
-    replyState.parentId = comment.id;
-    replyState.parentComment = comment;
-    updateSubmitBtn();
+
+    const form = document.createElement('form');
+    form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
+    form.dataset.parentId = String(comment.id);
+    form.innerHTML = `
+      <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}... (Enter para enviar, Shift+Enter para nueva línea)" required></textarea>
+      <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
+      <div class="d-flex gap-2 mt-2 justify-content-end">
+        <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
+          <i class="fas fa-paper-plane me-1"></i>Responder
+        </button>
+      </div>
+    `;
+
+    commentBody.appendChild(form);
+    const textarea = form.querySelector('textarea');
+    const errorBox = form.querySelector('.fd-comment-inline-reply__error');
+    textarea.focus();
+
+    // Double-submit guard: `submitBtn.disabled = true` only takes
+    // effect AFTER the submit handler runs, so a fast second Enter
+    // could trigger another requestSubmit() before the first submit
+    // has even started. The `submitting` flag is checked synchronously
+    // in BOTH the keydown handler AND the submit handler.
+    let submitting = false;
+
+    // Enter without Shift submits; Shift+Enter inserts a new line.
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !submitting) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form
+      .querySelector('.fd-inline-reply-cancel')
+      .addEventListener('click', () => form.remove());
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (submitting) return;
+      const message = textarea.value.trim();
+      if (!message) return;
+
+      submitting = true;
+      const submitBtn = form.querySelector('.fd-inline-reply-submit');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+      errorBox.style.display = 'none';
+
+      try {
+        await commentService.create(incidentId, {
+          message,
+          parentId: comment.id,
+          imageIds: [],
+        });
+        form.remove();
+        await cargarComentarios();
+      } catch (err) {
+        console.error('Error al enviar respuesta:', err);
+        submitting = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML =
+          '<i class="fas fa-paper-plane me-1"></i>Responder';
+        // Show the actual backend error message (e.g. "no se puede
+        // responder a un comentario de segundo nivel").
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          'No se pudo enviar la respuesta. Intenta de nuevo.';
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+      }
+    });
   }
 
   function cancelReply() {
@@ -674,9 +731,11 @@ async function setupComments(incidentId) {
       const replyBtn = e.target.closest('.btn-respoder-comentario');
       if (replyBtn) {
         const commentId = Number(replyBtn.dataset.id);
-        const listItems = listEl.querySelectorAll(':scope > li');
-        const found = findCommentById(listItems, commentId);
-        if (found) handleReply(found);
+        const found = commentById.get(commentId);
+        if (found) {
+          const li = replyBtn.closest('li');
+          openInlineReplyForm(found, li);
+        }
         return;
       }
 
@@ -737,21 +796,6 @@ async function setupComments(incidentId) {
   }
 
   cargarComentarios();
-}
-
-function findCommentById(listItems, id) {
-  for (const li of listItems) {
-    const commentId = li.querySelector('.btn-respoder-comentario, .btn-eliminar-comentario')?.dataset?.id;
-    if (commentId && Number(commentId) === id) {
-      const nameEl = li.querySelector('.fw-semibold');
-      const name = nameEl?.textContent?.trim() || 'Usuario';
-      const messageEl = li.querySelector('.small');
-      const message = messageEl ? messageEl.textContent : '';
-      const user = { first_name: name.split(' ')[0], last_name: name.split(' ').slice(1).join(' '), email: null };
-      return { id: Number(commentId), message, user };
-    }
-  }
-  return null;
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────

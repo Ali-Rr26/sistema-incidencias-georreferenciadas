@@ -434,13 +434,13 @@ body[data-role='guest']
 
 .app-shell-bell-panel__item {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 10px 16px;
+  align-items: center;
+  padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f5f6fb;
   font-size: 0.85rem;
   color: #23283b;
+  transition: background-color 0.15s ease;
 }
 
 .app-shell-bell-panel__item:hover {
@@ -452,12 +452,18 @@ body[data-role='guest']
   font-weight: 600;
 }
 
-.app-shell-bell-panel__item-time {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: #8a90a0;
+.app-shell-bell-panel__item--unread:hover {
+  background: #e7e1ff;
+}
+
+.app-shell-bell-panel__item .message-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #23283b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .app-shell-bell-panel__empty {

@@ -6,6 +6,7 @@
    and a few component-specific tweaks not covered by Bootstrap.
    ============================================================ */
 
+
 /* ─── Leaflet map container ─── */
 .fd-map-container {
   height: 320px;
@@ -132,6 +133,106 @@
   justify-content: center;
 }
 
+/* ─── Comment image gallery ─── */
+.incid-detail__thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.incid-detail__thumbnail-wrapper {
+  position: relative;
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+
+.incid-detail__thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: none;
+  transition: transform 0.25s ease, filter 0.25s ease;
+  display: block;
+}
+
+.incid-detail__thumbnail:hover {
+  transform: scale(1.05);
+  filter: brightness(0.9);
+}
+
+.incid-detail__thumbnail-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  display: flex;
+  align-items: flex-end;
+  padding: 8px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.incid-detail__thumbnail-wrapper:hover .incid-detail__thumbnail-overlay {
+  opacity: 1;
+}
+
+.incid-detail__thumbnail-caption {
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* ─── Comment list — last child has no border ─── */
+#fd-comments-list > li:last-child {
+  border-bottom: none !important;
+}
+
+/* Bootstrap 5 dropped .media / .media-body — restore the BS4 Media object
+   behavior so the ui-list-media.html pattern works correctly. */
+.media-body {
+  flex: 1;
+}
+
+/* Nested replies — same media object layout as parent, just mt-3 for spacing */
+.incid-detail__nested > li {
+  margin-top: 1rem;
+}
+
+/* Inline reply form — appears below the comment being replied to */
+.fd-comment-inline-reply {
+  border-top-color: #eef0f5 !important;
+}
+
+.fd-comment-inline-reply textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-size: 0.875rem;
+}
+
+.incid-detail__reply-quote {
+  font-size: 0.8rem;
+  color: #6c757d;
+  border-left: 3px solid #dee2e6;
+  padding-left: 8px;
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+.incid-detail__reply-quote strong {
+  font-weight: 600;
+  color: #495057;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 640px) {
   .fd-map-container {
@@ -140,5 +241,9 @@
 
   .gr-page__title {
     font-size: 1.1rem;
+  }
+
+  .incid-detail__thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
 }

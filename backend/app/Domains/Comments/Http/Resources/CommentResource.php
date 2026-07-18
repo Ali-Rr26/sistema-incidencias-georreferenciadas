@@ -18,6 +18,7 @@ class CommentResource extends JsonResource
             'user_id'    => $this->user_id,
             'message'    => $this->message,
             'parent_id'  => $this->parent_id,
+            'depth'      => $this->depth ?? 0,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'user'       => $this->whenLoaded('user'),
