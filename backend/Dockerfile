@@ -9,6 +9,15 @@ ENV LOG_CHANNEL=stderr
 
 RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium pcov
 
+# Raise upload limits for avatar uploads (5 MB cap + 1 MB form overhead).
+# Without these, PHP rejects any multipart upload above the default 2 MB before
+# Laravel can validate it, causing 422s with misleading "validation failed" errors.
+RUN { \
+        echo 'upload_max_filesize = 6M'; \
+        echo 'post_max_size = 8M'; \
+        echo 'memory_limit = 128M'; \
+    } > /usr/local/etc/php/conf.d/uploads.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/backend
