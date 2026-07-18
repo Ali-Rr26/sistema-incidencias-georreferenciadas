@@ -379,7 +379,7 @@ function buildCommentLi(comment, currentUserId, depth = 0) {
 
   const isOwner = currentUserId != null && comment.user_id === currentUserId;
 
-  const replyBtn = currentUserId != null
+  const replyBtn = currentUserId != null && (comment.depth ?? 0) < 2
     ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
         <i class="fas fa-reply"></i> Responder
       </button>`
@@ -527,8 +527,15 @@ async function setupComments(incidentId) {
    *
    * Submitting the form posts to the same `commentService.create` API
    * as the main form, then reloads the comments list.
+   *
+   * Comments at the backend's max depth (depth >= 2) cannot be replied
+   * to, so this function returns silently and the caller should not
+   * show a form.
    */
   function openInlineReplyForm(comment, li) {
+    // Backend rejects replies to comments at depth >= 2 (3 levels max).
+    if ((comment.depth ?? 0) >= 2) return;
+
     // Close any previously open inline reply form (only one at a time)
     document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
 
@@ -544,6 +551,7 @@ async function setupComments(incidentId) {
     form.dataset.parentId = String(comment.id);
     form.innerHTML = `
       <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}..." required></textarea>
+      <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
       <div class="d-flex gap-2 mt-2 justify-content-end">
         <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
         <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
@@ -554,6 +562,7 @@ async function setupComments(incidentId) {
 
     mediaBody.appendChild(form);
     const textarea = form.querySelector('textarea');
+    const errorBox = form.querySelector('.fd-comment-inline-reply__error');
     textarea.focus();
 
     form
@@ -569,6 +578,7 @@ async function setupComments(incidentId) {
       submitBtn.disabled = true;
       submitBtn.innerHTML =
         '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+      errorBox.style.display = 'none';
 
       try {
         await commentService.create(incidentId, {
@@ -583,7 +593,14 @@ async function setupComments(incidentId) {
         submitBtn.disabled = false;
         submitBtn.innerHTML =
           '<i class="fas fa-paper-plane me-1"></i>Responder';
-        alert('No se pudo enviar la respuesta. Intenta de nuevo.');
+        // Show the actual backend error message (e.g. "no se puede
+        // responder a un comentario de segundo nivel").
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          'No se pudo enviar la respuesta. Intenta de nuevo.';
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
       }
     });
   }

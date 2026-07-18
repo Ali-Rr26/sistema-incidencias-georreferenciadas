@@ -318,9 +318,7 @@ export default {
       ? '<span class="badge bg-info-subtle text-info mb-1">Atención institucional</span>'
       : '';
 
-    const isOwner = currentUserId != null && comment.user_id === currentUserId;
-
-    const replyBtn = currentUserId != null
+    const replyBtn = currentUserId != null && (comment.depth ?? 0) < 2
       ? `<button type="button" class="btn btn-sm btn-link text-muted p-0 ms-2 btn-respoder-comentario" data-id="${escapeHtml(String(comment.id))}" title="Responder">
           <i class="fas fa-reply"></i> Responder
         </button>`
@@ -341,12 +339,11 @@ export default {
           ${comment.images.map(img => {
             const src = escapeHtml(getCommentImageUrl(img.url));
             const caption = escapeHtml(img.caption || img.original_name || '');
-            const delBtn = isOwner
-              ? `<button type="button" class="incid-detail__image-delete btn-eliminar-imagen" data-comment-id="${escapeHtml(String(comment.id))}" data-image-id="${escapeHtml(String(img.id))}" title="Eliminar imagen">&times;</button>`
-              : '';
-            return `<div class="incid-detail__thumbnail-wrapper">
-              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" data-src="${src}" data-caption="${caption}" />
-              ${delBtn}
+            return `<div class="incid-detail__thumbnail-wrapper" data-src="${src}" data-caption="${caption}">
+              <img src="${src}" alt="${caption}" class="incid-detail__thumbnail" />
+              <div class="incid-detail__thumbnail-overlay">
+                ${caption ? `<span class="incid-detail__thumbnail-caption">${caption}</span>` : ''}
+              </div>
             </div>`;
           }).join('')}
          </div>`
@@ -452,8 +449,15 @@ export default {
      *
      * Submitting the form posts to the same `commentService.create` API
      * as the main form, then reloads the comments list.
+     *
+     * Comments at the backend's max depth (depth >= 2) cannot be replied
+     * to, so this function returns silently and the caller should not
+     * show a form.
      */
     function openInlineReplyForm(comment, li) {
+      // Backend rejects replies to comments at depth >= 2 (3 levels max).
+      if ((comment.depth ?? 0) >= 2) return;
+
       // Close any previously open inline reply form (only one at a time)
       document.querySelectorAll('.fd-comment-inline-reply').forEach((f) => f.remove());
 
@@ -467,6 +471,7 @@ export default {
       form.dataset.parentId = String(comment.id);
       form.innerHTML = `
         <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}..." required></textarea>
+        <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
         <div class="d-flex gap-2 mt-2 justify-content-end">
           <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
           <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
@@ -477,6 +482,7 @@ export default {
 
       mediaBody.appendChild(form);
       const textarea = form.querySelector('textarea');
+      const errorBox = form.querySelector('.fd-comment-inline-reply__error');
       textarea.focus();
 
       form
@@ -492,6 +498,7 @@ export default {
         submitBtn.disabled = true;
         submitBtn.innerHTML =
           '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
+        errorBox.style.display = 'none';
 
         try {
           await commentService.create(incidentId, {
@@ -506,7 +513,14 @@ export default {
           submitBtn.disabled = false;
           submitBtn.innerHTML =
             '<i class="fas fa-paper-plane me-1"></i>Responder';
-          alert('No se pudo enviar la respuesta. Intenta de nuevo.');
+          // Show the actual backend error message (e.g. "no se puede
+          // responder a un comentario de segundo nivel").
+          const msg =
+            err?.response?.data?.message ||
+            err?.message ||
+            'No se pudo enviar la respuesta. Intenta de nuevo.';
+          errorBox.textContent = msg;
+          errorBox.style.display = 'block';
         }
       });
     }
@@ -651,7 +665,7 @@ export default {
           return;
         }
 
-        const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
+        const thumb = e.target.closest('.incid-detail__thumbnail-wrapper[data-src]');
         if (thumb) {
           const src = thumb.dataset.src;
           const caption = thumb.dataset.caption || '';
