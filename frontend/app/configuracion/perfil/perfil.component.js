@@ -1,4 +1,8 @@
 import { http } from '../../core/http.service.js';
+import { auth } from '../../auth/auth.service.js';
+
+/** Shared object URL for avatar preview — revoked on destroy/submit to avoid memory leaks */
+let _avatarObjectUrl = null;
 
 function mostrarToast(mensaje, tipo) {
   const el = document.getElementById('toast-msg');
@@ -30,7 +34,36 @@ export default {
       mostrarToast('Error al cargar el perfil.', 'danger');
     }
 
-    // ─── Submit ────────────────────────────────────────────────
+    // ─── Avatar preview ────────────────────────────────────────
+
+    const avatarInput = document.getElementById('perfil-avatar');
+    const avatarPreview = document.getElementById('perfil-avatar-preview');
+
+    if (avatarInput && avatarPreview) {
+      avatarInput.addEventListener('change', function () {
+        // Revoke previous blob URL to avoid memory leaks
+        if (_avatarObjectUrl) {
+          URL.revokeObjectURL(_avatarObjectUrl);
+          _avatarObjectUrl = null;
+        }
+
+        const file = this.files && this.files[0];
+        if (!file) {
+          avatarPreview.style.display = 'none';
+          avatarPreview.src = '';
+          return;
+        }
+
+        _avatarObjectUrl = URL.createObjectURL(file);
+        avatarPreview.src = _avatarObjectUrl;
+        avatarPreview.style.display = 'block';
+      });
+    } else {
+      // Defensive: when avatar elements are absent (legacy DOM), treat as no file
+      console.warn('[Perfil] Avatar input/preview elements not found in DOM');
+    }
+
+    // ─── Submit ───────────────────────────────────────────────
 
     document
       .getElementById('form-perfil')
@@ -41,14 +74,36 @@ export default {
           return;
         }
 
-        const payload = {
-          first_name: document.getElementById('perfil-nombre').value.trim(),
-          last_name: document.getElementById('perfil-apellido').value.trim(),
-          phone:
-            document.getElementById('perfil-telefono').value.trim() || null,
-        };
+        const avatarFile =
+          document.getElementById('perfil-avatar')?.files?.[0] ?? null;
 
-        console.log('[Perfil] Submitting payload:', payload);
+        // Build payload — FormData when avatar is present, plain object otherwise
+        let body;
+        if (avatarFile) {
+          body = new FormData();
+          body.append('avatar', avatarFile);
+          body.append(
+            'first_name',
+            document.getElementById('perfil-nombre').value.trim(),
+          );
+          body.append(
+            'last_name',
+            document.getElementById('perfil-apellido').value.trim(),
+          );
+          body.append(
+            'phone',
+            document.getElementById('perfil-telefono').value.trim() || null,
+          );
+        } else {
+          body = {
+            first_name: document.getElementById('perfil-nombre').value.trim(),
+            last_name: document.getElementById('perfil-apellido').value.trim(),
+            phone:
+              document.getElementById('perfil-telefono').value.trim() || null,
+          };
+        }
+
+        console.log('[Perfil] Submitting payload:', body);
 
         document.getElementById('perfil-btn-texto').classList.add('d-none');
         document
@@ -57,9 +112,25 @@ export default {
         document.getElementById('btn-guardar-perfil').disabled = true;
 
         try {
-          const res = await http.put('/auth/profile', payload);
+          const res = await http.put('/auth/profile', body);
           console.log('[Perfil] Update success:', res);
           mostrarToast('Perfil actualizado correctamente.', 'success');
+
+          // Refresh auth state so app-shell header re-renders with new avatar
+          await auth.me();
+          auth._notifyAuthChange();
+
+          // Reset avatar preview after successful upload
+          if (avatarFile && _avatarObjectUrl) {
+            URL.revokeObjectURL(_avatarObjectUrl);
+            _avatarObjectUrl = null;
+            const preview = document.getElementById('perfil-avatar-preview');
+            if (preview) {
+              preview.style.display = 'none';
+              preview.src = '';
+            }
+            avatarInput.value = '';
+          }
         } catch (err) {
           console.error('[Perfil] Update error:', err);
           mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
@@ -74,6 +145,9 @@ export default {
   },
 
   onDestroy() {
-    // No special cleanup needed
+    if (_avatarObjectUrl) {
+      URL.revokeObjectURL(_avatarObjectUrl);
+      _avatarObjectUrl = null;
+    }
   },
 };

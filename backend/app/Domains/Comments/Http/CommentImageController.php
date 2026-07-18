@@ -28,14 +28,14 @@ class CommentImageController
             $path = $this->imageService->processUploadedImage($file, $comment->id);
 
             return CommentImage::create([
-                'comment_id'  => $comment->id,
-                'url'         => $path,
-                'caption'     => null,
-                'sort_order'  => 0,
+                'comment_id' => $comment->id,
+                'url' => $path,
+                'caption' => null,
+                'sort_order' => 0,
             ]);
         });
 
-        return (CommentImageResource::collection($images))
+        return CommentImageResource::collection($images)
             ->response()
             ->setStatusCode(201);
     }
@@ -52,8 +52,8 @@ class CommentImageController
             Storage::disk($this->storageDisk())->delete($image->url);
         } catch (\Throwable $e) {
             Log::warning('Failed to delete image file from S3', [
-                'path'   => $image->url,
-                'error'  => $e->getMessage(),
+                'path' => $image->url,
+                'error' => $e->getMessage(),
             ]);
         }
 

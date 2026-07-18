@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Notifications\Enums\NotificationType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -8,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * `notifications.type` column.
  *
  * Background: the PHP enum
- * ({@see \App\Domains\Notifications\Enums\NotificationType}) added the
+ * ({@see NotificationType}) added the
  * `Assigned` case to support `AssignmentNotificationObserver` (delivered
  * in the same change-set). The DB schema, however, carried a 5-value
  * CHECK constraint from migration
@@ -35,7 +36,7 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check');
         DB::statement(
-            "ALTER TABLE notifications ADD CONSTRAINT notifications_type_check "
+            'ALTER TABLE notifications ADD CONSTRAINT notifications_type_check '
             ."CHECK (type IN ('claim', 'assignment', 'assigned', 'status_change', 'comment', 'legacy'))"
         );
     }
@@ -48,7 +49,7 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check');
         DB::statement(
-            "ALTER TABLE notifications ADD CONSTRAINT notifications_type_check "
+            'ALTER TABLE notifications ADD CONSTRAINT notifications_type_check '
             ."CHECK (type IN ('claim', 'assignment', 'status_change', 'comment', 'legacy'))"
         );
     }

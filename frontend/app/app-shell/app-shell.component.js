@@ -20,6 +20,7 @@
  */
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
+import { resolveAvatar } from '../utils/avatar.js';
 import { menuService } from '../shared/menu.service.js';
 import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
@@ -653,7 +654,7 @@ async function populateHeader() {
         'Usuario';
     }
     if (avatarEl) {
-      avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
+      renderAvatar(avatarEl, u, 'admin');
     }
 
     refreshBellBadges();
@@ -664,10 +665,35 @@ async function populateHeader() {
   if (role === 'citizen') {
     const avatarEl = document.getElementById('app-shell-avatar');
     if (avatarEl) {
-      avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
+      renderAvatar(avatarEl, u, 'citizen');
     }
 
     refreshBellBadges();
+  }
+}
+
+/**
+ * Render an <img> avatar inside avatarEl when resolveAvatar returns a URL,
+ * otherwise fall back to initials.
+ *
+ * @param {Element} avatarEl  - the span element to populate
+ * @param {object}  u        - the user object
+ * @param {string}  role     - 'admin' | 'citizen'
+ */
+function renderAvatar(avatarEl, u, _role) {
+  // Try profile_image_path first, then legacy avatar object
+  const rawKey = u.profile_image_path ?? null;
+  const resolvedUrl = resolveAvatar(rawKey || u.avatar);
+
+  if (resolvedUrl) {
+    // Normalize a raw storage key to a full /storage/ URL.
+    // A raw key looks like "users/5/uuid.webp".
+    // A full URL (e.g. Google) is returned as-is.
+    const src = rawKey ? '/storage/' + rawKey : resolvedUrl;
+    avatarEl.innerHTML = `<img src="${src}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+  } else {
+    const initial = (u.first_name || u.email || '?')[0].toUpperCase();
+    avatarEl.textContent = initial;
   }
 }
 

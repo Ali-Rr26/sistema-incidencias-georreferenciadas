@@ -35,6 +35,7 @@ class User extends Authenticatable
         'last_name',
         'phone',
         'avatar',
+        'profile_image_path',
         'email_verified_at',
     ];
 

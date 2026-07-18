@@ -16,7 +16,7 @@ class StoreCommentImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'images'   => ['required', 'array', 'min:1'],
+            'images' => ['required', 'array', 'min:1'],
             'images.*' => [
                 'required',
                 'image',
@@ -30,9 +30,9 @@ class StoreCommentImageRequest extends FormRequest
     {
         return [
             'images.required' => 'Debes subir al menos una imagen.',
-            'images.*.image'  => 'Cada archivo debe ser una imagen válida.',
-            'images.*.mimes'  => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',
-            'images.*.max'    => 'Cada imagen no puede superar los 10 MB.',
+            'images.*.image' => 'Cada archivo debe ser una imagen válida.',
+            'images.*.mimes' => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',
+            'images.*.max' => 'Cada imagen no puede superar los 10 MB.',
         ];
     }
 }

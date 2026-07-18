@@ -66,10 +66,10 @@ class GoogleAuthController
             'user' => new UserResource($user),
         ])
             ->withCookie($this->refreshCookie($result['refreshToken']))
-                ->withCookie($this->mercureCookies->build($user));
-        }
+            ->withCookie($this->mercureCookies->build($user));
+    }
 
-        // Cookie builders
+    // Cookie builders
 
     private function refreshCookie(string $token): Cookie
     {

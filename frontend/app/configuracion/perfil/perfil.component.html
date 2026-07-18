@@ -70,6 +70,43 @@
           </div>
         </div>
 
+        <!-- Avatar upload -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-12">
+            <label for="perfil-avatar" class="form-label fw-semibold">
+              Foto de Perfil
+            </label>
+            <div class="d-flex align-items-center gap-3">
+              <img
+                id="perfil-avatar-preview"
+                src="#"
+                alt="Vista previa de avatar"
+                class="rounded-circle"
+                style="
+                  width: 80px;
+                  height: 80px;
+                  object-fit: cover;
+                  display: none;
+                  border: 2px solid #dee2e6;
+                "
+              />
+              <div>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="perfil-avatar"
+                  accept="image/jpeg,image/png,image/webp"
+                  style="max-width: 280px"
+                />
+                <div class="form-text" style="font-size: 12px">
+                  JPG, PNG o WebP. Máximo 5 MB. La imagen se recortará a 512×512
+                  px.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Acciones -->
         <div class="d-flex gap-2 pt-2 border-top">
           <button type="submit" class="gr-btn-primary" id="btn-guardar-perfil">

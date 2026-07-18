@@ -8,10 +8,9 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
-use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -54,17 +53,17 @@ beforeEach(function (): void {
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $this->incident = Incident::create([
         'incident_category_id' => $category->id,
-        'organization_id'     => $org->id,
-        'user_id'             => $this->user->id,
-        'location_id'         => $location->id,
-        'title'               => 'Test Incident',
-        'status'              => Incident::STATUS_PENDING,
-        'priority'            => Incident::PRIORITY_MEDIUM,
+        'organization_id' => $org->id,
+        'user_id' => $this->user->id,
+        'location_id' => $location->id,
+        'title' => 'Test Incident',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
     ]);
     $this->comment = Comment::create([
         'incident_id' => $this->incident->id,
-        'user_id'     => $this->user->id,
-        'message'     => 'Test comment',
+        'user_id' => $this->user->id,
+        'message' => 'Test comment',
     ]);
 });
 
@@ -145,8 +144,8 @@ it('denies image upload to non-owner', function (): void {
 it('deletes an image and returns 204', function (): void {
     $image = CommentImage::create([
         'comment_id' => $this->comment->id,
-        'url'        => 'comments/1/test.webp',
-        'caption'    => null,
+        'url' => 'comments/1/test.webp',
+        'caption' => null,
         'sort_order' => 0,
     ]);
     Storage::disk('s3')->put($image->url, 'fake image content');
@@ -162,7 +161,7 @@ it('deletes an image and returns 204', function (): void {
 it('denies image delete to non-owner', function (): void {
     $image = CommentImage::create([
         'comment_id' => $this->comment->id,
-        'url'        => 'comments/1/test.webp',
+        'url' => 'comments/1/test.webp',
     ]);
     Storage::disk('s3')->put($image->url, 'fake image content');
     $stranger = User::factory()->create(['role_id' => 5]);

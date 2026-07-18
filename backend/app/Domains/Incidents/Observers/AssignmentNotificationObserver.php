@@ -88,10 +88,8 @@ class AssignmentNotificationObserver
         $title = (string) $a->incident->title;
 
         $message = match ($role) {
-            AssignmentRole::Responsable->value
-                => "Se te asignó como responsable de la incidencia '{$title}'.",
-            AssignmentRole::Apoyo->value
-                => "Se te asignó como apoyo en la incidencia '{$title}'.",
+            AssignmentRole::Responsable->value => "Se te asignó como responsable de la incidencia '{$title}'.",
+            AssignmentRole::Apoyo->value => "Se te asignó como apoyo en la incidencia '{$title}'.",
             default => null,
         };
 

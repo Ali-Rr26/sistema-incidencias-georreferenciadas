@@ -1,10 +1,14 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
+import { auth } from '../../../../auth/auth.service.js';
 import {
   initSelect,
   getSelect,
   destroyAll,
 } from '../../../../shared/select-search.js';
+
+/** Shared object URL for avatar preview — revoked on destroy to avoid memory leaks */
+let _avatarObjectUrl = null;
 
 export default {
   templateUrl:
@@ -63,7 +67,10 @@ export default {
         const resp = await http.get('/users/' + userId);
         const u = resp.data ?? resp;
 
-        poblarCombos({ roles: u.roles ?? [], organizations: u.organizations ?? [] });
+        poblarCombos({
+          roles: u.roles ?? [],
+          organizations: u.organizations ?? [],
+        });
 
         // Tom Select must be initialized AFTER options are in the DOM.
         initSelect('user-rol', { placeholder: 'Buscar rol...' });
@@ -79,6 +86,15 @@ export default {
         getSelect('user-org')?.setValue(
           u.organization?.id ? String(u.organization.id) : '',
         );
+
+        // Show existing avatar preview if profile_image_path is set
+        if (u.profile_image_path) {
+          const preview = document.getElementById('user-avatar-preview');
+          if (preview) {
+            preview.src = '/storage/' + u.profile_image_path;
+            preview.style.display = 'block';
+          }
+        }
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
@@ -92,6 +108,114 @@ export default {
 
       initSelect('user-rol', { placeholder: 'Buscar rol...' });
       initSelect('user-org', { placeholder: 'Buscar organización...' });
+    }
+
+    // ─── Avatar preview ──────────────────────────────────────────────
+
+    const avatarInput = document.getElementById('user-avatar');
+    const avatarPreview = document.getElementById('user-avatar-preview');
+
+    if (avatarInput && avatarPreview) {
+      avatarInput.addEventListener('change', function () {
+        if (_avatarObjectUrl) {
+          URL.revokeObjectURL(_avatarObjectUrl);
+          _avatarObjectUrl = null;
+        }
+
+        const file = this.files && this.files[0];
+        if (!file) {
+          avatarPreview.style.display = 'none';
+          avatarPreview.src = '';
+          return;
+        }
+
+        _avatarObjectUrl = URL.createObjectURL(file);
+        avatarPreview.src = _avatarObjectUrl;
+        avatarPreview.style.display = 'block';
+      });
+    }
+
+    // ─── Avatar upload button ─────────────────────────────────────────
+
+    const uploadBtn = document.getElementById('btn-upload-avatar');
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', async function () {
+        const file = avatarInput?.files?.[0];
+        if (!file) {
+          mostrarToast('Seleccioná una imagen primero.', 'warning');
+          return;
+        }
+
+        uploadBtn.disabled = true;
+        try {
+          const formData = new FormData();
+          formData.append('avatar', file);
+
+          const updatedUser = await http.post(
+            '/api/users/' + userId + '/avatar',
+            formData,
+          );
+          const u = updatedUser.data ?? updatedUser;
+
+          mostrarToast('Foto actualizada correctamente.', 'success');
+
+          // Refresh auth state so header re-renders with new avatar
+          await auth.me();
+          auth._notifyAuthChange();
+
+          // Update preview with new image
+          if (avatarPreview && u.profile_image_path) {
+            avatarPreview.src = '/storage/' + u.profile_image_path;
+            avatarPreview.style.display = 'block';
+          }
+
+          // Clear file input and revoke preview URL
+          if (_avatarObjectUrl) {
+            URL.revokeObjectURL(_avatarObjectUrl);
+            _avatarObjectUrl = null;
+          }
+          if (avatarInput) avatarInput.value = '';
+        } catch (err) {
+          mostrarToast(err.message ?? 'No se pudo subir la foto.', 'danger');
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      });
+    }
+
+    // ─── Avatar delete button ────────────────────────────────────────
+
+    const deleteBtn = document.getElementById('btn-delete-avatar');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async function () {
+        if (!confirm('¿Eliminar la foto de perfil?')) return;
+
+        deleteBtn.disabled = true;
+        try {
+          await http.delete('/api/users/' + userId + '/avatar');
+
+          mostrarToast('Foto eliminada.', 'success');
+
+          // Refresh auth state so header re-renders
+          await auth.me();
+          auth._notifyAuthChange();
+
+          // Clear preview
+          if (_avatarObjectUrl) {
+            URL.revokeObjectURL(_avatarObjectUrl);
+            _avatarObjectUrl = null;
+          }
+          if (avatarPreview) {
+            avatarPreview.style.display = 'none';
+            avatarPreview.src = '';
+          }
+          if (avatarInput) avatarInput.value = '';
+        } catch (err) {
+          mostrarToast(err.message ?? 'No se pudo eliminar la foto.', 'danger');
+        } finally {
+          deleteBtn.disabled = false;
+        }
+      });
     }
 
     // ─── Submit ──────────────────────────────────────────────────────
@@ -150,5 +274,9 @@ export default {
 
   onDestroy() {
     destroyAll();
+    if (_avatarObjectUrl) {
+      URL.revokeObjectURL(_avatarObjectUrl);
+      _avatarObjectUrl = null;
+    }
   },
 };

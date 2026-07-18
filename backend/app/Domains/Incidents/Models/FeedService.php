@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 class FeedService

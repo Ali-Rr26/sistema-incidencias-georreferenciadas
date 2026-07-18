@@ -33,6 +33,7 @@ class UserResource extends JsonResource
             'last_name' => $this->last_name,
             'phone' => $this->phone,
             'avatar' => $this->avatar,
+            'profile_image_path' => $this->profile_image_path,
             'role' => $this->whenLoaded('role', fn () => [
                 'id' => $this->role->id,
                 'name' => $this->role->name,

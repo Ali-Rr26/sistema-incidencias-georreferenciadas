@@ -28,7 +28,7 @@ beforeEach(function (): void {
 it('builds cookie with mercure.subscribe claim containing exactly the user topic', function (): void {
     $user = User::factory()->create(['role_id' => 2]);
 
-    $cookie = (new MercureCookieService())->build($user);
+    $cookie = (new MercureCookieService)->build($user);
 
     expect($cookie->getName())->toBe('mercureAuthorization');
 
@@ -42,14 +42,14 @@ it('uses the configured cookie ttl in minutes as maxAge', function (): void {
     config(['mercure.cookie.ttl_minutes' => 5]);
 
     $user = User::factory()->create();
-    $cookie = (new MercureCookieService())->build($user);
+    $cookie = (new MercureCookieService)->build($user);
 
     expect($cookie->getMaxAge())->toBe(5 * 60);
 });
 
 it('marks the cookie HttpOnly, SameSite=Strict, path=/', function (): void {
     $user = User::factory()->create();
-    $cookie = (new MercureCookieService())->build($user);
+    $cookie = (new MercureCookieService)->build($user);
 
     expect($cookie->isHttpOnly())->toBeTrue()
         ->and(strtolower($cookie->getSameSite() ?? ''))->toBe('strict')
@@ -57,7 +57,7 @@ it('marks the cookie HttpOnly, SameSite=Strict, path=/', function (): void {
 });
 
 it('expire() returns the same cookie name with an already-past expiration (for logout)', function (): void {
-    $cookie = (new MercureCookieService())->expire();
+    $cookie = (new MercureCookieService)->expire();
 
     expect($cookie->getName())->toBe('mercureAuthorization')
         ->and($cookie->getExpiresTime())->toBeLessThanOrEqual(time());
@@ -71,7 +71,7 @@ it('expire() honors overridden mercure.cookie.name and path so logout can actual
     config(['mercure.cookie.name' => 'tenant-mercure-auth']);
     config(['mercure.cookie.path' => '/admin']);
 
-    $cookie = (new MercureCookieService())->expire();
+    $cookie = (new MercureCookieService)->expire();
 
     expect($cookie->getName())->toBe('tenant-mercure-auth')
         ->and($cookie->getPath())->toBe('/admin')
@@ -86,7 +86,7 @@ it('build() and expire() agree on name and path so logout actually clears the co
     // in sync no matter what config values are.
     config(['mercure.cookie.name' => 'my-mercure', 'mercure.cookie.path' => '/restricted']);
 
-    $service = new MercureCookieService();
+    $service = new MercureCookieService;
     $built = $service->build(User::factory()->create());
     $expired = $service->expire();
 
