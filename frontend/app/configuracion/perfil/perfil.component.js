@@ -23,9 +23,7 @@ function renderAvatarHelp() {
     ?.parentElement?.querySelector('.form-text');
   if (!avatarHelpText) return;
   const maxMb = (AVATAR_MAX_KB / 1024).toFixed(2).replace(/\.00$/, '0');
-  const exts = ACCEPTED_MIME_TYPES.map((t) =>
-    t.split('/')[1].toUpperCase(),
-  )
+  const exts = ACCEPTED_MIME_TYPES.map((t) => t.split('/')[1].toUpperCase())
     .join(', ')
     .replace('JPEG', 'JPG');
   avatarHelpText.textContent = `${exts}. Máximo ${maxMb} MB. La imagen se recortará a 512×512 px.`;

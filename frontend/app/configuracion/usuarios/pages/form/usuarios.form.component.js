@@ -14,8 +14,7 @@ let _avatar = null;
 export default {
   templateUrl:
     'app/configuracion/usuarios/pages/form/usuarios.form.component.html',
-  styleUrl:
-    'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
+  styleUrl: 'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
 
   async onInit() {
     const esEdicion = router.queryParams.has('id');
@@ -134,16 +133,15 @@ export default {
     const eliminarBtn = document.getElementById('btn-eliminar-avatar');
     const deleteFlagInput = document.getElementById('user-delete-avatar-flag');
 
-    const showEliminarBtn = currentUser?.profile_image_path !== null &&
+    const showEliminarBtn =
+      currentUser?.profile_image_path !== null &&
       currentUser?.profile_image_path !== undefined;
     if (eliminarBtn) {
       eliminarBtn.classList.toggle('d-none', !showEliminarBtn);
     }
 
     if (currentUser?.profile_image_path) {
-      _avatar?.setPreviewFromUrl(
-        '/storage/' + currentUser.profile_image_path,
-      );
+      _avatar?.setPreviewFromUrl('/storage/' + currentUser.profile_image_path);
       if (deleteFlagInput) deleteFlagInput.value = '0';
     }
 
@@ -154,10 +152,7 @@ export default {
         // Mark the form for deletion; applied only on submit.
         if (deleteFlagInput) deleteFlagInput.value = '1';
         eliminarBtn.classList.add('d-none');
-        mostrarToast(
-          'La foto se eliminará al guardar los cambios.',
-          'success',
-        );
+        mostrarToast('La foto se eliminará al guardar los cambios.', 'success');
       });
     }
 
@@ -176,8 +171,7 @@ export default {
         const orgVal = document.getElementById('user-org').value;
 
         const avatarFile = _avatar?.getFile() ?? null;
-        const wantsDelete =
-          deleteFlagInput && deleteFlagInput.value === '1';
+        const wantsDelete = deleteFlagInput && deleteFlagInput.value === '1';
 
         const basePayload = {
           first_name: document.getElementById('user-nombre').value.trim(),
@@ -185,17 +179,14 @@ export default {
           email: document.getElementById('user-email').value.trim(),
           role_id: parseInt(document.getElementById('user-rol').value),
           organization_id: orgVal ? parseInt(orgVal) : null,
-          phone:
-            document.getElementById('user-telefono').value.trim() || null,
+          phone: document.getElementById('user-telefono').value.trim() || null,
           ...(wantsDelete ? { _delete_avatar: true } : {}),
         };
 
         if (!id) {
           // Generar una contraseña temporal de invitación
           basePayload.password =
-            'Invite_' +
-            Math.random().toString(36).substring(2, 10) +
-            '!';
+            'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
         }
 
         let payload;
@@ -237,9 +228,7 @@ export default {
           mostrarToast(err.message ?? 'No se pudo guardar.', 'danger');
         } finally {
           document.getElementById('user-btn-texto').classList.remove('d-none');
-          document
-            .getElementById('user-btn-loading')
-            .classList.add('d-none');
+          document.getElementById('user-btn-loading').classList.add('d-none');
           document.getElementById('btn-guardar-user').disabled = false;
         }
       });

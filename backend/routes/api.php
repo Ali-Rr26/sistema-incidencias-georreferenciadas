@@ -17,7 +17,6 @@ use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
-use App\Domains\Users\Http\Controllers\UserAvatarController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;

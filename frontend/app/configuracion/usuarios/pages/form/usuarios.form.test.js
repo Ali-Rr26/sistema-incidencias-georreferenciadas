@@ -39,7 +39,10 @@ vi.stubGlobal('URL', {
 });
 
 // Stub window.confirm so click-on-delete doesn't block tests.
-vi.stubGlobal('confirm', vi.fn(() => true));
+vi.stubGlobal(
+  'confirm',
+  vi.fn(() => true),
+);
 
 let usuariosFormComponent;
 
@@ -187,7 +190,9 @@ describe('usuariosFormComponent — avatar preview', () => {
     await usuariosFormComponent.onInit();
 
     expect(
-      document.getElementById('btn-eliminar-avatar').classList.contains('d-none'),
+      document
+        .getElementById('btn-eliminar-avatar')
+        .classList.contains('d-none'),
     ).toBe(false);
   });
 
@@ -196,7 +201,9 @@ describe('usuariosFormComponent — avatar preview', () => {
     await usuariosFormComponent.onInit();
 
     expect(
-      document.getElementById('btn-eliminar-avatar').classList.contains('d-none'),
+      document
+        .getElementById('btn-eliminar-avatar')
+        .classList.contains('d-none'),
     ).toBe(true);
   });
 
@@ -211,9 +218,9 @@ describe('usuariosFormComponent — avatar preview', () => {
 
     expect(document.getElementById('user-delete-avatar-flag').value).toBe('1');
     expect(deleteBtn.classList.contains('d-none')).toBe(true);
-    expect(
-      document.getElementById('user-avatar-preview').style.display,
-    ).toBe('none');
+    expect(document.getElementById('user-avatar-preview').style.display).toBe(
+      'none',
+    );
   });
 });
 

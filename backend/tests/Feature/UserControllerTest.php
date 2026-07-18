@@ -34,7 +34,7 @@ it('PUT /users/{id} multipart with avatar replaces existing avatar', function ()
     $admin = User::factory()->create(['role_id' => 1]);
     $file = UploadedFile::fake()->image('avatar.jpg', 512, 512);
 
-    $response = $this->actingAs($admin)->put('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'Juan',
         'last_name' => 'Perez',
         'email' => $target->email,
@@ -60,7 +60,7 @@ it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function 
 
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $response = $this->actingAs($admin)->putJson('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->putJson('/api/users/'.$target->id, [
         'first_name' => 'Juan',
         'last_name' => 'Perez',
         'email' => $target->email,
@@ -84,7 +84,7 @@ it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): 
 
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $response = $this->actingAs($admin)->putJson('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->putJson('/api/users/'.$target->id, [
         'first_name' => 'New Name',
         'last_name' => $target->last_name,
         'email' => $target->email,
@@ -108,7 +108,7 @@ it('PUT /users/{id} multipart without avatar file preserves the existing avatar'
     $admin = User::factory()->create(['role_id' => 1]);
 
     // Multipart request without an avatar file in the payload.
-    $response = $this->actingAs($admin)->put('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'Renamed',
     ]);
 
@@ -124,7 +124,7 @@ it('PUT /users/{id} rejects oversized avatar file', function (): void {
     // 801 KB — over the 800 KB cap defined by User::AVATAR_MAX_KB.
     $file = UploadedFile::fake()->image('big.jpg')->size(801);
 
-    $response = $this->actingAs($admin)->put('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
         'avatar' => $file,
     ]);
@@ -139,7 +139,7 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
 
     $file = UploadedFile::fake()->create('avatar.gif', 100, 'image/gif');
 
-    $response = $this->actingAs($admin)->put('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
         'avatar' => $file,
     ]);
@@ -154,7 +154,7 @@ it('PUT /users/{id} accepts avatar at exactly 800KB', function (): void {
 
     $file = UploadedFile::fake()->image('avatar.jpg')->size(800);
 
-    $response = $this->actingAs($admin)->put('/api/users/' . $target->id, [
+    $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => $target->first_name,
         'last_name' => $target->last_name,
         'email' => $target->email,
