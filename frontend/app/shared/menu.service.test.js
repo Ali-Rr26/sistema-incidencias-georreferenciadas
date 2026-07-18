@@ -95,7 +95,9 @@ describe('menuService', () => {
     try {
       // Initial grant: only the citizen menu
       http.get.mockResolvedValueOnce({
-        data: [{ id: 1, name: 'Feed', route: '/feed', icon: null, children: [] }],
+        data: [
+          { id: 1, name: 'Feed', route: '/feed', icon: null, children: [] },
+        ],
       });
       const first = await menuService.getMyMenu();
       expect(first[0].route).toBe('/feed');

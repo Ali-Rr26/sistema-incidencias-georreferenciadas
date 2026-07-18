@@ -5,8 +5,14 @@
     <div class="composer-bar d-none card mb-3" id="composer-bar">
       <div class="card-body d-flex align-items-center gap-3">
         <div class="composer-avatar" id="composer-avatar">MR</div>
-        <button type="button" class="composer-input-wrap btn flex-grow-1" aria-label="Reportar nueva incidencia">
-          <span class="composer-placeholder">¿Qué incidencia deseas reportar hoy?</span>
+        <button
+          type="button"
+          class="composer-input-wrap btn flex-grow-1"
+          aria-label="Reportar nueva incidencia"
+        >
+          <span class="composer-placeholder"
+            >¿Qué incidencia deseas reportar hoy?</span
+          >
         </button>
         <button class="composer-btn btn btn-primary">
           <i class="fa-solid fa-location-dot"></i> Reportar
@@ -16,10 +22,30 @@
 
     <!-- Filter chips (shared across viewports) -->
     <div class="feed-filters d-flex flex-wrap gap-2 mb-3" id="feed-filters">
-      <button class="feed-chip active btn btn-outline-primary btn-sm" data-status="">Todo</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="in_progress">En proceso</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="pending">Pendientes</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="resolved">Resueltos</button>
+      <button
+        class="feed-chip active btn btn-outline-primary btn-sm"
+        data-status=""
+      >
+        Todo
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="in_progress"
+      >
+        En proceso
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="pending"
+      >
+        Pendientes
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="resolved"
+      >
+        Resueltos
+      </button>
     </div>
 
     <!-- Loading skeleton -->
@@ -50,8 +76,13 @@
       <div id="feed-list" class="feed-cards row g-3"></div>
 
       <!-- Infinite scroll sentinel -->
-      <div id="feed-sentinel" class="feed-sentinel d-flex justify-content-center">
-        <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
+      <div
+        id="feed-sentinel"
+        class="feed-sentinel d-flex justify-content-center"
+      >
+        <div class="feed-sentinel-spinner">
+          <div class="feed-spinner"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -61,30 +92,82 @@
     <!-- Filtros -->
     <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
       <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
-      <div class="rp-card-section-label text-muted small fw-bold text-uppercase">ESTADO</div>
-      <div class="rp-filter-chips d-flex flex-wrap gap-2 mb-3" id="rp-status-filters">
-        <div class="rp-filter-chip active badge bg-primary" data-status="">Todo</div>
-        <div class="rp-filter-chip badge bg-secondary" data-status="in_progress">En proceso</div>
-        <div class="rp-filter-chip badge bg-secondary" data-status="pending">Pendiente</div>
-        <div class="rp-filter-chip badge bg-secondary" data-status="resolved">Resuelto</div>
+      <div
+        class="rp-card-section-label text-muted small fw-bold text-uppercase"
+      >
+        ESTADO
       </div>
-      <div class="rp-card-section-label text-muted small fw-bold text-uppercase">TIPO</div>
+      <div
+        class="rp-filter-chips d-flex flex-wrap gap-2 mb-3"
+        id="rp-status-filters"
+      >
+        <div class="rp-filter-chip active badge bg-primary" data-status="">
+          Todo
+        </div>
+        <div
+          class="rp-filter-chip badge bg-secondary"
+          data-status="in_progress"
+        >
+          En proceso
+        </div>
+        <div class="rp-filter-chip badge bg-secondary" data-status="pending">
+          Pendiente
+        </div>
+        <div class="rp-filter-chip badge bg-secondary" data-status="resolved">
+          Resuelto
+        </div>
+      </div>
+      <div
+        class="rp-card-section-label text-muted small fw-bold text-uppercase"
+      >
+        TIPO
+      </div>
       <div class="rp-category-filters" id="rp-category-filters">
         <div class="form-check">
-          <input class="rp-checkbox-box form-check-input" type="checkbox" id="cat-1" data-category="1" checked>
-          <label class="rp-checkbox-label form-check-label" for="cat-1">Infraestructura</label>
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-1"
+            data-category="1"
+            checked
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-1"
+            >Infraestructura</label
+          >
         </div>
         <div class="form-check">
-          <input class="rp-checkbox-box form-check-input" type="checkbox" id="cat-2" data-category="2" checked>
-          <label class="rp-checkbox-label form-check-label" for="cat-2">Servicios públicos</label>
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-2"
+            data-category="2"
+            checked
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-2"
+            >Servicios públicos</label
+          >
         </div>
         <div class="form-check">
-          <input class="rp-checkbox-box form-check-input" type="checkbox" id="cat-3" data-category="3">
-          <label class="rp-checkbox-label form-check-label" for="cat-3">Medio ambiente</label>
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-3"
+            data-category="3"
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-3"
+            >Medio ambiente</label
+          >
         </div>
         <div class="form-check">
-          <input class="rp-checkbox-box form-check-input" type="checkbox" id="cat-4" data-category="4">
-          <label class="rp-checkbox-label form-check-label" for="cat-4">Seguridad</label>
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-4"
+            data-category="4"
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-4"
+            >Seguridad</label
+          >
         </div>
       </div>
     </div>

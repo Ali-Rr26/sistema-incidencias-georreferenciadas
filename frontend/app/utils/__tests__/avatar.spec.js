@@ -117,9 +117,7 @@ describe('resolveAvatar', () => {
 
   it('accepts a plain string path and returns it as-is', () => {
     // SCEN-PIU-Test-001: plain string path (storage key shape)
-    expect(resolveAvatar('users/5/abc123.webp')).toBe(
-      'users/5/abc123.webp',
-    );
+    expect(resolveAvatar('users/5/abc123.webp')).toBe('users/5/abc123.webp');
   });
 
   it('prefers profile_image_path string over avatar object (SCEN-PIU-Test-001)', () => {

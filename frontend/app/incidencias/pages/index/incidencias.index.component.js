@@ -1,4 +1,8 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml } from '../../../utils/format.js';
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  escapeHtml,
+} from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
@@ -301,8 +305,12 @@ export default {
       permisos = new Set();
     }
     if (permisos.has('incidents.manage')) {
-      document.getElementById('btn-nueva-incidencia')?.classList.remove('d-none');
-      document.getElementById('btn-registrar-primera')?.classList.remove('d-none');
+      document
+        .getElementById('btn-nueva-incidencia')
+        ?.classList.remove('d-none');
+      document
+        .getElementById('btn-registrar-primera')
+        ?.classList.remove('d-none');
     }
 
     cargarIncidencias(1);

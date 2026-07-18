@@ -378,7 +378,9 @@ export default {
       // viewport (REL-1 fix).
       const root = document.getElementById(SCROLL_REGION);
       if (!root) {
-        console.warn('[feed] #feed-scroll-region not found, skipping infinite scroll');
+        console.warn(
+          '[feed] #feed-scroll-region not found, skipping infinite scroll',
+        );
         return;
       }
 

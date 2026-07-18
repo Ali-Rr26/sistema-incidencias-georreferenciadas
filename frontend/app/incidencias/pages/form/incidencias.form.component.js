@@ -233,7 +233,9 @@ export default {
     function populateCities(provinceId) {
       citySelect.innerHTML = '';
       neighborhoodSelect.innerHTML = '';
-      const province = provinces.find((p) => String(p.id) === String(provinceId));
+      const province = provinces.find(
+        (p) => String(p.id) === String(provinceId),
+      );
       const cities = province?.children ?? [];
 
       if (!province || cities.length === 0) {
@@ -511,7 +513,10 @@ export default {
       // sent to the backend — it's the more specific classification.
       // Falls back to the parent category when no subcategory was chosen
       // (e.g. the parent has no children, or the citizen left it blank).
-      const categoryId = parseInt(subCategoryVal || parentCategoryVal || '', 10);
+      const categoryId = parseInt(
+        subCategoryVal || parentCategoryVal || '',
+        10,
+      );
       if (!categoryId) {
         showFieldError(P + 'error-category', 'Seleccione una categoría');
         valid = false;
@@ -524,7 +529,9 @@ export default {
       // no province-level fallback: a province alone isn't specific
       // enough to be a submittable location_id, so it's treated the same
       // as leaving the whole cascade blank (null).
-      const neighborhoodVal = document.getElementById('ici-location-neighborhood').value;
+      const neighborhoodVal = document.getElementById(
+        'ici-location-neighborhood',
+      ).value;
       const cityVal = document.getElementById('ici-location-city').value;
       const locVal = neighborhoodVal || cityVal;
       const locationId = locVal ? parseInt(locVal, 10) : null;

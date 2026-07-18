@@ -4,13 +4,13 @@ Single-source helpers shared across the admin and citizen shells.
 
 ## What's here
 
-| File | Exports | Source consumers (PR #1) |
-|------|---------|--------------------------|
-| `format.js`   | `escapeHtml`, `timeAgo`, `STATUS_LABEL`, `PRIORITY_LABEL` | `feed/feed.component.js`, `feed/pages/detail/feed-detail.component.js`, `incidencias/pages/detail/incidencias.detail.component.js`, `incidencias/pages/index/incidencias.index.component.js`, `incidencias/pages/pendientes/pendientes.component.js` |
-| `avatar.js`   | `getInitials`, `getUserDisplayName`, `resolveAvatar`     | `feed/feed.component.js`, `feed/pages/detail/feed-detail.component.js` |
-| `role.js`     | `resolveRoleName`, `ROLE_LABELS`                         | `auth/role.guard.js`, `layout/layout.component.js` |
-| `component.js` | `defineComponent` (decorator shim)                       | every component file |
-| `layout.js`    | `initShell`, `initPage`                                 | admin shell |
+| File           | Exports                                                   | Source consumers (PR #1)                                                                                                                                                                                                                             |
+| -------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format.js`    | `escapeHtml`, `timeAgo`, `STATUS_LABEL`, `PRIORITY_LABEL` | `feed/feed.component.js`, `feed/pages/detail/feed-detail.component.js`, `incidencias/pages/detail/incidencias.detail.component.js`, `incidencias/pages/index/incidencias.index.component.js`, `incidencias/pages/pendientes/pendientes.component.js` |
+| `avatar.js`    | `getInitials`, `getUserDisplayName`, `resolveAvatar`      | `feed/feed.component.js`, `feed/pages/detail/feed-detail.component.js`                                                                                                                                                                               |
+| `role.js`      | `resolveRoleName`, `ROLE_LABELS`                          | `auth/role.guard.js`, `layout/layout.component.js`                                                                                                                                                                                                   |
+| `component.js` | `defineComponent` (decorator shim)                        | every component file                                                                                                                                                                                                                                 |
+| `layout.js`    | `initShell`, `initPage`                                   | admin shell                                                                                                                                                                                                                                          |
 
 ## Rule
 
