@@ -973,6 +973,12 @@ function createBellPanel({
   function buildEmptyState() {
     const li = document.createElement('li');
     li.className = 'app-shell-bell-panel__empty';
+    // Derive the id from the parent list's id (citizen `app-shell-bell-list`
+    // → `app-shell-bell-empty`; admin `app-shell-bell-list-admin` →
+    // `app-shell-bell-empty-admin`) so tests and integration scripts can
+    // target the dynamically-rendered empty state by id, mirroring the
+    // static template markup (#app-shell-bell-empty on the citizen list).
+    li.id = list.id.replace('-list', '-empty');
     li.textContent = 'Sin notificaciones';
     return li;
   }
@@ -1022,7 +1028,7 @@ function createBellPanel({
     body.className = 'w-75 d-inline-block v-middle ps-2';
 
     const title = document.createElement('h6');
-    title.className = 'message-title mb-0 mt-1';
+    title.className = 'app-shell-bell-panel__title mb-0 mt-1';
     title.textContent = notif.message ?? '';
     body.appendChild(title);
 
