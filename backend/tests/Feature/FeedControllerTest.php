@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ beforeEach(function (): void {
     // the custom JwtAuthenticate middleware, which still rejects the
     // request with 401 before the controller runs. Same seam used by
     // CommentControllerTest and ClaimFlowTest.
-    $this->withoutMiddleware(\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class);
+    $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
 it('returns feed from Redis with correct JSON structure', function (): void {

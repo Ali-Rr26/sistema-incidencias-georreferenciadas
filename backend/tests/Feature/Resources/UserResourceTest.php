@@ -13,7 +13,7 @@ class UserResourceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_toArray_includes_timestamps(): void
+    public function test_to_array_includes_timestamps(): void
     {
         $user = User::factory()->create();
 
