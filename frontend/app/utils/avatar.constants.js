@@ -5,16 +5,11 @@
 export const AVATAR_MAX_KB = 800;
 
 /** Accepted avatar file extensions (lowercase, no dot). */
-export const ACCEPTED_MIMES = Object.freeze([
-  "jpeg",
-  "jpg",
-  "png",
-  "webp",
-]);
+export const ACCEPTED_MIMES = Object.freeze(['jpeg', 'jpg', 'png', 'webp']);
 
 /** Accepted avatar MIME types (for <input type="file" accept="...">). */
 export const ACCEPTED_MIME_TYPES = Object.freeze([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
+  'image/jpeg',
+  'image/png',
+  'image/webp',
 ]);
