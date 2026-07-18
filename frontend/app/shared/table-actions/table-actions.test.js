@@ -475,3 +475,266 @@ describe('Live re-hydration', () => {
     unmount(el);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PR1 review robustness regressions
+// ---------------------------------------------------------------------------
+// RES-1: double mount leaks Dropdown instance and PubSub listener
+// RES-2: uncaught rejection if getMyPermissions() fails
+// RES-3: uncaught error if fetchTemplate() fails
+// REL-1: renderDropdownItems crashes on null element references
+// REL-2: rehydrate calls dropdown.hide() with no null guard
+
+describe('Robustness regressions (PR1 review)', () => {
+  describe('RES-1: double mount guard', () => {
+    it('throws when mount is called twice on the same element', async () => {
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+      const { mount, unmount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await mount(el, {
+        id: '1',
+        titulo: 'T',
+        slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+      });
+
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).rejects.toThrow(/already[- ]mounted|already exists|double mount/i);
+
+      unmount(el);
+    });
+
+    it('does not register a second PubSub listener when mount is called twice', async () => {
+      const onInvalidateSpy = vi
+        .spyOn(permissionService, 'onInvalidate')
+        .mockReturnValue(() => {});
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+
+      const { mount, unmount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await mount(el, {
+        id: '1',
+        titulo: 'T',
+        slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+      });
+      expect(onInvalidateSpy).toHaveBeenCalledTimes(1);
+
+      // Second mount must fail WITHOUT registering a second listener
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).rejects.toThrow();
+      expect(onInvalidateSpy).toHaveBeenCalledTimes(1);
+
+      unmount(el);
+    });
+  });
+
+  describe('RES-2: getMyPermissions rejection', () => {
+    it('renders error state on the kebab when getMyPermissions rejects', async () => {
+      vi.spyOn(permissionService, 'getMyPermissions').mockRejectedValue(
+        new Error('Network error'),
+      );
+      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+      const { mount, unmount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      // mount() must NOT propagate the rejection
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).resolves.toBeUndefined();
+
+      const toggle = el.querySelector('.dropdown-toggle');
+      expect(toggle).not.toBeNull();
+      // Still disabled (no usable permissions), but tooltip is the ERROR state,
+      // not the loading state.
+      expect(toggle.hasAttribute('disabled')).toBe(true);
+      expect(toggle.getAttribute('title')).not.toBe('Cargando permisos…');
+      expect(toggle.getAttribute('title')).toMatch(/error/i);
+
+      unmount(el);
+    });
+  });
+
+  describe('RES-3: fetchTemplate failure', () => {
+    it('rejects with descriptive error and leaves clean DOM when template fetch fails', async () => {
+      globalThis.fetch = vi.fn((url) => {
+        if (url.endsWith('.html')) {
+          return Promise.reject(new Error('boom: template network error'));
+        }
+        return Promise.reject(new Error('Unexpected fetch URL'));
+      });
+
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+      const { mount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).rejects.toThrow();
+
+      // DOM must be cleaned up — no partial children left
+      expect(el.innerHTML).toBe('');
+    });
+
+    it('rejects with descriptive error when template body has no children', async () => {
+      // Browser/jsdom auto-adds <head>/<body> wrappers, so <html></html> yields
+      // a doc whose body.children is empty.
+      globalThis.fetch = vi.fn((url) => {
+        if (url.endsWith('.html')) {
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve('<html></html>'),
+          });
+        }
+        return Promise.reject(new Error('Unexpected fetch URL'));
+      });
+
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(new Set());
+      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+      const { mount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).rejects.toThrow(/template/i);
+
+      expect(el.innerHTML).toBe('');
+    });
+  });
+
+  describe('REL-1: renderDropdownItems null guards', () => {
+    it('does not crash when the template omits the edit <li>', async () => {
+      const partialTemplate = `<div class="d-flex justify-content-center gap-1">
+  <a class="btn btn-sm btn-outline-primary btn-ver" href="#" data-action="view" aria-label="Ver detalle">
+    <i class="fa-solid fa-eye"></i>
+  </a>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Acciones">
+      <i class="fa-solid fa-ellipsis-v"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li class="table-actions-delete-item" data-action="delete" style="display:none">
+        <a class="dropdown-item table-actions-delete text-danger" href="#" data-action="delete" aria-label="Eliminar">
+          <i class="fa-solid fa-trash-alt"></i> Eliminar
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>`;
+
+      globalThis.fetch = vi.fn((url) => {
+        if (url.endsWith('.html')) {
+          return Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve(partialTemplate),
+          });
+        }
+        return Promise.reject(new Error('Unexpected fetch URL'));
+      });
+
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(['incidents.update', 'incidents.delete']),
+      );
+      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+
+      const { mount, unmount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await expect(
+        mount(el, {
+          id: '1',
+          titulo: 'T',
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+        }),
+      ).resolves.toBeUndefined();
+
+      // Component degrades gracefully: delete item is present, edit is not.
+      expect(el.querySelector('.table-actions-edit-item')).toBeNull();
+      expect(el.querySelector('.table-actions-delete-item')).not.toBeNull();
+
+      unmount(el);
+    });
+  });
+
+  describe('REL-2: rehydrate dropdown null guard', () => {
+    it('does not call dropdown.hide() on the rehydrate path after unmount', async () => {
+      let rehydrateCb = null;
+      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+        new Set(['incidents.update']),
+      );
+      vi.spyOn(permissionService, 'onInvalidate').mockImplementation((cb) => {
+        rehydrateCb = cb;
+        return () => {};
+      });
+
+      const { mount, unmount } = await import('./table-actions.component.js');
+
+      const el = document.createElement('table-actions');
+      document.body.appendChild(el);
+
+      await mount(el, {
+        id: '1',
+        titulo: 'T',
+        slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+      });
+
+      const toggle = el.querySelector('.dropdown-toggle');
+      const dropdown = bootstrap.Dropdown.getInstance(toggle);
+      expect(dropdown).not.toBeNull();
+
+      // Simulate a real Bootstrap Dropdown that crashes when hide() is called
+      // after dispose(). This proves the production guard works: hide() must
+      // not be invoked once the instance has been disposed via unmount().
+      const hideSpy = vi.spyOn(dropdown, 'hide').mockImplementation(() => {
+        throw new Error('hide() called on disposed Dropdown');
+      });
+
+      unmount(el);
+
+      // Trigger the leaked rehydrate — must NOT throw, must NOT call hide()
+      await expect(rehydrateCb()).resolves.not.toThrow();
+      expect(hideSpy).not.toHaveBeenCalled();
+    });
+  });
+});

@@ -57,6 +57,9 @@ function disposeDropdown(toggleEl) {
  * Called both on initial hydration and on re-hydration.
  * Items not in the user's set are removed from DOM (per spec).
  *
+ * Defensive: null-checks each element so a malformed template (or post-unmount
+ * DOM) cannot crash the component — it just degrades silently.
+ *
  * @param {HTMLElement} el — host element
  * @param {Set<string>} perms — user's permission set
  * @param {{ update: string, delete: string }} slugs
@@ -75,6 +78,8 @@ function renderDropdownItems(el, perms, slugs) {
     } else {
       editLi.remove();
     }
+  } else if (slugs.update) {
+    console.warn('table-actions: .table-actions-edit-item missing from template');
   }
   if (deleteLi) {
     if (hasDelete) {
@@ -82,6 +87,13 @@ function renderDropdownItems(el, perms, slugs) {
     } else {
       deleteLi.remove();
     }
+  } else if (slugs.delete) {
+    console.warn('table-actions: .table-actions-delete-item missing from template');
+  }
+
+  if (!toggle) {
+    console.warn('table-actions: .dropdown-toggle missing from template');
+    return;
   }
 
   if (hasUpdate || hasDelete) {
@@ -98,8 +110,21 @@ function renderDropdownItems(el, perms, slugs) {
  */
 function setLoadingState(el) {
   const toggle = el.querySelector('.dropdown-toggle');
+  if (!toggle) return;
   toggle.setAttribute('disabled', '');
   toggle.setAttribute('title', 'Cargando permisos…');
+}
+
+/**
+ * Internal: sets the error state on the kebab toggle when permissions fail to load.
+ */
+function setErrorState(el, err) {
+  const toggle = el.querySelector('.dropdown-toggle');
+  if (toggle) {
+    toggle.setAttribute('disabled', '');
+    toggle.setAttribute('title', 'Error al cargar permisos');
+  }
+  console.error('table-actions: failed to load permissions', err);
 }
 
 /**
@@ -110,66 +135,118 @@ function subscribeToInvalidation(el, rehydrate) {
 }
 
 /**
+ * Internal: removes every child node from el.
+ */
+function clearChildren(el) {
+  while (el.firstChild) {
+    el.removeChild(el.firstChild);
+  }
+}
+
+/**
  * Mounts the table-actions component onto a host element.
  *
  * @param {HTMLElement} el — host <table-actions> element
  * @param {{ id: string, titulo: string, slugs: { update: string, delete: string } }} ctx
  */
 export async function mount(el, ctx) {
-  // Fetch and parse template
-  const html = await fetchTemplate(templateUrl);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const fragment = doc.body.children[0];
+  // RES-1: guard against double mount() — the second call would leak the
+  // Dropdown instance and the PubSub subscription of the first.
+  if (INSTANCES.has(el)) {
+    throw new Error(
+      'table-actions: mount() called on already-mounted element. Call unmount(el) first.',
+    );
+  }
 
-  // Append to host
-  el.appendChild(fragment);
+  try {
+    // Fetch and parse template
+    const html = await fetchTemplate(templateUrl);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const fragment = doc.body.children[0];
 
-  // Wire Ver button
-  const verBtn = el.querySelector('.btn-ver');
-  verBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    el.dispatchEvent(new CustomEvent('table-actions:view', { detail: eventDetail(ctx) }));
-  });
+    if (!fragment) {
+      throw new Error(`table-actions: template "${templateUrl}" returned no body content`);
+    }
 
-  // Wire Editar and Eliminar items (always, but they may be hidden by permissions)
-  const editItem = el.querySelector('.table-actions-edit');
-  const deleteItem = el.querySelector('.table-actions-delete');
+    // Append to host
+    el.appendChild(fragment);
 
-  editItem.addEventListener('click', (e) => {
-    e.preventDefault();
-    el.dispatchEvent(new CustomEvent('table-actions:edit', { detail: eventDetail(ctx) }));
-  });
+    // Wire Ver button (REL-1: defensive — log and skip if missing)
+    const verBtn = el.querySelector('.btn-ver');
+    if (verBtn) {
+      verBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        el.dispatchEvent(new CustomEvent('table-actions:view', { detail: eventDetail(ctx) }));
+      });
+    } else {
+      console.warn('table-actions: .btn-ver missing from template');
+    }
 
-  deleteItem.addEventListener('click', (e) => {
-    e.preventDefault();
-    el.dispatchEvent(new CustomEvent('table-actions:delete', { detail: eventDetail(ctx) }));
-  });
+    // Wire Editar and Eliminar items (always, but they may be hidden by permissions)
+    const editItem = el.querySelector('.table-actions-edit');
+    const deleteItem = el.querySelector('.table-actions-delete');
 
-  // Initialize Bootstrap Dropdown
-  const toggle = el.querySelector('.dropdown-toggle');
-  const dropdown = new bootstrap.Dropdown(toggle);
+    if (editItem) {
+      editItem.addEventListener('click', (e) => {
+        e.preventDefault();
+        el.dispatchEvent(new CustomEvent('table-actions:edit', { detail: eventDetail(ctx) }));
+      });
+    } else {
+      console.warn('table-actions: .table-actions-edit missing from template');
+    }
 
-  // Re-hydration callback
-  const rehydrate = async () => {
-    // Close dropdown if open
-    dropdown.hide();
+    if (deleteItem) {
+      deleteItem.addEventListener('click', (e) => {
+        e.preventDefault();
+        el.dispatchEvent(new CustomEvent('table-actions:delete', { detail: eventDetail(ctx) }));
+      });
+    } else {
+      console.warn('table-actions: .table-actions-delete missing from template');
+    }
 
-    // Re-fetch permissions (uses cache if fresh)
-    const perms = await permissionService.getMyPermissions();
-    renderDropdownItems(el, perms, ctx.slugs);
-  };
+    // Initialize Bootstrap Dropdown (REL-1: defensive — skip wiring if missing)
+    const toggle = el.querySelector('.dropdown-toggle');
+    const dropdown = toggle ? new bootstrap.Dropdown(toggle) : null;
+    if (!toggle) {
+      console.warn('table-actions: .dropdown-toggle missing from template');
+    }
 
-  // Subscribe to invalidation
-  const unsubscribeInvalidate = subscribeToInvalidation(el, rehydrate);
+    // Re-hydration callback
+    const rehydrate = async () => {
+      // REL-2: guard against post-unmount PubSub leaks — INSTANCES entry is
+      // deleted by unmount(), so a stale rehydrate becomes a no-op.
+      const inst = INSTANCES.get(el);
+      if (!inst) return;
+      if (inst.dropdown) inst.dropdown.hide();
 
-  // Initial hydration
-  setLoadingState(el);
-  const perms = await permissionService.getMyPermissions();
-  renderDropdownItems(el, perms, ctx.slugs);
+      // Re-fetch permissions (uses cache if fresh)
+      const perms = await permissionService.getMyPermissions();
+      renderDropdownItems(el, perms, ctx.slugs);
+    };
 
-  // Store instance data
-  INSTANCES.set(el, { dropdown, unsubscribeInvalidate, ctx });
+    // Subscribe to invalidation
+    const unsubscribeInvalidate = subscribeToInvalidation(el, rehydrate);
+
+    // Initial hydration — RES-2: swallow getMyPermissions rejection and render
+    // an error state instead of leaving the user on the loading state forever.
+    setLoadingState(el);
+    try {
+      const perms = await permissionService.getMyPermissions();
+      renderDropdownItems(el, perms, ctx.slugs);
+    } catch (permErr) {
+      setErrorState(el, permErr);
+    }
+
+    // Store instance data
+    INSTANCES.set(el, { dropdown, unsubscribeInvalidate, ctx });
+  } catch (err) {
+    // RES-3: any failure (template fetch, parse, wiring) leaves el with
+    // partial DOM. Clean up and re-throw so the caller sees a meaningful error
+    // and the next mount() on the same el starts from a clean slate.
+    clearChildren(el);
+    throw new Error(`table-actions: mount failed: ${err.message}`, { cause: err });
+  }
 }
 
 /**
@@ -190,9 +267,7 @@ export function unmount(el) {
   unsubscribeInvalidate();
 
   // Remove all child nodes
-  while (el.firstChild) {
-    el.removeChild(el.firstChild);
-  }
+  clearChildren(el);
 
   INSTANCES.delete(el);
 }
