@@ -38,13 +38,16 @@ it('builds cookie with mercure.subscribe claim containing exactly the user topic
         ->toBe([sprintf('user:%d:notifications', $user->id)]);
 });
 
-it('uses the configured cookie ttl in minutes as maxAge', function (): void {
+it('uses the configured cookie ttl in minutes as expiration', function (): void {
     config(['mercure.cookie.ttl_minutes' => 5]);
 
+    $beforeBuild = time();
     $user = User::factory()->create();
     $cookie = (new MercureCookieService)->build($user);
+    $afterBuild = time();
 
-    expect($cookie->getMaxAge())->toBe(5 * 60);
+    expect($cookie->getExpiresTime())->toBeGreaterThanOrEqual($beforeBuild + (5 * 60))
+        ->and($cookie->getExpiresTime())->toBeLessThanOrEqual($afterBuild + (5 * 60));
 });
 
 it('marks the cookie HttpOnly, SameSite=Strict, path=/', function (): void {

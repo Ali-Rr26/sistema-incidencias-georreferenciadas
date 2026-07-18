@@ -87,12 +87,12 @@ final class GenerateAvatarConstantsCommand extends Command
         sort($mimeTypes, SORT_STRING);
 
         $mimesLines = implode("\n", array_map(
-            static fn (string $mime): string => sprintf('  %s,', $this->jsString($mime)),
+            fn (string $mime): string => sprintf('  %s,', $this->jsString($mime)),
             $mimes,
         ));
 
         $mimeTypesLines = implode("\n", array_map(
-            static fn (string $type): string => sprintf('  %s,', $this->jsString($type)),
+            fn (string $type): string => sprintf('  %s,', $this->jsString($type)),
             $mimeTypes,
         ));
 
