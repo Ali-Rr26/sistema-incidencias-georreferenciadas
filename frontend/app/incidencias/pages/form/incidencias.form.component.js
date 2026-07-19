@@ -1,8 +1,10 @@
 /**
- * Unified Create Incident Form
+ * Unified Create/Edit Incident Form — 4-step stepper
  *
- * Single responsive template — CSS grid reflows fields 1-col → 2-col ≥ 992px.
- * No shell-based context detection; all elements use the `ici-` prefix.
+ * Steps: 1 Información Básica → 2 Categorización y Archivos →
+ * 3 Ubicación → 4 Revisión. Single template, one <form>, panels toggled
+ * via `d-none`; no shell-based context detection; all elements use the
+ * `ici-` prefix.
  */
 
 import template from './incidencias.form.component.html?raw';
@@ -21,8 +23,22 @@ const ERROR_MAP = {
   location_id: 'error-location',
 };
 
+// ── Which step each backend-validated field lives on, so a 422 jumps
+// the user back to where the offending field actually is ──
+const FIELD_STEP = {
+  title: 1,
+  description: 1,
+  priority: 1,
+  incident_category_id: 2,
+  location_id: 2,
+  geom: 3,
+};
+
 const P = 'ici-';
 const $ = (suffix) => document.getElementById(P + suffix);
+
+const TOTAL_STEPS = 4;
+const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
 export default {
   template,
@@ -377,6 +393,7 @@ export default {
     // ── Character counters ──
     const titleInput = $('title');
     const descInput = $('description');
+    const priorityInput = $('priority');
     const titleCounter = $('char-counter-title');
     const descCounter = $('char-counter-description');
 
@@ -394,6 +411,157 @@ export default {
         descCounter.textContent = this.value.length + '/500';
       });
     }
+
+    if (priorityInput) {
+      priorityInput.addEventListener('change', function () {
+        if (this.value) resetFieldError(P + 'error-priority');
+      });
+    }
+
+    // ── Step machine (1 Info Básica → 2 Categorización y Archivos →
+    // 3 Ubicación → 4 Revisión) ──
+    let currentStep = 1;
+
+    function stepPanel(n) {
+      return document.getElementById(P + 'step-' + n);
+    }
+
+    function updateStepperIndicator(n) {
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        const dot = document.getElementById(P + 'stepper-' + i);
+        if (!dot) continue;
+        dot.classList.toggle('ici-stepper__step--active', i === n);
+        dot.classList.toggle('ici-stepper__step--done', i < n);
+      }
+    }
+
+    function updateFooterButtons(n) {
+      $('btn-cancel')?.classList.toggle('d-none', n !== 1);
+      $('btn-prev')?.classList.toggle('d-none', n === 1);
+      $('btn-next')?.classList.toggle('d-none', n === TOTAL_STEPS);
+      $('submit')?.classList.toggle('d-none', n !== TOTAL_STEPS);
+    }
+
+    function selectedOptionText(selectEl) {
+      const opt = selectEl?.selectedOptions?.[0];
+      return opt && opt.value ? opt.textContent : '';
+    }
+
+    function renderReviewSummary() {
+      const reviewTitle = $('review-title');
+      if (reviewTitle) reviewTitle.textContent = titleInput?.value || '—';
+
+      const reviewPriority = $('review-priority');
+      if (reviewPriority) {
+        reviewPriority.textContent =
+          PRIORITY_LABELS[priorityInput?.value] || '—';
+      }
+
+      const reviewDescription = $('review-description');
+      if (reviewDescription) {
+        reviewDescription.textContent = descInput?.value || 'Sin descripción';
+      }
+
+      const reviewCategory = $('review-category');
+      if (reviewCategory) {
+        const subcatText = selectedOptionText(subcatSelect);
+        const catText = selectedOptionText(catSelect);
+        reviewCategory.textContent = subcatText || catText || '—';
+      }
+
+      const reviewLocation = $('review-location');
+      if (reviewLocation) {
+        const parts = [
+          selectedOptionText(provinceSelect),
+          selectedOptionText(citySelect),
+          selectedOptionText(neighborhoodSelect),
+        ].filter(Boolean);
+        reviewLocation.textContent = parts.length
+          ? parts.join(', ')
+          : 'Sin ubicación fija';
+      }
+
+      const reviewImagesCount = $('review-images-count');
+      if (reviewImagesCount) {
+        reviewImagesCount.textContent = imagenesSeleccionadas.length
+          ? `${imagenesSeleccionadas.length} imagen(es) adjunta(s)`
+          : 'Sin imágenes adjuntas';
+      }
+
+      const reviewCoords = $('review-coords');
+      if (reviewCoords) {
+        if (geomValue?.coordinates) {
+          const [lng, lat] = geomValue.coordinates;
+          reviewCoords.textContent = `Lat: ${lat}, Lng: ${lng}`;
+        } else {
+          reviewCoords.textContent = 'Sin ubicación en el mapa';
+        }
+      }
+    }
+
+    function goToStep(n) {
+      currentStep = Math.min(TOTAL_STEPS, Math.max(1, n));
+      for (let i = 1; i <= TOTAL_STEPS; i++) {
+        stepPanel(i)?.classList.toggle('d-none', i !== currentStep);
+      }
+      updateStepperIndicator(currentStep);
+      updateFooterButtons(currentStep);
+      if (currentStep === TOTAL_STEPS) renderReviewSummary();
+    }
+
+    function validateStep1() {
+      let valid = true;
+      if (!titleInput?.value.trim()) {
+        showFieldError(P + 'error-title', 'El título es obligatorio');
+        valid = false;
+      }
+      if (!priorityInput?.value) {
+        showFieldError(P + 'error-priority', 'Seleccione la prioridad');
+        valid = false;
+      }
+      return valid;
+    }
+
+    function validateStep2() {
+      const categoryId = subcatSelect?.value || catSelect?.value || '';
+      if (!categoryId) {
+        showFieldError(P + 'error-category', 'Seleccione una categoría');
+        return false;
+      }
+      resetFieldError(P + 'error-category');
+      return true;
+    }
+
+    function validateStep3() {
+      if (!geomValue) {
+        showFieldError(
+          P + 'error-geom',
+          'Debe marcar una ubicación en el mapa',
+        );
+        return false;
+      }
+      return true;
+    }
+
+    $('btn-next')?.addEventListener('click', () => {
+      if (currentStep === 1 && !validateStep1()) return;
+      if (currentStep === 2 && !validateStep2()) return;
+      if (currentStep === 3 && !validateStep3()) return;
+      goToStep(currentStep + 1);
+    });
+
+    $('btn-prev')?.addEventListener('click', () => {
+      goToStep(currentStep - 1);
+    });
+
+    [1, 2, 3].forEach((n) => {
+      document
+        .getElementById(P + 'review-edit-' + n)
+        ?.addEventListener('click', (e) => {
+          e.preventDefault();
+          goToStep(n);
+        });
+    });
 
     // ── Edit mode loading ──
     const isEdit = router.queryParams.has('id');
@@ -482,6 +650,10 @@ export default {
       }
     }
 
+    // Always land on step 1 — including edit mode, which arrives
+    // pre-filled and lets the user jump to Revisión via "Editar" links.
+    goToStep(1);
+
     // ── Submit handler ──
     const form = document.getElementById('ici-form');
     if (!form) return;
@@ -490,23 +662,24 @@ export default {
       e.preventDefault();
       resetAllErrors();
 
-      // ── Validate shared fields ──
+      // ── Validate shared fields (defense in depth — the per-step
+      // gates above should already guarantee these hold by the time
+      // step 4's submit button is reachable) ──
       let valid = true;
+      let firstInvalidStep = null;
       const title = $('title').value.trim();
       const description = $('description').value.trim();
       const priority = $('priority').value;
 
-      if (!title) {
-        showFieldError(P + 'error-title', 'El título es obligatorio');
+      if (!title || !priority) {
+        if (!title) {
+          showFieldError(P + 'error-title', 'El título es obligatorio');
+        }
+        if (!priority) {
+          showFieldError(P + 'error-priority', 'Seleccione la prioridad');
+        }
         valid = false;
-      }
-
-      if (!geomValue) {
-        showFieldError(
-          P + 'error-geom',
-          'Debe marcar una ubicación en el mapa',
-        );
-        valid = false;
+        firstInvalidStep = firstInvalidStep ?? 1;
       }
 
       const parentCategoryVal = document.getElementById('ici-category').value;
@@ -522,9 +695,22 @@ export default {
       if (!categoryId) {
         showFieldError(P + 'error-category', 'Seleccione una categoría');
         valid = false;
+        firstInvalidStep = firstInvalidStep ?? 2;
       }
 
-      if (!valid) return;
+      if (!geomValue) {
+        showFieldError(
+          P + 'error-geom',
+          'Debe marcar una ubicación en el mapa',
+        );
+        valid = false;
+        firstInvalidStep = firstInvalidStep ?? 3;
+      }
+
+      if (!valid) {
+        goToStep(firstInvalidStep);
+        return;
+      }
 
       // Deepest level actually chosen wins — same fallback logic as
       // category/subcategory (neighborhoodVal || cityVal), except there's
@@ -598,6 +784,7 @@ export default {
       } catch (err) {
         // 422 — validation errors
         if (err.status === 422 && err.errors) {
+          let backendErrorStep = null;
           for (const [field, messages] of Object.entries(err.errors)) {
             const errorSuffix = ERROR_MAP[field];
             if (errorSuffix) {
@@ -608,8 +795,10 @@ export default {
                   : messages;
                 errorEl.style.display = 'block';
               }
+              backendErrorStep = backendErrorStep ?? FIELD_STEP[field] ?? null;
             }
           }
+          if (backendErrorStep) goToStep(backendErrorStep);
           // Show general error banner
           const errorBanner = document.getElementById(P + 'error');
           if (errorBanner && err.message) {
