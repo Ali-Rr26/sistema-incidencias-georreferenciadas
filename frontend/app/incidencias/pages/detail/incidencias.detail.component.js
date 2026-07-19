@@ -12,7 +12,11 @@ import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
-import { buildCommentItem } from '../../../shared/comment-item.js';
+import { renderCommentThread } from '../../../shared/comment-thread.js';
+import {
+  sortStatusHistoryDesc,
+  statusHistoryEntry,
+} from '../../../utils/status-history.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
 import { openInlineReplyForm } from '../../../shared/comment-reply.js';
 
@@ -344,15 +348,9 @@ function renderHistorial(items) {
   }
 
   // más reciente primero (DESC)
-  listEl.innerHTML = [...items]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  listEl.innerHTML = sortStatusHistoryDesc(items)
     .map((item) => {
-      const prev =
-        STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
-      const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-      const user = item.user
-        ? [item.user.first_name, item.user.last_name].filter(Boolean).join(' ')
-        : 'Sistema';
+      const { prev, next, userName } = statusHistoryEntry(item);
       const fecha = new Date(item.created_at).toLocaleString('es-EC', {
         year: 'numeric',
         month: '2-digit',
@@ -363,7 +361,7 @@ function renderHistorial(items) {
       return `
         <div class="border-start border-2 border-primary ps-3 mb-3">
           <div class="small fw-semibold">${prev} → ${next}</div>
-          <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+          <div class="text-muted" style="font-size:0.75rem;">${userName} · ${fecha}</div>
         </div>`;
     })
     .join('');
@@ -371,64 +369,19 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-function buildCommentLi(comment, currentUserId, depth = 0) {
-  return buildCommentItem(
-    comment,
-    {
-      currentUserId,
-      canDelete: true,
-      getUserName: (u) => {
-        if (!u) return 'Usuario';
-        return (
-          [u.first_name, u.last_name].filter(Boolean).join(' ') ||
-          u.email ||
-          'Usuario'
-        );
-      },
-    },
-    depth,
-  );
-}
-
 // Module-scoped index of commentId → full comment object. Populated by
 // renderComments and read by the inline-reply click handler in
-// setupComments. Replaces the previous DOM-scraping helper which broke
-// whenever the comment-item CSS classes were renamed.
+// setupComments.
 let commentById = new Map();
 
-function flattenCommentsIntoMap(items, map) {
-  if (!items) return;
-  for (const c of items) {
-    map.set(c.id, c);
-    if (c.replies && c.replies.length > 0) {
-      flattenCommentsIntoMap(c.replies, map);
-    }
-  }
-}
-
 function renderComments(items, currentUserId) {
-  const listEl = document.getElementById('detalle-comments-list');
-  const vacioEl = document.getElementById('detalle-comments-vacio');
-  if (!listEl) return;
-
-  // Index every comment (root + nested replies) by id so the click
-  // handler in setupComments can look up the full comment object —
-  // including the backend-provided `.depth`, `.user`, and `.message` —
-  // instead of scraping the rendered DOM (which used to break every
-  // time CSS classes were renamed).
-  commentById = new Map();
-  flattenCommentsIntoMap(items, commentById);
-
-  if (!items || items.length === 0) {
-    listEl.replaceChildren();
-    vacioEl?.classList.remove('d-none');
-    return;
-  }
-
-  vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(
-    ...items.map((c) => buildCommentLi(c, currentUserId, 0)),
-  );
+  commentById = renderCommentThread({
+    items,
+    listEl: document.getElementById('detalle-comments-list'),
+    emptyEl: document.getElementById('detalle-comments-vacio'),
+    currentUserId,
+    canDelete: true,
+  });
 }
 
 async function setupComments(incidentId) {

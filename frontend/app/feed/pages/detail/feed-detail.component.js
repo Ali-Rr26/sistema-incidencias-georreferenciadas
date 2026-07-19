@@ -21,7 +21,11 @@ import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { openInlineReplyForm } from '../../../shared/comment-reply.js';
-import { buildCommentItem } from '../../../shared/comment-item.js';
+import { renderCommentThread } from '../../../shared/comment-thread.js';
+import {
+  sortStatusHistoryDesc,
+  statusHistoryEntry,
+} from '../../../utils/status-history.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -303,53 +307,15 @@ export default {
     this._detailMapRemove = remove;
   },
 
-  _buildCommentLi(comment, currentUserId, depth = 0) {
-    return buildCommentItem(
-      comment,
-      {
-        currentUserId,
-        canDelete: false,
-        getUserName: (u) => (u ? getUserDisplayName(u) : 'Usuario'),
-      },
-      depth,
-    );
-  },
-
-  /**
-   * Recursively index every comment (root + nested replies) by id so the
-   * click handler in `_setupComments` can look up the full comment object
-   * — including the backend-provided `.depth`, `.user`, and `.message` —
-   * instead of scraping the rendered DOM (which used to break every time
-   * CSS classes were renamed).
-   */
-  _flattenComments(items, map) {
-    if (!items) return;
-    for (const c of items) {
-      map.set(c.id, c);
-      if (c.replies && c.replies.length > 0) {
-        this._flattenComments(c.replies, map);
-      }
-    }
-  },
-
   _renderComments(items, currentUserId) {
-    const listEl = document.getElementById('fd-comments-list');
-    const emptyEl = document.getElementById('fd-comments-empty');
-    if (!listEl) return;
-
-    this._commentById = new Map();
-    this._flattenComments(items, this._commentById);
-
-    if (!items || items.length === 0) {
-      listEl.replaceChildren();
-      emptyEl?.classList.remove('d-none');
-      return;
-    }
-
-    emptyEl?.classList.add('d-none');
-    listEl.replaceChildren(
-      ...items.map((c) => this._buildCommentLi(c, currentUserId, 0)),
-    );
+    this._commentById = renderCommentThread({
+      items,
+      listEl: document.getElementById('fd-comments-list'),
+      emptyEl: document.getElementById('fd-comments-empty'),
+      currentUserId,
+      canDelete: false,
+      getUserName: (u) => (u ? getUserDisplayName(u) : 'Usuario'),
+    });
   },
 
   /**
@@ -722,9 +688,7 @@ export default {
     }
 
     // Sort DESC (most recent first)
-    const sorted = [...items].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at),
-    );
+    const sorted = sortStatusHistoryDesc(items);
 
     // Group by day label
     const dayLabel = (dateStr) => {
@@ -768,17 +732,7 @@ export default {
           <div class="fd-timeline-day">${escapeHtml(group.label)}</div>
           ${group.items
             .map((item) => {
-              const prev =
-                STATUS_LABEL[item.previous_status] ??
-                item.previous_status ??
-                '—';
-              const next =
-                STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-              const user = item.user
-                ? [item.user.first_name, item.user.last_name]
-                    .filter(Boolean)
-                    .join(' ')
-                : 'Sistema';
+              const { prev, next, userName } = statusHistoryEntry(item);
               const time = timeStr(item.created_at);
               const initials = getInitials(item.user);
               return `
@@ -791,7 +745,7 @@ export default {
                 </div>
                 <div class="fd-timeline-actor">
                   <span class="fd-timeline-avatar">${escapeHtml(initials)}</span>
-                  ${escapeHtml(user)}
+                  ${escapeHtml(userName)}
                 </div>
               </div>
             </div>`;
