@@ -119,7 +119,7 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
     currentUserId != null && (comment.depth ?? 0) < MAX_COMMENT_DEPTH;
   const replyBtn = canReply
     ? `<button type="button"
-         class="comment-action-btn btn-respoder-comentario"
+         class="comment-action-btn btn-responder-comentario"
          data-id="${escapeHtml(String(comment.id))}"
          title="Responder">
          <i class="fas fa-reply"></i> Responder
