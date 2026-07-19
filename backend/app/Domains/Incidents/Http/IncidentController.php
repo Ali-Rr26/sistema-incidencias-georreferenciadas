@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
+use App\Domains\Incidents\Http\Requests\UpdateIncidentStatusRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
@@ -23,7 +23,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
 class IncidentController extends Controller
@@ -94,13 +93,7 @@ class IncidentController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        // Convertir GeoJSON string a Point object para el cast espacial
-        if (isset($data['geom']) && is_string($data['geom'])) {
-            $geom = json_decode($data['geom'], true);
-            if (isset($geom['coordinates'])) {
-                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
-            }
-        }
+        $data = $this->castGeomToPoint($data);
 
         // Los archivos se manejan aparte — no mezclar con el create
         unset($data['images']);
@@ -151,15 +144,7 @@ class IncidentController extends Controller
 
     public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
     {
-        $data = $request->validated();
-
-        // Convertir GeoJSON string a Point object para el cast espacial
-        if (isset($data['geom']) && is_string($data['geom'])) {
-            $geom = json_decode($data['geom'], true);
-            if (isset($geom['coordinates'])) {
-                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
-            }
-        }
+        $data = $this->castGeomToPoint($request->validated());
 
         unset($data['images']);
 
@@ -182,28 +167,32 @@ class IncidentController extends Controller
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    public function updateStatus(Request $request, Incident $incident): JsonResponse
+    public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): JsonResponse
     {
-        $this->authorize('update', $incident);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::in([IncidentStatus::Pending->value, IncidentStatus::InProgress->value, IncidentStatus::Resolved->value])],
-        ]);
-
-        if ($validated['status'] !== $incident->status->value) {
-            $isResponsable = $incident->assignedUsers()
-                ->where('user_id', $request->user()->id)
-                ->where('assignment_role', 'responsable')
-                ->exists();
-
-            if (! $isResponsable) {
-                abort(403, 'No estás asignado como responsable de esta incidencia.');
-            }
-        }
+        // Permiso de update + regla de responsable, ambos en la Policy.
+        $this->authorize('updateStatus', [$incident, $validated['status']]);
 
         $incident = $this->incidents->update($incident->id, ['status' => $validated['status']]);
 
         return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Los FormRequests validan `geom` como string GeoJSON; el cast espacial
+     * del modelo necesita un objeto Point. Compartido por store() y update().
+     */
+    private function castGeomToPoint(array $data): array
+    {
+        if (isset($data['geom']) && is_string($data['geom'])) {
+            $geom = json_decode($data['geom'], true);
+            if (isset($geom['coordinates'])) {
+                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
+            }
+        }
+
+        return $data;
     }
 
     /**

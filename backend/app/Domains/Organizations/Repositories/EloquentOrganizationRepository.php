@@ -8,7 +8,6 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Shared\Repositories\EloquentRepository;
 use App\Domains\Users\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -20,17 +19,9 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         parent::__construct(new Organization);
     }
 
-    public function paginate(array $filters = [], int $perPage = 20, ?int $hardCap = null): LengthAwarePaginator
+    protected function paginateRelations(): array
     {
-        $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
-        unset($filters['per_page']);
-
-        $query = $this->newQuery()
-            ->with('location', 'parent', 'category');
-
-        $this->applyFilters($query, $filters);
-
-        return $query->paginate(min($perPage, $hardCap ?? 100));
+        return ['location', 'parent', 'category'];
     }
 
     public function findById(int $id): ?Organization
