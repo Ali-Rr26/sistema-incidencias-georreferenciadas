@@ -13,6 +13,7 @@ import {
   destroyAll,
 } from '../../../shared/select-search.js';
 import { mount } from '../../../shared/table-actions/table-actions.component.js';
+import { isDesktop, mostrarEstado, mostrarToast } from '../../../utils/ui.js';
 
 const POR_PAGINA = 10;
 
@@ -55,26 +56,6 @@ export default {
         month: '2-digit',
         year: 'numeric',
       });
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function isDesktop() {
-      return window.matchMedia('(min-width: 768px)').matches;
     }
 
     function renderTabla(datos, total) {

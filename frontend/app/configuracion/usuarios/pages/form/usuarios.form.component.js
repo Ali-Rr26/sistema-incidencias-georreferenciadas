@@ -7,6 +7,7 @@ import {
   destroyAll,
 } from '../../../../shared/select-search.js';
 import { mountAvatarUploader } from '../../../../shared/avatar-uploader.js';
+import { mostrarToast } from '../../../../utils/ui.js';
 
 /** Module-scope so onDestroy can clean it up after the latest onInit. */
 let _avatar = null;
@@ -28,13 +29,6 @@ export default {
       titulo.textContent = 'Editar Usuario';
       cardTitulo.textContent = 'Editar Usuario';
       breadcrumb.textContent = 'Editar';
-    }
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
     // ─── Poblar selects con catálogo ──────────────────────────────────

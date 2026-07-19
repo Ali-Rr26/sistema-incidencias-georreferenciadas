@@ -5,16 +5,10 @@ import {
   ACCEPTED_MIME_TYPES,
 } from '../../utils/avatar.constants.js';
 import { mountAvatarUploader } from '../../shared/avatar-uploader.js';
+import { mostrarToast } from '../../utils/ui.js';
 
 /** Module-scope so onDestroy can clean it up after the latest onInit. */
 let _avatar = null;
-
-function mostrarToast(mensaje, tipo) {
-  const el = document.getElementById('toast-msg');
-  el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-  document.getElementById('toast-msg-texto').textContent = mensaje;
-  new bootstrap.Toast(el, { delay: 3000 }).show();
-}
 
 /** Render the localized help text (extensions + max size). */
 function renderAvatarHelp() {

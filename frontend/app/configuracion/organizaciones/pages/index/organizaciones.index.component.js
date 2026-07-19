@@ -5,6 +5,11 @@ import { isForbidden } from '../../../../shared/forbidden.js';
 // eslint-disable-next-line no-unused-vars
 import { permissionService } from '../../../../shared/permission.service.js';
 import { mount } from '../../../../shared/table-actions/table-actions.component.js';
+import {
+  isDesktop,
+  mostrarEstado,
+  mostrarToast,
+} from '../../../../utils/ui.js';
 
 const POR_PAGINA = 15;
 
@@ -17,23 +22,6 @@ export default {
     let totalPaginas = 1;
     let idEliminar = null;
 
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      if (!el) return;
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
-
     function formatearFecha(isoStr) {
       if (!isoStr) return '—';
       const d = new Date(isoStr);
@@ -42,10 +30,6 @@ export default {
         month: '2-digit',
         year: 'numeric',
       });
-    }
-
-    function isDesktop() {
-      return window.matchMedia('(min-width: 768px)').matches;
     }
 
     function renderTabla(datos, total) {

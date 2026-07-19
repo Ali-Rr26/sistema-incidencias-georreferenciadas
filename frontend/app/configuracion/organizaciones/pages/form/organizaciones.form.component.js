@@ -1,5 +1,6 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
+import { mostrarToast } from '../../../../utils/ui.js';
 import {
   initSelect,
   getSelect,
@@ -25,13 +26,6 @@ export default {
     document.getElementById('breadcrumb-actual').textContent = esEdicion
       ? 'Editar'
       : 'Crear';
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
 
     // ─── Cargar organizaciones padre ──────────────────────────────────────
     function cargarPadres(organizations, exceptId = null) {

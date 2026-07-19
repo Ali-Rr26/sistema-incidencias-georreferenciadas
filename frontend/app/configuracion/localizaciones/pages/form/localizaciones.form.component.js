@@ -1,5 +1,6 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
+import { mostrarToast } from '../../../../utils/ui.js';
 import {
   initRemoteSelect,
   updateSelectOptions,
@@ -35,13 +36,6 @@ export default {
       titulo.textContent = 'Editar Localización';
       cardTitulo.textContent = 'Editar Localización';
       breadcrumb.textContent = 'Editar';
-    }
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
     }
 
     let locActual = null;

@@ -6,6 +6,11 @@ import { isForbidden } from '../../../../shared/forbidden.js';
 import { permissionService } from '../../../../shared/permission.service.js';
 import { mount } from '../../../../shared/table-actions/table-actions.component.js';
 import { renderAvatarCell } from '../../../../utils/avatar.js';
+import {
+  isDesktop,
+  mostrarEstado,
+  mostrarToast,
+} from '../../../../utils/ui.js';
 
 const POR_PAGINA = 15;
 
@@ -30,30 +35,10 @@ export default {
     let roles = [];
     let organizaciones = [];
 
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
-
     function iniciales(user) {
       const n = (user.first_name?.[0] ?? '').toUpperCase();
       const a = (user.last_name?.[0] ?? '').toUpperCase();
       return n + a || 'U';
-    }
-
-    function isDesktop() {
-      return window.matchMedia('(min-width: 768px)').matches;
     }
 
     function renderTabla(datos, total) {
