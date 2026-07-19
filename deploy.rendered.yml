@@ -66,7 +66,7 @@ services:
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
       REDIS_IMAGE: redis:8-alpine
-      REDIS_PASSWORD: "null"
+      REDIS_PASSWORD: ""
       REDIS_PORT: "6379"
       RUSTFS_API_PORT: "9300"
       RUSTFS_CONSOLE_PORT: "9301"
