@@ -109,11 +109,17 @@ class FeedRebuildCommand extends Command
                 $pipe->exec();
             });
 
-        // Rebuild comment_count for each incident that has comments
-        $incidentIds = Comment::distinct()->pluck('incident_id');
-        foreach ($incidentIds as $incidentId) {
-            $count = Comment::where('incident_id', $incidentId)->count();
-            Redis::hincrby('incident:'.$incidentId, 'comment_count', $count);
+        // Rebuild comment_count for each incident that has comments.
+        // HSET (absolute), never HINCRBY: the incident:{id} hashes are not
+        // wiped above (only the feed:v2 keys are), so an increment would
+        // stack on top of the value left by the previous rebuild.
+        $counts = Comment::query()
+            ->selectRaw('incident_id, COUNT(*) AS total')
+            ->groupBy('incident_id')
+            ->pluck('total', 'incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'comment_count', (int) $count);
         }
 
         $this->info("Synced {$commentCount} comments to Redis.");
