@@ -13,6 +13,109 @@ El sistema simula un entorno real de gestión municipal o técnica, donde múlti
 
 ---
 
+## 🏗️ Arquitectura del Sistema
+
+```mermaid
+graph TB
+    subgraph Frontend["🖥️ FRONTEND (Navegador)"]
+        Feed["Feed/Mapa<br/>(Citizens)"]
+        Admin["Panel Admin<br/>(Staff)"]
+        Auth["Autenticación<br/>(Login/Register)"]
+    end
+
+    subgraph "🔌 API REST (Laravel 11)"
+        Auth_API["Auth Domain<br/>JWT + Firebase"]
+        Incidents_API["Incidents Domain<br/>CRUD + Workflow"]
+        Comments_API["Comments Domain<br/>Threaded Comments"]
+        Assignments_API["Assignments Domain<br/>Roles & Permissions"]
+        Users_API["Users Domain<br/>Roles & Profile"]
+        Notifications_API["Notifications Domain<br/>Real-time Push"]
+        Menus_API["Menus Domain<br/>Role-based Access"]
+    end
+
+    subgraph Storage["💾 DATA & CACHE"]
+        PG["PostgreSQL<br/>Incidents, Users,<br/>Comments, History"]
+        Redis["Redis<br/>Feed Cache<br/>Sessions"]
+        S3["S3/Object Storage<br/>Images"]
+    end
+
+    subgraph "🔔 SERVICES"
+        Mercure["Mercure<br/>Web Sockets"]
+        Jobs["Queue Jobs<br/>Notifications"]
+    end
+
+    subgraph "🔐 AUTHORIZATION"
+        Policies["Resource Policies<br/>incidents.view, feed.detail"]
+        Permissions["Permission System<br/>roles ← permissions"]
+    end
+
+    %% Frontend connections
+    Feed -->|GET /feed, /incidents/{id}| Incidents_API
+    Feed -->|GET /comments| Comments_API
+    Admin -->|POST/PUT /incidents| Incidents_API
+    Admin -->|GET /status-history| Incidents_API
+    Auth -->|POST /login, /register| Auth_API
+
+    %% API to Data
+    Incidents_API -->|Read/Write| PG
+    Comments_API -->|Read/Write| PG
+    Assignments_API -->|Read/Write| PG
+    Users_API -->|Read/Write| PG
+    Notifications_API -->|Read/Write| PG
+    Menus_API -->|Read| PG
+
+    %% API to Cache
+    Incidents_API -->|Cache Feed| Redis
+    Comments_API -->|Check Cache| Redis
+
+    %% API to Storage
+    Incidents_API -->|Images| S3
+
+    %% Notifications flow
+    Incidents_API -->|Trigger Events| Jobs
+    Jobs -->|Push Updates| Mercure
+    Mercure -->|Subscribe| Feed
+    Mercure -->|Subscribe| Admin
+
+    %% Authorization flow
+    Auth_API -->|Issue JWT| Frontend
+    Incidents_API -.->|Check Policy| Policies
+    Assignments_API -.->|Resolve| Permissions
+    Policies -.->|Enforce| Permissions
+
+    style Frontend fill:#e1f5ff
+    style Auth fill:#fff3e0
+    style Incidents_API fill:#f3e5f5
+    style Comments_API fill:#f3e5f5
+    style Assignments_API fill:#f3e5f5
+    style PG fill:#c8e6c9
+    style Redis fill:#ffccbc
+    style Mercure fill:#b2dfdb
+    style Jobs fill:#ffe0b2
+    style Policies fill:#e0f2f1
+```
+
+### 📊 Dominios Principales (Domain-Driven Design)
+
+| Dominio | Responsabilidades | Entidades Clave |
+|---------|-------------------|-----------------|
+| **Incidents** | CRUD, Estados, Workflow, Georreferenciación | Incident, IncidentCategory, Status, Location |
+| **Comments** | Comentarios anidados, Imágenes, Historial | Comment, CommentImage, Thread |
+| **Assignments** | Asignación de responsables, Roles | Assignment, AssignmentRole |
+| **Users** | Perfiles, Roles, Permisos | User, Role, Permission |
+| **Notifications** | Alertas, Marcas leído/no leído | Notification, Event |
+| **Auth** | JWT + Firebase, Sesiones | Token, RefreshToken |
+| **Menus** | Menús dinámicos, Control de acceso | Menu (role-filtered) |
+
+### 🔄 Flujos Clave
+
+- **Reporte de incidencia** (Ciudadano) → Validación → Almacenamiento → Notificación a Staff
+- **Cambio de estado** → Trigger DB → Historial → Event → Notificación → Suscriptores
+- **Asignación** → Policy check → Permission validation → Event → Notificación
+- **Comentario** → Policy check → Almacenamiento → Notificación en tiempo real (WebSocket)
+
+---
+
 ## 🎯 Objetivo
 
 Desarrollar una aplicación web que permita:

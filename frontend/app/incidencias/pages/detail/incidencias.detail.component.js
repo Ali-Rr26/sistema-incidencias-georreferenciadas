@@ -60,7 +60,7 @@ export default {
     setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
-    setupComments(id);
+    setupComments(id, inc.comments);
     setupAssignments(id, inc, inc.assignments);
   },
 
@@ -384,7 +384,7 @@ function renderComments(items, currentUserId) {
   });
 }
 
-async function setupComments(incidentId) {
+async function setupComments(incidentId, initialComments) {
   const loadingEl = document.getElementById('detalle-comments-loading');
   const form = document.getElementById('detalle-comment-form');
   const input = document.getElementById('detalle-comment-input');
@@ -404,6 +404,7 @@ async function setupComments(incidentId) {
   const replyState = { parentId: null, parentComment: null };
   const selectedFiles = [];
   const previewUrls = [];
+  let hasLoadedComments = false;
 
   function updateCounter() {
     const len = input.value.length;
@@ -483,12 +484,19 @@ async function setupComments(incidentId) {
   async function cargarComentarios() {
     loadingEl?.classList.remove('d-none');
     try {
-      const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data, currentUserId);
+      // On first load, use embedded comments if available. On subsequent
+      // refreshes (after create/delete), always fetch fresh data.
+      if (!hasLoadedComments && initialComments) {
+        renderComments(initialComments, currentUserId);
+      } else {
+        const { data } = await commentService.list(incidentId, { perPage: 50 });
+        renderComments(data, currentUserId);
+      }
     } catch (err) {
       console.error('Error al cargar comentarios:', err);
     } finally {
       loadingEl?.classList.add('d-none');
+      hasLoadedComments = true;
     }
   }
 
@@ -667,7 +675,16 @@ async function setupComments(incidentId) {
     currentUserId = null;
   }
 
-  cargarComentarios();
+  // Initialize: use embedded comments if available (from incident detail),
+  // otherwise fetch from separate endpoint. After this first load, subsequent
+  // refreshes (post-create, post-delete) go via cargarComentarios() → fetch.
+  if (initialComments && initialComments.length > 0) {
+    loadingEl?.classList.add('d-none');
+    renderComments(initialComments, currentUserId);
+    hasLoadedComments = true;
+  } else {
+    await cargarComentarios();
+  }
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────
