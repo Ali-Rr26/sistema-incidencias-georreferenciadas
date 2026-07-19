@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http\Policies;
 
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Shared\Http\Policies\PermissionPolicy;
 use App\Domains\Users\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -66,13 +65,17 @@ class IncidentPolicy extends PermissionPolicy
     }
 
     /**
-     * Un OperadorOrg puede claim una incidencia solo si:
-     * - es de su organización
-     * - no está ya asignada
+     * Claim una incidencia (asignarse como operador).
+     *
+     * Requiere incidents.update (admin_sistema via Gate::before,
+     * admin_organización y operador_organización lo tienen) +
+     * pertenecer a la misma organización. El service layer (IncidentClaimService)
+     * valida las reglas de negocio: máx claims activos, no reclamar lo ya
+     * asignado, etc.
      */
     public function claim(User $user, Incident $incident): bool
     {
-        if ($user->role?->name !== UserRole::OperadorOrganizacion->value) {
+        if (! $user->can('incidents.update')) {
             return false;
         }
 
@@ -80,11 +83,14 @@ class IncidentPolicy extends PermissionPolicy
     }
 
     /**
-     * Un OperadorOrg puede release solo las incidencias que él mismo claimeó.
+     * Release una incidencia previamente claimeada.
+     *
+     * Requiere incidents.update + ser el dueño del claim.
+     * El service layer valida consistencia.
      */
     public function release(User $user, Incident $incident): bool
     {
-        if ($user->role?->name !== UserRole::OperadorOrganizacion->value) {
+        if (! $user->can('incidents.update')) {
             return false;
         }
 
