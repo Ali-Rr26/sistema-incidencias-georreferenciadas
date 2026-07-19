@@ -98,7 +98,7 @@ services:
     ports:
       - mode: ingress
         target: 8000
-        published: "8000"
+        published: 8000
         protocol: tcp
   cloudflared:
     command:
@@ -178,7 +178,7 @@ services:
     ports:
       - mode: ingress
         target: 80
-        published: "3000"
+        published: 3000
         protocol: tcp
   grafana:
     deploy:
@@ -194,7 +194,7 @@ services:
     ports:
       - mode: ingress
         target: 3000
-        published: "3001"
+        published: 3001
         protocol: tcp
     volumes:
       - type: bind
@@ -224,7 +224,7 @@ services:
     ports:
       - mode: ingress
         target: 3100
-        published: "3100"
+        published: 3100
         protocol: tcp
     volumes:
       - type: bind
@@ -252,7 +252,7 @@ services:
     ports:
       - mode: ingress
         target: 9090
-        published: "9090"
+        published: 9090
         protocol: tcp
     volumes:
       - type: bind
@@ -335,11 +335,11 @@ services:
     ports:
       - mode: ingress
         target: 9000
-        published: "9300"
+        published: 9300
         protocol: tcp
       - mode: ingress
         target: 9001
-        published: "9301"
+        published: 9301
         protocol: tcp
     user: root
     volumes:
