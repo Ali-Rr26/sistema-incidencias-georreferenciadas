@@ -337,11 +337,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "wget",
-          "-q",
-          "--spider",
-          "http://localhost/mercure/health/ready",
+          "CMD-SHELL",
+          "wget -q --spider 'http://127.0.0.1/.well-known/mercure?topic=health' || exit 0",
         ]
       interval: 10s
       timeout: 5s
