@@ -12,7 +12,10 @@
   width: 100%;
   height: calc(100dvh - 128px);
   background: #f4f6fa;
-  position: relative;
+  /* Removed position: relative to prevent z-index stacking context.
+     Absolute children (.mp-canvas, .mp-filters-panel) will position
+     relative to the nearest positioned ancestor, which is #page-outlet
+     or higher. This allows sidebar (z-index: 150) to appear on top. */
 }
 @supports not (height: 100dvh) {
   .mp-layout {
