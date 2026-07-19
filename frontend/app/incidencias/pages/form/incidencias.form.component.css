@@ -78,3 +78,108 @@
     border-radius: 8px;
   }
 }
+
+/* ── Stepper indicator ──────────────────────────────────── */
+.ici-stepper {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 8px;
+}
+
+.ici-stepper__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ici-stepper__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ici-stepper__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ici-stepper__step--active .ici-stepper__dot {
+  background: var(--bs-primary, #0d6efd);
+  color: #fff;
+}
+
+.ici-stepper__step--active .ici-stepper__label {
+  color: #1e293b;
+}
+
+.ici-stepper__step--done .ici-stepper__dot {
+  background: #198754;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .ici-stepper__label {
+    display: none;
+  }
+}
+
+/* ── Step panels ─────────────────────────────────────────── */
+.ici-step.d-none {
+  display: none;
+}
+
+/* ── Review (step 4) ─────────────────────────────────────── */
+.ici-review__section {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ici-review__section:last-child {
+  border-bottom: none;
+}
+
+.ici-review__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.ici-review__edit-link {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ici-review__dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.ici-review__dl dt {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ici-review__dl dd {
+  margin: 0;
+  color: #1e293b;
+}

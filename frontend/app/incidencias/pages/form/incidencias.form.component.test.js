@@ -40,6 +40,7 @@ function makeFakeMap() {
     on: vi.fn(),
     setView: vi.fn(),
     getZoom: vi.fn(() => 13),
+    invalidateSize: vi.fn(),
   };
 }
 const fakeMap = makeFakeMap();
@@ -111,42 +112,98 @@ const locationTreeFixture = [
 
 function buildFormDom() {
   document.body.innerHTML = `
-    <div id="ici-map"></div>
-    <div id="ici-error-geom"></div>
-    <input type="file" id="ici-images" multiple />
-    <div id="ici-image-preview"></div>
-    <input type="text" id="ici-title" />
-    <textarea id="ici-description"></textarea>
-    <select id="ici-priority">
-      <option value="">-- Seleccione --</option>
-      <option value="high">Alta</option>
-      <option value="medium">Media</option>
-      <option value="low">Baja</option>
-    </select>
-    <select id="ici-category">
-      <option value="">-- Seleccione categoría --</option>
-    </select>
-    <div id="ici-error-category"></div>
-    <select id="ici-subcategory" disabled>
-      <option value="">-- Seleccione una categoría primero --</option>
-    </select>
-    <div id="ici-error-subcategory"></div>
-    <select id="ici-location-province">
-      <option value="">-- Sin ubicación fija --</option>
-    </select>
-    <select id="ici-location-city" disabled>
-      <option value="">-- Seleccione una provincia primero --</option>
-    </select>
-    <select id="ici-location-neighborhood" disabled>
-      <option value="">-- Seleccione un cantón primero --</option>
-    </select>
-    <div id="ici-error-location"></div>
     <h1 id="ici-page-title"></h1>
     <span id="ici-breadcrumb-active"></span>
     <h5 id="ici-card-title"></h5>
-    <span id="ici-submit-btn-text"></span>
-    <span id="ici-toast-text"></span>
+    <div id="ici-error" class="d-none"></div>
+
+    <ol id="ici-stepper">
+      <li id="ici-stepper-1"></li>
+      <li id="ici-stepper-2"></li>
+      <li id="ici-stepper-3"></li>
+      <li id="ici-stepper-4"></li>
+    </ol>
+
+    <form id="ici-form">
+      <div id="ici-step-1" class="ici-step">
+        <input type="text" id="ici-title" />
+        <div id="ici-error-title"></div>
+        <small id="ici-char-counter-title"></small>
+        <select id="ici-priority">
+          <option value="">-- Seleccione --</option>
+          <option value="high">Alta</option>
+          <option value="medium">Media</option>
+          <option value="low">Baja</option>
+        </select>
+        <div id="ici-error-priority"></div>
+        <textarea id="ici-description"></textarea>
+        <div id="ici-error-description"></div>
+        <small id="ici-char-counter-description"></small>
+      </div>
+
+      <div id="ici-step-2" class="ici-step d-none">
+        <select id="ici-category">
+          <option value="">-- Seleccione categoría --</option>
+        </select>
+        <div id="ici-error-category"></div>
+        <select id="ici-subcategory" disabled>
+          <option value="">-- Seleccione una categoría primero --</option>
+        </select>
+        <div id="ici-error-subcategory"></div>
+        <select id="ici-location-province">
+          <option value="">-- Sin ubicación fija --</option>
+        </select>
+        <select id="ici-location-city" disabled>
+          <option value="">-- Seleccione una provincia primero --</option>
+        </select>
+        <select id="ici-location-neighborhood" disabled>
+          <option value="">-- Seleccione un cantón primero --</option>
+        </select>
+        <div id="ici-error-location"></div>
+        <input type="file" id="ici-images" multiple />
+        <div id="ici-image-preview"></div>
+      </div>
+
+      <div id="ici-step-3" class="ici-step d-none">
+        <div id="ici-map"></div>
+        <div id="ici-error-geom"></div>
+        <button type="button" id="ici-btn-geo"></button>
+      </div>
+
+      <div id="ici-step-4" class="ici-step d-none">
+        <a href="#" id="ici-review-edit-1"></a>
+        <span id="ici-review-title"></span>
+        <span id="ici-review-priority"></span>
+        <span id="ici-review-description"></span>
+        <a href="#" id="ici-review-edit-2"></a>
+        <span id="ici-review-category"></span>
+        <span id="ici-review-location"></span>
+        <span id="ici-review-images-count"></span>
+        <a href="#" id="ici-review-edit-3"></a>
+        <span id="ici-review-coords"></span>
+      </div>
+
+      <button type="button" id="ici-btn-prev"></button>
+      <a href="#/incidencias" id="ici-btn-cancel"></a>
+      <button type="button" id="ici-btn-next"></button>
+      <button type="submit" id="ici-submit">
+        <span id="ici-submit-text">
+          <span id="ici-submit-btn-text"></span>
+        </span>
+        <span id="ici-submit-loading" class="d-none"></span>
+      </button>
+    </form>
+
+    <div id="ici-toast">
+      <span id="ici-toast-text"></span>
+    </div>
   `;
+}
+
+/** Simulates a map click by invoking the handler registered via `map.on('click', ...)`. */
+function clickMap(lat, lng) {
+  const call = fakeMap.on.mock.calls.find(([evt]) => evt === 'click');
+  call[1]({ latlng: { lat, lng } });
 }
 
 describe('incidencias.form — category/subcategory dropdown reactivity', () => {
@@ -521,5 +578,451 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
         '400',
       );
     });
+  });
+});
+
+describe('incidencias.form — 4-step stepper', () => {
+  let component;
+
+  beforeAll(async () => {
+    const mod = await import('./incidencias.form.component.js');
+    component = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    buildFormDom();
+    vi.stubGlobal('L', { marker: vi.fn(() => makeFakeMarker()) });
+    mockRouter.queryParams = new URLSearchParams();
+    mockRouter.navigate.mockClear();
+
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
+      }
+      if (path === '/locations/tree') {
+        return Promise.resolve({ data: locationTreeFixture });
+      }
+      return Promise.resolve({ data: [] });
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    component.onDestroy?.();
+  });
+
+  function fillStep1(overrides = {}) {
+    document.getElementById('ici-title').value =
+      overrides.title ?? 'Fuga de agua';
+    document.getElementById('ici-priority').value =
+      overrides.priority ?? 'high';
+  }
+
+  function step(n) {
+    return document.getElementById('ici-step-' + n);
+  }
+
+  it('starts on step 1 with prev/submit hidden and cancel/next visible', async () => {
+    await component.onInit();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(step(2).classList.contains('d-none')).toBe(true);
+    expect(step(3).classList.contains('d-none')).toBe(true);
+    expect(step(4).classList.contains('d-none')).toBe(true);
+    expect(document.getElementById('ici-btn-prev').classList).toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-submit').classList).toContain('d-none');
+    expect(document.getElementById('ici-btn-cancel').classList).not.toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-btn-next').classList).not.toContain(
+      'd-none',
+    );
+  });
+
+  it('shows only Cancelar/Siguiente synchronously, before any fetch resolves', async () => {
+    // No `await` yet — assert on the state left behind by the
+    // synchronous portion of onInit(), before it yields at its first
+    // `await` (Leaflet map init). This is what a user would see during
+    // the categories/locations/map loading window.
+    const pending = component.onInit();
+
+    expect(document.getElementById('ici-btn-prev').classList).toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-submit').classList).toContain('d-none');
+    expect(document.getElementById('ici-btn-cancel').classList).not.toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-btn-next').classList).not.toContain(
+      'd-none',
+    );
+
+    await pending;
+  });
+
+  it('Siguiente already works (not a dead button) before categories/locations resolve', async () => {
+    let resolveCategories;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return new Promise((resolve) => {
+          resolveCategories = () => resolve({ data: categoryTreeFixture });
+        });
+      }
+      if (path === '/locations/tree') {
+        return Promise.resolve({ data: locationTreeFixture });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const pending = component.onInit();
+    fillStep1();
+
+    // Let the map-init await resolve so onInit reaches (and calls)
+    // the categories fetch above, which is what constructs the
+    // controlled, still-pending promise and captures
+    // `resolveCategories` — without actually resolving it yet.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Click Siguiente while the categories fetch is still pending —
+    // step 1 -> 2 doesn't need that data, so it must not be a dead
+    // button and must not throw (TDZ) either.
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(true);
+    expect(step(2).classList.contains('d-none')).toBe(false);
+
+    resolveCategories();
+    await pending;
+  });
+
+  it('blocks advancing past step 1 without title and priority', async () => {
+    await component.onInit();
+
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-title').textContent).toMatch(
+      /obligatorio/i,
+    );
+    expect(document.getElementById('ici-error-priority').textContent).toMatch(
+      /prioridad/i,
+    );
+  });
+
+  it('advances to step 2 once title and priority are filled', async () => {
+    await component.onInit();
+    fillStep1();
+
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(true);
+    expect(step(2).classList.contains('d-none')).toBe(false);
+  });
+
+  it('blocks advancing past step 2 without a category', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(2).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-category').textContent).toMatch(
+      /categoría/i,
+    );
+  });
+
+  it('blocks advancing past step 3 without a map marker', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(3).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /ubicación en el mapa/i,
+    );
+  });
+
+  it('reaches step 4 and renders a live review summary', async () => {
+    await component.onInit();
+    fillStep1({ title: 'Bache profundo', priority: 'medium' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    clickMap(10, 20);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(step(4).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-review-title').textContent).toBe(
+      'Bache profundo',
+    );
+    expect(document.getElementById('ici-review-priority').textContent).toBe(
+      'Media',
+    );
+    expect(document.getElementById('ici-review-category').textContent).toBe(
+      'Baches',
+    );
+    expect(document.getElementById('ici-review-coords').textContent).toBe(
+      'Lat: 10, Lng: 20',
+    );
+    expect(document.getElementById('ici-btn-next').classList).toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-submit').classList).not.toContain(
+      'd-none',
+    );
+  });
+
+  it('invalidates the Leaflet map size the moment step 3 becomes visible', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    expect(fakeMap.invalidateSize).not.toHaveBeenCalled();
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    expect(fakeMap.invalidateSize).toHaveBeenCalled();
+  });
+
+  it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    // Province chosen, city/neighborhood left blank — mirrors the
+    // submit handler, which drops a province-only pick to
+    // location_id: null (no province-level fallback).
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(document.getElementById('ici-review-location').textContent).toBe(
+      'Sin ubicación fija',
+    );
+  });
+
+  it('review summary shows the full path when a city (or neighborhood) is actually chosen', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '301'; // Rumiñahui — no neighborhoods
+    citySelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(document.getElementById('ici-review-location').textContent).toMatch(
+      /Rumiñahui/,
+    );
+  });
+
+  it('"Editar" on the review step jumps back to the right step without losing data', async () => {
+    await component.onInit();
+    fillStep1({ title: 'Poste caído' });
+    document.getElementById('ici-btn-next').click();
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click();
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document.getElementById('ici-review-edit-1').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-title').value).toBe('Poste caído');
+  });
+
+  it('"Anterior" moves back one step', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    document.getElementById('ici-btn-prev').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(step(2).classList.contains('d-none')).toBe(true);
+  });
+
+  it('submits the full payload from step 4, including priority', async () => {
+    mockHttp.post.mockResolvedValue({ data: { id: 99 } });
+
+    await component.onInit();
+    fillStep1({ title: 'Fuga de agua', priority: 'low' });
+    document.getElementById('ici-btn-next').click();
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '2'; // Seguridad — no children
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click();
+    clickMap(-0.2, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockHttp.post).toHaveBeenCalledWith(
+      '/incidents',
+      expect.objectContaining({
+        title: 'Fuga de agua',
+        priority: 'low',
+        incident_category_id: 2,
+      }),
+    );
+  });
+
+  it('submits geom as a JSON string (not "[object Object]") when images are attached', async () => {
+    mockHttp.post.mockResolvedValue({ data: { id: 100 } });
+
+    await component.onInit();
+    fillStep1({ title: 'Fuga de agua', priority: 'low' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '2'; // Seguridad — no children
+    catSelect.dispatchEvent(new Event('change'));
+
+    const file = new File(['x'], 'evidencia.jpg', { type: 'image/jpeg' });
+    const inputImagenes = document.getElementById('ici-images');
+    Object.defineProperty(inputImagenes, 'files', {
+      value: [file],
+      configurable: true,
+    });
+    inputImagenes.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(-0.2, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockHttp.post).toHaveBeenCalledWith(
+      '/incidents',
+      expect.any(FormData),
+    );
+    const body = mockHttp.post.mock.calls[0][1];
+    const sentGeom = body.get('geom');
+    expect(() => JSON.parse(sentGeom)).not.toThrow();
+    expect(JSON.parse(sentGeom)).toEqual({
+      type: 'Point',
+      coordinates: [-78.5, -0.2],
+    });
+  });
+
+  it('a 422 error on a step-3 field (geom) jumps back to step 3', async () => {
+    mockHttp.post.mockRejectedValue({
+      status: 422,
+      errors: { geom: ['El punto debe estar dentro del municipio'] },
+      message: 'Datos inválidos',
+    });
+
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click();
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click();
+    clickMap(0, 0);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(step(3).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /municipio/i,
+    );
+  });
+
+  it('a 422 spanning step-1 and step-3 fields lands on step 1 (the earliest), not whichever field the backend listed first', async () => {
+    mockHttp.post.mockRejectedValue({
+      status: 422,
+      // `geom` (step 3) listed before `title` (step 1) on purpose — the
+      // fix must pick the minimum step across all fields, not the
+      // first key iterated from the backend's response.
+      errors: {
+        geom: ['El punto debe estar dentro del municipio'],
+        title: ['El título ya existe'],
+      },
+      message: 'Datos inválidos',
+    });
+
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click();
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click();
+    clickMap(0, 0);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-title').textContent).toMatch(
+      /ya existe/i,
+    );
+    // The step-3 error is still written into its own (now hidden) panel
+    // so it's not lost — just not where the user is landed first.
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /municipio/i,
+    );
   });
 });
