@@ -21,9 +21,7 @@ import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { openInlineReplyForm } from '../../../shared/comment-reply.js';
-import {
-  buildCommentItem,
-} from '../../../shared/comment-item.js';
+import { buildCommentItem } from '../../../shared/comment-item.js';
 
 // ── Detect context: admin vs citizen ──
 //

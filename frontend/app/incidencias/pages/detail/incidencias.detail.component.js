@@ -12,9 +12,7 @@ import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
-import {
-  buildCommentItem,
-} from '../../../shared/comment-item.js';
+import { buildCommentItem } from '../../../shared/comment-item.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
 import { openInlineReplyForm } from '../../../shared/comment-reply.js';
 
