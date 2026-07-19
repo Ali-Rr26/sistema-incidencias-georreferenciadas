@@ -1,3 +1,4 @@
+import template from './incidencias.index.component.html?raw';
 import {
   badgeEstado,
   badgePrioridad,
@@ -19,7 +20,7 @@ import { isDesktop, mostrarEstado, mostrarToast } from '../../../utils/ui.js';
 const POR_PAGINA = 10;
 
 export default {
-  templateUrl: 'app/incidencias/pages/index/incidencias.index.component.html',
+  template,
 
   async onInit() {
     let paginaActual = 1;

@@ -76,9 +76,9 @@ describe('perfilComponent', () => {
 
   // ── Contract test ──────────────────────────────────────────
 
-  it('exports defineComponent contract (templateUrl, onInit, onDestroy)', () => {
+  it('exports defineComponent contract (template, onInit, onDestroy)', () => {
     expect(perfilComponent).not.toBeNull();
-    expect(perfilComponent).toHaveProperty('templateUrl');
+    expect(perfilComponent).toHaveProperty('template');
     expect(perfilComponent).toHaveProperty('onInit');
     expect(perfilComponent).toHaveProperty('onDestroy');
     expect(typeof perfilComponent.onInit).toBe('function');
@@ -87,15 +87,14 @@ describe('perfilComponent', () => {
 
   // ── Scoped CSS wiring (REQ-FRONTEND-EVENTS) ────────────────
   // The custom router in core/router.js injects a <style> tag only when
-  // component.styleUrl is truthy. Without it the .perfil-grid, .perfil-card,
+  // component.style is truthy. Without it the .perfil-grid, .perfil-card,
   // .perfil-avatar-wrap, etc. CSS rules in perfil.component.css never load
   // and the redesign is invisible at runtime (HTML keeps the new classes
   // but no styles apply, so the page looks identical to the pre-redesign).
 
-  it('declares styleUrl pointing to perfil.component.css', () => {
-    expect(perfilComponent.styleUrl).toBe(
-      'app/configuracion/perfil/perfil.component.css',
-    );
+  it('bundles perfil.component.css as a style string', () => {
+    expect(typeof perfilComponent.style).toBe('string');
+    expect(perfilComponent.style.length).toBeGreaterThan(0);
   });
 
   // ── onInit fetches /me and populates form ──────────────────
@@ -284,9 +283,9 @@ describe('perfilComponent — avatar upload (C1)', () => {
     }
   });
 
-  it('exports defineComponent contract (templateUrl, onInit, onDestroy)', () => {
+  it('exports defineComponent contract (template, onInit, onDestroy)', () => {
     expect(perfilComponent).not.toBeNull();
-    expect(perfilComponent).toHaveProperty('templateUrl');
+    expect(perfilComponent).toHaveProperty('template');
     expect(perfilComponent).toHaveProperty('onInit');
     expect(perfilComponent).toHaveProperty('onDestroy');
     expect(typeof perfilComponent.onInit).toBe('function');

@@ -136,6 +136,36 @@ describe('router integration (single-shell)', () => {
     expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css?raw=1');
   });
 
+  it('mounts bundled template + style strings with zero fetches', async () => {
+    const onInit = vi.fn();
+
+    // Components migrated to Vite ?raw imports expose `template`/`style`
+    // strings instead of `templateUrl`/`styleUrl` — the router must mount
+    // them without touching the network. Same for the shell's `style`.
+    router.shell.style = '#sidebarnav { padding: 0; }';
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Inline</section>',
+        style: '#dashboard-page { color: teal; }',
+        onInit,
+      },
+      [],
+      'admin',
+    );
+
+    await router.resolve();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(document.getElementById('page-outlet').innerHTML).toContain(
+      'Inline',
+    );
+    expect(document.getElementById('shell-style')).not.toBeNull();
+    const styles = [...document.querySelectorAll('style[id^="style-"]')];
+    expect(styles.some((s) => s.textContent.includes('teal'))).toBe(true);
+    expect(onInit).toHaveBeenCalledTimes(1);
+  });
+
   it('redirects to /feed when a citizen accesses an admin-tagged route', async () => {
     const onInit = vi.fn();
 

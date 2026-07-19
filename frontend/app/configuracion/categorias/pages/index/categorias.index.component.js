@@ -1,9 +1,9 @@
+import template from './categorias.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 
 export default {
-  templateUrl:
-    'app/configuracion/categorias/pages/index/categorias.index.component.html',
+  template,
 
   async onInit() {
     let categoriasPadre = [];

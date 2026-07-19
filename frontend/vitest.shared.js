@@ -5,6 +5,10 @@ export const sharedTestConfig = {
   clearMocks: true,
   restoreMocks: true,
   mockReset: true,
+  // Without this, Vitest stubs every *.css import to an empty module — the
+  // stub regex also matches `x.component.css?raw`, which would silently
+  // turn the bundled `style` strings of migrated components into ''.
+  css: true,
 };
 
 export const unitTestGlobs = [

@@ -130,20 +130,19 @@ describe('usuariosFormComponent — contract & load', () => {
     usuariosFormComponent?.onDestroy?.();
   });
 
-  it('exports defineComponent contract (templateUrl, styleUrl, onInit, onDestroy)', () => {
+  it('exports defineComponent contract (template, style, onInit, onDestroy)', () => {
     expect(usuariosFormComponent).not.toBeNull();
-    expect(usuariosFormComponent).toHaveProperty('templateUrl');
-    expect(usuariosFormComponent).toHaveProperty('styleUrl');
+    expect(usuariosFormComponent).toHaveProperty('template');
+    expect(usuariosFormComponent).toHaveProperty('style');
     expect(usuariosFormComponent).toHaveProperty('onInit');
     expect(usuariosFormComponent).toHaveProperty('onDestroy');
     expect(typeof usuariosFormComponent.onInit).toBe('function');
     expect(typeof usuariosFormComponent.onDestroy).toBe('function');
   });
 
-  it('styleUrl points to the shared-scoped stylesheet', () => {
-    expect(usuariosFormComponent.styleUrl).toBe(
-      'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
-    );
+  it('bundles the shared-scoped stylesheet as a style string', () => {
+    expect(typeof usuariosFormComponent.style).toBe('string');
+    expect(usuariosFormComponent.style.length).toBeGreaterThan(0);
   });
 });
 

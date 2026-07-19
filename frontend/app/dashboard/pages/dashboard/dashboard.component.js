@@ -1,3 +1,5 @@
+import template from './dashboard.component.html?raw';
+import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
 
 // ─────────────────────────────────────────────
@@ -389,8 +391,8 @@ function setupFilterListeners() {
 // Componente
 // ─────────────────────────────────────────────
 export default {
-  templateUrl: 'app/dashboard/pages/dashboard/dashboard.component.html',
-  styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
+  template,
+  style,
 
   async onInit() {
     // C3 y feed de actividad en paralelo

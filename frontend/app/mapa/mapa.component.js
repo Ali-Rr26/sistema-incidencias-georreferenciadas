@@ -1,3 +1,4 @@
+import style from './mapa.component.css?raw';
 import { http } from '../core/http.service.js';
 import {
   STATUS_LABEL,
@@ -154,7 +155,7 @@ export default {
       ></div>
     </div>
   `,
-  styleUrl: 'app/mapa/mapa.component.css',
+  style,
 
   async onInit() {
     document.body.classList.add('mp-view');

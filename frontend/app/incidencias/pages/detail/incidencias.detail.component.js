@@ -1,3 +1,4 @@
+import template from './incidencias.detail.component.html?raw';
 import {
   STATUS_LABEL,
   PRIORITY_LABEL,
@@ -36,7 +37,7 @@ const DROPDOWN_STATUSES = [
 ];
 
 export default {
-  templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
+  template,
 
   async onInit({ params } = {}) {
     const id = params?.id;

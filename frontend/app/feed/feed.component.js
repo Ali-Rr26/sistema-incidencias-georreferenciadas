@@ -1,3 +1,5 @@
+import template from './feed.component.html?raw';
+import style from './feed.component.css?raw';
 import {
   escapeHtml,
   timeAgo,
@@ -229,8 +231,8 @@ const CHIP_SELECTOR = '.feed-chip';
 // ── Component ──────────────────────────────────────────────
 
 export default {
-  templateUrl: 'app/feed/feed.component.html',
-  styleUrl: 'app/feed/feed.component.css',
+  template,
+  style,
 
   async onInit() {
     let paginaActual = 1;

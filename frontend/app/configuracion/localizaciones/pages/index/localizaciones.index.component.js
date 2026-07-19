@@ -1,3 +1,4 @@
+import template from './localizaciones.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
@@ -20,8 +21,7 @@ const NIVEL_LABELS = {
 };
 
 export default {
-  templateUrl:
-    'app/configuracion/localizaciones/pages/index/localizaciones.index.component.html',
+  template,
 
   async onInit() {
     let paginaActual = 1;

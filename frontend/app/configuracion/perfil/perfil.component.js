@@ -1,3 +1,5 @@
+import template from './perfil.component.html?raw';
+import style from './perfil.component.css?raw';
 import { http } from '../../core/http.service.js';
 import { auth } from '../../auth/auth.service.js';
 import {
@@ -24,8 +26,8 @@ function renderAvatarHelp() {
 }
 
 export default {
-  templateUrl: 'app/configuracion/perfil/perfil.component.html',
-  styleUrl: 'app/configuracion/perfil/perfil.component.css',
+  template,
+  style,
 
   async onInit() {
     console.log('[Perfil] onInit called');

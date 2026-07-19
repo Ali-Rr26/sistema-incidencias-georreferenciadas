@@ -18,23 +18,11 @@
  *   table-actions:delete — detail: { id, titulo }
  */
 
+import template from './table-actions.component.html?raw';
 import { permissionService } from '../permission.service.js';
-
-export const templateUrl =
-  'app/shared/table-actions/table-actions.component.html';
 
 // WeakMap: host element → instance data
 const INSTANCES = new WeakMap();
-
-/**
- * @param {string} url
- * @returns {Promise<string>}
- */
-async function fetchTemplate(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to load template: ${url}`);
-  return res.text();
-}
 
 /**
  * Internal: builds the CustomEvent detail from ctx.
@@ -164,16 +152,13 @@ export async function mount(el, ctx) {
   }
 
   try {
-    // Fetch and parse template
-    const html = await fetchTemplate(templateUrl);
+    // Parse the bundled template (Vite ?raw import — no runtime fetch)
     const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(template, 'text/html');
     const fragment = doc.body.children[0];
 
     if (!fragment) {
-      throw new Error(
-        `table-actions: template "${templateUrl}" returned no body content`,
-      );
+      throw new Error('table-actions: template returned no body content');
     }
 
     // Append to host

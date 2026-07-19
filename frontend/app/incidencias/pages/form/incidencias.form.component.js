@@ -5,6 +5,8 @@
  * No shell-based context detection; all elements use the `ici-` prefix.
  */
 
+import template from './incidencias.form.component.html?raw';
+import style from './incidencias.form.component.css?raw';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
@@ -23,8 +25,8 @@ const P = 'ici-';
 const $ = (suffix) => document.getElementById(P + suffix);
 
 export default {
-  templateUrl: 'app/incidencias/pages/form/incidencias.form.component.html',
-  styleUrl: 'app/incidencias/pages/form/incidencias.form.component.css',
+  template,
+  style,
 
   async onInit() {
     document.body.classList.add('ici-create-view');

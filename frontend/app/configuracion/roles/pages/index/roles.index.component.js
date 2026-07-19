@@ -1,8 +1,9 @@
+import template from './roles.index.component.html?raw';
 import { router } from '../../../../core/router.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 
 export default {
-  templateUrl: 'app/configuracion/roles/pages/index/roles.index.component.html',
+  template,
 
   async onInit() {
     const page = createCrudIndexPage({

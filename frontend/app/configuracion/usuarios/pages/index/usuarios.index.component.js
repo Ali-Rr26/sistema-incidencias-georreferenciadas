@@ -1,3 +1,4 @@
+import template from './usuarios.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { renderAvatarCell } from '../../../../utils/avatar.js';
@@ -30,8 +31,7 @@ function iniciales(user) {
 }
 
 export default {
-  templateUrl:
-    'app/configuracion/usuarios/pages/index/usuarios.index.component.html',
+  template,
 
   async onInit() {
     let roles = [];

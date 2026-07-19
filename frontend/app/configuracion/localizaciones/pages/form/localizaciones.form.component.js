@@ -1,3 +1,4 @@
+import template from './localizaciones.form.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { mostrarToast } from '../../../../utils/ui.js';
@@ -21,8 +22,7 @@ const PARENT_LEVEL_MAP = {
 };
 
 export default {
-  templateUrl:
-    'app/configuracion/localizaciones/pages/form/localizaciones.form.component.html',
+  template,
 
   async onInit() {
     const esEdicion = router.queryParams.has('id');

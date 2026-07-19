@@ -166,7 +166,11 @@ class Router {
   async _mountShell() {
     if (this.shell.mount) await this.shell.mount();
     if (this.shell.init) await this.shell.init();
-    if (this.shell.styleUrl) {
+    // `style` is a CSS string bundled at build time (Vite ?raw import) —
+    // preferred. `styleUrl` is the legacy runtime-fetch path.
+    if (this.shell.style) {
+      this._appendStyle(this.shell.style, 'shell-style');
+    } else if (this.shell.styleUrl) {
       await this._injectStyle(this.shell.styleUrl, 'shell-style');
     }
   }
@@ -195,8 +199,11 @@ class Router {
       throw new Error('Router: page outlet not found');
     }
 
-    // Fetch template + CSS in parallel so the component never renders
-    // without its styles (eliminates FOUC between insert and style inject).
+    // Components bundle their template/CSS as strings (Vite ?raw imports)
+    // via `template`/`style` — zero runtime requests. `templateUrl`/
+    // `styleUrl` remain as the legacy runtime-fetch path; both resolve in
+    // parallel so the component never renders without its styles
+    // (eliminates FOUC between insert and style inject).
     const htmlPromise = component.template
       ? Promise.resolve(component.template)
       : this._fetchText(component.templateUrl);
@@ -204,9 +211,11 @@ class Router {
     // instead of an HMR-wrapped JS module — wrapping corrupts the CSS
     // parser when injected into a <style> tag. In production nginx serves
     // the static CSS file ignoring query strings, so this is a no-op there.
-    const cssPromise = component.styleUrl
-      ? this._fetchText(this._withRaw(component.styleUrl))
-      : Promise.resolve(null);
+    const cssPromise = component.style
+      ? Promise.resolve(component.style)
+      : component.styleUrl
+        ? this._fetchText(this._withRaw(component.styleUrl))
+        : Promise.resolve(null);
 
     const [html, css] = await Promise.all([htmlPromise, cssPromise]);
 
@@ -234,6 +243,10 @@ class Router {
     // CSS we feed into the <style> tag, where it would otherwise break the
     // CSS parser and silently disable every rule in this stylesheet.
     const css = await this._fetchText(this._withRaw(url));
+    this._appendStyle(css, id);
+  }
+
+  _appendStyle(css, id) {
     const style = document.createElement('style');
     style.id = id;
     style.textContent = css;

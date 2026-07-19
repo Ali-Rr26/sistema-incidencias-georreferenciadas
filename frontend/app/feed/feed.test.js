@@ -57,12 +57,14 @@ describe('feed component — single responsive template', () => {
   });
 
   it('component exports defineComponent contract', () => {
-    expect(feedComponent).toHaveProperty('templateUrl');
-    expect(feedComponent).toHaveProperty('styleUrl');
+    expect(feedComponent).toHaveProperty('template');
+    expect(feedComponent).toHaveProperty('style');
     expect(feedComponent).toHaveProperty('onInit');
     expect(feedComponent).toHaveProperty('onDestroy');
-    expect(feedComponent.templateUrl).toBe('app/feed/feed.component.html');
-    expect(feedComponent.styleUrl).toBe('app/feed/feed.component.css');
+    // Bundled at build time via Vite ?raw imports — real file contents,
+    // not URLs, so the router mounts without any runtime fetch.
+    expect(feedComponent.template).toContain('<');
+    expect(feedComponent.style).toBeTruthy();
   });
 
   it('onInit handles missing DOM gracefully', async () => {

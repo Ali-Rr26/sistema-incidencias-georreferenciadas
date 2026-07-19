@@ -1,3 +1,5 @@
+import template from './usuarios.form.component.html?raw';
+import style from './usuarios.form.component.css?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { auth } from '../../../../auth/auth.service.js';
@@ -13,9 +15,8 @@ import { mostrarToast } from '../../../../utils/ui.js';
 let _avatar = null;
 
 export default {
-  templateUrl:
-    'app/configuracion/usuarios/pages/form/usuarios.form.component.html',
-  styleUrl: 'app/configuracion/usuarios/pages/form/usuarios.form.component.css',
+  template,
+  style,
 
   async onInit() {
     const esEdicion = router.queryParams.has('id');

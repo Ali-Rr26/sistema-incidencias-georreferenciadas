@@ -1,9 +1,9 @@
+import template from './organizaciones.index.component.html?raw';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { formatearFecha } from '../../../../utils/format.js';
 
 export default {
-  templateUrl:
-    'app/configuracion/organizaciones/pages/index/organizaciones.index.component.html',
+  template,
 
   async onInit() {
     const page = createCrudIndexPage({

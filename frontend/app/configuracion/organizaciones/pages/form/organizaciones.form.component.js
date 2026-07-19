@@ -1,3 +1,4 @@
+import template from './organizaciones.form.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { mostrarToast } from '../../../../utils/ui.js';
@@ -9,8 +10,7 @@ import {
 } from '../../../../shared/select-search.js';
 
 export default {
-  templateUrl:
-    'app/configuracion/organizaciones/pages/form/organizaciones.form.component.html',
+  template,
 
   async onInit() {
     const editId = router.queryParams.get('id');

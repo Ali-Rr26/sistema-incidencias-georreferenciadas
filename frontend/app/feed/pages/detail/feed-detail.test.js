@@ -75,8 +75,8 @@ describe('feed-detail — role-aware back-link (T-3.7)', () => {
 
   it('exports a defineComponent contract', () => {
     const component = feedDetailModule.default;
-    expect(component).toHaveProperty('templateUrl');
-    expect(component).toHaveProperty('styleUrl');
+    expect(component).toHaveProperty('template');
+    expect(component).toHaveProperty('style');
     expect(component).toHaveProperty('onInit');
     expect(component).toHaveProperty('onDestroy');
   });

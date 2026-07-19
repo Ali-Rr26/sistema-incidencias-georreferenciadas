@@ -15,6 +15,19 @@ vi.mock('../../core/http.service.js', async (importOriginal) => {
   };
 });
 
+// Mutable override for the bundled template (Vite ?raw import). Lets
+// individual tests swap the template string WITHOUT vi.resetModules(),
+// which would detach the permissionService singleton other tests spy on.
+const templateOverride = vi.hoisted(() => ({ current: null }));
+vi.mock('./table-actions.component.html?raw', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    get default() {
+      return templateOverride.current ?? original.default;
+    },
+  };
+});
+
 // Mock bootstrap.Dropdown globally
 class MockDropdown {
   constructor(el) {
@@ -703,69 +716,38 @@ describe('Robustness regressions (PR1 review)', () => {
     });
   });
 
-  describe('RES-3: fetchTemplate failure', () => {
-    it('rejects with descriptive error and leaves clean DOM when template fetch fails', async () => {
-      globalThis.fetch = vi.fn((url) => {
-        if (url.endsWith('.html')) {
-          return Promise.reject(new Error('boom: template network error'));
-        }
-        return Promise.reject(new Error('Unexpected fetch URL'));
-      });
-
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
-        new Set(),
-      );
-      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
-
-      const { mount } = await import('./table-actions.component.js');
-
-      const el = document.createElement('table-actions');
-      document.body.appendChild(el);
-
-      await expect(
-        mount(el, {
-          id: '1',
-          titulo: 'T',
-          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
-        }),
-      ).rejects.toThrow();
-
-      // DOM must be cleaned up — no partial children left
-      expect(el.innerHTML).toBe('');
-    });
-
+  describe('RES-3: empty template body guard', () => {
+    // The template is bundled at build time (Vite ?raw import), so the
+    // network-failure mode no longer exists. The parse guard does: an
+    // empty/whitespace-only template must still reject and leave the DOM
+    // clean. We swap the bundled string via vi.doMock on the ?raw module.
     it('rejects with descriptive error when template body has no children', async () => {
       // Browser/jsdom auto-adds <head>/<body> wrappers, so <html></html> yields
       // a doc whose body.children is empty.
-      globalThis.fetch = vi.fn((url) => {
-        if (url.endsWith('.html')) {
-          return Promise.resolve({
-            ok: true,
-            text: () => Promise.resolve('<html></html>'),
-          });
-        }
-        return Promise.reject(new Error('Unexpected fetch URL'));
-      });
+      templateOverride.current = '<html></html>';
+      try {
+        vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+          new Set(),
+        );
+        vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
-      vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
-        new Set(),
-      );
-      vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
+        const { mount } = await import('./table-actions.component.js');
 
-      const { mount } = await import('./table-actions.component.js');
+        const el = document.createElement('table-actions');
+        document.body.appendChild(el);
 
-      const el = document.createElement('table-actions');
-      document.body.appendChild(el);
+        await expect(
+          mount(el, {
+            id: '1',
+            titulo: 'T',
+            slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+          }),
+        ).rejects.toThrow(/template/i);
 
-      await expect(
-        mount(el, {
-          id: '1',
-          titulo: 'T',
-          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
-        }),
-      ).rejects.toThrow(/template/i);
-
-      expect(el.innerHTML).toBe('');
+        expect(el.innerHTML).toBe('');
+      } finally {
+        templateOverride.current = null;
+      }
     });
   });
 
@@ -790,15 +772,9 @@ describe('Robustness regressions (PR1 review)', () => {
   </div>
 </div>`;
 
-      globalThis.fetch = vi.fn((url) => {
-        if (url.endsWith('.html')) {
-          return Promise.resolve({
-            ok: true,
-            text: () => Promise.resolve(partialTemplate),
-          });
-        }
-        return Promise.reject(new Error('Unexpected fetch URL'));
-      });
+      // Bundled template variant: swap the ?raw module instead of mocking
+      // fetch — the component no longer touches the network.
+      templateOverride.current = partialTemplate;
 
       vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
         new Set(['incidents.update', 'incidents.delete']),
@@ -823,6 +799,8 @@ describe('Robustness regressions (PR1 review)', () => {
       expect(el.querySelector('.table-actions-delete-item')).not.toBeNull();
 
       unmount(el);
+
+      templateOverride.current = null;
     });
   });
 

@@ -18,6 +18,8 @@
  * then the shell is fully self-contained and can be mounted manually for
  * visual QA.
  */
+import template from './app-shell.component.html?raw';
+import style from './app-shell.component.css?raw';
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
 import { resolveAvatar } from '../utils/avatar.js';
@@ -26,9 +28,6 @@ import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { router } from '../core/router.js';
 import { timeAgo } from '../utils/format.js';
-
-const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
-const STYLE_URL = 'app/app-shell/app-shell.component.css';
 
 let _unsubAuth = null;
 
@@ -92,18 +91,13 @@ export function classifyRole(user) {
 }
 
 export const appShell = {
-  templateUrl: TEMPLATE_URL,
-  styleUrl: STYLE_URL,
+  template,
+  style,
 
   async mount() {
-    const response = await fetch(TEMPLATE_URL);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load appShell template: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const html = await response.text();
+    // Template is bundled at build time (Vite ?raw import) — no runtime
+    // fetch, so the shell can never render before its markup is available.
+    const html = template;
     if (!html.trim()) {
       throw new Error('appShell.mount: template body is empty');
     }
@@ -509,7 +503,6 @@ function buildLeafLink(item) {
   li.appendChild(a);
   return li;
 }
-
 
 async function populateHeader() {
   const u = await auth.me().catch(() => null);

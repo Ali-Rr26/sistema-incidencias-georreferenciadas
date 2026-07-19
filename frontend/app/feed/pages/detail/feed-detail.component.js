@@ -7,6 +7,9 @@
  *
  * Uses router.routeParams.id from the param-matching router.
  */
+// This component's markup is an inline `template:` string (see the bottom
+// of the default export) — only its CSS lives in a separate file.
+import style from './feed-detail.component.css?raw';
 import {
   escapeHtml,
   timeAgo,
@@ -40,8 +43,7 @@ function getFeedUrl(role) {
 // ── Component ───────────────────────────────────────────────
 
 export default {
-  templateUrl: 'app/feed/pages/detail/feed-detail.component.html',
-  styleUrl: 'app/feed/pages/detail/feed-detail.component.css',
+  style,
 
   async onInit({ params, role } = {}) {
     const detailEl = document.getElementById('fd-detail');
