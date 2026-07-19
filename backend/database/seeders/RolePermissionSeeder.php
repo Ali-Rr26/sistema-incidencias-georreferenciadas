@@ -118,6 +118,7 @@ class RolePermissionSeeder extends Seeder
     ];
 
     private const USUARIO_PERMISSIONS = [
+        ['resource' => 'incidents',     'action' => 'view'],
         ['resource' => 'incidents',     'action' => 'create'],
         ['resource' => 'comments',      'action' => 'create'],
         ['resource' => 'assignments',   'action' => 'view'],

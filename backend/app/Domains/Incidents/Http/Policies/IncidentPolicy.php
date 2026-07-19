@@ -28,6 +28,12 @@ class IncidentPolicy extends PermissionPolicy
             return true;
         }
 
+        // Los usuarios regulares (ciudadanos) pueden ver cualquier incidencia
+        // tal como ya las ven en el feed/mapa.
+        if ($user->isRegularUser()) {
+            return true;
+        }
+
         return $model->organization_id !== null && $model->organization_id === $user->organization_id;
     }
 
