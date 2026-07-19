@@ -75,7 +75,7 @@ jobs:
           set -a
           source .env
           set +a
-          docker stack deploy -c deploy.yml incidencias-stack
+          docker stack deploy --resolve-image=always -c deploy.yml incidencias-stack
 
       - name: Health check
         run: |
