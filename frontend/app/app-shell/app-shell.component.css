@@ -84,6 +84,11 @@
     opacity: 1;
     pointer-events: auto;
   }
+  /* When sidebar opens, lower main content z-index so backdrop (140) +
+     sidebar (150) stay on top of any maps/content with high z-index */
+  .app-shell-sidebar.is-open ~ .app-shell-main {
+    z-index: 1;
+  }
 }
 
 /* ============================================================
