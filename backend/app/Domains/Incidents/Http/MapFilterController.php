@@ -24,7 +24,9 @@ class MapFilterController extends Controller
             ->select(['id', 'name'])
             ->orderBy('name')
             ->get()
-            ->toArray();
+            ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])
+            ->values()
+            ->all();
 
         return response()->json([
             'data' => [
