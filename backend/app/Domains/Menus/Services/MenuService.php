@@ -84,6 +84,23 @@ class MenuService
         }
         unset($node);
 
-        return $tree;
+        // Filter out empty headers (no route, no children). These happen when
+        // a parent menu (e.g., "Incidencias" group) has no visible children
+        // after role-based filtering. Don't render empty section headers in UX.
+        return $this->filterEmptyHeaders($tree);
+    }
+
+    /** Recursively remove menu nodes that are non-navigable headers with no children. */
+    private function filterEmptyHeaders(array $menus): array
+    {
+        return array_values(array_filter(
+            array_map(function ($node) {
+                // Recursively filter children
+                $node['children'] = $this->filterEmptyHeaders($node['children']);
+                // Keep node if it has a route OR has children
+                return ($node['route'] !== null || !empty($node['children'])) ? $node : null;
+            }, $menus),
+            fn ($item) => $item !== null,
+        ));
     }
 }

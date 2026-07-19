@@ -38,7 +38,13 @@ class StatusHistoryController
     {
         $incident = Incident::findOrFail($incidentId);
 
-        $this->authorize('view', $incident);
+        // Status history is staff-only (incidents.view). Citizens can view
+        // incident details via feed, but not the administrative status log.
+        // Explicit permission check prevents feed.detail from leaking into
+        // operations reserved for incidents.view gate.
+        if (! $request->user()?->can('incidents.view')) {
+            abort(403);
+        }
 
         $rows = DB::table('status_history')
             ->where('incident_id', $incident->id)
