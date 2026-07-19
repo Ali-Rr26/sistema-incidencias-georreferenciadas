@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
@@ -29,8 +32,8 @@ beforeEach(function (): void {
     // Seed the permissions catalog so policy lookups work, then grant
     // feed.view to usuario (role 5) — needed by the FeedController
     // citizen-path check.
-    $this->seed(\Database\Seeders\PermissionSeeder::class);
-    $permId = \App\Domains\Permissions\Models\Permission::where('resource', 'feed')
+    $this->seed(PermissionSeeder::class);
+    $permId = Permission::where('resource', 'feed')
         ->where('action', 'view')->value('permission_id');
     DB::table('role_permission')->insert([
         'role_id' => 5,
@@ -41,10 +44,10 @@ beforeEach(function (): void {
 
     // Re-register dynamic gates after seeding (AppServiceProvider ran on
     // empty DB at boot, so feed.view gate doesn't exist yet).
-    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
-        \Illuminate\Support\Facades\Gate::define(
+    foreach (Permission::all() as $p) {
+        Gate::define(
             "{$p->resource}.{$p->action}",
-            fn (\App\Domains\Users\Models\User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
         );
     }
 });

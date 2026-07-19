@@ -6,10 +6,13 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 uses(RefreshDatabase::class);
 
@@ -21,12 +24,12 @@ beforeEach(function (): void {
     ]);
 
     // Seed the permissions catalog so policy lookups work.
-    $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $this->seed(PermissionSeeder::class);
 
     // Grant incidents.update to operador_organizacion (role 4) — needed by
     // IncidentPolicy::claim/release after switching from role-name check to
     // $user->can('incidents.update').
-    $permId = \App\Domains\Permissions\Models\Permission::where('resource', 'incidents')
+    $permId = Permission::where('resource', 'incidents')
         ->where('action', 'update')->value('permission_id');
     DB::table('role_permission')->insert([
         'role_id' => 4,
@@ -38,10 +41,10 @@ beforeEach(function (): void {
     // Re-register dynamic gates: AppServiceProvider ran on an empty DB at
     // boot, so no {resource}.{action} gates exist yet. Seed them now so
     // $user->can('incidents.update') resolves correctly in the policy.
-    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
-        \Illuminate\Support\Facades\Gate::define(
+    foreach (Permission::all() as $p) {
+        Gate::define(
             "{$p->resource}.{$p->action}",
-            fn (\App\Domains\Users\Models\User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
         );
     }
 
