@@ -5,6 +5,11 @@ import { isForbidden } from '../../../../shared/forbidden.js';
 // eslint-disable-next-line no-unused-vars
 import { permissionService } from '../../../../shared/permission.service.js';
 import { mount } from '../../../../shared/table-actions/table-actions.component.js';
+import {
+  isDesktop,
+  mostrarEstado,
+  mostrarToast,
+} from '../../../../utils/ui.js';
 
 const POR_PAGINA = 15;
 const NIVEL_LABELS = {
@@ -31,22 +36,6 @@ export default {
     const tbody = () => document.getElementById('tabla-body');
     const thead = () => document.getElementById('thead-locs');
 
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
-
     function nivelBadge(level) {
       const map = {
         country: 'primary',
@@ -55,10 +44,6 @@ export default {
         neighborhood: 'secondary',
       };
       return `<span class="badge bg-${map[level] ?? 'secondary'}">${NIVEL_LABELS[level] ?? level}</span>`;
-    }
-
-    function isDesktop() {
-      return window.matchMedia('(min-width: 768px)').matches;
     }
 
     // ─── Tree mode ────────────────────────────────────────────────────────
