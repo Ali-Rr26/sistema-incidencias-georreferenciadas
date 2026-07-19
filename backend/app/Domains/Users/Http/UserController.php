@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http;
 
-use App\Domains\Organizations\Models\Organization;
-use App\Domains\Roles\Models\Role;
+use App\Domains\Organizations\Repositories\OrganizationRepository;
+use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Users\Http\Requests\StoreUserRequest;
 use App\Domains\Users\Http\Requests\UpdateUserRequest;
 use App\Domains\Users\Http\Resources\UserCollection;
@@ -26,6 +26,8 @@ class UserController extends Controller
     public function __construct(
         private readonly UserRepository $users,
         private readonly ProfileImageService $profileImageService,
+        private readonly RoleRepository $roles,
+        private readonly OrganizationRepository $organizations,
     ) {
         $this->authorizeResource(User::class, 'user');
     }
@@ -113,14 +115,8 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         return response()->json([
-            'roles' => Role::orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name])
-                ->values(),
-            'organizations' => Organization::orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name])
-                ->values(),
+            'roles' => $this->roles->catalog(),
+            'organizations' => $this->organizations->catalog(),
         ]);
     }
 }
