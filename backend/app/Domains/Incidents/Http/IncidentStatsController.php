@@ -31,6 +31,13 @@ class IncidentStatsController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        // Solo roles con dashboard.view pueden acceder a estadísticas.
+        // Define qué aparece en el menú; si algún día se abre a más roles,
+        // alcanza con asignar dashboard.view en RolePermissionSeeder.
+        if (! $request->user()?->can('dashboard.view')) {
+            abort(403, 'No tienes permiso para ver las estadísticas.');
+        }
+
         $validated = $request->validate([
             'inicio' => 'nullable|date_format:Y-m-d',
             'fin' => [
