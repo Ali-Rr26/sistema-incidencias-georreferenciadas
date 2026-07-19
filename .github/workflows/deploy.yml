@@ -63,10 +63,15 @@ jobs:
             exit 1
           fi
 
+      # Images are tagged with the commit SHA so every deploy changes the
+      # service spec — Swarm skips updates when the image reference is
+      # unchanged (a plain :latest tag makes deploys silent no-ops on a
+      # single-node stack without a registry).
       - name: Build images
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker compose -f deploy.yml build
 
@@ -75,7 +80,8 @@ jobs:
           set -a
           source .env
           set +a
-          docker stack deploy --resolve-image=always -c deploy.yml incidencias-stack
+          export IMAGE_TAG=${{ github.sha }}
+          docker stack deploy -c deploy.yml incidencias-stack
 
       - name: Health check
         run: |
