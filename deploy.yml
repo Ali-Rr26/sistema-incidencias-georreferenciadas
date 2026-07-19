@@ -7,7 +7,7 @@
 #   - PostGIS 17+, Redis 8+
 services:
   frontend:
-    image: ghcr.io/ali-rr26/sistema-incidencias-frontend:latest
+    image: sistema-incidencias-frontend:latest
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -33,7 +33,7 @@ services:
         condition: any
 
   backend:
-    image: ghcr.io/ali-rr26/sistema-incidencias-backend:latest
+    image: sistema-incidencias-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
