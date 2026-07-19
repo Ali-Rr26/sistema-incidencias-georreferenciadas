@@ -96,6 +96,63 @@ export default {
       }
     }
 
+    // ── Character counters — declared before any await below so the
+    // step-machine bootstrap (next) can safely call validateStep1() the
+    // moment a user clicks Siguiente, even mid-fetch ──
+    const titleInput = $('title');
+    const descInput = $('description');
+    const priorityInput = $('priority');
+    const titleCounter = $('char-counter-title');
+    const descCounter = $('char-counter-description');
+
+    if (titleInput && titleCounter) {
+      titleInput.addEventListener('input', function () {
+        titleCounter.textContent = this.value.length + '/100';
+        if (this.value.trim()) {
+          resetFieldError(P + 'error-title');
+        }
+      });
+    }
+
+    if (descInput && descCounter) {
+      descInput.addEventListener('input', function () {
+        descCounter.textContent = this.value.length + '/500';
+      });
+    }
+
+    if (priorityInput) {
+      priorityInput.addEventListener('change', function () {
+        if (this.value) resetFieldError(P + 'error-priority');
+      });
+    }
+
+    // ── Step machine bootstrap — runs synchronously, before the Leaflet
+    // map / categories / locations awaits below, so the footer never
+    // flashes all four buttons at once and Siguiente/Anterior aren't
+    // dead buttons while those requests are in flight ──
+    let currentStep = 1;
+    goToStep(1);
+
+    $('btn-next')?.addEventListener('click', () => {
+      if (currentStep === 1 && !validateStep1()) return;
+      if (currentStep === 2 && !validateStep2()) return;
+      if (currentStep === 3 && !validateStep3()) return;
+      goToStep(currentStep + 1);
+    });
+
+    $('btn-prev')?.addEventListener('click', () => {
+      goToStep(currentStep - 1);
+    });
+
+    [1, 2, 3].forEach((n) => {
+      document
+        .getElementById(P + 'review-edit-' + n)
+        ?.addEventListener('click', (e) => {
+          e.preventDefault();
+          goToStep(n);
+        });
+    });
+
     // ── Leaflet map ──
     const mapaInicial = { lat: -0.9537, lng: -80.7286, zoom: 13 };
     const { map, remove } = await initMapView({
@@ -390,37 +447,10 @@ export default {
       });
     });
 
-    // ── Character counters ──
-    const titleInput = $('title');
-    const descInput = $('description');
-    const priorityInput = $('priority');
-    const titleCounter = $('char-counter-title');
-    const descCounter = $('char-counter-description');
-
-    if (titleInput && titleCounter) {
-      titleInput.addEventListener('input', function () {
-        titleCounter.textContent = this.value.length + '/100';
-        if (this.value.trim()) {
-          resetFieldError(P + 'error-title');
-        }
-      });
-    }
-
-    if (descInput && descCounter) {
-      descInput.addEventListener('input', function () {
-        descCounter.textContent = this.value.length + '/500';
-      });
-    }
-
-    if (priorityInput) {
-      priorityInput.addEventListener('change', function () {
-        if (this.value) resetFieldError(P + 'error-priority');
-      });
-    }
-
     // ── Step machine (1 Info Básica → 2 Categorización y Archivos →
-    // 3 Ubicación → 4 Revisión) ──
-    let currentStep = 1;
+    // 3 Ubicación → 4 Revisión) — `currentStep` and the Siguiente/
+    // Anterior/Editar listeners are declared earlier, before any await,
+    // see the bootstrap block above. Only the function bodies live here.
 
     function stepPanel(n) {
       return document.getElementById(P + 'step-' + n);
@@ -471,14 +501,22 @@ export default {
 
       const reviewLocation = $('review-location');
       if (reviewLocation) {
-        const parts = [
-          selectedOptionText(provinceSelect),
-          selectedOptionText(citySelect),
-          selectedOptionText(neighborhoodSelect),
-        ].filter(Boolean);
-        reviewLocation.textContent = parts.length
-          ? parts.join(', ')
-          : 'Sin ubicación fija';
+        // Mirrors the submit handler's precedence exactly (neighborhood ||
+        // city, no province-alone fallback) — a province-only selection
+        // submits location_id: null, so it must never be displayed here
+        // as if it were going to be saved.
+        const cityVal = citySelect?.value;
+        const neighborhoodVal = neighborhoodSelect?.value;
+        if (cityVal || neighborhoodVal) {
+          const parts = [
+            selectedOptionText(provinceSelect),
+            selectedOptionText(citySelect),
+            selectedOptionText(neighborhoodSelect),
+          ].filter(Boolean);
+          reviewLocation.textContent = parts.join(', ');
+        } else {
+          reviewLocation.textContent = 'Sin ubicación fija';
+        }
       }
 
       const reviewImagesCount = $('review-images-count');
@@ -506,6 +544,12 @@ export default {
       }
       updateStepperIndicator(currentStep);
       updateFooterButtons(currentStep);
+      // The map is created while step 3 is still `d-none` (it's the last
+      // step reachable, initialized up front so a click can drop a
+      // marker as soon as the user arrives); Leaflet can't size itself
+      // correctly inside a hidden container, so force a resize the
+      // moment the panel actually becomes visible.
+      if (currentStep === 3) map?.invalidateSize();
       if (currentStep === TOTAL_STEPS) renderReviewSummary();
     }
 
@@ -650,10 +694,6 @@ export default {
       }
     }
 
-    // Always land on step 1 — including edit mode, which arrives
-    // pre-filled and lets the user jump to Revisión via "Editar" links.
-    goToStep(1);
-
     // ── Submit handler ──
     const form = document.getElementById('ici-form');
     if (!form) return;
@@ -784,6 +824,11 @@ export default {
       } catch (err) {
         // 422 — validation errors
         if (err.status === 422 && err.errors) {
+          // Land on the EARLIEST step among all returned fields, not
+          // just the first one the backend happened to list — errors on
+          // other steps are still written into their own (now hidden)
+          // panel below, but a step order lower than that would strand
+          // the user unable to see them.
           let backendErrorStep = null;
           for (const [field, messages] of Object.entries(err.errors)) {
             const errorSuffix = ERROR_MAP[field];
@@ -795,7 +840,13 @@ export default {
                   : messages;
                 errorEl.style.display = 'block';
               }
-              backendErrorStep = backendErrorStep ?? FIELD_STEP[field] ?? null;
+              const fieldStep = FIELD_STEP[field] ?? null;
+              if (fieldStep !== null) {
+                backendErrorStep =
+                  backendErrorStep === null
+                    ? fieldStep
+                    : Math.min(backendErrorStep, fieldStep);
+              }
             }
           }
           if (backendErrorStep) goToStep(backendErrorStep);

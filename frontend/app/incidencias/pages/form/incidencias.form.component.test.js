@@ -40,6 +40,7 @@ function makeFakeMap() {
     on: vi.fn(),
     setView: vi.fn(),
     getZoom: vi.fn(() => 13),
+    invalidateSize: vi.fn(),
   };
 }
 const fakeMap = makeFakeMap();
@@ -641,6 +642,64 @@ describe('incidencias.form — 4-step stepper', () => {
     );
   });
 
+  it('shows only Cancelar/Siguiente synchronously, before any fetch resolves', async () => {
+    // No `await` yet — assert on the state left behind by the
+    // synchronous portion of onInit(), before it yields at its first
+    // `await` (Leaflet map init). This is what a user would see during
+    // the categories/locations/map loading window.
+    const pending = component.onInit();
+
+    expect(document.getElementById('ici-btn-prev').classList).toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-submit').classList).toContain('d-none');
+    expect(document.getElementById('ici-btn-cancel').classList).not.toContain(
+      'd-none',
+    );
+    expect(document.getElementById('ici-btn-next').classList).not.toContain(
+      'd-none',
+    );
+
+    await pending;
+  });
+
+  it('Siguiente already works (not a dead button) before categories/locations resolve', async () => {
+    let resolveCategories;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return new Promise((resolve) => {
+          resolveCategories = () => resolve({ data: categoryTreeFixture });
+        });
+      }
+      if (path === '/locations/tree') {
+        return Promise.resolve({ data: locationTreeFixture });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const pending = component.onInit();
+    fillStep1();
+
+    // Let the map-init await resolve so onInit reaches (and calls)
+    // the categories fetch above, which is what constructs the
+    // controlled, still-pending promise and captures
+    // `resolveCategories` — without actually resolving it yet.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Click Siguiente while the categories fetch is still pending —
+    // step 1 -> 2 doesn't need that data, so it must not be a dead
+    // button and must not throw (TDZ) either.
+    document.getElementById('ici-btn-next').click();
+
+    expect(step(1).classList.contains('d-none')).toBe(true);
+    expect(step(2).classList.contains('d-none')).toBe(false);
+
+    resolveCategories();
+    await pending;
+  });
+
   it('blocks advancing past step 1 without title and priority', async () => {
     await component.onInit();
 
@@ -732,6 +791,71 @@ describe('incidencias.form — 4-step stepper', () => {
     );
   });
 
+  it('invalidates the Leaflet map size the moment step 3 becomes visible', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    expect(fakeMap.invalidateSize).not.toHaveBeenCalled();
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    expect(fakeMap.invalidateSize).toHaveBeenCalled();
+  });
+
+  it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    // Province chosen, city/neighborhood left blank — mirrors the
+    // submit handler, which drops a province-only pick to
+    // location_id: null (no province-level fallback).
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(document.getElementById('ici-review-location').textContent).toBe(
+      'Sin ubicación fija',
+    );
+  });
+
+  it('review summary shows the full path when a city (or neighborhood) is actually chosen', async () => {
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '301'; // Rumiñahui — no neighborhoods
+    citySelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(document.getElementById('ici-review-location').textContent).toMatch(
+      /Rumiñahui/,
+    );
+  });
+
   it('"Editar" on the review step jumps back to the right step without losing data', async () => {
     await component.onInit();
     fillStep1({ title: 'Poste caído' });
@@ -814,6 +938,47 @@ describe('incidencias.form — 4-step stepper', () => {
     await Promise.resolve();
 
     expect(step(3).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /municipio/i,
+    );
+  });
+
+  it('a 422 spanning step-1 and step-3 fields lands on step 1 (the earliest), not whichever field the backend listed first', async () => {
+    mockHttp.post.mockRejectedValue({
+      status: 422,
+      // `geom` (step 3) listed before `title` (step 1) on purpose — the
+      // fix must pick the minimum step across all fields, not the
+      // first key iterated from the backend's response.
+      errors: {
+        geom: ['El punto debe estar dentro del municipio'],
+        title: ['El título ya existe'],
+      },
+      message: 'Datos inválidos',
+    });
+
+    await component.onInit();
+    fillStep1();
+    document.getElementById('ici-btn-next').click();
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    document.getElementById('ici-btn-next').click();
+    clickMap(0, 0);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('ici-error-title').textContent).toMatch(
+      /ya existe/i,
+    );
+    // The step-3 error is still written into its own (now hidden) panel
+    // so it's not lost — just not where the user is landed first.
     expect(document.getElementById('ici-error-geom').textContent).toMatch(
       /municipio/i,
     );
