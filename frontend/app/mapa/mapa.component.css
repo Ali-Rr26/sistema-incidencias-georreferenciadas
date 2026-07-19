@@ -21,11 +21,12 @@
 }
 
 /* Map canvas fills the entire layout (no sidebar column anymore
-   — the filter panel overlays the map, not a sibling column). */
+   — the filter panel overlays the map, not a sibling column).
+   z-index: -1 keeps the canvas behind sidebar/backdrop (z-index: 140+). */
 .mp-canvas {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: -1;
 }
 
 /* ── Floating filter panel ──────────────────────────────────── */

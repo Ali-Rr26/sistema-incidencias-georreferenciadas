@@ -23,7 +23,8 @@ class MapFilterController extends Controller
         $categories = IncidentCategory::query()
             ->select(['id', 'name'])
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->toArray();
 
         return response()->json([
             'data' => [
