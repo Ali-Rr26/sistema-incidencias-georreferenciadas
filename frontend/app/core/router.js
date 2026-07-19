@@ -257,10 +257,12 @@ class Router {
   }
 
   async _fetchText(url) {
-    // `cache: 'no-store'` keeps the browser from serving stale template/CSS
-    // bytes between edits — important for HMR-style dev loops where a hash
-    // stays the same but the file content changes.
-    const res = await fetch(url, { cache: 'no-store' });
+    // Default HTTP caching on purpose: nginx serves /app and /css with
+    // `Cache-Control: no-cache`, so the browser revalidates via ETag and
+    // gets a cheap 304 when the file hasn't changed — still fresh right
+    // after a deploy or a dev edit, without re-downloading every byte on
+    // every navigation like the previous `cache: 'no-store'` did.
+    const res = await fetch(url);
     if (!res.ok)
       throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();

@@ -3,7 +3,7 @@
  *
  * Verifies:
  *   1. A route tagged with a shell mounts inside that shell's outlet, fetches
- *      its template + style with cache: 'no-store', wires updateActive on
+ *      its template + style, wires updateActive on
  *      the shell, and calls onInit / initPage exactly once.
  *   2. A role-mismatch (citizen accessing an admin-tagged route) redirects
  *      to /feed and skips onInit.
@@ -130,14 +130,10 @@ describe('router integration (single-shell)', () => {
     expect(
       document.querySelector('.sidebar-link')?.classList.contains('active'),
     ).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith('/templates/dashboard.html', {
-      cache: 'no-store',
-    });
+    expect(fetchMock).toHaveBeenCalledWith('/templates/dashboard.html');
     // The router appends ?raw=1 to .css URLs (see _withRaw in router.js)
     // so Vite's dev HMR wrapper doesn't corrupt the CSS parser.
-    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css?raw=1', {
-      cache: 'no-store',
-    });
+    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css?raw=1');
   });
 
   it('redirects to /feed when a citizen accesses an admin-tagged route', async () => {

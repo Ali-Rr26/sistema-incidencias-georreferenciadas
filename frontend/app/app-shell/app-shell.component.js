@@ -96,7 +96,7 @@ export const appShell = {
   styleUrl: STYLE_URL,
 
   async mount() {
-    const response = await fetch(TEMPLATE_URL, { cache: 'no-store' });
+    const response = await fetch(TEMPLATE_URL);
     if (!response.ok) {
       throw new Error(
         `Failed to load appShell template: ${response.status} ${response.statusText}`,
