@@ -1,3 +1,5 @@
+@import '../../../shared/image-uploader.css';
+
 /* ── incidencias.form — minimal custom CSS ────────────────────────
    Map height (clamp), a11y wrappers, form card body padding,
    toast stacking, breadcrumb link style.

@@ -12,6 +12,7 @@ import style from './incidencias.form.component.css?raw';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
+import { mountImageUploader } from '../../../shared/image-uploader.js';
 
 // ── Error field mapping: backend field → error ID suffix ──
 const ERROR_MAP = {
@@ -421,31 +422,20 @@ export default {
       return null;
     }
 
-    // ── Image preview ──
-    const inputImagenes = $('images');
-    const previsualizacion = $('image-preview');
-
-    inputImagenes.addEventListener('change', function () {
-      const files = Array.from(this.files).slice(0, 10);
-      imagenesSeleccionadas = files;
-      previsualizacion.innerHTML = '';
-
-      files.forEach((file) => {
-        const reader = new FileReader();
-        const wrapper = document.createElement('div');
-        wrapper.className = 'ici-thumb-wrapper';
-
-        reader.onload = (e) => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'ici-thumb-img';
-          wrapper.appendChild(img);
-        };
-
-        reader.readAsDataURL(file);
-        previsualizacion.appendChild(wrapper);
+    // ── Image Uploader ──
+    let imageUploaderController = null;
+    const uploaderContainer = $('image-uploader-container');
+    if (uploaderContainer) {
+      imageUploaderController = mountImageUploader({
+        container: uploaderContainer,
+        inputId: 'ici-images',
+        maxFiles: 10,
+        maxSizeMB: 5,
+        onChange: (files) => {
+          imagenesSeleccionadas = files;
+        },
       });
-    });
+    }
 
     // ── Step machine (1 Info Básica → 2 Categorización y Archivos →
     // 3 Ubicación → 4 Revisión) — `currentStep` and the Siguiente/
@@ -783,7 +773,8 @@ export default {
 
       // ── Send request ──
       try {
-        const hasImages = imagenesSeleccionadas.length > 0;
+        const filesToUpload = imageUploaderController ? imageUploaderController.getFiles() : imagenesSeleccionadas;
+        const hasImages = filesToUpload.length > 0;
         let body;
         if (hasImages) {
           body = new FormData();
@@ -795,7 +786,7 @@ export default {
               body.append(key, key === 'geom' ? JSON.stringify(val) : val);
             }
           }
-          imagenesSeleccionadas.forEach((file) =>
+          filesToUpload.forEach((file) =>
             body.append('images[]', file),
           );
         } else {
@@ -881,6 +872,9 @@ export default {
 
   onDestroy() {
     document.body.classList.remove('ici-create-view');
+
+    this._imageUploader?.destroy();
+    this._imageUploader = null;
 
     // Clean up Leaflet map via the helper's returned disposer
     this._mapRemove?.();
