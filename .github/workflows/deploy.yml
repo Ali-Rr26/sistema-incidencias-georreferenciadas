@@ -76,8 +76,8 @@ jobs:
 
       - name: Push images to registry
         run: |
-          docker push ghcr.io/sistema-incidencias/backend:latest
-          docker push ghcr.io/sistema-incidencias/frontend:latest
+          docker push ghcr.io/ali-rr26/sistema-incidencias-backend:latest
+          docker push ghcr.io/ali-rr26/sistema-incidencias-frontend:latest
 
       - name: Deploy stack
         run: |
