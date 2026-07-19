@@ -98,14 +98,19 @@ class Router {
 
     // Role-bucket short-circuit: when the login flow has classified the
     // user and stashed the role on the router, resolve() can redirect to
-    // /feed without waiting for roleGuard to fetch /me. Only fires when
-    // the bucket is set AND the route carries a role tag — falls through
-    // to the external guards (which handle token + /me + allowedRoles)
-    // for the first navigation, where the bucket is still null.
+    // /feed without waiting for roleGuard to fetch /me. Only admin-tagged
+    // routes are gated here: 'both' routes are open to every authenticated
+    // bucket, and citizen-tagged routes stay reachable for staff — the
+    // backend menu grants Inicio/Reportar/Perfil by permission, and the
+    // per-route guards remain the real authorization source. A strict
+    // bucket !== tag comparison here used to no-op every one of those
+    // clicks for admins (redirecting to /feed, itself citizen-tagged)
+    // until an F5 cleared the bucket. Falls through to the external
+    // guards for the first navigation, where the bucket is still null.
     if (
-      route.role !== undefined &&
+      route.role === 'admin' &&
       this._currentUserRole &&
-      this._currentUserRole !== route.role
+      this._currentUserRole !== 'admin'
     ) {
       this.navigate('/feed');
       return;

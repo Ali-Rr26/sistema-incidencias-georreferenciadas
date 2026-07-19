@@ -166,6 +166,48 @@ describe('router integration (single-shell)', () => {
     expect(onInit).toHaveBeenCalledTimes(1);
   });
 
+  it('lets an admin bucket into a citizen-tagged route (backend menu grants Inicio/Reportar by permission)', async () => {
+    const onInit = vi.fn();
+
+    router.setCurrentUserRole('admin');
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Feed</section>',
+        onInit,
+      },
+      [],
+      'citizen',
+    );
+
+    await router.resolve();
+
+    expect(onInit).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('page-outlet').innerHTML).toContain('Feed');
+  });
+
+  it('lets any bucket into a both-tagged route (e.g. /configuracion/perfil)', async () => {
+    const onInit = vi.fn();
+
+    router.setCurrentUserRole('admin');
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Perfil</section>',
+        onInit,
+      },
+      [],
+      'both',
+    );
+
+    await router.resolve();
+
+    expect(onInit).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('page-outlet').innerHTML).toContain(
+      'Perfil',
+    );
+  });
+
   it('redirects to /feed when a citizen accesses an admin-tagged route', async () => {
     const onInit = vi.fn();
 
