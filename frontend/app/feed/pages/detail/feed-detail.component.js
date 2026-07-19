@@ -20,10 +20,8 @@ import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
-import {
-  buildCommentItem,
-  MAX_COMMENT_DEPTH,
-} from '../../../shared/comment-item.js';
+import { openInlineReplyForm } from '../../../shared/comment-reply.js';
+import { buildCommentItem } from '../../../shared/comment-item.js';
 
 // ── Detect context: admin vs citizen ──
 //
@@ -393,119 +391,6 @@ export default {
         .join('');
     }
 
-    /**
-     * Open an inline reply form below the comment being replied to.
-     * Only one inline form is open at a time — opening a new one closes
-     * the previous. The form scrolls into view and focuses the textarea.
-     *
-     * Submitting the form posts to the same `commentService.create` API
-     * as the main form, then reloads the comments list.
-     *
-     * Comments at the backend's max depth (depth >= MAX_COMMENT_DEPTH)
-     * cannot be replied to, so this function returns silently and the
-     * caller should not show a form.
-     *
-     * NOTE: image attachment is intentionally NOT supported on inline
-     * replies (CRITICAL #6 from PR review). The main comment form at the
-     * top of the page is the only path that can attach images to a
-     * comment. Adding uploader UI here would require ~50 extra lines
-     * (preview, upload progress, error handling) and was out of budget
-     * for this correction. Tracked as follow-up work.
-     */
-    function openInlineReplyForm(comment, li) {
-      // Backend rejects replies to comments at depth >= MAX_COMMENT_DEPTH
-      // (3 levels max: root → reply → reply-to-reply).
-      if ((comment.depth ?? 0) >= MAX_COMMENT_DEPTH) return;
-
-      // Close any previously open inline reply form (only one at a time)
-      document
-        .querySelectorAll('.fd-comment-inline-reply')
-        .forEach((f) => f.remove());
-
-      const commentBody = li.querySelector('.comment-body');
-      if (!commentBody) return;
-
-      const parentUser = comment.user
-        ? getUserDisplayName(comment.user)
-        : 'Usuario';
-
-      const form = document.createElement('form');
-      form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
-      form.dataset.parentId = String(comment.id);
-      form.innerHTML = `
-        <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}... (Enter para enviar, Shift+Enter para nueva línea)" required></textarea>
-        <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
-        <div class="d-flex gap-2 mt-2 justify-content-end">
-          <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
-          <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
-            <i class="fas fa-paper-plane me-1"></i>Responder
-          </button>
-        </div>
-      `;
-
-      commentBody.appendChild(form);
-      const textarea = form.querySelector('textarea');
-      const errorBox = form.querySelector('.fd-comment-inline-reply__error');
-      textarea.focus();
-
-      // Double-submit guard: `submitBtn.disabled = true` only takes
-      // effect AFTER the submit handler runs, so a fast second Enter
-      // could trigger another requestSubmit() before the first submit
-      // has even started. The `submitting` flag is checked synchronously
-      // in BOTH the keydown handler AND the submit handler.
-      let submitting = false;
-
-      // Enter without Shift submits; Shift+Enter inserts a new line.
-      textarea.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !submitting) {
-          e.preventDefault();
-          form.requestSubmit();
-        }
-      });
-
-      form
-        .querySelector('.fd-inline-reply-cancel')
-        .addEventListener('click', () => form.remove());
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (submitting) return;
-        const message = textarea.value.trim();
-        if (!message) return;
-
-        submitting = true;
-        const submitBtn = form.querySelector('.fd-inline-reply-submit');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML =
-          '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...';
-        errorBox.style.display = 'none';
-
-        try {
-          await commentService.create(incidentId, {
-            message,
-            parentId: comment.id,
-            imageIds: [],
-          });
-          form.remove();
-          await cargarComentarios();
-        } catch (err) {
-          console.error('Error al enviar respuesta:', err);
-          submitting = false;
-          submitBtn.disabled = false;
-          submitBtn.innerHTML =
-            '<i class="fas fa-paper-plane me-1"></i>Responder';
-          // Show the actual backend error message (e.g. "no se puede
-          // responder a un comentario de segundo nivel").
-          const msg =
-            err?.response?.data?.message ||
-            err?.message ||
-            'No se pudo enviar la respuesta. Intenta de nuevo.';
-          errorBox.textContent = msg;
-          errorBox.style.display = 'block';
-        }
-      });
-    }
-
     function cancelReply() {
       const prefix = '> @';
       if (input.value.startsWith(prefix)) {
@@ -645,13 +530,19 @@ export default {
     const listEl = document.getElementById('fd-comments-list');
     if (listEl) {
       listEl.addEventListener('click', async (e) => {
-        const replyBtn = e.target.closest('.btn-respoder-comentario');
+        const replyBtn = e.target.closest('.btn-responder-comentario');
         if (replyBtn) {
           const commentId = Number(replyBtn.dataset.id);
           const found = self._commentById?.get(commentId);
           if (found) {
             const li = replyBtn.closest('li');
-            openInlineReplyForm(found, li);
+            openInlineReplyForm({
+              incidentId,
+              comment: found,
+              li,
+              getUserName: getUserDisplayName,
+              onPosted: cargarComentarios,
+            });
           }
           return;
         }
