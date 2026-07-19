@@ -6,7 +6,9 @@ describe('formatCommentMessage', () => {
     const raw = '> @User: Hola\nGracias por responder';
     const formatted = formatCommentMessage(raw);
 
-    expect(formatted).toContain('<blockquote class="comment-quote">@User: Hola</blockquote>');
+    expect(formatted).toContain(
+      '<blockquote class="comment-quote">@User: Hola</blockquote>',
+    );
     expect(formatted).toContain('Gracias por responder');
   });
 
@@ -40,7 +42,9 @@ describe('buildCommentItem', () => {
 
     const li = buildCommentItem(comment, { currentUserId: 5, canDelete: true });
     expect(li.querySelector('.comment-quote')).not.toBeNull();
-    expect(li.querySelector('.comment-quote').textContent).toBe('@Admin: saludo');
+    expect(li.querySelector('.comment-quote').textContent).toBe(
+      '@Admin: saludo',
+    );
     expect(li.querySelector('.comment-replies')).not.toBeNull();
   });
 });
