@@ -70,6 +70,11 @@ jobs:
         run: |
           docker compose -f deploy.yml build
 
+      - name: Push images to registry
+        run: |
+          docker push ghcr.io/sistema-incidencias/backend:latest
+          docker push ghcr.io/sistema-incidencias/frontend:latest
+
       - name: Deploy stack
         run: |
           set -a
