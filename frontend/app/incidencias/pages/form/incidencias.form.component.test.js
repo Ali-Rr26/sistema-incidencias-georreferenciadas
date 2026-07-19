@@ -913,6 +913,48 @@ describe('incidencias.form — 4-step stepper', () => {
     );
   });
 
+  it('submits geom as a JSON string (not "[object Object]") when images are attached', async () => {
+    mockHttp.post.mockResolvedValue({ data: { id: 100 } });
+
+    await component.onInit();
+    fillStep1({ title: 'Fuga de agua', priority: 'low' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '2'; // Seguridad — no children
+    catSelect.dispatchEvent(new Event('change'));
+
+    const file = new File(['x'], 'evidencia.jpg', { type: 'image/jpeg' });
+    const inputImagenes = document.getElementById('ici-images');
+    Object.defineProperty(inputImagenes, 'files', {
+      value: [file],
+      configurable: true,
+    });
+    inputImagenes.dispatchEvent(new Event('change'));
+
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(-0.2, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockHttp.post).toHaveBeenCalledWith(
+      '/incidents',
+      expect.any(FormData),
+    );
+    const body = mockHttp.post.mock.calls[0][1];
+    const sentGeom = body.get('geom');
+    expect(() => JSON.parse(sentGeom)).not.toThrow();
+    expect(JSON.parse(sentGeom)).toEqual({
+      type: 'Point',
+      coordinates: [-78.5, -0.2],
+    });
+  });
+
   it('a 422 error on a step-3 field (geom) jumps back to step 3', async () => {
     mockHttp.post.mockRejectedValue({
       status: 422,
