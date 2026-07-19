@@ -134,6 +134,30 @@ it('lists comments for an incident', function (): void {
     $response->assertJsonCount(3, 'data');
 });
 
+it('lists top level comments and nests replies without duplicating at root level', function (): void {
+    $parent = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Parent comment',
+    ]);
+
+    $child = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Child reply',
+        'parent_id' => $parent->id,
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->getJson("/api/incidents/{$this->incident->id}/comments");
+
+    $response->assertOk();
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.id', $parent->id);
+    $response->assertJsonPath('data.0.replies.0.id', $child->id);
+});
+
 it('shows a single comment', function (): void {
     $comment = Comment::create([
         'incident_id' => $this->incident->id,

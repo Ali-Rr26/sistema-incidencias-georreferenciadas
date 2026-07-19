@@ -43,6 +43,26 @@ function defaultGetUserName(user) {
   );
 }
 
+/**
+ * Format message content, rendering Markdown blockquotes (`> text`) cleanly.
+ * @param {string} msg
+ * @returns {string}
+ */
+export function formatCommentMessage(msg) {
+  if (!msg) return '';
+  const lines = msg.split('\n');
+  return lines
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('>')) {
+        const quoteText = trimmed.replace(/^>\s*/, '');
+        return `<blockquote class="comment-quote">${escapeHtml(quoteText)}</blockquote>`;
+      }
+      return escapeHtml(line);
+    })
+    .join('<br>');
+}
+
 /** Palette for citizen avatar backgrounds (cycles by user id). */
 const CITIZEN_COLORS = ['#4F6BED', '#7C3AED', '#0891B2', '#059669', '#D97706'];
 
@@ -162,6 +182,9 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
        </div>`
       : '';
 
+  // ── Message formatting ──────────────────────────────────────────────────
+  const messageHtml = formatCommentMessage(comment.message);
+
   // ── Assemble ──────────────────────────────────────────────────────────────
   li.innerHTML = `
     ${avatarHtml}
@@ -172,7 +195,7 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
         <span class="comment-time">${timeAgo(comment.created_at)}</span>
       </div>
       ${institutionalBadge}
-      <div class="comment-bubble">${escapeHtml(comment.message)}</div>
+      <div class="comment-bubble">${messageHtml}</div>
       ${imagesHtml}
       ${actionsHtml}
     </div>`;

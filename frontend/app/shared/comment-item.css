@@ -95,8 +95,18 @@
   font-size: 0.875rem;
   color: #3a4060;
   line-height: 1.55;
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.comment-quote {
+  margin: 0 0 6px 0;
+  padding: 4px 10px;
+  border-left: 3px solid #4f6bed;
+  background: rgba(79, 107, 237, 0.08);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: #4a5568;
+  font-style: italic;
 }
 
 /* ── Action row ─────────────────────────────────────────────── */
@@ -145,22 +155,23 @@
 /* ── Nested replies ──────────────────────────────────────────── */
 .comment-replies {
   list-style: none;
-  margin: 12px 0 0 0;
+  margin: 10px 0 0 0;
   padding: 0 0 0 16px;
-  border-left: 2px dashed #c2c7d8;
+  border-left: 2px solid #cbd5e1;
 }
 
 .comment-item--reply {
-  padding: 12px 0;
+  padding: 10px 0 4px 0;
   border-bottom: none;
 }
 
 .comment-item--reply .comment-bubble {
-  background: #eef1fd;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .comment-item--reply .comment-avatar {
-  width: 34px;
-  height: 34px;
-  font-size: 0.72rem;
+  width: 32px;
+  height: 32px;
+  font-size: 0.7rem;
 }
