@@ -69,6 +69,8 @@ class PermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'manage', 'name' => 'Gestionar Incidencias (Back-office)', 'description' => 'Crear/gestionar incidencias desde el back-office'],
         // Feed ciudadano (Inicio + Reportar)
         ['resource' => 'feed',                'action' => 'view',   'name' => 'Ver Feed',                   'description' => 'Acceso al feed ciudadano de incidencias'],
+        // Detalle de incidencia desde el feed ciudadano
+        ['resource' => 'feed',                'action' => 'detail', 'name' => 'Ver Detalle de Incidencia',  'description' => 'Ver detalle de una incidencia desde el feed ciudadano'],
         // Perfil propio (visibilidad universal)
         ['resource' => 'profile',             'action' => 'view',   'name' => 'Ver Perfil',                 'description' => 'Ver perfil propio'],
     ];

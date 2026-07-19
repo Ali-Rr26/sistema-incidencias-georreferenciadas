@@ -20,17 +20,18 @@ class IncidentPolicy extends PermissionPolicy
 
     public function view(User $user, Model $model): bool
     {
+        // Los ciudadanos con feed.detail pueden ver cualquier incidencia
+        // desde el feed, sin pasar por el check de incidents.view (que es
+        // el permiso administrativo de incidencias y gatilla el menú staff).
+        if ($user->can('feed.detail')) {
+            return true;
+        }
+
         if (! parent::view($user, $model)) {
             return false;
         }
 
         if ($user->isSystemAdmin()) {
-            return true;
-        }
-
-        // Los usuarios regulares (ciudadanos) pueden ver cualquier incidencia
-        // tal como ya las ven en el feed/mapa.
-        if ($user->isRegularUser()) {
             return true;
         }
 
