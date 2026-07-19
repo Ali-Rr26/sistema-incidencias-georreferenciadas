@@ -121,6 +121,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'feed',          'action' => 'detail'],
         ['resource' => 'incidents',     'action' => 'create'],
         ['resource' => 'comments',      'action' => 'create'],
+        ['resource' => 'comments',      'action' => 'view'],
         ['resource' => 'assignments',   'action' => 'view'],
         ['resource' => 'feed',          'action' => 'view'],
         ['resource' => 'profile',       'action' => 'view'],
