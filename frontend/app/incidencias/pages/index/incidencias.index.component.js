@@ -1,7 +1,8 @@
 import {
-  STATUS_LABEL,
-  PRIORITY_LABEL,
+  badgeEstado,
+  badgePrioridad,
   escapeHtml,
+  formatearFecha,
 } from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
@@ -24,39 +25,6 @@ export default {
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;
-
-    // Helpers — labels come from the shared utils so the dictionary lives
-    // in exactly one place. The badge wrappers themselves stay local because
-    // they also encode the colour scheme.
-    const PRIORITY_COLOR = {
-      high: 'danger',
-      medium: 'warning',
-      low: 'success',
-    };
-    const STATUS_COLOR = {
-      pending: 'secondary',
-      in_progress: 'primary',
-      resolved: 'success',
-      pending_operator: 'warning',
-    };
-
-    function badgePrioridad(p) {
-      const label = PRIORITY_LABEL[p] || '—';
-      return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
-    }
-
-    function badgeEstado(e) {
-      return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
-    }
-
-    function formatearFecha(iso) {
-      if (!iso) return '—';
-      return new Date(iso).toLocaleDateString('es-EC', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    }
 
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {

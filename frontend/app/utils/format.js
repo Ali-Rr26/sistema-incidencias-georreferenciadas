@@ -12,7 +12,9 @@
  * Don't redefine it here — CI will fail.
  */
 
-export { STATUS_LABEL } from './status.constants.js';
+import { STATUS_LABEL } from './status.constants.js';
+
+export { STATUS_LABEL };
 
 /**
  * Escape a string so it is safe to interpolate into an HTML template.
@@ -68,4 +70,39 @@ export function getCommentImageUrl(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return `${STORAGE_BASE}/${path}`;
+}
+
+/**
+ * Bootstrap color keys per priority/status — used by the badge helpers
+ * below and by any view that needs the raw color (e.g. map markers).
+ */
+export const PRIORITY_COLOR = Object.freeze({
+  high: 'danger',
+  medium: 'warning',
+  low: 'success',
+});
+
+export const STATUS_COLOR = Object.freeze({
+  pending: 'secondary',
+  in_progress: 'primary',
+  resolved: 'success',
+  pending_operator: 'warning',
+});
+
+export function badgePrioridad(p) {
+  const label = PRIORITY_LABEL[p] || '—';
+  return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
+}
+
+export function badgeEstado(e) {
+  return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
+}
+
+export function formatearFecha(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-EC', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
