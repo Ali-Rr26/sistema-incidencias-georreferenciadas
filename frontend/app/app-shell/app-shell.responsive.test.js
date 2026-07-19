@@ -127,13 +127,9 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       expect(css).toMatch(/grid-template-columns:\s*240px\s+1fr/);
     });
 
-    it('hides bottom nav by default and shows it on mobile', () => {
-      // Default: bottom nav is hidden (display: none)
+    it('hides bottom nav by default', () => {
+      // Bottom nav is hidden by default (display: none) — mobile uses off-canvas sidebar
       expect(css).toMatch(/\.app-shell-bottom-nav[^}]*display:\s*none/);
-      // Mobile breakpoint: bottom nav is shown (display: flex or block)
-      expect(css).toMatch(
-        /@media[^{]*\(max-width:[\s\S]*?\.app-shell-bottom-nav[^}]*display:\s*(flex|block|grid)/,
-      );
     });
 
     it('declares a sidebar toggle button styled to match the header chrome', () => {

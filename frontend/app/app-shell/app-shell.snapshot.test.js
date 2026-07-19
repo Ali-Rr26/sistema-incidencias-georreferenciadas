@@ -154,10 +154,6 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
     expect(document.getElementById('app-shell-bell')).toBeTruthy();
     expect(document.getElementById('app-shell-avatar')).toBeTruthy();
     expect(document.getElementById('app-shell-citizen-sidebar')).toBeTruthy();
-    // The "+" is now synthesized by renderBottomNavMenu, so it only
-    // exists after the renderer has run — that's why we drain the
-    // microtask chain above before asserting.
-    expect(document.getElementById('app-shell-bottom-plus')).toBeTruthy();
 
     // Admin regions still in DOM but tagged for hiding via CSS.
     const adminSidebar = document.getElementById('app-shell-admin-sidebar');
