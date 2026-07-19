@@ -90,15 +90,17 @@ class MenuService
         return $this->filterEmptyHeaders($tree);
     }
 
-    /** Recursively remove menu nodes that are non-navigable headers with no children. */
     private function filterEmptyHeaders(array $menus): array
     {
         return array_values(array_filter(
             array_map(function ($node) {
-                // Recursively filter children
                 $node['children'] = $this->filterEmptyHeaders($node['children']);
+
                 // Keep node if it has a route OR has children
-                return ($node['route'] !== null || !empty($node['children'])) ? $node : null;
+                $hasRoute = $node['route'] !== null;
+                $hasChildren = count($node['children']) > 0;
+
+                return ($hasRoute || $hasChildren) ? $node : null;
             }, $menus),
             fn ($item) => $item !== null,
         ));
