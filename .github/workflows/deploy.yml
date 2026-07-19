@@ -70,6 +70,10 @@ jobs:
         run: |
           docker compose -f deploy.yml build
 
+      - name: Login to ghcr.io
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Push images to registry
         run: |
           docker push ghcr.io/sistema-incidencias/backend:latest
