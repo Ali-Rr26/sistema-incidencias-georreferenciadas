@@ -12,16 +12,14 @@ use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
-use App\Domains\Locations\Models\Location;
-use App\Domains\Organizations\Models\Organization;
+use App\Domains\Incidents\Services\IncidentImageService;
+use App\Domains\Organizations\Repositories\OrganizationRepository;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
-use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
@@ -31,7 +29,8 @@ class IncidentController extends Controller
 
     public function __construct(
         private readonly IncidentRepository $incidents,
-        private readonly StorageService $storage,
+        private readonly OrganizationRepository $organizations,
+        private readonly IncidentImageService $images,
     ) {
         $this->authorizeResource(Incident::class, 'incident');
     }
@@ -99,24 +98,17 @@ class IncidentController extends Controller
         unset($data['images']);
 
         // Auto-asignar organización basada en la ubicación (B-02)
-        // Si no se envió organization_id explícitamente, buscar una
-        // organización cuyo location_id coincida con la ubicación de la
-        // incidencia o con alguno de sus ancestros en la jerarquía.
         if (empty($data['organization_id']) && ! empty($data['location_id'])) {
-            $location = Location::find($data['location_id']);
-            if ($location !== null) {
-                $locationIds = $location->ancestorsAndSelf()->pluck('id');
-                $org = Organization::whereIn('location_id', $locationIds)->first();
-                if ($org !== null) {
-                    $data['organization_id'] = $org->id;
-                }
+            $org = $this->organizations->findForLocation((int) $data['location_id']);
+            if ($org !== null) {
+                $data['organization_id'] = $org->id;
             }
         }
 
         $incident = $this->incidents->create($data);
 
         if ($request->hasFile('images')) {
-            $images = $this->uploadImages($request->file('images'), $incident->id, true);
+            $images = $this->images->upload($request->file('images'), $incident->id, true);
             if (! empty($images)) {
                 $incident->update(['images' => $images]);
             }
@@ -150,7 +142,7 @@ class IncidentController extends Controller
 
         if ($request->hasFile('images')) {
             $hasExisting = ! empty($incident->images);
-            $images = $this->uploadImages($request->file('images'), $incident->id, ! $hasExisting);
+            $images = $this->images->upload($request->file('images'), $incident->id, ! $hasExisting);
             $existing = $incident->images ?? [];
             $data['images'] = array_merge($existing, $images);
         }
@@ -229,38 +221,5 @@ class IncidentController extends Controller
                 'email' => $u->email,
             ])->values(),
         ]);
-    }
-
-    /**
-     * Sube archivos a S3 y retorna array de metadata.
-     *
-     * @param  UploadedFile[]|UploadedFile|null  $files
-     * @param  bool  $firstIsThumbnail  Si el primer archivo debe marcarse como thumbnail
-     * @return array<int, array{path: string, original_name: string, mime_type: string, size: int, is_thumbnail: bool}>
-     */
-    private function uploadImages(array|UploadedFile|null $files, int $incidentId, bool $firstIsThumbnail): array
-    {
-        $files = is_array($files) ? $files : ($files ? [$files] : []);
-        $files = array_filter($files);
-
-        if (empty($files)) {
-            return [];
-        }
-
-        $images = [];
-
-        foreach ($files as $i => $file) {
-            $key = $this->storage->uploadImage($file, $incidentId);
-
-            $images[] = [
-                'path' => $key,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'is_thumbnail' => $firstIsThumbnail && $i === 0,
-            ];
-        }
-
-        return $images;
     }
 }

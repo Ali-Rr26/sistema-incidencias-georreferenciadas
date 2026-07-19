@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Comments\Http;
 
+use App\Domains\Comments\Http\Policies\CommentPolicy;
 use App\Domains\Comments\Http\Requests\StoreCommentRequest;
 use App\Domains\Comments\Http\Requests\UpdateCommentRequest;
 use App\Domains\Comments\Http\Resources\CommentCollection;
@@ -109,9 +110,8 @@ class CommentController extends Controller
     /**
      * viewAny/create (index/store) never receive the parent Incident via
      * Laravel's authorizeResource wiring, so CommentPolicy can't org-scope
-     * them — org-scoping happens here instead, mirroring
-     * CommentPolicy::inSameOrg exactly. Users without an organization
-     * (citizens, operador_sistema) are exempt, same as the Policy.
+     * them — the check runs here against the resolved route param, but the
+     * rule itself lives in CommentPolicy::hasOrgAccess (single owner).
      */
     private function authorizeIncidentOrgScope(Incident $incident): void
     {
@@ -121,14 +121,8 @@ class CommentController extends Controller
             abort(401);
         }
 
-        if ($user->isSystemAdmin() || $user->organization_id === null) {
-            return;
+        if (! CommentPolicy::hasOrgAccess($user, $incident->organization_id)) {
+            abort(403, 'No tienes acceso a los comentarios de esta organización.');
         }
-
-        if ($incident->organization_id !== null && $incident->organization_id === $user->organization_id) {
-            return;
-        }
-
-        abort(403, 'No tienes acceso a los comentarios de esta organización.');
     }
 }

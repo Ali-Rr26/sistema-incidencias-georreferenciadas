@@ -29,6 +29,30 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         return $this->newQuery()->with('category')->find($id);
     }
 
+    public function findForLocation(int $locationId): ?Organization
+    {
+        $location = Location::find($locationId);
+        if ($location === null) {
+            return null;
+        }
+
+        $locationIds = $location->ancestorsAndSelf()->pluck('id');
+
+        /** @var Organization|null */
+        return $this->newQuery()->whereIn('location_id', $locationIds)->first();
+    }
+
+    public function catalog(bool $withParent = false): Collection
+    {
+        $columns = $withParent ? ['id', 'name', 'parent_id'] : ['id', 'name'];
+
+        return $this->newQuery()
+            ->orderBy('name')
+            ->get($columns)
+            ->map(fn (Organization $o) => array_intersect_key($o->toArray(), array_flip($columns)))
+            ->values();
+    }
+
     public function tree(): Collection
     {
         $query = $this->newQuery();
