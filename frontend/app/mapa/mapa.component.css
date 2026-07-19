@@ -38,7 +38,7 @@
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  z-index: 600;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -119,7 +119,7 @@ body:not(.mp-filters-open) .mp-filters-panel {
   background: #fff;
   border: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  z-index: 600;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: center;
