@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Http\Requests;
 
 use App\Domains\Incidents\Models\Incident;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class UpdateIncidentRequest extends FormRequest
@@ -30,16 +31,11 @@ class UpdateIncidentRequest extends FormRequest
             return false;
         }
 
-        // Verify status transitions require the user to be 'responsable'
-        if ($this->has('status') && $this->input('status') !== $incident->status->value) {
-            $isResponsable = $incident->assignedUsers()
-                ->where('user_id', $user->id)
-                ->where('assignment_role', 'responsable')
-                ->exists();
-
-            if (! $isResponsable) {
-                abort(403, 'No estás asignado como responsable de esta incidencia.');
-            }
+        // Status transitions require the user to be 'responsable' — the rule
+        // lives in IncidentPolicy::updateStatus (single owner); Gate::authorize
+        // preserves the deny message as the 403 body.
+        if ($this->has('status')) {
+            Gate::authorize('updateStatus', [$incident, (string) $this->input('status')]);
         }
 
         if ($user->isOperator()) {

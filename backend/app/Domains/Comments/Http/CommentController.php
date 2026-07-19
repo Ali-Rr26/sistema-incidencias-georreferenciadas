@@ -21,7 +21,7 @@ class CommentController extends Controller
     use AuthorizesRequests;
 
     public function __construct(
-        private readonly CommentRepository $commentRepository,
+        private readonly CommentRepository $comments,
     ) {
         // Wires resource-level policy checks for every method:
         //   index   → viewAny  (PermissionPolicy::viewAny → comments.view)
@@ -38,7 +38,7 @@ class CommentController extends Controller
     {
         $this->authorizeIncidentOrgScope($incident);
 
-        $comments = $this->commentRepository->paginate(
+        $comments = $this->comments->paginate(
             filters: ['incident_id' => $incident->id],
             perPage: (int) $request->integer('per_page', 20),
         );
@@ -66,7 +66,7 @@ class CommentController extends Controller
             }
         }
 
-        $comment = $this->commentRepository->create([
+        $comment = $this->comments->create([
             'incident_id' => $incident->id,
             'user_id' => auth()->id(),
             'message' => $request->input('message'),
@@ -89,7 +89,7 @@ class CommentController extends Controller
 
     public function update(UpdateCommentRequest $request, Comment $comment): CommentResource
     {
-        $this->commentRepository->update($comment->id, [
+        $this->comments->update($comment->id, [
             'message' => $request->input('message'),
         ]);
 
@@ -101,7 +101,7 @@ class CommentController extends Controller
 
     public function destroy(Comment $comment): JsonResponse
     {
-        $this->commentRepository->delete($comment->id);
+        $this->comments->delete($comment->id);
 
         return response()->json(null, 204);
     }
