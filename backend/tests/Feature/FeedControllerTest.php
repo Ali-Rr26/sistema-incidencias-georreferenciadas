@@ -23,6 +23,28 @@ beforeEach(function (): void {
     DB::table('roles')->insert(['id' => 5, 'name' => 'usuario']);
     $this->citizen = User::factory()->create(['role_id' => 5]);
 
+    // Seed the permissions catalog so policy lookups work, then grant
+    // feed.view to usuario (role 5) — needed by the FeedController
+    // citizen-path check.
+    $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $permId = \App\Domains\Permissions\Models\Permission::where('resource', 'feed')
+        ->where('action', 'view')->value('permission_id');
+    DB::table('role_permission')->insert([
+        'role_id' => 5,
+        'permission_id' => $permId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Re-register dynamic gates after seeding (AppServiceProvider ran on
+    // empty DB at boot, so feed.view gate doesn't exist yet).
+    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
+        \Illuminate\Support\Facades\Gate::define(
+            "{$p->resource}.{$p->action}",
+            fn (\App\Domains\Users\Models\User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+        );
+    }
+
     // Skip JWT middleware — actingAs() bypasses the Auth guard but not
     // the custom JwtAuthenticate middleware, which still rejects the
     // request with 401 before the controller runs. Same seam used by

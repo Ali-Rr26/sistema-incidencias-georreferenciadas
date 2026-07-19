@@ -20,6 +20,31 @@ beforeEach(function (): void {
         ['id' => 4, 'name' => 'operador_organizacion'],
     ]);
 
+    // Seed the permissions catalog so policy lookups work.
+    $this->seed(\Database\Seeders\PermissionSeeder::class);
+
+    // Grant incidents.update to operador_organizacion (role 4) — needed by
+    // IncidentPolicy::claim/release after switching from role-name check to
+    // $user->can('incidents.update').
+    $permId = \App\Domains\Permissions\Models\Permission::where('resource', 'incidents')
+        ->where('action', 'update')->value('permission_id');
+    DB::table('role_permission')->insert([
+        'role_id' => 4,
+        'permission_id' => $permId,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // Re-register dynamic gates: AppServiceProvider ran on an empty DB at
+    // boot, so no {resource}.{action} gates exist yet. Seed them now so
+    // $user->can('incidents.update') resolves correctly in the policy.
+    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
+        \Illuminate\Support\Facades\Gate::define(
+            "{$p->resource}.{$p->action}",
+            fn (\App\Domains\Users\Models\User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+        );
+    }
+
     $this->location = Location::create(['name' => 'Test City', 'level' => 'city']);
 
     // Create placeholder org for category FK, then real orgs
