@@ -85,37 +85,8 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             return;
         }
 
-        // `geom` arrives in different shapes depending on the request pipeline:
-        //   - "<JSON string>"                                          — form posts
-        //                                                                a JSON-encoded
-        //                                                                string (the
-        //                                                                path tests
-        //                                                                covered).
-        //   - ["type" => ..., "coordinates" => [...]]                  — already-decoded
-        //                                                                array, the most
-        //                                                                common path:
-        //                                                                axios posts a
-        //                                                                JSON object and
-        //                                                                Laravel's
-        //                                                                `nullable|json`
-        //                                                                validation accepts
-        //                                                                arrays as valid
-        //                                                                JSON (Laravel 10+).
-        //                                                                This is the path
-        //                                                                that used to explode
-        //                                                                with "Array to
-        //                                                                string conversion"
-        //                                                                → 500 on every
-        //                                                                POST /api/incidents.
-        //   - {"type":...,"coordinates":[...]} (stdClass)              — defensive (e.g. a
-        //                                                                future middleware
-        //                                                                or a model cast
-        //                                                                leak).
-        //   - any other shape                                          — malformed; the
-        //                                                                `geom` field's own
-        //                                                                `nullable|json` rule
-        //                                                                is responsible for
-        //                                                                reporting it, not us.
+        // Normalize the sibling value because JSON, multipart, and already-cast
+        // callers can supply array, string, or object shapes.
         $geom = match (true) {
             is_array($geomRaw) => $geomRaw,
             is_string($geomRaw) => json_decode($geomRaw, true),
