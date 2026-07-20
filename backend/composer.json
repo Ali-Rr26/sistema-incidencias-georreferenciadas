@@ -77,14 +77,14 @@
         "format:check": [
             "./vendor/bin/pint --test"
         ],
-        "test:unit": [
-            "@php artisan test --testsuite=Unit"
+"test:unit": [
+            "@php vendor/bin/pest --parallel --processes=8 --testsuite=Unit"
         ],
         "test:feature": [
-            "@php artisan test --testsuite=Feature"
+            "@php vendor/bin/pest --parallel --processes=8 --testsuite=Feature"
         ],
         "test": [
-            "@php artisan test"
+            "@php vendor/bin/pest --parallel --processes=8"
         ],
         "test:coverage": [
             "@php artisan test --coverage"

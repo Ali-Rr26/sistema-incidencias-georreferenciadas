@@ -7,7 +7,6 @@ use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use RuntimeException;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -92,5 +91,5 @@ it('throws a clear RuntimeException when the citizen role row is missing', funct
         'last_name' => 'Pérez',
         'email' => 'dan@example.com',
         'password' => 'Password1',
-    ]))->toThrow(RuntimeException::class);
+    ]))->toThrow(\RuntimeException::class);
 });
