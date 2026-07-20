@@ -14,6 +14,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Implementación Eloquent del repositorio de Incidencias.
+ *
+ * @cqrs-role command-repository
+ *
+ * Pertenece al command side: toda mutación pasa por DB::transaction(),
+ * lockForUpdate() en operaciones con race (claim/release) y el bind del
+ * actor de auditoría vía set_config('app.current_user_id', ...) para que
+ * el trigger Postgres registre quién hizo el cambio.
+ *
+ * `applyFilters()` es la única superficie que también consume el query side
+ * (FeedController::staffFeed()), pero sólo para casos staff — el feed
+ * ciudadano NUNCA debe llegar a este repositorio.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class EloquentIncidentRepository extends EloquentRepository implements IncidentRepository
 {
     public function __construct()

@@ -12,6 +12,18 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
+ * HTTP shell del query side unificado del mapa/feed de Incidencias.
+ *
+ * @cqrs-role query-http-shell
+ *
+ * Es el único entry point de lectura del módulo. Despacha por rol:
+ * staff → Postgres vía IncidentRepository (con el mismo org-scoping de
+ * /api/incidents), citizen → read model Redis vía FeedService.
+ *
+ * El feed ciudadano NUNCA debe pasar por IncidentRepository directamente:
+ * si necesitás agregar un filtro o campo, va en FeedService (read model)
+ * y en RedisIncidentSync (proyección) juntos.
+ *
  * Unified read-side for the incidents map/feed — one endpoint for every
  * role now that auth is mandatory everywhere (the anonymous "Visitante"
  * role was retired; see docs/Requisitos/SRS.md RF-SW-008). Previously

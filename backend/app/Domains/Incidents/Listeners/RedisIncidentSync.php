@@ -8,6 +8,25 @@ use App\Domains\Incidents\Models\Incident;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
+/**
+ * Proyector que mantiene sincronizado el read model Redis con Postgres.
+ *
+ * @cqrs-role projection-listener
+ *
+ * Pertenece a la frontera write→read: escucha los eventos Eloquent
+ * `created` / `updated` / `deleted` / `forceDeleted` que dispara el modelo
+ * Incident y reescribe los hashes en Redis (feed:v2:items + feed:v2:index).
+ *
+ * Si agregás una Incidencia o modificás un campo que el feed expone,
+ * hay que actualizar `syncIncident()` y el shape serializado en
+ * `FeedService::getFeed()` JUNTOS. Si sólo tocás uno de los dos, el feed
+ * va a devolver datos inconsistentes.
+ *
+ * No es event sourcing: si Redis se pierde, los datos se reconstruyen
+ * desde Postgres con un job de re-proyección, no desde un log de eventos.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class RedisIncidentSync
 {
     private const V2_INDEX_KEY = 'feed:v2:index';
