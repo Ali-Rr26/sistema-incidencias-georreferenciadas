@@ -16,84 +16,114 @@ El sistema simula un entorno real de gestión municipal o técnica, donde múlti
 ## 🏗️ Arquitectura del Sistema
 
 ```mermaid
-graph TB
-    subgraph Frontend["🖥️ FRONTEND (Navegador)"]
-        Feed["Feed/Mapa<br/>(Citizens)"]
-        Admin["Panel Admin<br/>(Staff)"]
-        Auth["Autenticación<br/>(Login/Register)"]
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize':'13px','lineColor':'#555'}}}%%
+flowchart LR
+
+    %% ============ FRONTEND ============
+    subgraph FE["🌐 FRONTEND · Browser / SPA"]
+        direction TB
+        FE_C["Ciudadanos<br/>📰 Feed · 🗺️ Mapa"]
+        FE_S["Staff interno<br/>⚙️ Panel Admin"]
     end
 
-    subgraph "🔌 API REST (Laravel 11)"
-        Auth_API["Auth Domain<br/>JWT + Firebase"]
-        Incidents_API["Incidents Domain<br/>CRUD + Workflow"]
-        Comments_API["Comments Domain<br/>Threaded Comments"]
-        Assignments_API["Assignments Domain<br/>Roles & Permissions"]
-        Users_API["Users Domain<br/>Roles & Profile"]
-        Notifications_API["Notifications Domain<br/>Real-time Push"]
-        Menus_API["Menus Domain<br/>Role-based Access"]
+    %% ============ BACKEND ============
+    subgraph BACKEND["🖥️ BACKEND · Laravel 11 + Servicios"]
+        direction TB
+
+        subgraph EDGE["🛡️ Edge tier"]
+            Nginx["Nginx<br/>TLS · rate limit · static"]
+        end
+
+        subgraph APP["⚙️ App tier"]
+            Laravel["Laravel 11<br/>PHP-FPM · Octane"]
+            Workers["Queue Workers<br/>notifications · events"]
+            Cron["Scheduler<br/>cron · cleanup · jobs"]
+        end
+
+        subgraph REALTIME["⚡ Real-time tier"]
+            Mercure{{"Mercure Hub<br/>SSE / WebSocket"}}
+        end
+
+        subgraph DATA["💾 Data tier"]
+            direction LR
+            PG[("PostgreSQL<br/>+ PostGIS<br/>spatial indexes · geometry")]
+            Redis[("Redis<br/>cache · sessions · queues")]
+            S3[("Object Storage<br/>S3 / MinIO<br/>imágenes")]
+        end
     end
 
-    subgraph Storage["💾 DATA & CACHE"]
-        PG["PostgreSQL<br/>Incidents, Users,<br/>Comments, History"]
-        Redis["Redis<br/>Feed Cache<br/>Sessions"]
-        S3["S3/Object Storage<br/>Images"]
+    %% ============ CROSS-CUTTING ============
+    subgraph CROSS["🔍 Cross-cutting · Observabilidad + Calidad"]
+        direction TB
+
+        subgraph OBS["📊 Observability stack"]
+            OTel["OpenTelemetry SDK<br/>en Laravel + workers"]
+            Prom["Prometheus<br/>metrics scraping"]
+            Grafana["Grafana<br/>dashboards · alertas"]
+            Loki["Loki + Promtail<br/>logs centralizados"]
+            Tempo["Tempo / Jaeger<br/>distributed tracing"]
+        end
+
+        subgraph QUAL["🧪 Calidad de código"]
+            Sonar["SonarQube<br/>SAST · code smells · coverage gates"]
+            CI["CI Pipeline<br/>build · test · scan · deploy"]
+        end
     end
 
-    subgraph "🔔 SERVICES"
-        Mercure["Mercure<br/>Web Sockets"]
-        Jobs["Queue Jobs<br/>Notifications"]
-    end
+    %% ====== FLUJOS PRINCIPALES (Frontend → Backend) ======
+    FE_C -->|HTTPS| Nginx
+    FE_S -->|HTTPS| Nginx
+    Nginx --> Laravel
 
-    subgraph "🔐 AUTHORIZATION"
-        Policies["Resource Policies<br/>incidents.view, feed.detail"]
-        Permissions["Permission System<br/>roles ← permissions"]
-    end
+    Laravel -->|SQL · spatial queries| PG
+    Laravel -->|cache · sessions| Redis
+    Laravel -->|upload imágenes| S3
 
-    %% Frontend connections
-    Feed -->|"GET /feed, /incidents/{id}"| Incidents_API
-    Feed -->|GET /comments| Comments_API
-    Admin -->|POST/PUT /incidents| Incidents_API
-    Admin -->|GET /status-history| Incidents_API
-    Auth -->|POST /login, /register| Auth_API
+    Laravel -->|enqueue jobs| Workers
+    Workers -->|publish events| Mercure
+    Mercure -->|SSE / WebSocket| FE_C
+    Mercure -->|SSE / WebSocket| FE_S
 
-    %% API to Data
-    Incidents_API -->|Read/Write| PG
-    Comments_API -->|Read/Write| PG
-    Assignments_API -->|Read/Write| PG
-    Users_API -->|Read/Write| PG
-    Notifications_API -->|Read/Write| PG
-    Menus_API -->|Read| PG
+    Cron --> Laravel
 
-    %% API to Cache
-    Incidents_API -->|Cache Feed| Redis
-    Comments_API -->|Check Cache| Redis
+    %% ====== CROSS-CUTTING (dashed = observa, no transporta tráfico) ======
+    Nginx -.->|access logs| Loki
+    Laravel -.->|traces| OTel
+    Workers -.->|traces| OTel
+    Nginx -.->|nginx_exporter| Prom
+    PG -.->|pg_exporter| Prom
+    Redis -.->|redis_exporter| Prom
+    OTel --> Tempo
+    Prom --> Grafana
+    Loki --> Grafana
+    Tempo --> Grafana
 
-    %% API to Storage
-    Incidents_API -->|Images| S3
+    CI -->|static analysis| Sonar
+    CI -->|build & deploy| Laravel
+    CI -->|build & deploy| Workers
 
-    %% Notifications flow
-    Incidents_API -->|Trigger Events| Jobs
-    Jobs -->|Push Updates| Mercure
-    Mercure -->|Subscribe| Feed
-    Mercure -->|Subscribe| Admin
+    %% ====== STYLES ======
+    classDef feCls fill:#e0f7fa,stroke:#00695c,color:#004d40,stroke-width:2px
+    classDef edgeCls fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef appCls fill:#e8eaf6,stroke:#283593,color:#1a237e
+    classDef rtCls fill:#fff8e1,stroke:#ff8f00,color:#e65100
+    classDef dataCls fill:#eceff1,stroke:#37474f,color:#263238
+    classDef obsCls fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef qualCls fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 
-    %% Authorization flow
-    Auth_API -->|Issue JWT| Frontend
-    Incidents_API -.->|Check Policy| Policies
-    Assignments_API -.->|Resolve| Permissions
-    Policies -.->|Enforce| Permissions
+    class FE_C,FE_S feCls
+    class Nginx edgeCls
+    class Laravel,Workers,Cron appCls
+    class Mercure rtCls
+    class PG,Redis,S3 dataCls
+    class OTel,Prom,Grafana,Loki,Tempo obsCls
+    class Sonar,CI qualCls
 
-    style Frontend fill:#e1f5ff
-    style Auth fill:#fff3e0
-    style Incidents_API fill:#f3e5f5
-    style Comments_API fill:#f3e5f5
-    style Assignments_API fill:#f3e5f5
-    style PG fill:#c8e6c9
-    style Redis fill:#ffccbc
-    style Mercure fill:#b2dfdb
-    style Jobs fill:#ffe0b2
-    style Policies fill:#e0f2f1
+    style BACKEND fill:#fafafa,stroke:#424242,stroke-width:3px,color:#212121
+    style CROSS fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#4a148c
 ```
+
+> **Convención visual:** flecha sólida = tráfico real · flecha punteada = telemetría (observa, no transporta) · `[(…)]` = datastore · `{{…}}` = hub/puerto.
 
 ### 📊 Dominios Principales (Domain-Driven Design)
 
