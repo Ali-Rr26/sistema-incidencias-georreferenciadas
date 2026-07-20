@@ -21,9 +21,10 @@ export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
  * @returns {Object|null} Controller { getFiles, clear, destroy }
  */
 export function mountImageUploader(options = {}) {
-  const container = typeof options.container === 'string'
-    ? document.querySelector(options.container)
-    : options.container;
+  const container =
+    typeof options.container === 'string'
+      ? document.querySelector(options.container)
+      : options.container;
 
   if (!container) {
     console.warn('[image-uploader] Missing container element');
@@ -35,7 +36,9 @@ export function mountImageUploader(options = {}) {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   const onChange = options.onChange ?? (() => {});
 
-  let selectedFiles = Array.isArray(options.initialFiles) ? [...options.initialFiles] : [];
+  let selectedFiles = Array.isArray(options.initialFiles)
+    ? [...options.initialFiles]
+    : [];
   const objectUrlMap = new Map(); // File -> ObjectURL
 
   // Render main layout
@@ -107,9 +110,10 @@ export function mountImageUploader(options = {}) {
 
   function getObjectURL(file) {
     if (!objectUrlMap.has(file)) {
-      const url = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
-        ? URL.createObjectURL(file)
-        : '';
+      const url =
+        typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
+          ? URL.createObjectURL(file)
+          : '';
       objectUrlMap.set(file, url);
     }
     return objectUrlMap.get(file);
@@ -118,7 +122,11 @@ export function mountImageUploader(options = {}) {
   function revokeObjectURL(file) {
     if (objectUrlMap.has(file)) {
       const url = objectUrlMap.get(file);
-      if (url && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      if (
+        url &&
+        typeof URL !== 'undefined' &&
+        typeof URL.revokeObjectURL === 'function'
+      ) {
         URL.revokeObjectURL(url);
       }
       objectUrlMap.delete(file);
@@ -149,10 +157,12 @@ export function mountImageUploader(options = {}) {
         <span class="image-uploader__filename">${escapeHtml(file.name)}</span>
       `;
 
-      card.querySelector('.image-uploader__remove-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        removeFile(index);
-      });
+      card
+        .querySelector('.image-uploader__remove-btn')
+        .addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeFile(index);
+        });
 
       gridEl.appendChild(card);
     });
@@ -173,7 +183,8 @@ export function mountImageUploader(options = {}) {
 
       const fileType = (file.type || '').toLowerCase();
       const fileName = (file.name || '').toLowerCase();
-      const isImage = fileType.startsWith('image/') ||
+      const isImage =
+        fileType.startsWith('image/') ||
         ACCEPTED_IMAGE_TYPES.includes(fileType) ||
         /\.(jpe?g|png|webp|gif)$/i.test(fileName);
 
@@ -189,7 +200,7 @@ export function mountImageUploader(options = {}) {
 
       // Check duplicates by name & size
       const isDuplicate = selectedFiles.some(
-        (f) => f.name === file.name && f.size === file.size
+        (f) => f.name === file.name && f.size === file.size,
       );
       if (!isDuplicate) {
         validFiles.push(file);

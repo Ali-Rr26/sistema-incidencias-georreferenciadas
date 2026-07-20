@@ -57,7 +57,9 @@ describe('mountImageUploader', () => {
     fileInput.dispatchEvent(new Event('change'));
 
     expect(controller.getFiles().length).toBe(2);
-    expect(container.querySelector('#iu-error').textContent).toContain('máximo de 2 imágenes');
+    expect(container.querySelector('#iu-error').textContent).toContain(
+      'máximo de 2 imágenes',
+    );
   });
 
   it('validates file size limit', () => {
@@ -65,7 +67,11 @@ describe('mountImageUploader', () => {
     const fileInput = container.querySelector('#iu-file-input-desktop');
 
     // 2 MB file (larger than 1 MB limit)
-    const largeFile = new File([new ArrayBuffer(2 * 1024 * 1024)], 'large.jpg', { type: 'image/jpeg' });
+    const largeFile = new File(
+      [new ArrayBuffer(2 * 1024 * 1024)],
+      'large.jpg',
+      { type: 'image/jpeg' },
+    );
 
     Object.defineProperty(fileInput, 'files', {
       value: [largeFile],
@@ -74,7 +80,9 @@ describe('mountImageUploader', () => {
     fileInput.dispatchEvent(new Event('change'));
 
     expect(controller.getFiles().length).toBe(0);
-    expect(container.querySelector('#iu-error').textContent).toContain('supera el tamaño máximo');
+    expect(container.querySelector('#iu-error').textContent).toContain(
+      'supera el tamaño máximo',
+    );
   });
 
   it('removes an individual file', () => {
@@ -92,7 +100,9 @@ describe('mountImageUploader', () => {
     expect(controller.getFiles().length).toBe(2);
 
     // Click remove button on first card
-    const removeBtns = container.querySelectorAll('.image-uploader__remove-btn');
+    const removeBtns = container.querySelectorAll(
+      '.image-uploader__remove-btn',
+    );
     removeBtns[0].click();
 
     expect(controller.getFiles().length).toBe(1);

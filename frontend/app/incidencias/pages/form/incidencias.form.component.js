@@ -773,7 +773,9 @@ export default {
 
       // ── Send request ──
       try {
-        const filesToUpload = imageUploaderController ? imageUploaderController.getFiles() : imagenesSeleccionadas;
+        const filesToUpload = imageUploaderController
+          ? imageUploaderController.getFiles()
+          : imagenesSeleccionadas;
         const hasImages = filesToUpload.length > 0;
         let body;
         if (hasImages) {
@@ -786,9 +788,7 @@ export default {
               body.append(key, key === 'geom' ? JSON.stringify(val) : val);
             }
           }
-          filesToUpload.forEach((file) =>
-            body.append('images[]', file),
-          );
+          filesToUpload.forEach((file) => body.append('images[]', file));
         } else {
           body = payloadBase;
         }
