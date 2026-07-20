@@ -50,7 +50,7 @@ graph TB
     end
 
     %% Frontend connections
-    Feed -->|GET /feed, /incidents/{id}| Incidents_API
+    Feed -->|"GET /feed, /incidents/{id}"| Incidents_API
     Feed -->|GET /comments| Comments_API
     Admin -->|POST/PUT /incidents| Incidents_API
     Admin -->|GET /status-history| Incidents_API
