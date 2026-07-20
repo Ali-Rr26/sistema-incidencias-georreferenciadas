@@ -48,6 +48,29 @@ function machalaSquareGeom(): MultiPolygon
     ]);
 }
 
+/**
+ * Square geom ~400km north of machalaSquareGeom (`lng [-79.0,-78.8]` x `lat [-0.4,-0.2]`).
+ * Para tests que necesitan un cantón "lejano" (sin match con el pin de
+ * machala). Tras el fix de parroquia-no-geom (ver scope del PR), los tests
+ * que asumen el escenario "submit sin geom" fueron actualizados para usar
+ * este helper con el fin de mantener la semántica de "submit con
+ * polygon propio que NO contiene el pin".
+ */
+function quitoSquareGeom(): MultiPolygon
+{
+    return new MultiPolygon([
+        new Polygon([
+            new LineString([
+                new Point(-0.4, -79.0),
+                new Point(-0.4, -78.8),
+                new Point(-0.2, -78.8),
+                new Point(-0.2, -79.0),
+                new Point(-0.4, -79.0),
+            ]),
+        ]),
+    ]);
+}
+
 it('sqlite: never fails, even for a location/point that would mismatch on pgsql', function (): void {
     if (postgisAvailableForRule()) {
         $this->markTestSkipped('This scenario targets the non-pgsql (sqlite) driver-guard path.');
@@ -159,7 +182,17 @@ it('pgsql: fails when the point is inside the polygon but location_id is unrelat
         'level' => 'city',
         'geom' => machalaSquareGeom(),
     ]);
-    $quito = Location::create(['name' => 'Quito', 'level' => 'city']);
+    // Quito con geom en una zona totalmente separada (~400km al norte).
+    // Pre-fix este test creaba Quito sin geom y esperaba fail; con la nueva
+    // sem�ntica (submit sin geom = silent, ver scope del PR), un submit
+    // sin geom ya no es el escenario v�lido. Quito con geom lejano reproduce
+    // la sem�ntica original: findByPoint match = Machala (deepest polygon),
+    // Quito no est� en ancestros del match → fail.
+    $quito = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'geom' => quitoSquareGeom(),
+    ]);
     $rule = makeRule();
     $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]])]);
 
@@ -225,6 +258,66 @@ it('pgsql: submitting the cantón itself still passes when its parent province a
     });
 
     expect($failed)->toBeFalse();
+});
+
+it('pgsql: stays silent (no rejection) when the submitted location has no polygon of its own (parroquia)', function (): void {
+    if (! postgisAvailableForRule()) {
+        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
+    }
+
+    // Regression for false-422s on parroquia submissions (repro 2026-07-20):
+    //
+    // The user reports selecting the parroquia "La Libertad" inside the
+    // cantón "La Libertad" (Santa Elena province) and dropping a pin
+    // clearly inside the cantón's polygon, and getting a 422 with
+    // "La ubicación seleccionada no contiene el punto marcado en el mapa".
+    //
+    // The cause: `LocationGeomSeeder` only loads polygons for `province` and
+    // `city` (not for `neighborhood`/parroquia). `findByPoint` returns the
+    // deepest polygon owning ancestor (the cantón); the submitted
+    // parroquia is a *descendant* of that match, NOT an ancestor —
+    // so the old ancestry-only check rejected the submission.
+    //
+    // The fix (per user decision): the rule can only validate when the
+    // submitted location has its own polygon (i.e., province or cantón).
+    // For parroquia (and any future level without geom), the rule stays
+    // silent — the boundary-feedback overlay from PR #91 carries
+    // the visual feedback at cantón level instead. This is honest: we
+    // can't know the pin is inside the *specific* parroquia without
+    // parroquia polygons, and the cantón's polygon is the strongest
+    // signal we have.
+    $province = Location::create([
+        'name' => 'Santa Elena',
+        'level' => 'province',
+        'geom' => machalaSquareGeom(),
+    ]);
+    $city = Location::create([
+        'name' => 'La Libertad',
+        'level' => 'city',
+        'parent_id' => $province->id,
+        'geom' => machalaSquareGeom(),
+    ]);
+    $parish = Location::create([
+        'name' => 'La Libertad',
+        'level' => 'neighborhood',
+        'parent_id' => $city->id,
+        'geom' => null, // parroquia sin geom por diseño del seeder
+    ]);
+    $rule = makeRule();
+    // Pin (lon, lat) anywhere inside the cantón's small bbox (mismo
+    // fixture que los demás tests del rule: ~-80.7/-80.6 lon, -1.0/-0.8 lat).
+    $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]])]);
+
+    $failed = false;
+    $failMessage = null;
+    $rule->validate('location_id', $parish->id, function () use (&$failed, &$failMessage) {
+        $failed = true;
+        $failMessage = func_get_args()[0] ?? null;
+    });
+
+    // Critical assertion: stay silent (no $fail callback).
+    expect($failed)->toBeFalse();
+    expect($failMessage)->toBeNull();
 });
 
 it('pgsql: tolerates geom arriving as an already-decoded array (real HTTP traffic path)', function (): void {
@@ -311,7 +404,15 @@ it('exposes its rejection message in Spanish (end-user readability, pinned)', fu
         'level' => 'city',
         'geom' => machalaSquareGeom(),
     ]);
-    $quito = Location::create(['name' => 'Quito', 'level' => 'city']);
+    // Quito con geom lejano para que el rule efectivamente dispare el
+    // mensaje en español (ver scope del PR: parroquia/level-sin-geom
+    // es silent, así que necesitamos un cantón con geom para
+    // que el fail() se ejecute).
+    $quito = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'geom' => quitoSquareGeom(),
+    ]);
 
     $rule = makeRule();
     $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]])]);
