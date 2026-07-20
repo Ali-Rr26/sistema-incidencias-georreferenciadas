@@ -392,6 +392,20 @@ function setupFilterListeners() {
 // filterState. Browsers start the download via a temporary anchor so
 // the user stays on the dashboard (no navigation).
 // ─────────────────────────────────────────────
+// Only the real backend filters live here. `locationTree` and
+// `categories` are dropdown data cached on filterState for the picker
+// UI — they are NOT query params the endpoint accepts, and serialising
+// them via URLSearchParams would yield "locationTree=[object Object]"
+// which 422s the request.
+const EXPORT_FILTER_KEYS = [
+  'inicio',
+  'fin',
+  'tipo_id',
+  'ciudad_id',
+  'provincia_id',
+  'pais_id',
+];
+
 function setupExportListeners() {
   document.querySelectorAll('[data-export-format]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -400,7 +414,8 @@ function setupExportListeners() {
 
       const params = new URLSearchParams();
       params.set('format', format);
-      for (const [key, value] of Object.entries(filterState)) {
+      for (const key of EXPORT_FILTER_KEYS) {
+        const value = filterState[key];
         if (value !== null && value !== undefined && value !== '') {
           params.set(key, String(value));
         }
@@ -429,11 +444,18 @@ async function triggerDownload(url) {
     a.remove();
     URL.revokeObjectURL(objectUrl);
   } catch (err) {
+    // The previous fallback (`window.location.assign(url)`) navigated
+    // full-page without the JWT header, so the request came back as
+    // 401 'Token de autenticación no proporcionado.' — confusing
+    // because the user IS logged in, the request just can't carry
+    // headers on a top-level navigation. Show the error instead and
+    // let the user retry.
     console.error('Error al exportar:', err);
-    // Fallback: full navigation triggers the download via the
-    // browser's native download manager even if the blob fetch fails
-    // (e.g. large PDFs that exceed the in-memory buffer budget).
-    window.location.assign(url);
+    const message =
+      err && err.status
+        ? `No se pudo exportar (HTTP ${err.status}). Reintentá.`
+        : 'No se pudo exportar. Reintentá o revisá tu conexión.';
+    window.alert(message);
   }
 }
 
