@@ -302,6 +302,9 @@ export default {
     function refreshPinVsBoundary() {
       const warningEl = document.getElementById(P + 'boundary-warning');
       const submitBtn = $('submit');
+      const blockedReasonEl = document.getElementById(
+        P + 'submit-blocked-reason',
+      );
       if (!marker || !pendingBoundary) {
         setPinVariant('default');
         if (warningEl) {
@@ -309,6 +312,10 @@ export default {
           warningEl.textContent = '';
         }
         if (submitBtn) submitBtn.disabled = false;
+        if (blockedReasonEl) {
+          blockedReasonEl.classList.add('d-none');
+          blockedReasonEl.textContent = '';
+        }
         return;
       }
       const ll = marker.getLatLng();
@@ -323,6 +330,10 @@ export default {
           warningEl.textContent = '';
         }
         if (submitBtn) submitBtn.disabled = false;
+        if (blockedReasonEl) {
+          blockedReasonEl.classList.add('d-none');
+          blockedReasonEl.textContent = '';
+        }
       } else {
         setPinVariant('warn');
         if (warningEl) {
@@ -330,6 +341,14 @@ export default {
           warningEl.classList.remove('d-none');
         }
         if (submitBtn) submitBtn.disabled = true;
+        // Inline reason at the submit footer — the warning on the
+        // map (step 3) tells the user *how* to fix it; this tells
+        // them *that* they can't submit, right where they reach
+        // for the submit button.
+        if (blockedReasonEl) {
+          blockedReasonEl.textContent = `No podés guardar: el pin está fuera de ${pendingBoundaryLabel}.`;
+          blockedReasonEl.classList.remove('d-none');
+        }
       }
     }
 

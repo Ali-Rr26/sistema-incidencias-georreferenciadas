@@ -293,6 +293,11 @@ function buildFormDom() {
         </span>
         <span id="ici-submit-loading" class="d-none"></span>
       </button>
+      <small
+        id="ici-submit-blocked-reason"
+        class="d-none d-block text-end text-danger fw-semibold mt-2"
+        role="alert"
+      ></small>
     </form>
 
     <div id="ici-toast">
@@ -1330,5 +1335,51 @@ describe('feature: map-location-boundary', () => {
     expect(document.getElementById('ici-error-geom').textContent).toMatch(
       /fuera de la ubicación/i,
     );
+  });
+
+  // ── Submit-footer reason: un mensaje corto, a la derecha del
+  // botón submit, que se muestra cuando el form está bloqueado. El
+  // warning del mapa (paso 3) explica CÓMO arreglarlo; éste le
+  // recuerda al usuario que NO puede submittear, justo donde está
+  // el botón. ──
+
+  it('shows a reason next to the submit button when the pin is outside the boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    const reason = document.getElementById('ici-submit-blocked-reason');
+    expect(reason.classList.contains('d-none')).toBe(true);
+
+    clickMap(0.05, -79.5); // outside Quito bbox
+
+    expect(reason.classList.contains('d-none')).toBe(false);
+    expect(reason.textContent).toMatch(/No podés guardar/i);
+    expect(reason.textContent).toMatch(/cantón Quito/);
+  });
+
+  it('hides the submit-blocked reason when the pin moves back inside the boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+    clickMap(0.05, -79.5); // outside
+    expect(
+      document
+        .getElementById('ici-submit-blocked-reason')
+        .classList.contains('d-none'),
+    ).toBe(false);
+
+    clickMap(0.1, -78.5); // inside
+
+    const reason = document.getElementById('ici-submit-blocked-reason');
+    expect(reason.classList.contains('d-none')).toBe(true);
+    expect(reason.textContent).toBe('');
+  });
+
+  it('keeps the submit-blocked reason hidden when no location (and therefore no boundary) is selected', async () => {
+    await component.onInit();
+    clickMap(0.1, -78.5);
+
+    const reason = document.getElementById('ici-submit-blocked-reason');
+    expect(reason.classList.contains('d-none')).toBe(true);
+    expect(reason.textContent).toBe('');
   });
 });
