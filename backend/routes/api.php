@@ -7,6 +7,7 @@ use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\Controllers\AssignmentController;
+use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
@@ -45,8 +46,9 @@ Route::middleware('jwt')->group(function () {
     Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
 
     // Core
-    Route::get('incidents/stats', IncidentStatsController::class);
+Route::get('incidents/stats', IncidentStatsController::class);
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
+    Route::get('incidents/exportar', ExportIncidenciasController::class);
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentWorkflowController::class, 'release'])->where('incident', '\d+')->middleware('can:release,incident');
     Route::put('incidents/{incident}/estado', [IncidentController::class, 'updateStatus'])->where('incident', '\d+');

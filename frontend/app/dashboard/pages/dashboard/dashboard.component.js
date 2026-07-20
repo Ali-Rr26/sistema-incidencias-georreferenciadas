@@ -403,6 +403,7 @@ export default {
 
     // Setup de filtros (carga listener e inicializa opciones)
     setupFilterListeners();
+    setupExportListeners();
 
     // Cargar stats iniciales (sin filtros)
     await refreshDashboard();
