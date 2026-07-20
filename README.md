@@ -16,84 +16,104 @@ El sistema simula un entorno real de gestión municipal o técnica, donde múlti
 ## 🏗️ Arquitectura del Sistema
 
 ```mermaid
-graph TB
-    subgraph Frontend["🖥️ FRONTEND (Navegador)"]
-        Feed["Feed/Mapa<br/>(Citizens)"]
-        Admin["Panel Admin<br/>(Staff)"]
-        Auth["Autenticación<br/>(Login/Register)"]
+%%{init: {'theme': 'base', 'themeVariables': {'fontSize':'13px','lineColor':'#555'}}}%%
+flowchart LR
+
+    %% ============ BROWSER ============
+    Browser["🌐 Browser<br/>Vanilla JS + Vite 6<br/>Suscripción SSE (EventSource)"]
+
+    %% ============ CLOUDFLARE (external) ============
+    subgraph CF["☁️ External · Cloudflare (gestionado fuera del repo)"]
+        CFT["Cloudflare Tunnel<br/>TLS termination<br/>hostname rules en dashboard CF"]
     end
 
-    subgraph "🔌 API REST (Laravel 11)"
-        Auth_API["Auth Domain<br/>JWT + Firebase"]
-        Incidents_API["Incidents Domain<br/>CRUD + Workflow"]
-        Comments_API["Comments Domain<br/>Threaded Comments"]
-        Assignments_API["Assignments Domain<br/>Roles & Permissions"]
-        Users_API["Users Domain<br/>Roles & Profile"]
-        Notifications_API["Notifications Domain<br/>Real-time Push"]
-        Menus_API["Menus Domain<br/>Role-based Access"]
+    %% ============ FRONTEND CONTAINER ============
+    subgraph FE["🖥️ Frontend container · nginx:alpine"]
+        Nginx["Nginx :80<br/>sirve /dist estático<br/>proxy /api/* → backend:8000<br/>proxy /storage/* → backend:8000<br/>proxy /.well-known/mercure → mercure<br/>/nginx_status → Prometheus"]
+        SPA["📦 SPA estática<br/>Bootstrap 5 · Leaflet · Turf<br/>Tom Select"]
     end
 
-    subgraph Storage["💾 DATA & CACHE"]
-        PG["PostgreSQL<br/>Incidents, Users,<br/>Comments, History"]
-        Redis["Redis<br/>Feed Cache<br/>Sessions"]
-        S3["S3/Object Storage<br/>Images"]
+    %% ============ BACKEND CONTAINER ============
+    subgraph BE["🖥️ Backend container · FrankenPHP 1.12.4"]
+        Octane["Laravel 13.15 + Octane 2.17.5<br/>PHP ≥8.3 · driver=frankenphp<br/>Caddy embebido (HTTP server)<br/>QUEUE_CONNECTION=sync<br/>(sin queue worker · sin scheduler)"]
     end
 
-    subgraph "🔔 SERVICES"
-        Mercure["Mercure<br/>Web Sockets"]
-        Jobs["Queue Jobs<br/>Notifications"]
+    %% ============ MERCURE (separate service) ============
+    Mercure{{"⚡ Mercure · dunglas/mercure<br/>SSE / EventSource<br/>topic: user:{id}:notifications<br/>(notification bell · no feed/map)"}}
+
+    %% ============ DATA TIER ============
+    subgraph DATA["💾 Data tier"]
+        PG[("PostgreSQL 17<br/>+ PostGIS 3.5<br/>spatial · GIST indexes")]
+        Redis[("Redis 8<br/>CQRS read model · geolocation<br/>Prometheus cache")]
+        RustFS[("RustFS<br/>S3-compatible self-hosted<br/>(swap a AWS S3 o MinIO posible)")]
     end
 
-    subgraph "🔐 AUTHORIZATION"
-        Policies["Resource Policies<br/>incidents.view, feed.detail"]
-        Permissions["Permission System<br/>roles ← permissions"]
+    %% ============ OBSERVABILITY ============
+    subgraph OBS["📊 Observability (sin tracing · sin APM)"]
+        Prom["Prometheus<br/>scrapes: backend/metrics,<br/>nginx, pg_exporter, redis_exporter<br/>⚠️ sin volumen persistente"]
+        Loki["Loki + Promtail<br/>stderr del backend + access logs<br/>⚠️ sin volumen persistente"]
+        Graf["Grafana<br/>dashboards provisionados"]
     end
 
-    %% Frontend connections
-    Feed -->|GET /feed, /incidents/{id}| Incidents_API
-    Feed -->|GET /comments| Comments_API
-    Admin -->|POST/PUT /incidents| Incidents_API
-    Admin -->|GET /status-history| Incidents_API
-    Auth -->|POST /login, /register| Auth_API
+    %% ============ QUALITY + CI ============
+    subgraph QUAL["🧪 Calidad + CI"]
+        GH["GitHub Actions<br/>backend: Pint · Pest<br/>frontend: ESLint · Prettier · Vitest<br/>⚠️ PHPStan instalado pero no corre en CI"]
+        Sonar["SonarQube Community<br/>SAST · code smells<br/>⚠️ Clover PHP no generado aún"]
+    end
 
-    %% API to Data
-    Incidents_API -->|Read/Write| PG
-    Comments_API -->|Read/Write| PG
-    Assignments_API -->|Read/Write| PG
-    Users_API -->|Read/Write| PG
-    Notifications_API -->|Read/Write| PG
-    Menus_API -->|Read| PG
+    %% ============ FLOWS ============
+    Browser -->|HTTPS| CFT
+    CFT -->|HTTP :80 + X-Forwarded-Proto| Nginx
+    Nginx -->|sirve| SPA
+    Nginx -->|/api/* · /storage/*| Octane
+    Nginx -->|/.well-known/mercure| Mercure
 
-    %% API to Cache
-    Incidents_API -->|Cache Feed| Redis
-    Comments_API -->|Check Cache| Redis
+    Octane -->|spatial queries| PG
+    Octane -->|CQRS sync listeners| Redis
+    Octane -->|upload imágenes| RustFS
+    Octane -.->|publish (sync, sin queue)| Mercure
+    Mercure -->|SSE / EventSource| Browser
 
-    %% API to Storage
-    Incidents_API -->|Images| S3
+    %% Observability (dashed)
+    Octane -.->|/metrics| Prom
+    Nginx -.->|/nginx_status| Prom
+    PG -.->|pg_exporter| Prom
+    Redis -.->|redis_exporter| Prom
+    Nginx -.->|access logs| Loki
+    Octane -.->|stderr logs| Loki
+    Prom --> Graf
+    Loki --> Graf
 
-    %% Notifications flow
-    Incidents_API -->|Trigger Events| Jobs
-    Jobs -->|Push Updates| Mercure
-    Mercure -->|Subscribe| Feed
-    Mercure -->|Subscribe| Admin
+    %% Quality
+    GH -->|lint + test + build| FE
+    GH -->|lint + test + build| BE
+    GH -.->|scan condicional (si SONAR_TOKEN)| Sonar
 
-    %% Authorization flow
-    Auth_API -->|Issue JWT| Frontend
-    Incidents_API -.->|Check Policy| Policies
-    Assignments_API -.->|Resolve| Permissions
-    Policies -.->|Enforce| Permissions
+    %% ============ STYLES ============
+    classDef browserCls fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef cfCls fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef feCls fill:#e0f7fa,stroke:#00695c,color:#004d40
+    classDef beCls fill:#e8eaf6,stroke:#283593,color:#1a237e
+    classDef rtCls fill:#fff8e1,stroke:#ff8f00,color:#e65100
+    classDef dataCls fill:#eceff1,stroke:#37474f,color:#263238
+    classDef obsCls fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef qualCls fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 
-    style Frontend fill:#e1f5ff
-    style Auth fill:#fff3e0
-    style Incidents_API fill:#f3e5f5
-    style Comments_API fill:#f3e5f5
-    style Assignments_API fill:#f3e5f5
-    style PG fill:#c8e6c9
-    style Redis fill:#ffccbc
-    style Mercure fill:#b2dfdb
-    style Jobs fill:#ffe0b2
-    style Policies fill:#e0f2f1
+    class Browser browserCls
+    class CFT cfCls
+    class Nginx,SPA feCls
+    class Octane beCls
+    class Mercure rtCls
+    class PG,Redis,RustFS dataCls
+    class Prom,Loki,Graf obsCls
+    class GH,Sonar qualCls
+
+    style CF fill:#fafafa,stroke:#9e9e9e,stroke-dasharray: 5 5,color:#424242
 ```
+
+> **Convención visual:** flecha sólida = tráfico real de request · flecha punteada = observabilidad / CI (no transporta tráfico de usuario) · `[(…)]` = datastore · `{{…}}` = hub/puerto · ⚠️ = caveat conocido del estado actual.
+>
+> **Caveats documentados en el diagrama:** (1) TLS termination ocurre en Cloudflare, Nginx escucha HTTP plano en `:80`; (2) Prometheus y Loki **no tienen volúmenes persistentes** — métricas y logs son efímeros; (3) backend usa `QUEUE_CONNECTION=sync`, no hay queue worker / Horizon / scheduler / cron corriendo; (4) Mercure hoy solo emite al topic `user:{id}:notifications` (campana), no al feed/mapa/admin; (5) el coverage report PHP Clover que SonarQube espera **no se genera** con la config actual de phpunit; (6) PHPStan está instalado pero **no corre en CI**.
 
 ### 📊 Dominios Principales (Domain-Driven Design)
 
