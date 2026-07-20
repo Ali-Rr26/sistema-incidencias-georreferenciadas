@@ -11,8 +11,16 @@ use App\Domains\Users\Models\User;
 /**
  * Servicio de claim/release de incidencias.
  *
- * Encapsula la lógica de negocio para que un OperadorOrg
- * tome (claim) o libere (release) una incidencia de su organización.
+ * @cqrs-role command-service
+ *
+ * Pertenece al command side: encapsula la lógica de negocio para que un
+ * OperadorOrg tome (claim) o libere (release) una incidencia de su
+ * organización. Valida pertenencia organizacional, no-duplicidad del
+ * claim y el límite `max_active_claims` antes de delegar al
+ * IncidentRepository, que es quien efectivamente muta Postgres dentro
+ * de una transacción.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
  */
 class IncidentClaimService
 {

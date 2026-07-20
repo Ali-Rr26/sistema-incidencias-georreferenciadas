@@ -23,6 +23,23 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
+/**
+ * HTTP shell del command side de Incidencias.
+ *
+ * @cqrs-role command-http-shell
+ *
+ * Cubre el CRUD administrativo (index/show/store/update/updateStatus).
+ * No embebe reglas de negocio: delega a IncidentRepository y a los
+ * Services (AssignmentService, IncidentClaimService, IncidentImageService).
+ * Cualquier mutación que pase por acá dispara los eventos Eloquent que
+ * RedisIncidentSync escucha para mantener el read model.
+ *
+ * Si necesitás un endpoint que sirva datos sin escribir, considerá si
+ * corresponde al command side (show/update con lectura incidental) o al
+ * query side (FeedController / un nuevo ReadModel Controller).
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class IncidentController extends Controller
 {
     use AuthorizesRequests;

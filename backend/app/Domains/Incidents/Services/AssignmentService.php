@@ -10,7 +10,13 @@ use App\Domains\Incidents\Models\Incident;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Business rules for the `assignments` sub-resource.
+ * Reglas de negocio del sub-recurso `assignments`.
+ *
+ * @cqrs-role command-service
+ *
+ * Pertenece al command side: encapsula invariantes (rol válido, sin
+ * usuarios duplicados, un solo responsable por incidencia) que el
+ * controller NO debe embebir para mantenerlas testeables sin kernel.
  *
  * The HTTP layer (AssignmentController) is a thin shell over these
  * methods; the controller does not embed any of this logic so the rules

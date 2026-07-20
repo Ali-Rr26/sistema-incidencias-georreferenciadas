@@ -19,6 +19,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
 
+/**
+ * Aggregate root compartido del módulo de Incidencias.
+ *
+ * @cqrs-role aggregate-root
+ *
+ * Es el mismo modelo que usa el command side (EloquentIncidentRepository
+ * + AssignmentService / IncidentClaimService) para escribir y el query side
+ * (FeedController → FeedService) sólo de manera indirecta, leyendo el
+ * read model Redis que mantiene RedisIncidentSync a partir de los eventos
+ * `created` / `updated` / `deleted` que este modelo dispara.
+ *
+ * Cualquier mutación a Incidencia DEBE persistirse dentro de
+ * DB::transaction() para que el trigger de auditoría y el listener de
+ * proyección queden consistentes.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class Incident extends Model
 {
     use HasSpatial, SoftDeletes;

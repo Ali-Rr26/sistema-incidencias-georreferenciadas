@@ -6,6 +6,24 @@ namespace App\Domains\Incidents\Models;
 
 use Illuminate\Support\Facades\Redis;
 
+/**
+ * Read model del feed ciudadano de Incidencias.
+ *
+ * @cqrs-role query-read-model
+ *
+ * Pertenece al query side y NUNCA debe tocar Postgres. Lee exclusivamente
+ * de Redis (`feed:v2:items` como hash + `feed:v2:index` como sorted set).
+ *
+ * Si Redis está caído, devuelve una respuesta vacía y loggea en vez de
+ * tirar 500 — el mapa del frontend debe seguir renderizando. La fuente
+ * de verdad sigue siendo Postgres; este servicio es una vista optimizada
+ * eventualmente consistente.
+ *
+ * Los filtros que agregues acá son filtros del read model, no reglas de
+ * negocio: para eso, los servicios del command side.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class FeedService
 {
     private const CANDIDATE_LIMIT = 500;

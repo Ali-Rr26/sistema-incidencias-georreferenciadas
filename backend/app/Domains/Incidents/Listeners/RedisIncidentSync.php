@@ -5,11 +5,35 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Listeners;
 
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
+/**
+ * Proyector que mantiene sincronizado el read model Redis con Postgres.
+ *
+ * @cqrs-role projection-listener
+ *
+ * Pertenece a la frontera write→read: escucha los eventos Eloquent
+ * `created` / `updated` / `deleted` / `forceDeleted` que dispara el modelo
+ * Incident y reescribe los hashes en Redis (feed:v2:items + feed:v2:index).
+ *
+ * El shape del payload en Redis lo define {@see IncidentFeedSerializer} y es
+ * la fuente única de verdad: este listener y {@see \App\Console\Commands\FeedRebuildCommand}
+ * lo consumen vía inyección. Si agregás un campo, tocás el serializer — y los
+ * dos sitios que escriben a Redis lo reflejan automáticamente. No hay shape
+ * duplicado en este archivo.
+ *
+ * No es event sourcing: si Redis se pierde, los datos se reconstruyen
+ * desde Postgres con un job de re-proyección, no desde un log de eventos.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class RedisIncidentSync
 {
+    public function __construct(
+        private readonly IncidentFeedSerializer $serializer,
+    ) {}
     private const V2_INDEX_KEY = 'feed:v2:index';
 
     private const V2_ITEMS_KEY = 'feed:v2:items';
@@ -37,34 +61,7 @@ class RedisIncidentSync
     private function syncIncident(Incident $incident): void
     {
         try {
-            $incident->loadMissing(['category', 'location', 'user']);
-
-            $locationPathIds = $incident->location?->ancestorsAndSelf()
-                ->orderBy('depth', 'desc')
-                ->pluck('id')
-                ->toArray() ?? [];
-
-            $data = [
-                'id' => (string) $incident->id,
-                'incident_category_id' => (string) $incident->incident_category_id,
-                'organization_id' => (string) $incident->organization_id,
-                'user_id' => (string) $incident->user_id,
-                'location_id' => (string) $incident->location_id,
-                'title' => $incident->title,
-                'status' => $incident->status,
-                'priority' => $incident->priority,
-                'resolution_date' => $incident->resolution_date?->toIso8601String(),
-                'created_at' => $incident->created_at?->toIso8601String(),
-                'updated_at' => $incident->updated_at?->toIso8601String(),
-                'geom' => $incident->geom ? $incident->geom->toJson() : null,
-                'category_name' => $incident->category?->name ?? '',
-                'organization_name' => $incident->organization?->name ?? '',
-                'location_name' => $incident->location?->name ?? '',
-                'location_path_ids' => json_encode($locationPathIds),
-                'user_first_name' => $incident->user?->first_name,
-                'user_last_name' => $incident->user?->last_name,
-                'user_avatar' => $incident->user?->avatar,
-            ];
+            $data = $this->serializer->serialize($incident);
 
             Redis::hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
             Redis::zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
