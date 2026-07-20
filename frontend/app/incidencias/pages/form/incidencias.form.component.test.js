@@ -160,8 +160,7 @@ function buildFormDom() {
           <option value="">-- Seleccione un cantón primero --</option>
         </select>
         <div id="ici-error-location"></div>
-        <input type="file" id="ici-images" multiple />
-        <div id="ici-image-preview"></div>
+        <div id="ici-image-uploader-container"></div>
       </div>
 
       <div id="ici-step-3" class="ici-step d-none">
