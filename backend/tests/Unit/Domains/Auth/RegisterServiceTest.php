@@ -91,5 +91,5 @@ it('throws a clear RuntimeException when the citizen role row is missing', funct
         'last_name' => 'Pérez',
         'email' => 'dan@example.com',
         'password' => 'Password1',
-    ]))->toThrow(\RuntimeException::class);
+    ]))->toThrow(RuntimeException::class);
 });
