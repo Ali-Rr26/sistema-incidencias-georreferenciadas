@@ -29,6 +29,8 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.3.5",
+    "@turf/helpers": "^7.3.5",
     "leaflet": "^1.9.4"
   }
 }
