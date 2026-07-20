@@ -421,24 +421,30 @@ function setupExportListeners() {
         }
       }
 
-      triggerDownload(`/api/incidents/exportar?${params.toString()}`);
+      triggerDownload(`/incidents/exportar?${params.toString()}`);
     });
   });
 }
 
-async function triggerDownload(url) {
+async function triggerDownload(path) {
   try {
     // Reuse the shared http service so JWT header / refresh flow is
     // identical to every other dashboard call. `responseType: 'blob'`
     // tells the service not to JSON-parse.
-    const blob = await http.get(url, { responseType: 'blob' });
+    // `path` must be a RELATIVE path (e.g. `/incidents/exportar?...`)
+    // because http.get() prepends API_URL = '/api' for us. Passing a
+    // full URL would double the prefix and 404.
+    const blob = await http.get(path, { responseType: 'blob' });
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
     // The server sets the filename via Content-Disposition, but a
-    // fallback here keeps the file usable when the header is stripped
-    // (e.g. some corporate proxies).
-    a.download = url.split('?')[0].split('/').pop() || 'reporte';
+    // deterministic local fallback keeps the file usable when the
+    // header is stripped (e.g. some corporate proxies).
+    const format =
+      new URLSearchParams(path.split('?')[1] || '').get('format') || 'reporte';
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `incidencias-${date}.${format}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
