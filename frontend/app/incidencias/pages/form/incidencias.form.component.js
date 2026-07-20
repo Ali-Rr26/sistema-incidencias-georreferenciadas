@@ -9,6 +9,7 @@
 
 import template from './incidencias.form.component.html?raw';
 import style from './incidencias.form.component.css?raw';
+import uploaderStyle from '../../../shared/image-uploader.css?raw';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
@@ -43,7 +44,7 @@ const PRIORITY_LABELS = { high: 'Alta', medium: 'Media', low: 'Baja' };
 
 export default {
   template,
-  style,
+  style: style + '\n' + uploaderStyle,
 
   async onInit() {
     document.body.classList.add('ici-create-view');
