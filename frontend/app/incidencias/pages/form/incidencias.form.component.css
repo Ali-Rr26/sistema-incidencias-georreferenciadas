@@ -179,7 +179,40 @@
   font-size: 13px;
 }
 
-.ici-review__dl dd {
-  margin: 0;
-  color: #1e293b;
-}
+    .ici-review__dl dd {
+      margin: 0;
+      color: #1e293b;
+    }
+
+    /* ── Map boundary overlay + pin-vs-boundary feedback (feature: map-location-boundary) ──
+       The polígono cargado desde `GET /api/locations/{id}` se renderiza con stroke
+       azul y fill semitransparente. El pin cambia a rojo cuando dropeado afuera.
+       Los colores siguen el sistema de design tokens del repo (slate / red). */
+    .incid-form__marker--ok .leaflet-marker-icon {
+      filter: hue-rotate(85deg) saturate(1.6) brightness(1.1);
+    }
+    .incid-form__marker--warn .leaflet-marker-icon {
+      filter: hue-rotate(320deg) saturate(2) brightness(0.95);
+    }
+    .incid-form__boundary-warning {
+      font-size: 14px;
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+    .incid-form__boundary-sublabel {
+      margin-top: 8px;
+      margin-bottom: 0;
+      color: #64748b;
+      font-size: 13px;
+      font-style: italic;
+    }
+    .incid-form__boundary-disclaimer {
+      margin-top: 6px;
+      margin-bottom: 0;
+      color: #94a3b8;
+      font-size: 12px;
+      font-style: italic;
+    }
+    .leaflet-interactive:focus {
+      outline: 2px solid #2563eb;
+    }

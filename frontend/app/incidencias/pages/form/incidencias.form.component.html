@@ -283,6 +283,27 @@
                   <i class="fas fa-exclamation-circle me-1"></i>Debe marcar una
                   ubicación en el mapa.
                 </div>
+                <!-- ── Boundary overlay + pin-vs-boundary feedback (feature: map-location-boundary) ──
+                     Estos 3 elementos se controlan desde el component.js según el
+                     location_id seleccionado en el step 2 (cascada province/city/
+                     neighborhood) y la posición del pin dropeado en step 3. -->
+                <p
+                  id="ici-boundary-sublabel"
+                  class="incid-form__boundary-sublabel d-none"
+                ></p>
+                <div
+                  id="ici-boundary-warning"
+                  class="alert alert-warning incid-form__boundary-warning d-none"
+                  role="alert"
+                  aria-live="polite"
+                ></div>
+                <p
+                  id="ici-boundary-disclaimer"
+                  class="incid-form__boundary-disclaimer d-none"
+                >
+                  Referencia visual basada en datos administrativos del INEC. La
+                  precisión final la determina el sistema de validación al enviar.
+                </p>
                 <div class="d-flex gap-2 mt-2">
                   <button
                     type="button"

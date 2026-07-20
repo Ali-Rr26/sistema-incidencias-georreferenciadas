@@ -14,6 +14,8 @@ import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { mountImageUploader } from '../../../shared/image-uploader.js';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { point as turfPoint } from '@turf/helpers';
 
 // ── Error field mapping: backend field → error ID suffix ──
 const ERROR_MAP = {
@@ -155,6 +157,173 @@ export default {
         });
     });
 
+    // ── Boundary overlay state (feature: map-location-boundary) ──
+    //
+    // El endpoint `GET /api/locations/{id}` ya incluye `geom` en su respuesta
+    // (ver `LocationResource::resolve()`), y el árbol `locationsTree` que se
+    // carga arriba ya trae cada nodo con su `geom`. No hace falta un endpoint
+    // nuevo: leemos directo del árbol en memoria. Estos helpers resuelven el
+    // boundary para la location seleccionada.
+    let pendingBoundary = null;       // GeoJSON (MultiPolygon / Polygon) a dibujar
+    let pendingBoundaryLabel = null;  // "cantón Santa Elena" (para el mensaje)
+    let pendingBoundarySublabel = null; // "Parroquia X dentro de cantón Y"
+    let boundaryLayer = null;         // referencia Leaflet del layer actual
+
+    function findLocationInTree(id, nodes) {
+      if (!id || !nodes) return null;
+      const target = String(id);
+      // Acepta tanto el array raíz (`locationsTree`) como un nodo individual.
+      const list = Array.isArray(nodes) ? nodes : [nodes];
+      for (const node of list) {
+        if (!node || node.id == null) continue;
+        if (String(node.id) === target) return node;
+        if (Array.isArray(node.children)) {
+          const hit = findLocationInTree(id, node.children);
+          if (hit) return hit;
+        }
+      }
+      return null;
+    }
+
+    function resolveBoundaryFromSelection(location) {
+      if (!location) return null;
+      if (location.geom) {
+        return {
+          geom: location.geom,
+          level: location.level,
+          name: location.name,
+          source: 'self',
+        };
+      }
+      // Parish sin geom: subimos al cantón padre que sí tiene boundary.
+      if (location.parent_id) {
+        const parent = findLocationInTree(location.parent_id, locationsTree);
+        if (parent && parent.geom) {
+          return {
+            geom: parent.geom,
+            level: parent.level,
+            name: parent.name,
+            source: 'parent',
+            parishName: location.name,
+          };
+        }
+      }
+      return null;
+    }
+
+    function applyBoundaryFromSelection(location) {
+      pendingBoundary = null;
+      pendingBoundaryLabel = null;
+      pendingBoundarySublabel = null;
+      const r = resolveBoundaryFromSelection(location);
+      if (!r) {
+        renderBoundaryUI();
+        return;
+      }
+      pendingBoundary = r.geom;
+      // "cantón" para city, "provincia" para province — singular para el mensaje.
+      const levelTxt = r.level === 'city' ? 'cantón' : r.level === 'province' ? 'provincia' : r.level;
+      pendingBoundaryLabel = `${levelTxt} ${r.name}`;
+      pendingBoundarySublabel =
+        r.source === 'parent' && r.parishName
+          ? `Parroquia ${r.parishName} dentro de ${levelTxt} ${r.name}`
+          : null;
+      // Si el map ya está montado, dibujamos ahora; si no, `pendingBoundary`
+      // queda seteada para que el primer render del map (más abajo) lo agarre.
+      if (map) drawBoundaryLayer();
+      renderBoundaryUI();
+    }
+
+    function drawBoundaryLayer() {
+      if (!map) return;
+      if (boundaryLayer) {
+        boundaryLayer.remove();
+        boundaryLayer = null;
+      }
+      if (!pendingBoundary) return;
+      boundaryLayer = L.geoJSON(pendingBoundary, {
+        style: {
+          color: '#3b82f6',
+          weight: 2,
+          fillColor: '#3b82f6',
+          fillOpacity: 0.15,
+        },
+      }).addTo(map);
+      try {
+        map.fitBounds(boundaryLayer.getBounds(), {
+          padding: [20, 20],
+          maxZoom: 14,
+        });
+      } catch {
+        /* getBounds puede fallar si la geometría está vacía; ignorar */
+      }
+    }
+
+    function renderBoundaryUI() {
+      const sublabelEl = document.getElementById(P + 'boundary-sublabel');
+      const disclaimerEl = document.getElementById(P + 'boundary-disclaimer');
+      if (sublabelEl) {
+        if (pendingBoundarySublabel) {
+          sublabelEl.textContent = pendingBoundarySublabel;
+          sublabelEl.classList.remove('d-none');
+        } else {
+          sublabelEl.classList.add('d-none');
+        }
+      }
+      if (disclaimerEl) {
+        disclaimerEl.classList.toggle('d-none', !pendingBoundary);
+      }
+      // El warning se refresca separadamente porque depende del pin,
+      // no solo de la selección.
+      refreshPinVsBoundary();
+    }
+
+    function setPinVariant(variant) {
+      // 'default' | 'ok' | 'warn'
+      if (!marker) return;
+      const dom = marker.getElement();
+      if (!dom) return;
+      // Leaflet envuelve el icono en un `.leaflet-marker-icon`; aplicamos
+      // la clase sobre ese, o sobre el contenedor si no se encuentra.
+      const target = dom.querySelector?.('.leaflet-marker-icon') || dom;
+      target.classList.remove(
+        'incid-form__marker--ok',
+        'incid-form__marker--warn',
+      );
+      if (variant === 'ok') target.classList.add('incid-form__marker--ok');
+      if (variant === 'warn') target.classList.add('incid-form__marker--warn');
+    }
+
+    function refreshPinVsBoundary() {
+      const warningEl = document.getElementById(P + 'boundary-warning');
+      if (!marker || !pendingBoundary) {
+        setPinVariant('default');
+        if (warningEl) {
+          warningEl.classList.add('d-none');
+          warningEl.textContent = '';
+        }
+        return;
+      }
+      const ll = marker.getLatLng();
+      const inside = booleanPointInPolygon(
+        turfPoint([ll.lng, ll.lat]),
+        pendingBoundary,
+      );
+      if (inside) {
+        setPinVariant('ok');
+        if (warningEl) {
+          warningEl.classList.add('d-none');
+          warningEl.textContent = '';
+        }
+      } else {
+        setPinVariant('warn');
+        if (warningEl) {
+          warningEl.textContent = `El pin está fuera de la ubicación ${pendingBoundaryLabel}. Si querés enviar igual, podés hacerlo.`;
+          warningEl.classList.remove('d-none');
+        }
+      }
+    }
+
     // ── Leaflet map ──
     const mapaInicial = { lat: -0.9537, lng: -80.7286, zoom: 13 };
     const { map, remove } = await initMapView({
@@ -162,7 +331,14 @@ export default {
       center: { lat: mapaInicial.lat, lng: mapaInicial.lng },
       zoom: mapaInicial.zoom,
     });
-    this._mapRemove = remove;
+    // Wrap the disposer para limpiar también el boundary layer (feature: map-location-boundary).
+    this._mapRemove = () => {
+      if (boundaryLayer) {
+        boundaryLayer.remove();
+        boundaryLayer = null;
+      }
+      remove();
+    };
     if (!map) return;
 
     function setMarker(lat, lng) {
@@ -181,6 +357,9 @@ export default {
       };
       map.setView([lat, lng], map.getZoom());
       resetFieldError(P + 'error-geom');
+      // Feature: map-location-boundary — refrescar estado del pin vs el
+      // boundary actualmente dibujado (color + warning inline).
+      refreshPinVsBoundary();
     }
 
     map.on('click', (e) => setMarker(e.latlng.lat, e.latlng.lng));
@@ -392,9 +571,20 @@ export default {
 
     provinceSelect.addEventListener('change', function () {
       populateCities(this.value);
+      // Feature: map-location-boundary — actualiza el boundary overlay.
+      const loc = findLocationInTree(this.value, locationsTree);
+      applyBoundaryFromSelection(loc);
     });
     citySelect.addEventListener('change', function () {
       populateNeighborhoods(this.value);
+      const loc = findLocationInTree(this.value, locationsTree);
+      applyBoundaryFromSelection(loc);
+    });
+    neighborhoodSelect.addEventListener('change', function () {
+      // Para parroquia: si tiene geom propio, úsalo; si no, el
+      // `resolveBoundaryFromSelection` resuelve al cantón padre.
+      const loc = findLocationInTree(this.value, locationsTree);
+      applyBoundaryFromSelection(loc);
     });
 
     /**
