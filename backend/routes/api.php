@@ -46,7 +46,7 @@ Route::middleware('jwt')->group(function () {
     Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
 
     // Core
-Route::get('incidents/stats', IncidentStatsController::class);
+    Route::get('incidents/stats', IncidentStatsController::class);
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     Route::get('incidents/exportar', ExportIncidenciasController::class);
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
