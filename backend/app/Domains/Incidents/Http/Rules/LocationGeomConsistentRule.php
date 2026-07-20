@@ -130,6 +130,7 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
         // against, so failing here is meaningful, not a guess.
         if ($matched === null) {
             $fail('El punto seleccionado está fuera de cualquier zona conocida. Verifica que la ubicación y el pin correspondan.');
+
             return;
         }
 
