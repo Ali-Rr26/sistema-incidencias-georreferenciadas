@@ -122,11 +122,14 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             return;
         }
 
-        // No polygon contains the point — either no boundary data has been
-        // imported yet for that area, or the point is genuinely outside any
-        // known location. Either way, we can't prove inconsistency, so stay
-        // silent rather than reject.
+        // Strict at save (user-confirmed): when the submitted location has
+        // its own polygon, an out-of-coverage pin is a hard error rather
+        // than a silent pass. The parroquia-silent case is handled by the
+        // earlier `whereNotNull('geom')` early-return — we only reach
+        // here when the submitted location has a polygon to reconcile
+        // against, so failing here is meaningful, not a guess.
         if ($matched === null) {
+            $fail('El punto seleccionado está fuera de cualquier zona conocida. Verifica que la ubicación y el pin correspondan.');
             return;
         }
 
