@@ -978,9 +978,7 @@ export default {
           body = new FormData();
           for (const [key, val] of Object.entries(payloadBase)) {
             if (val !== null && val !== '') {
-              // Backend validates `geom` as `nullable|json` — FormData
-              // coerces plain objects to "[object Object]" via toString(),
-              // so it must be serialized explicitly before appending.
+              // FormData coerces objects to "[object Object]", so serialize geom explicitly.
               body.append(key, key === 'geom' ? JSON.stringify(val) : val);
             }
           }
