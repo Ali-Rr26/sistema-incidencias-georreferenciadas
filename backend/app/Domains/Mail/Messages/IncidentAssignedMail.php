@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Notifications\Mail;
+namespace App\Domains\Mail\Messages;
 
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Users\Models\User;

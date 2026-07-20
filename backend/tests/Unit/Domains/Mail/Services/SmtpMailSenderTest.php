@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Notifications\Mail\IncidentAssignedMail;
-use App\Domains\Notifications\Services\Mail\SmtpMailSender;
+use App\Domains\Mail\Messages\IncidentAssignedMail;
+use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Mail\PendingMail;

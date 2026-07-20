@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Notifications\Services\Mail;
+namespace App\Domains\Mail\Services;
 
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Notifications\Mail\IncidentAssignedMail;
+use App\Domains\Mail\Messages\IncidentAssignedMail;
 use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Support\Facades\Log;

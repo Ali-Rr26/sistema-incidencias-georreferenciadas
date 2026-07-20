@@ -7,7 +7,7 @@ use App\Domains\Incidents\Enums\AssignmentRole;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
-use App\Domains\Notifications\Services\Mail\MailSenderInterface;
+use App\Domains\Mail\Services\MailSenderInterface;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
