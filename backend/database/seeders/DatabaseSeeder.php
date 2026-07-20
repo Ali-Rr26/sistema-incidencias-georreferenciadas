@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             // so it must run AFTER OrganizationSeeder. Previously this was
             // ordered the wrong way, leaving orgs without their operators.
             EcuadorLocationSeeder::class,
+            // No-ops on non-pgsql drivers (`locations.geom` is pgsql-only).
+            LocationGeomSeeder::class,
             OrganizationSeeder::class,
             UserSeeder::class,
             PermissionSeeder::class,

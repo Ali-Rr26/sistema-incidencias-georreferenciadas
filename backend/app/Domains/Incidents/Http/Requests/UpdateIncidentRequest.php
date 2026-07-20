@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Requests;
 
+use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -56,7 +57,7 @@ class UpdateIncidentRequest extends FormRequest
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|nullable|string',
             'incident_category_id' => 'sometimes|integer|exists:incident_categories,id',
-            'location_id' => 'sometimes|integer|exists:locations,id',
+            'location_id' => ['sometimes', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
             'status' => ['sometimes', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
