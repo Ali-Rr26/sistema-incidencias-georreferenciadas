@@ -184,10 +184,10 @@ it('pgsql: fails when the point is inside the polygon but location_id is unrelat
     ]);
     // Quito con geom en una zona totalmente separada (~400km al norte).
     // Pre-fix este test creaba Quito sin geom y esperaba fail; con la nueva
-    // sem�ntica (submit sin geom = silent, ver scope del PR), un submit
-    // sin geom ya no es el escenario v�lido. Quito con geom lejano reproduce
-    // la sem�ntica original: findByPoint match = Machala (deepest polygon),
-    // Quito no est� en ancestros del match → fail.
+    // sem�ntica (submit sin geom = silent, ver scope del PR), un submit
+    // sin geom ya no es el escenario v�lido. Quito con geom lejano reproduce
+    // la sem�ntica original: findByPoint match = Machala (deepest polygon),
+    // Quito no est� en ancestros del match → fail.
     $quito = Location::create([
         'name' => 'Quito',
         'level' => 'city',
@@ -316,6 +316,87 @@ it('pgsql: stays silent (no rejection) when the submitted location has no polygo
     });
 
     // Critical assertion: stay silent (no $fail callback).
+    expect($failed)->toBeFalse();
+    expect($failMessage)->toBeNull();
+});
+
+it('pgsql: fails strict with the "fuera de cualquier zona conocida" message when the submitted location has its own polygon but the pin is outside ALL known polygons', function (): void {
+    if (! postgisAvailableForRule()) {
+        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
+    }
+
+    // "Strict at save" — the end-user-confirmed behavior after PR #95:
+    // when the submitted location has its own polygon (province or cantón),
+    // dropping the pin somewhere no polygon covers (ocean, ungazetted
+    // area) is a hard error. We have no positive match to reconcile
+    // against, so the safest default is to reject rather than to silently
+    // persist a location/pin pair we can't verify.
+    //
+    // Distinct from the silent-parroquia path covered by the sibling test
+    // below: parroquia has no own polygon, so the rule stays silent. This
+    // scenario only applies when the submitted location has geom != null.
+    //
+    // Defensive isolation: `RefreshDatabase` already empties `locations`
+    // between tests, but if a future change adds a global seeder (or any
+    // per-test seeding of `locations`), `findByPoint` could return an
+    // unrelated polygon instead of null and the strict branch under test
+    // would never fire. Explicit clear pins the assumption to code.
+    Location::query()->delete();
+    $canton = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'geom' => quitoSquareGeom(),
+    ]);
+
+    $rule = makeRule();
+    // Pacific Ocean point, well west of any seeder polygon (Santa Elena
+    // province sits around lat -2.2° / lng -80.5°). This guarantees that
+    // `findByPoint` returns null — the strict branch under test.
+    $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-81.7, -2.5]])]);
+
+    $failed = false;
+    $failMessage = null;
+    $rule->validate('location_id', $canton->id, function (string $message) use (&$failed, &$failMessage) {
+        $failed = true;
+        $failMessage = $message;
+    });
+
+    expect($failed)->toBeTrue();
+    expect($failMessage)
+        ->toBe('El punto seleccionado está fuera de cualquier zona conocida. Verifica que la ubicación y el pin correspondan.');
+});
+
+it('pgsql: stays silent for parroquia even when the pin is outside ALL known polygons', function (): void {
+    if (! postgisAvailableForRule()) {
+        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
+    }
+
+    // Regression for the silent-parroquia guarantee from PR #95: even on
+    // the new strict-pin path, a parroquia submission (geom = null by
+    // seeder design) MUST stay silent — we have no parroquia polygon to
+    // compare against, and rejecting would be the same class of false-422
+    // bug #95 fixed for the inside-polygon case. The strict message
+    // applies only when the submitted location has its own polygon.
+    //
+    // Defensive isolation: see the sibling test above — same rationale.
+    Location::query()->delete();
+    $parish = Location::create([
+        'name' => 'La Libertad',
+        'level' => 'neighborhood',
+        'geom' => null, // parroquia sin geom por diseño del seeder
+    ]);
+
+    $rule = makeRule();
+    // Same ocean point as the strict-pin test above.
+    $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-81.7, -2.5]])]);
+
+    $failed = false;
+    $failMessage = null;
+    $rule->validate('location_id', $parish->id, function (string $message) use (&$failed, &$failMessage) {
+        $failed = true;
+        $failMessage = $message;
+    });
+
     expect($failed)->toBeFalse();
     expect($failMessage)->toBeNull();
 });

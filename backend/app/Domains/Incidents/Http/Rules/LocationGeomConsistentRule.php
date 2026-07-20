@@ -28,6 +28,19 @@ use MatanYadaev\EloquentSpatial\Objects\Point;
  */
 class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
 {
+    /**
+     * Spanish validation messages — hardcoded on purpose.
+     *
+     * Pinned by `LocationGeomConsistentRuleTest` so a future i18n sweep
+     * doesn't drift these strings without an explicit decision. The rest
+     * of the app's validation messages stay in English (`APP_LOCALE=en`);
+     * these two are the only ones an end user sees when picking a
+     * province + cantón on a map of Ecuador.
+     */
+    private const MSG_PIN_OUT_OF_COVERAGE = 'El punto seleccionado está fuera de cualquier zona conocida. Verifica que la ubicación y el pin correspondan.';
+
+    private const MSG_LOCATION_PIN_MISMATCH = 'La ubicación seleccionada no contiene el punto marcado en el mapa.';
+
     /** @var array<string, mixed> */
     protected array $data = [];
 
@@ -122,11 +135,21 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             return;
         }
 
-        // No polygon contains the point — either no boundary data has been
-        // imported yet for that area, or the point is genuinely outside any
-        // known location. Either way, we can't prove inconsistency, so stay
-        // silent rather than reject.
+        // Strict at save (product decision, PR #97): when the submitted
+        // location has its own polygon, an out-of-coverage pin is treated
+        // as a hard error rather than a silent pass. The parroquia-silent
+        // case is handled by the earlier `whereNotNull('geom')`
+        // early-return — we only reach here when the submitted location
+        // has a polygon to reconcile against.
+        //
+        // Known limitation: if `locations.geom` is missing/truncated for
+        // the submitted area (seeder gap), this branch can falsely fail
+        // pins that ARE inside the location's true boundary. That's the
+        // "boundary-data gap" tradeoff behind choosing strict over silent
+        // — owned by the geom seeder team, not this rule.
         if ($matched === null) {
+            $fail(self::MSG_PIN_OUT_OF_COVERAGE);
+
             return;
         }
 
@@ -139,14 +162,7 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             ->all();
 
         if (! in_array((int) $value, $validIds, true)) {
-            // Spanish message: this is the only `LocationGeomConsistentRule`
-            // failure the end user ever sees, and they're picking a province +
-            // cantón on a map of Ecuador — an English error here is opaque to
-            // the typical user. Pinned by the test `exposes its rejection
-            // message in Spanish` below so future i18n sweeps don't drift this
-            // string without an explicit decision. The rest of the app's
-            // validation messages stay in English (`APP_LOCALE=en`).
-            $fail('La ubicación seleccionada no contiene el punto marcado en el mapa.');
+            $fail(self::MSG_LOCATION_PIN_MISMATCH);
         }
     }
 }
