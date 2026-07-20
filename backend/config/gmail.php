@@ -4,14 +4,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Gmail / SMTP transport for AssignmentNotification mail
+    | From address for AssignmentNotification mail
     |--------------------------------------------------------------------------
     |
-    | Configuración dedicada para el envío de mail de notificación de
-    | asignación de operador a una incidencia. Si los valores GMAIL_*
-    | no están seteados en el entorno, el servicio SmtpMailSender hace
-    | fallback automático a config('mail.*') (vars MAIL_*), garantizando
-    | que el mail siga saliendo incluso sin env dedicado.
+    | Overrides opcionales del `from` para el canal de notificaciones de
+    | asignación de operador. Si los valores GMAIL_FROM_* están vacíos,
+    | SmtpMailSender hace fallback automático a config('mail.from.*').
     |
     | Orden de precedencia que SmtpMailSender aplica:
     |
@@ -21,22 +19,14 @@ return [
     |   1. config('gmail.from_name')     →  si no vacío
     |   2. config('mail.from.name')      →  fallback
     |
-    | Las credenciales (host/port/username/password/encryption) NO se
-    | leen desde aquí: el mailer real las consume de la sección
-    | `mail.mailers.smtp` de config/mail.php (que ya está poblada por
-    | MAIL_HOST/MAIL_PORT/etc.). Esta sección expone SOLO el from y el
-    | "identifier" del canal (usado para logs y debugging).
+    | IMPORTANTE: las credenciales SMTP (host, port, username, password,
+    | encryption) NO se leen desde este archivo. El motor real (Symfony
+    | Mailer) las consume directamente de la sección `mail.mailers.smtp`
+    | de config/mail.php, que se llena con las env vars MAIL_HOST,
+    | MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD y MAIL_SCHEME/ENCRYPTION.
+    | Esto garantiza una sola fuente de verdad para credenciales SMTP
+    | y evita drift entre canales.
     */
-
-    'mail_host' => env('GMAIL_MAIL_HOST', 'smtp.gmail.com'),
-
-    'mail_port' => (int) env('GMAIL_MAIL_PORT', 587),
-
-    'mail_username' => env('GMAIL_MAIL_USERNAME'),
-
-    'mail_password' => env('GMAIL_MAIL_PASSWORD'),
-
-    'mail_encryption' => env('GMAIL_MAIL_ENCRYPTION', 'tls'),
 
     'from_address' => env('GMAIL_FROM_ADDRESS'),
 
