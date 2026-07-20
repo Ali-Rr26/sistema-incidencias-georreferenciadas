@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Rules;
 
+use App\Domains\Locations\Models\Location;
 use App\Domains\Locations\Repositories\LocationRepository;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
@@ -49,6 +50,32 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
         // `locations.geom` only exists on pgsql (see the migration referenced
         // above); querying it on any other driver would throw.
         if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        // The boundary-data seeder (`LocationGeomSeeder`, see #89) only loads
+        // polygons for `province` and `city` levels — `neighborhood`
+        // (parroquia) and any future level intentionally stay without geom (the
+        // upstream `pabl-o-ce/Ecuador-geoJSON` MIT dataset only has province +
+        // cantón boundaries; parroquias would require a separate curated
+        // source).
+        //
+        // We can't reliably assert "the pin is inside the user's parroquia"
+        // because we don't have the parroquia's own polygon. Even if the
+        // pin's deepest polygon-owning ancestor is the cantón that
+        // contains the parroquia, claiming the pin is in the *specific*
+        // parroquia would be inference, not assertion — and it
+        // produced false 422s for legitimate submissions in the wild (repro
+        // confirmed 2026-07-20).
+        //
+        // The maximum this rule can validate is at cantón level (and
+        // above). For parroquia (and any future level without a polygon),
+        // the rule stays silent — the boundary-feedback overlay
+        // from #91 carries the visual boundary at cantón level instead.
+        if (! Location::query()
+            ->whereKey((int) $value)
+            ->whereNotNull('geom')
+            ->exists()) {
             return;
         }
 
