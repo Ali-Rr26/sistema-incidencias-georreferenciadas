@@ -376,16 +376,66 @@ function setupFilterListeners() {
     });
   }
 
-  // Select ciudad
-  const selectCiudad = document.getElementById('filter-ciudad');
-  if (selectCiudad) {
-    selectCiudad.addEventListener('change', (e) => {
-      filterState.ciudad_id = e.target.value
-        ? parseInt(e.target.value, 10)
-        : null;
-    });
-  }
-}
+// Select ciudad
+      const selectCiudad = document.getElementById('filter-ciudad');
+      if (selectCiudad) {
+        selectCiudad.addEventListener('change', (e) => {
+          filterState.ciudad_id = e.target.value
+            ? parseInt(e.target.value, 10)
+            : null;
+        });
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // Export dropdown — hits GET /api/incidents/exportar with the active
+    // filterState. Browsers start the download via a temporary anchor so
+    // the user stays on the dashboard (no navigation).
+    // ─────────────────────────────────────────────
+    function setupExportListeners() {
+      document.querySelectorAll('[data-export-format]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const format = e.currentTarget.dataset.exportFormat;
+          if (!format) return;
+
+          const params = new URLSearchParams();
+          params.set('format', format);
+          for (const [key, value] of Object.entries(filterState)) {
+            if (value !== null && value !== undefined && value !== '') {
+              params.set(key, String(value));
+            }
+          }
+
+          triggerDownload(`/api/incidents/exportar?${params.toString()}`);
+        });
+      });
+    }
+
+    async function triggerDownload(url) {
+      try {
+        // Reuse the shared http service so JWT header / refresh flow is
+        // identical to every other dashboard call. `responseType: 'blob'`
+        // tells the service not to JSON-parse.
+        const blob = await http.get(url, { responseType: 'blob' });
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        // The server sets the filename via Content-Disposition, but a
+        // fallback here keeps the file usable when the header is stripped
+        // (e.g. some corporate proxies).
+        a.download = url.split('?')[0].split('/').pop() || 'reporte';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        console.error('Error al exportar:', err);
+        // Fallback: full navigation triggers the download via the
+        // browser's native download manager even if the blob fetch fails
+        // (e.g. large PDFs that exceed the in-memory buffer budget).
+        window.location.assign(url);
+      }
+    }
 
 // ─────────────────────────────────────────────
 // Componente
