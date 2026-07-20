@@ -58,9 +58,47 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             return;
         }
 
-        // Malformed geom is the `geom` field's own `nullable|json` rule's
-        // problem to report — this rule only cares about well-formed points.
-        $geom = json_decode((string) $geomRaw, true);
+        // `geom` arrives in different shapes depending on the request pipeline:
+        //   - "<JSON string>"                                          — form posts
+        //                                                                a JSON-encoded
+        //                                                                string (the
+        //                                                                path tests
+        //                                                                covered).
+        //   - ["type" => ..., "coordinates" => [...]]                  — already-decoded
+        //                                                                array, the most
+        //                                                                common path:
+        //                                                                axios posts a
+        //                                                                JSON object and
+        //                                                                Laravel's
+        //                                                                `nullable|json`
+        //                                                                validation accepts
+        //                                                                arrays as valid
+        //                                                                JSON (Laravel 10+).
+        //                                                                This is the path
+        //                                                                that used to explode
+        //                                                                with "Array to
+        //                                                                string conversion"
+        //                                                                → 500 on every
+        //                                                                POST /api/incidents.
+        //   - {"type":...,"coordinates":[...]} (stdClass)              — defensive (e.g. a
+        //                                                                future middleware
+        //                                                                or a model cast
+        //                                                                leak).
+        //   - any other shape                                          — malformed; the
+        //                                                                `geom` field's own
+        //                                                                `nullable|json` rule
+        //                                                                is responsible for
+        //                                                                reporting it, not us.
+        $geom = match (true) {
+            is_array($geomRaw) => $geomRaw,
+            is_string($geomRaw) => json_decode($geomRaw, true),
+            is_object($geomRaw) => json_decode((string) json_encode($geomRaw), true),
+            default => null,
+        };
+        if (! is_array($geom)) {
+            return;
+        }
+
         $coordinates = $geom['coordinates'] ?? null;
         if (! is_array($coordinates) || count($coordinates) !== 2) {
             return;
@@ -103,7 +141,14 @@ class LocationGeomConsistentRule implements DataAwareRule, ValidationRule
             ->all();
 
         if (! in_array((int) $value, $validIds, true)) {
-            $fail('The selected location does not contain the marked point on the map.');
+            // Spanish message: this is the only `LocationGeomConsistentRule`
+            // failure the end user ever sees, and they're picking a province +
+            // cantón on a map of Ecuador — an English error here is opaque to
+            // the typical user. Pinned by the test `exposes its rejection
+            // message in Spanish` below so future i18n sweeps don't drift this
+            // string without an explicit decision. The rest of the app's
+            // validation messages stay in English (`APP_LOCALE=en`).
+            $fail('La ubicación seleccionada no contiene el punto marcado en el mapa.');
         }
     }
 }
