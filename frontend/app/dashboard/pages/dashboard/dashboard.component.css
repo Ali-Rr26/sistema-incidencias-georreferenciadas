@@ -1,3 +1,34 @@
+/* === Export dropdown === */
+.gr-export-dropdown {
+  display: inline-block;
+}
+
+.gr-export-dropdown .dropdown-menu {
+  min-width: 240px;
+  padding: 8px 0;
+}
+
+.gr-export-dropdown .dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  line-height: 1.2;
+}
+
+.gr-export-dropdown .dropdown-item small {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.gr-export-dropdown .dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.gr-export-dropdown .dropdown-item:disabled,
+.gr-export-dropdown .dropdown-item[aria-disabled='true'] {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 /* === Dashboard page === */
 #page-outlet {
   animation: fadeInUp 0.25s ease;

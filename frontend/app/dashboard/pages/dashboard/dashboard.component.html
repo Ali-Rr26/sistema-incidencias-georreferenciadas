@@ -19,6 +19,54 @@
       >
         <i class="fa-solid fa-filter"></i> Filtros
       </button>
+
+      <div class="dropdown gr-export-dropdown">
+        <button
+          class="btn btn-outline-primary dropdown-toggle"
+          type="button"
+          id="btn-export"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          <i class="fa-solid fa-download"></i> Exportar
+        </button>
+        <ul
+          class="dropdown-menu dropdown-menu-end"
+          aria-labelledby="btn-export"
+        >
+          <li>
+            <button
+              class="dropdown-item"
+              type="button"
+              data-export-format="csv"
+            >
+              <i class="fa-solid fa-file-csv me-2 text-success"></i> CSV
+              <small class="text-muted d-block">Hasta 10.000 filas</small>
+            </button>
+          </li>
+          <li>
+            <button
+              class="dropdown-item"
+              type="button"
+              data-export-format="xlsx"
+            >
+              <i class="fa-solid fa-file-excel me-2 text-success"></i> Excel
+              (.xlsx)
+              <small class="text-muted d-block">Hasta 10.000 filas</small>
+            </button>
+          </li>
+          <li>
+            <button
+              class="dropdown-item"
+              type="button"
+              data-export-format="pdf"
+            >
+              <i class="fa-solid fa-file-pdf me-2 text-danger"></i> PDF
+              <small class="text-muted d-block">Hasta 2.000 filas</small>
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 

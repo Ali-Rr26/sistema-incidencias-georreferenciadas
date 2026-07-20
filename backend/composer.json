@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
         "clickbar/laravel-magellan": "^2.2",
         "dedoc/scramble": "^0.13.28",
         "intervention/image": "^4.2",
@@ -20,6 +21,7 @@
         "lcobucci/jwt": "^5.6",
         "league/flysystem-aws-s3-v3": "^3.35",
         "matanyadaev/laravel-eloquent-spatial": "^4.8",
+        "openspout/openspout": "^5.8",
         "paragonie/sodium_compat": "^2.5",
         "predis/predis": "^3.5",
         "spatie/laravel-prometheus": "*",
@@ -75,14 +77,14 @@
         "format:check": [
             "./vendor/bin/pint --test"
         ],
-        "test:unit": [
-            "@php artisan test --testsuite=Unit"
+"test:unit": [
+            "@php vendor/bin/pest --parallel --processes=8 --testsuite=Unit"
         ],
         "test:feature": [
-            "@php artisan test --testsuite=Feature"
+            "@php vendor/bin/pest --parallel --processes=8 --testsuite=Feature"
         ],
         "test": [
-            "@php artisan test"
+            "@php vendor/bin/pest --parallel --processes=8"
         ],
         "test:coverage": [
             "@php artisan test --coverage"
