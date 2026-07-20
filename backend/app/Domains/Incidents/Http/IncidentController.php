@@ -172,16 +172,28 @@ class IncidentController extends Controller
     }
 
     /**
-     * Los FormRequests validan `geom` como string GeoJSON; el cast espacial
-     * del modelo necesita un objeto Point. Compartido por store() y update().
+     * Normalizes accepted `geom` input shapes for spatial persistence.
      */
     private function castGeomToPoint(array $data): array
     {
-        if (isset($data['geom']) && is_string($data['geom'])) {
-            $geom = json_decode($data['geom'], true);
-            if (isset($geom['coordinates'])) {
-                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
-            }
+        if (! isset($data['geom'])) {
+            return $data;
+        }
+
+        $geom = match (true) {
+            $data['geom'] instanceof Point => $data['geom'],
+            is_array($data['geom']) => $data['geom'],
+            is_string($data['geom']) => json_decode($data['geom'], true),
+            default => null,
+        };
+
+        if ($geom instanceof Point) {
+            return $data;
+        }
+
+        $coordinates = is_array($geom) ? ($geom['coordinates'] ?? null) : null;
+        if (is_array($coordinates) && isset($coordinates[0], $coordinates[1])) {
+            $data['geom'] = new Point((float) $coordinates[1], (float) $coordinates[0]);
         }
 
         return $data;
