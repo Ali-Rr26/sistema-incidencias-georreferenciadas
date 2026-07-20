@@ -48,98 +48,114 @@ vi.mock('../../../shared/init-map-view.js', () => ({
   default: vi.fn(async () => ({ map: fakeMap, remove: vi.fn() })),
 }));
 
-    function makeFakeMarker(initialLatLng) {
-      // Elemento del marker conectado al document para que el test pueda
-      // inspeccionarlo con `querySelector` (el original de Leaflet hace lo
-      // mismo — `marker.getElement()` devuelve un nodo ya agregado al mapa).
-      const iconDiv = document.createElement('div');
-      iconDiv.classList.add('leaflet-marker-icon');
-      const container = document.createElement('div');
-      container.classList.add('leaflet-marker-container');
-      container.appendChild(iconDiv);
-      document.body.appendChild(container);
+function makeFakeMarker(initialLatLng) {
+  // Elemento del marker conectado al document para que el test pueda
+  // inspeccionarlo con `querySelector` (el original de Leaflet hace lo
+  // mismo — `marker.getElement()` devuelve un nodo ya agregado al mapa).
+  const iconDiv = document.createElement('div');
+  iconDiv.classList.add('leaflet-marker-icon');
+  const container = document.createElement('div');
+  container.classList.add('leaflet-marker-container');
+  container.appendChild(iconDiv);
+  document.body.appendChild(container);
 
-      const initialLat = Array.isArray(initialLatLng) ? initialLatLng[0] : 0;
-      const initialLng = Array.isArray(initialLatLng) ? initialLatLng[1] : 0;
-      const position = { lat: initialLat, lng: initialLng };
+  const initialLat = Array.isArray(initialLatLng) ? initialLatLng[0] : 0;
+  const initialLng = Array.isArray(initialLatLng) ? initialLatLng[1] : 0;
+  const position = { lat: initialLat, lng: initialLng };
 
-      const marker = {
-        setLatLng: vi.fn(([lat, lng]) => {
-          position.lat = lat;
-          position.lng = lng;
-        }),
-        on: vi.fn(),
-        getLatLng: vi.fn(() => ({ lat: position.lat, lng: position.lng })),
-        getElement: vi.fn(() => container),
-      };
-      marker.addTo = vi.fn(() => marker);
-      return marker;
-    }
+  const marker = {
+    setLatLng: vi.fn(([lat, lng]) => {
+      position.lat = lat;
+      position.lng = lng;
+    }),
+    on: vi.fn(),
+    getLatLng: vi.fn(() => ({ lat: position.lat, lng: position.lng })),
+    getElement: vi.fn(() => container),
+  };
+  marker.addTo = vi.fn(() => marker);
+  return marker;
+}
 
-    /**
-     * Feature: map-location-boundary — builds the L stub with enough surface
-     * for the new code path. The default `marker` covers the existing tests;
-     * the geoJSON + tileLayer shims cover the boundary + tile layer code paths.
-     */
-    function makeFakeL() {
-      const fakeLayer = {
-        addTo: vi.fn(function () {
-          return this;
-        }),
-        remove: vi.fn(),
-        getBounds: vi.fn(() => ({
-          isValid: () => true,
-        })),
-      };
-      return {
-        // L.marker([lat, lng], opts): respetar el primer argumento como
-        // posición inicial — el componente llama esto UNA vez al crear el
-        // marker, esperando que getLatLng retorne esas coords.
-        marker: vi.fn((latlng) => makeFakeMarker(latlng)),
-        geoJSON: vi.fn(() => fakeLayer),
-        tileLayer: vi.fn(() => ({
-          addTo: vi.fn(() => ({})),
-        })),
-        map: vi.fn(() => fakeMap),
-      };
-    }
+/**
+ * Feature: map-location-boundary — builds the L stub with enough surface
+ * for the new code path. The default `marker` covers the existing tests;
+ * the geoJSON + tileLayer shims cover the boundary + tile layer code paths.
+ */
+function makeFakeL() {
+  const fakeLayer = {
+    addTo: vi.fn(function () {
+      return this;
+    }),
+    remove: vi.fn(),
+    getBounds: vi.fn(() => ({
+      isValid: () => true,
+    })),
+  };
+  return {
+    // L.marker([lat, lng], opts): respetar el primer argumento como
+    // posición inicial — el componente llama esto UNA vez al crear el
+    // marker, esperando que getLatLng retorne esas coords.
+    marker: vi.fn((latlng) => makeFakeMarker(latlng)),
+    geoJSON: vi.fn(() => fakeLayer),
+    tileLayer: vi.fn(() => ({
+      addTo: vi.fn(() => ({})),
+    })),
+    map: vi.fn(() => fakeMap),
+  };
+}
 
-    /** Location tree fixture con geom (feature: map-location-boundary). */
-    const locationTreeFixtureWithGeom = [
+/** Location tree fixture con geom (feature: map-location-boundary). */
+const locationTreeFixtureWithGeom = [
+  {
+    id: 100,
+    name: 'Ecuador',
+    level: 'country',
+    children: [
       {
-        id: 100,
-        name: 'Ecuador',
-        level: 'country',
+        id: 200,
+        name: 'Pichincha',
+        level: 'province',
+        geom: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [-78.6, 0.0],
+                [-78.4, 0.0],
+                [-78.4, 0.2],
+                [-78.6, 0.2],
+                [-78.6, 0.0],
+              ],
+            ],
+          ],
+        },
         children: [
           {
-            id: 200,
-            name: 'Pichincha',
-            level: 'province',
+            id: 300,
+            name: 'Quito',
+            level: 'city',
+            parent_id: 200,
             geom: {
               type: 'MultiPolygon',
-              coordinates: [[[
-                [-78.6, 0.0], [-78.4, 0.0], [-78.4, 0.2], [-78.6, 0.2], [-78.6, 0.0],
-              ]]],
+              coordinates: [
+                [
+                  [
+                    [-78.55, 0.05],
+                    [-78.45, 0.05],
+                    [-78.45, 0.15],
+                    [-78.55, 0.15],
+                    [-78.55, 0.05],
+                  ],
+                ],
+              ],
             },
-            children: [
-              {
-                id: 300,
-                name: 'Quito',
-                level: 'city',
-                parent_id: 200,
-                geom: {
-                  type: 'MultiPolygon',
-                  coordinates: [[[
-                    [-78.55, 0.05], [-78.45, 0.05], [-78.45, 0.15], [-78.55, 0.15], [-78.55, 0.05],
-                  ]]],
-                },
-                children: [],
-              },
-            ],
+            children: [],
           },
         ],
       },
-    ];
+    ],
+  },
+];
 
 const categoryTreeFixture = [
   {
@@ -1106,146 +1122,145 @@ describe('incidencias.form — 4-step stepper', () => {
     );
     // The step-3 error is still written into its own (now hidden) panel
     // so it's not lost — just not where the user is landed first.
-        expect(document.getElementById('ici-error-geom').textContent).toMatch(
-          /municipio/i,
-        );
-      });
-    });
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /municipio/i,
+    );
+  });
+});
 
-    /* ────────────────────────────────────────────────────────────────────────
-     * feature: map-location-boundary (issue: el usuario dropeaba el pin afuera
-     * del boundary del cantón seleccionado sin saber por qué el sistema
-     * rechazaba). Estos tests pinnean el comportamiento UX:
-     *   - selecting a cantón renders its polygon as an overlay
-     *   - selecting a parroquia falls back al cantón padre + sub-label
-     *   - pin inside boundary → marker ok, sin warning
-     *   - pin outside boundary → marker warn, warning inline
-     *   - sin selección → estado neutro, sin warning
-     * ──────────────────────────────────────────────────────────────────────── */
-    describe('feature: map-location-boundary', () => {
-      let component;
+/* ────────────────────────────────────────────────────────────────────────
+ * feature: map-location-boundary (issue: el usuario dropeaba el pin afuera
+ * del boundary del cantón seleccionado sin saber por qué el sistema
+ * rechazaba). Estos tests pinnean el comportamiento UX:
+ *   - selecting a cantón renders its polygon as an overlay
+ *   - selecting a parroquia falls back al cantón padre + sub-label
+ *   - pin inside boundary → marker ok, sin warning
+ *   - pin outside boundary → marker warn, warning inline
+ *   - sin selección → estado neutro, sin warning
+ * ──────────────────────────────────────────────────────────────────────── */
+describe('feature: map-location-boundary', () => {
+  let component;
 
-      beforeAll(async () => {
-        const mod = await import('./incidencias.form.component.js');
-        component = mod.default;
-      });
+  beforeAll(async () => {
+    const mod = await import('./incidencias.form.component.js');
+    component = mod.default;
+  });
 
-      beforeEach(() => {
-        vi.clearAllMocks();
-        buildFormDom();
-        // L stub extendido con geoJSON + tileLayer + map para este feature.
-        vi.stubGlobal('L', makeFakeL());
-        mockRouter.queryParams = new URLSearchParams();
-        mockRouter.navigate.mockClear();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    buildFormDom();
+    // L stub extendido con geoJSON + tileLayer + map para este feature.
+    vi.stubGlobal('L', makeFakeL());
+    mockRouter.queryParams = new URLSearchParams();
+    mockRouter.navigate.mockClear();
 
-        // Usar el tree con geom para que la cascada pueda resolver boundary.
-        mockHttp.get.mockImplementation((path) => {
-          if (path === '/incident-categories/tree') {
-            return Promise.resolve({ data: categoryTreeFixture });
-          }
-          if (path === '/locations/tree') {
-            return Promise.resolve({ data: locationTreeFixtureWithGeom });
-          }
-          return Promise.resolve({ data: [] });
-        });
-      });
-
-      afterEach(() => {
-        vi.unstubAllGlobals();
-        component.onDestroy?.();
-      });
-
-      /** Helper: simula selección en el dropdown de cantones. */
-      async function selectCanton(cantonId) {
-        const provinceSelect = document.getElementById('ici-location-province');
-        provinceSelect.value = '200'; // Pichincha
-        provinceSelect.dispatchEvent(new Event('change'));
-        await Promise.resolve();
-        await Promise.resolve();
-        const citySelect = document.getElementById('ici-location-city');
-        citySelect.value = String(cantonId);
-        citySelect.dispatchEvent(new Event('change'));
-        await Promise.resolve();
-        await Promise.resolve();
+    // Usar el tree con geom para que la cascada pueda resolver boundary.
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
       }
-
-      it('dibuja el boundary del cantón seleccionado y muestra el disclaimer', async () => {
-        await component.onInit();
-        await selectCanton(300);
-
-        const layer = document.getElementById('ici-boundary-disclaimer');
-        expect(layer.classList.contains('d-none')).toBe(false);
-
-        const sublabel = document.getElementById('ici-boundary-sublabel');
-        expect(sublabel.classList.contains('d-none')).toBe(true);
-      });
-
-      it('marca el pin verde y oculta el warning cuando el pin está adentro del boundary', async () => {
-        await component.onInit();
-        await selectCanton(300);
-
-        // Quito bbox: lon [-78.55,-78.45], lat [0.05,0.15]. Punto adentro.
-        clickMap(0.1, -78.5);
-
-        // El marker real está en el DOM vía getElement(); las clases de variant
-        // se aplican al `.leaflet-marker-icon` interno. Buscamos directamente
-        // en el DOM porque el marker está en un closure del componente.
-        const icons = document.querySelectorAll('.leaflet-marker-icon');
-        expect(icons.length).toBeGreaterThan(0);
-        // El más reciente es el último que clickMap agregó — usamos ese.
-        const icon = icons[icons.length - 1];
-        expect(icon.classList.contains('incid-form__marker--ok')).toBe(true);
-        expect(icon.classList.contains('incid-form__marker--warn')).toBe(false);
-
-        const warning = document.getElementById('ici-boundary-warning');
-        expect(warning.classList.contains('d-none')).toBe(true);
-      });
-
-      it('marca el pin rojo y muestra el warning cuando el pin está afuera del boundary', async () => {
-        await component.onInit();
-        await selectCanton(300);
-
-        // Punto afuera (al occidente del cantón).
-        clickMap(0.05, -79.5);
-
-        const icons = document.querySelectorAll('.leaflet-marker-icon');
-        const icon = icons[icons.length - 1];
-        expect(icon.classList.contains('incid-form__marker--warn')).toBe(true);
-        expect(icon.classList.contains('incid-form__marker--ok')).toBe(false);
-
-        const warning = document.getElementById('ici-boundary-warning');
-        expect(warning.classList.contains('d-none')).toBe(false);
-        expect(warning.textContent).toMatch(/fuera de la ubicación/);
-        expect(warning.textContent).toMatch(/cantón Quito/);
-      });
-
-      it('mantiene estado neutro (sin warning) si el usuario no seleccionó ubicación', async () => {
-        await component.onInit();
-
-        clickMap(0.1, -78.5);
-
-        const warning = document.getElementById('ici-boundary-warning');
-        expect(warning.classList.contains('d-none')).toBe(true);
-
-        const disclaimer = document.getElementById('ici-boundary-disclaimer');
-        expect(disclaimer.classList.contains('d-none')).toBe(true);
-      });
-
-      it('limpia el warning cuando el usuario reposiciona el pin adentro después de haberlo dropeado afuera', async () => {
-        await component.onInit();
-        await selectCanton(300);
-
-        // Primero dropear afuera
-        clickMap(0.05, -79.5);
-        let warning = document.getElementById('ici-boundary-warning');
-        expect(warning.classList.contains('d-none')).toBe(false);
-
-        // Después reposicionar adentro — el marker se actualiza vía setLatLng
-        // y refresca el warning.
-        clickMap(0.1, -78.5);
-
-        warning = document.getElementById('ici-boundary-warning');
-        expect(warning.classList.contains('d-none')).toBe(true);
-      });
+      if (path === '/locations/tree') {
+        return Promise.resolve({ data: locationTreeFixtureWithGeom });
+      }
+      return Promise.resolve({ data: [] });
     });
+  });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    component.onDestroy?.();
+  });
+
+  /** Helper: simula selección en el dropdown de cantones. */
+  async function selectCanton(cantonId) {
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200'; // Pichincha
+    provinceSelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = String(cantonId);
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+  }
+
+  it('dibuja el boundary del cantón seleccionado y muestra el disclaimer', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    const layer = document.getElementById('ici-boundary-disclaimer');
+    expect(layer.classList.contains('d-none')).toBe(false);
+
+    const sublabel = document.getElementById('ici-boundary-sublabel');
+    expect(sublabel.classList.contains('d-none')).toBe(true);
+  });
+
+  it('marca el pin verde y oculta el warning cuando el pin está adentro del boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    // Quito bbox: lon [-78.55,-78.45], lat [0.05,0.15]. Punto adentro.
+    clickMap(0.1, -78.5);
+
+    // El marker real está en el DOM vía getElement(); las clases de variant
+    // se aplican al `.leaflet-marker-icon` interno. Buscamos directamente
+    // en el DOM porque el marker está en un closure del componente.
+    const icons = document.querySelectorAll('.leaflet-marker-icon');
+    expect(icons.length).toBeGreaterThan(0);
+    // El más reciente es el último que clickMap agregó — usamos ese.
+    const icon = icons[icons.length - 1];
+    expect(icon.classList.contains('incid-form__marker--ok')).toBe(true);
+    expect(icon.classList.contains('incid-form__marker--warn')).toBe(false);
+
+    const warning = document.getElementById('ici-boundary-warning');
+    expect(warning.classList.contains('d-none')).toBe(true);
+  });
+
+  it('marca el pin rojo y muestra el warning cuando el pin está afuera del boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    // Punto afuera (al occidente del cantón).
+    clickMap(0.05, -79.5);
+
+    const icons = document.querySelectorAll('.leaflet-marker-icon');
+    const icon = icons[icons.length - 1];
+    expect(icon.classList.contains('incid-form__marker--warn')).toBe(true);
+    expect(icon.classList.contains('incid-form__marker--ok')).toBe(false);
+
+    const warning = document.getElementById('ici-boundary-warning');
+    expect(warning.classList.contains('d-none')).toBe(false);
+    expect(warning.textContent).toMatch(/fuera de la ubicación/);
+    expect(warning.textContent).toMatch(/cantón Quito/);
+  });
+
+  it('mantiene estado neutro (sin warning) si el usuario no seleccionó ubicación', async () => {
+    await component.onInit();
+
+    clickMap(0.1, -78.5);
+
+    const warning = document.getElementById('ici-boundary-warning');
+    expect(warning.classList.contains('d-none')).toBe(true);
+
+    const disclaimer = document.getElementById('ici-boundary-disclaimer');
+    expect(disclaimer.classList.contains('d-none')).toBe(true);
+  });
+
+  it('limpia el warning cuando el usuario reposiciona el pin adentro después de haberlo dropeado afuera', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    // Primero dropear afuera
+    clickMap(0.05, -79.5);
+    let warning = document.getElementById('ici-boundary-warning');
+    expect(warning.classList.contains('d-none')).toBe(false);
+
+    // Después reposicionar adentro — el marker se actualiza vía setLatLng
+    // y refresca el warning.
+    clickMap(0.1, -78.5);
+
+    warning = document.getElementById('ici-boundary-warning');
+    expect(warning.classList.contains('d-none')).toBe(true);
+  });
+});

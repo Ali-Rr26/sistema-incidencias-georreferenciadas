@@ -164,10 +164,10 @@ export default {
     // carga arriba ya trae cada nodo con su `geom`. No hace falta un endpoint
     // nuevo: leemos directo del árbol en memoria. Estos helpers resuelven el
     // boundary para la location seleccionada.
-    let pendingBoundary = null;       // GeoJSON (MultiPolygon / Polygon) a dibujar
-    let pendingBoundaryLabel = null;  // "cantón Santa Elena" (para el mensaje)
+    let pendingBoundary = null; // GeoJSON (MultiPolygon / Polygon) a dibujar
+    let pendingBoundaryLabel = null; // "cantón Santa Elena" (para el mensaje)
     let pendingBoundarySublabel = null; // "Parroquia X dentro de cantón Y"
-    let boundaryLayer = null;         // referencia Leaflet del layer actual
+    let boundaryLayer = null; // referencia Leaflet del layer actual
 
     function findLocationInTree(id, nodes) {
       if (!id || !nodes) return null;
@@ -222,7 +222,12 @@ export default {
       }
       pendingBoundary = r.geom;
       // "cantón" para city, "provincia" para province — singular para el mensaje.
-      const levelTxt = r.level === 'city' ? 'cantón' : r.level === 'province' ? 'provincia' : r.level;
+      const levelTxt =
+        r.level === 'city'
+          ? 'cantón'
+          : r.level === 'province'
+            ? 'provincia'
+            : r.level;
       pendingBoundaryLabel = `${levelTxt} ${r.name}`;
       pendingBoundarySublabel =
         r.source === 'parent' && r.parishName
