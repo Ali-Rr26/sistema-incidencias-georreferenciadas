@@ -335,6 +335,13 @@ it('pgsql: fails strict with the "fuera de cualquier zona conocida" message when
     // Distinct from the silent-parroquia path covered by the sibling test
     // below: parroquia has no own polygon, so the rule stays silent. This
     // scenario only applies when the submitted location has geom != null.
+    //
+    // Defensive isolation: `RefreshDatabase` already empties `locations`
+    // between tests, but if a future change adds a global seeder (or any
+    // per-test seeding of `locations`), `findByPoint` could return an
+    // unrelated polygon instead of null and the strict branch under test
+    // would never fire. Explicit clear pins the assumption to code.
+    Location::query()->delete();
     $canton = Location::create([
         'name' => 'Quito',
         'level' => 'city',
@@ -370,6 +377,9 @@ it('pgsql: stays silent for parroquia even when the pin is outside ALL known pol
     // compare against, and rejecting would be the same class of false-422
     // bug #95 fixed for the inside-polygon case. The strict message
     // applies only when the submitted location has its own polygon.
+    //
+    // Defensive isolation: see the sibling test above — same rationale.
+    Location::query()->delete();
     $parish = Location::create([
         'name' => 'La Libertad',
         'level' => 'neighborhood',
