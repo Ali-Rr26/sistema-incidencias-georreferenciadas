@@ -301,12 +301,14 @@ export default {
 
     function refreshPinVsBoundary() {
       const warningEl = document.getElementById(P + 'boundary-warning');
+      const submitBtn = $('submit');
       if (!marker || !pendingBoundary) {
         setPinVariant('default');
         if (warningEl) {
           warningEl.classList.add('d-none');
           warningEl.textContent = '';
         }
+        if (submitBtn) submitBtn.disabled = false;
         return;
       }
       const ll = marker.getLatLng();
@@ -320,12 +322,14 @@ export default {
           warningEl.classList.add('d-none');
           warningEl.textContent = '';
         }
+        if (submitBtn) submitBtn.disabled = false;
       } else {
         setPinVariant('warn');
         if (warningEl) {
-          warningEl.textContent = `El pin está fuera de la ubicación ${pendingBoundaryLabel}. Si querés enviar igual, podés hacerlo.`;
+          warningEl.textContent = `El pin está fuera de la ubicación ${pendingBoundaryLabel}. Ajustá la ubicación o el pin antes de guardar.`;
           warningEl.classList.remove('d-none');
         }
+        if (submitBtn) submitBtn.disabled = true;
       }
     }
 
@@ -886,6 +890,26 @@ export default {
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+
+      // Defense in depth — `refreshPinVsBoundary()` disables the submit
+      // button when the pin is outside the selected location's polygon,
+      // but a form submit triggered by Enter in any input bypasses that
+      // button-level `disabled` state. Re-check the warning's visibility
+      // here as the single source of truth so we never POST a
+      // location/pin pair the user wasn't warned about.
+      const boundaryWarningEl = document.getElementById(P + 'boundary-warning');
+      if (
+        boundaryWarningEl &&
+        !boundaryWarningEl.classList.contains('d-none')
+      ) {
+        showFieldError(
+          P + 'error-geom',
+          'El pin está fuera de la ubicación seleccionada. Ajustá la ubicación o el pin antes de guardar.',
+        );
+        goToStep(3);
+        return;
+      }
+
       resetAllErrors();
 
       // ── Validate shared fields (defense in depth — the per-step

@@ -1263,4 +1263,72 @@ describe('feature: map-location-boundary', () => {
     warning = document.getElementById('ici-boundary-warning');
     expect(warning.classList.contains('d-none')).toBe(true);
   });
+
+  // ── Strict-submit behavior: cuando el pin está afuera del boundary
+  // seleccionado, el form no debe dejar enviar la incidencia. Esta
+  // restricción la arrastra PR #97 ("ser estrictos al guardar"): la
+  // regla del backend rechaza el POST con 422, pero ese rebote es UX
+  // hostil — bloqueamos acá en el cliente para que el usuario nunca
+  // envíe un par (location_id, geom) inconsistente. ──
+
+  it('disables the submit button when the pin is outside the selected boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+
+    const submit = document.getElementById('ici-submit');
+    expect(submit.disabled).toBe(false);
+    clickMap(0.05, -79.5); // outside Quito bbox
+    expect(submit.disabled).toBe(true);
+  });
+
+  it('keeps the submit button enabled when the pin is inside the selected boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+    clickMap(0.1, -78.5); // inside Quito bbox
+
+    expect(document.getElementById('ici-submit').disabled).toBe(false);
+  });
+
+  it('re-enables the submit button when the pin moves from outside to inside the boundary', async () => {
+    await component.onInit();
+    await selectCanton(300);
+    clickMap(0.05, -79.5); // outside
+    expect(document.getElementById('ici-submit').disabled).toBe(true);
+
+    clickMap(0.1, -78.5); // inside
+    expect(document.getElementById('ici-submit').disabled).toBe(false);
+  });
+
+  it('keeps the submit button enabled when no location (and therefore no boundary) is selected', async () => {
+    await component.onInit();
+    clickMap(0.1, -78.5); // pin dropped with no selection at all
+
+    // Without `pendingBoundary`, the warning is hidden by design, so
+    // strict-mode cannot apply — the user is submitting without a
+    // location binding, which the backend treats as `location_id: null`
+    // and `LocationGeomConsistentRule` will not fire against.
+    expect(document.getElementById('ici-submit').disabled).toBe(false);
+  });
+
+  it('blocks form submit when the pin is outside the boundary, even if the submit event is dispatched directly (Enter-key bypass)', async () => {
+    mockHttp.post.mockResolvedValue({ data: { id: 101 } });
+
+    await component.onInit();
+    await selectCanton(300);
+    clickMap(0.05, -79.5); // outside
+
+    // The button is disabled, but Enter in any input still triggers a
+    // submit event on the form. Submit must NOT reach POST /incidents;
+    // the form should show the warning inline and stop.
+    document
+      .getElementById('ici-form')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockHttp.post).not.toHaveBeenCalled();
+    expect(document.getElementById('ici-error-geom').textContent).toMatch(
+      /fuera de la ubicación/i,
+    );
+  });
 });
