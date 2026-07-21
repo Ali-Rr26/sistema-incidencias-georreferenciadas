@@ -22,7 +22,7 @@ class StoreUserRequest extends FormRequest
             return false;
         }
 
-        if ($user->isOrganizationAdmin()) {
+        if (! $user->isSystemAdmin()) {
             $roleId = $this->input('role_id');
             $orgId = $this->input('organization_id');
 

@@ -32,7 +32,7 @@ class UpdateUserRequest extends FormRequest
             return false;
         }
 
-        if ($user->isOrganizationAdmin()) {
+        if (! $user->isSystemAdmin()) {
             // Cannot assign administrative roles (admin_sistema, operador_sistema)
             if ($this->has('role_id')) {
                 $roleId = $this->input('role_id');
