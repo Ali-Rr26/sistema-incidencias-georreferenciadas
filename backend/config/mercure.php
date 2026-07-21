@@ -120,9 +120,11 @@ return [
     | Hub
     |--------------------------------------------------------------------------
     |
-    | URL of the Mercure hub. In dev the hub runs in the same FrankenPHP
-    | process so the default loopback URL works. In production, point
-    | MERCURE_PUBLIC_URL at the hub's docker-compose sidecar hostname.
+    | URL of the Mercure hub. The hub runs as a separate docker-compose service
+    | (`mercure`) in every environment. Local and production differ only in
+    | hostname: in dev the hub is reachable as `http://mercure:3000/.well-known/
+    | mercure` (compose-internal DNS); in production point MERCURE_PUBLIC_URL
+    | at whatever sidecar hostname your platform exposes.
     |
     */
     'hub' => [

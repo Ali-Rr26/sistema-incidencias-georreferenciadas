@@ -34,8 +34,8 @@ flowchart LR
     end
 
     %% ============ BACKEND CONTAINER ============
-    subgraph BE["🖥️ Backend container · FrankenPHP 1.12.4"]
-        Octane["Laravel 13.15 + Octane 2.17.5<br/>PHP ≥8.3 · driver=frankenphp<br/>Caddy embebido (HTTP server)<br/>QUEUE_CONNECTION=sync<br/>(sin queue worker · sin scheduler)"]
+    subgraph BE["🖥️ Backend container · PHP 8.3 + Swoole 5"]
+        Octane["Laravel 13.15 + Octane 2.17.5<br/>PHP ≥8.3 · driver=swoole<br/>Swoole HTTP server (workers + task workers)<br/>QUEUE_CONNECTION=sync<br/>(sin queue worker · sin scheduler)"]
     end
 
     %% ============ MERCURE (separate service) ============
@@ -71,7 +71,7 @@ flowchart LR
     Octane -->|spatial queries| PG
     Octane -->|CQRS sync listeners| Redis
     Octane -->|upload imágenes| RustFS
-    Octane -.->|publish (sync, sin queue)| Mercure
+    Octane -.->|publish sync sin queue| Mercure
     Mercure -->|SSE / EventSource| Browser
 
     %% Observability (dashed)
@@ -87,7 +87,7 @@ flowchart LR
     %% Quality
     GH -->|lint + test + build| FE
     GH -->|lint + test + build| BE
-    GH -.->|scan condicional (si SONAR_TOKEN)| Sonar
+    GH -.->|scan condicional si SONAR_TOKEN| Sonar
 
     %% ============ STYLES ============
     classDef browserCls fill:#fff3e0,stroke:#e65100,color:#bf360c

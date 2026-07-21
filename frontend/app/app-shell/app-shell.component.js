@@ -1043,11 +1043,13 @@ function createBellPanel({
 
 /**
  * Establish the SSE connection to the Mercure hub for real-time bell
- * updates. Laravel Octane's FrankenPHP driver has no StreamedResponse
- * support (github.com/laravel/octane#903 — reproduces under RoadRunner
- * too, so it isn't a driver-specific quirk), so a hand-rolled SSE loop in
- * the backend never holds the connection open. Mercure sidesteps this: a
- * dedicated Go hub process holds the connection, not a PHP worker.
+ * updates. A hand-rolled SSE loop in the backend would never hold the
+ * connection open because Octane's runtime model — historically with
+ * FrankenPHP/RoadRunner buffering (laravel/octane#903, upstream
+ * closed-PRs #1141/#1144) and now with Swoole's stream-friendly
+ * SwooleClient — needs the actual SSE to be held by an external long-lived
+ * worker. Mercure is that external worker: a dedicated Go hub process
+ * holds the connection, PHP just publishes via Symfony Mercure SDK.
  *
  * The topic (`user:{id}:notifications`) must match
  * `NotificationService::topicFor()` on the backend exactly. Auth is the
