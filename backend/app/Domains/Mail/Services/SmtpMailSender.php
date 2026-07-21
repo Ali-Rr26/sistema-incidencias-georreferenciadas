@@ -106,4 +106,19 @@ class SmtpMailSender implements MailSenderInterface
 
         return (string) config('mail.from.name', (string) config('app.name', 'Sistema de Incidencias'));
     }
+
+    public function sendUserInvitation(User $user, string $tokenPlain): void
+    {
+        $fromAddress = $this->resolveFromAddress();
+        $fromName = $this->resolveFromName();
+
+        // TODO (WU-2): Reemplazar por new UserInvitedMail($user, $tokenPlain)
+        // cuando el mailable y la vista estén creados.
+        Log::info('UserInvitation mail would be sent', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'token_plain' => $tokenPlain,
+            'from' => $fromAddress,
+        ]);
+    }
 }

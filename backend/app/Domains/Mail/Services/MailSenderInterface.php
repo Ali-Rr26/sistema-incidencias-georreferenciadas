@@ -41,4 +41,16 @@ interface MailSenderInterface
      *                                  ('responsable' | 'apoyo').
      */
     public function sendAssignedIncident(User $user, Incident $incident, string $assignmentRole): void;
+
+    /**
+     * Envía un mail de invitación al usuario recién creado.
+     *
+     * El mail contiene un link con el token en plaintext para que
+     * el invitado acepte los Términos y Condiciones y setee su password.
+     *
+     * @param  User  $user  Usuario invitado (destinatario).
+     * @param  string  $tokenPlain  Token de invitación en texto plano
+     *                              (NUNCA guardar en la DB — solo en el mail).
+     */
+    public function sendUserInvitation(User $user, string $tokenPlain): void;
 }

@@ -16,6 +16,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Mail\Services\MailSenderInterface;
@@ -74,6 +75,9 @@ class AppServiceProvider extends ServiceProvider
         // con otros observadores ni con el sistema de mail transaccional
         // general (registros, recuperación de contraseña, etc.).
         $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
+        // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
+        $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
 
         $this->app->singleton(FirebaseTokenVerifier::class, function () {
             $credentialsPath = (string) (config('services.firebase.credentials_path')
