@@ -31,12 +31,12 @@ it('generate returns a 64-character random token', function (): void {
     expect(ctype_alnum($tokenPlain))->toBeTrue();
 });
 
-it('the hash is verifiable with Hash::check', function (): void {
+it('the hash is verifiable with sha256', function (): void {
     $generator = new InvitationTokenGenerator;
 
     ['tokenPlain' => $tokenPlain, 'tokenHash' => $tokenHash] = $generator->generate();
 
-    expect(Hash::check($tokenPlain, $tokenHash))->toBeTrue();
+    expect(hash('sha256', $tokenPlain))->toEqual($tokenHash);
 });
 
 it('two generate calls produce different tokens', function (): void {

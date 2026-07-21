@@ -164,28 +164,25 @@ class InvitationService
      */
     private function findInvitationByToken(string $tokenPlain): ?UserInvitation
     {
-        // Cargar TODAS las invitaciones para poder distinguir consumed vs. not-found.
-        $all = UserInvitation::all();
+        $hash = hash('sha256', $tokenPlain);
 
-        foreach ($all as $invitation) {
-            if (! Hash::check($tokenPlain, $invitation->token_hash)) {
-                continue;
-            }
+        // Búsqueda directa O(1) indexada en la base de datos
+        $invitation = UserInvitation::where('token_hash', $hash)->first();
 
-            // Token encontrado — verificar estado
-            if ($invitation->accepted_at !== null) {
-                throw new InvitationGoneException('Invitación ya utilizada');
-            }
-
-            if ($invitation->isExpired()) {
-                throw new InvitationGoneException('Token expirado');
-            }
-
-            // Vigente y pendiente
-            return $invitation;
+        if ($invitation === null) {
+            return null;
         }
 
-        // Ninguna invitación matcheó el token
-        return null;
+        // Token encontrado — verificar estado
+        if ($invitation->accepted_at !== null) {
+            throw new InvitationGoneException('Invitación ya utilizada');
+        }
+
+        if ($invitation->isExpired()) {
+            throw new InvitationGoneException('Token expirado');
+        }
+
+        // Vigente y pendiente
+        return $invitation;
     }
 }

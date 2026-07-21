@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Invitations\Services;
 
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -26,7 +25,7 @@ class InvitationTokenGenerator
 
         return [
             'tokenPlain' => $tokenPlain,
-            'tokenHash' => Hash::make($tokenPlain),
+            'tokenHash' => hash('sha256', $tokenPlain),
         ];
     }
 }

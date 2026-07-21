@@ -51,8 +51,8 @@ it('stores hashed token in database, not plaintext', function (): void {
     expect($invitation)->not->toBeNull();
     // Token hash must NOT be the same as the token plain
     expect($invitation->token_hash)->not->toBe($result->tokenPlain);
-    // Hash::make produces a bcrypt hash that starts with $2y$ or $2b$
-    expect(substr($invitation->token_hash, 0, 4))->toMatch('/^\$2[by]\$/');
+    // The token hash must be a valid 64-character hex string (SHA-256)
+    expect($invitation->token_hash)->toMatch('/^[a-f0-9]{64}$/');
 });
 
 it('does not throw when mail sending fails (S-7 tolerance)', function (): void {
