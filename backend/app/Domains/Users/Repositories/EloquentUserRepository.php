@@ -16,6 +16,23 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
         parent::__construct(new User);
     }
 
+    /**
+     * Create a user record.
+     *
+     * Password is always stripped: admin-created users are born with password=null
+     * and set it later via the invitation acceptance flow. Self-register via
+     * RegisterService bypasses this repository (calls User::create directly).
+     */
+    public function create(array $data): User
+    {
+        // Defensive: never accept a password from the data array.
+        // StoreUserRequest already prohibits it, but the repository is the last
+        // line of defense.
+        unset($data['password'], $data['password_confirmation']);
+
+        return $this->newQuery()->create($data);
+    }
+
     public function findByEmail(string $email): ?User
     {
         return $this->newQuery()->where('email', $email)->first();

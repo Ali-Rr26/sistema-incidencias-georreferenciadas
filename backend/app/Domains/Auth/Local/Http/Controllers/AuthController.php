@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Controllers;
 
+use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
 use App\Domains\Auth\Mercure\Services\MercureCookieService;
@@ -45,6 +46,10 @@ class AuthController
                 ip: $request->ip(),
                 ua: $request->userAgent(),
             );
+        } catch (PendingInvitationException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], Response::HTTP_UNAUTHORIZED);
         } catch (AuthenticationException $e) {
             throw $e->toValidationException();
         }

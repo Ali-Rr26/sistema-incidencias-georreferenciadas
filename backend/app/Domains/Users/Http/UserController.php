@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http;
 
+use App\Domains\Invitations\Services\InvitationService;
 use App\Domains\Organizations\Repositories\OrganizationRepository;
 use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Users\Http\Requests\StoreUserRequest;
@@ -18,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -28,6 +30,7 @@ class UserController extends Controller
         private readonly ProfileImageService $profileImageService,
         private readonly RoleRepository $roles,
         private readonly OrganizationRepository $organizations,
+        private readonly InvitationService $invitationService,
     ) {
         $this->authorizeResource(User::class, 'user');
     }
@@ -46,6 +49,17 @@ class UserController extends Controller
         $user = $this->users->create(
             $request->validated(),
         );
+
+        // Capture inviter before the closure — $request is not available after the
+        // HTTP response is sent (afterCommit runs after request lifecycle).
+        $inviter = $request->user();
+
+        // Dispatch invitation mail after the transaction commits successfully.
+        // If the transaction rolls back, the invitation is never created.
+        DB::afterCommit(function () use ($user, $inviter): void {
+            $this->invitationService->createAndSendInvitation($user, $inviter);
+        });
+
         $user->load(['role', 'organization']);
 
         return (new UserResource($user))
