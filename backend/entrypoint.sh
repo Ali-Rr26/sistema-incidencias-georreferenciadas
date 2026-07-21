@@ -97,8 +97,12 @@ echo ""
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
 echo "Starting Octane (FrankenPHP) on 0.0.0.0:8000..."
-exec php artisan octane:start \
-    --server=frankenphp \
+# NOTE: routes through App\Console\Commands\StartFrankenPhpCommand which
+# extends Laravel\Octane\Commands\StartFrankenPhpCommand and persists every
+# unhandled-by-parent stderr/stdout line through Log::channel('exceptions')
+# with the full Caddy debug payload. Same observable stdout behavior + extra
+# structured discoverability. See PR description for the workaround.
+exec php artisan octane:frankenphp \
     --host=0.0.0.0 \
     --port=8000 \
     --workers=4 \
