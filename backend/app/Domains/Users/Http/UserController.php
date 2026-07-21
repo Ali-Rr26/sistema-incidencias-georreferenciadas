@@ -127,10 +127,26 @@ class UserController extends Controller
     public function formData(Request $request): JsonResponse
     {
         $this->authorize('viewAny', User::class);
+        $user = $request->user();
+
+        $rolesQuery = \App\Domains\Roles\Models\Role::orderBy('name');
+        $orgsQuery = \App\Domains\Organizations\Models\Organization::orderBy('name');
+
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            // Exclude administrative/system roles for non-system admins
+            $rolesQuery->whereNotIn('name', [
+                \App\Domains\Roles\Enums\UserRole::AdminSistema->value,
+                \App\Domains\Roles\Enums\UserRole::OperadorSistema->value,
+                \App\Domains\Roles\Enums\UserRole::AdminLegacy->value,
+            ]);
+
+            // Non-system admins can only create users in their own organization
+            $orgsQuery->where('id', $user->organization_id);
+        }
 
         return response()->json([
-            'roles' => $this->roles->catalog(),
-            'organizations' => $this->organizations->catalog(),
+            'roles' => $rolesQuery->get(['id', 'name'])->map(fn ($r) => ['id' => $r->id, 'name' => $r->name])->values(),
+            'organizations' => $orgsQuery->get(['id', 'name'])->map(fn ($o) => ['id' => $o->id, 'name' => $o->name])->values(),
         ]);
     }
 }

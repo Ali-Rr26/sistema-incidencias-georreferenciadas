@@ -21,6 +21,7 @@ export default {
   async onInit() {
     const esEdicion = router.queryParams.has('id');
     const userId = router.queryParams.get('id');
+    const loggedUser = await auth.me();
 
     const titulo = document.getElementById('form-titulo');
     const cardTitulo = document.getElementById('card-titulo');
@@ -35,9 +36,17 @@ export default {
     // ─── Poblar selects con catálogo ──────────────────────────────────
 
     function poblarCombos({ roles, organizations }) {
+      let rolesFiltrados = roles;
+      if (loggedUser.role?.name !== 'admin_sistema') {
+        rolesFiltrados = roles.filter(
+          (r) =>
+            !['admin_sistema', 'operador_sistema', 'Admin'].includes(r.name),
+        );
+      }
+
       const selRol = document.getElementById('user-rol');
       selRol.innerHTML = '<option value="">-- Seleccione Rol --</option>';
-      roles.forEach((r) => {
+      rolesFiltrados.forEach((r) => {
         const opt = document.createElement('option');
         opt.value = r.id;
         opt.textContent = r.name;
@@ -99,6 +108,13 @@ export default {
             ? String(currentUser.organization.id)
             : '',
         );
+
+        if (
+          loggedUser.role?.name !== 'admin_sistema' &&
+          loggedUser.organization?.id
+        ) {
+          getSelect('user-org')?.disable();
+        }
       } catch {
         mostrarToast('Error al cargar el usuario.', 'danger');
       }
@@ -112,6 +128,14 @@ export default {
 
       initSelect('user-rol', { placeholder: 'Buscar rol...' });
       initSelect('user-org', { placeholder: 'Buscar organización...' });
+
+      if (
+        loggedUser.role?.name !== 'admin_sistema' &&
+        loggedUser.organization?.id
+      ) {
+        getSelect('user-org')?.setValue(String(loggedUser.organization.id));
+        getSelect('user-org')?.disable();
+      }
     }
 
     // ─── Avatar uploader (shared helper) ────────────────────────────

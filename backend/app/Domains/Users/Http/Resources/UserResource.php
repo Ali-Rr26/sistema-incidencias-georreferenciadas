@@ -47,13 +47,26 @@ class UserResource extends JsonResource
         ];
 
         if ($this->withCatalog) {
-            $data['roles'] = Role::orderBy('name')
-                ->get(['id', 'name'])
+            $user = $request->user();
+
+            $rolesQuery = Role::orderBy('name');
+            $orgsQuery = Organization::orderBy('name');
+
+            if ($user !== null && ! $user->isSystemAdmin()) {
+                $rolesQuery->whereNotIn('name', [
+                    \App\Domains\Roles\Enums\UserRole::AdminSistema->value,
+                    \App\Domains\Roles\Enums\UserRole::OperadorSistema->value,
+                    \App\Domains\Roles\Enums\UserRole::AdminLegacy->value,
+                ]);
+
+                $orgsQuery->where('id', $user->organization_id);
+            }
+
+            $data['roles'] = $rolesQuery->get(['id', 'name'])
                 ->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name])
                 ->values();
 
-            $data['organizations'] = Organization::orderBy('name')
-                ->get(['id', 'name'])
+            $data['organizations'] = $orgsQuery->get(['id', 'name'])
                 ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name])
                 ->values();
         }

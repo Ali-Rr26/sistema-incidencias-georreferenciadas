@@ -91,16 +91,13 @@ export async function acceptInvitation(
 ) {
   let response;
   try {
-    response = await http.post(
-      '/invitations/accept',
-      {
-        token: tokenPlain,
-        password,
-        password_confirmation: confirmPassword,
-        accept_terms: acceptTerms === true,
-        terms_version: termsVersion,
-      },
-    );
+    response = await http.post('/invitations/accept', {
+      token: tokenPlain,
+      password,
+      password_confirmation: confirmPassword,
+      accept_terms: acceptTerms === true,
+      terms_version: termsVersion,
+    });
   } catch (err) {
     if (err.status === 404) {
       throw new InvitationNotFoundError();
