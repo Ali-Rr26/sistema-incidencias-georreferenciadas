@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Users\Http\Resources;
 
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -54,9 +55,9 @@ class UserResource extends JsonResource
 
             if ($user !== null && ! $user->isSystemAdmin()) {
                 $rolesQuery->whereNotIn('name', [
-                    \App\Domains\Roles\Enums\UserRole::AdminSistema->value,
-                    \App\Domains\Roles\Enums\UserRole::OperadorSistema->value,
-                    \App\Domains\Roles\Enums\UserRole::AdminLegacy->value,
+                    UserRole::AdminSistema->value,
+                    UserRole::OperadorSistema->value,
+                    UserRole::AdminLegacy->value,
                 ]);
 
                 $orgsQuery->where('id', $user->organization_id);

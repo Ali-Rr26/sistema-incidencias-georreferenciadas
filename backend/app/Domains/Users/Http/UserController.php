@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Domains\Users\Http;
 
 use App\Domains\Invitations\Services\InvitationService;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Organizations\Repositories\OrganizationRepository;
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Users\Http\Requests\StoreUserRequest;
 use App\Domains\Users\Http\Requests\UpdateUserRequest;
@@ -129,15 +132,15 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
         $user = $request->user();
 
-        $rolesQuery = \App\Domains\Roles\Models\Role::orderBy('name');
-        $orgsQuery = \App\Domains\Organizations\Models\Organization::orderBy('name');
+        $rolesQuery = Role::orderBy('name');
+        $orgsQuery = Organization::orderBy('name');
 
         if ($user !== null && ! $user->isSystemAdmin()) {
             // Exclude administrative/system roles for non-system admins
             $rolesQuery->whereNotIn('name', [
-                \App\Domains\Roles\Enums\UserRole::AdminSistema->value,
-                \App\Domains\Roles\Enums\UserRole::OperadorSistema->value,
-                \App\Domains\Roles\Enums\UserRole::AdminLegacy->value,
+                UserRole::AdminSistema->value,
+                UserRole::OperadorSistema->value,
+                UserRole::AdminLegacy->value,
             ]);
 
             // Non-system admins can only create users in their own organization
