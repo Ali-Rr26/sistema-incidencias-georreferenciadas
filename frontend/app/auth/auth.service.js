@@ -159,9 +159,8 @@ class AuthService {
    */
   async acceptInvitation(tokenPlain, password, confirmPassword, acceptTerms) {
     // Lazy-import to avoid a circular dependency at module load time.
-    const { acceptInvitation: svcAccept } = await import(
-      '../invitations/invitation.service.js'
-    );
+    const { acceptInvitation: svcAccept } =
+      await import('../invitations/invitation.service.js');
     return svcAccept(tokenPlain, password, confirmPassword, acceptTerms, 'v0');
   }
 

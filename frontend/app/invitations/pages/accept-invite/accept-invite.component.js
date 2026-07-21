@@ -94,7 +94,7 @@ export default {
       document.getElementById('btn-activar-texto').classList.add('d-none');
       document.getElementById('btn-activar-loading').classList.remove('d-none');
 
-        try {
+      try {
         await auth.acceptInvitation(
           token,
           password,
@@ -130,9 +130,7 @@ export default {
       } finally {
         submitBtn.disabled = false;
         document.getElementById('btn-activar-texto').classList.remove('d-none');
-        document
-          .getElementById('btn-activar-loading')
-          .classList.add('d-none');
+        document.getElementById('btn-activar-loading').classList.add('d-none');
       }
     });
   },

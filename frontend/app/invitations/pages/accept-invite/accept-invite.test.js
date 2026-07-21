@@ -100,9 +100,9 @@ async function mountComponent(search = '') {
 beforeEach(() => {
   vi.clearAllMocks();
   // Reset mocks to their default (async no-op) behaviour.
-  authSvcMock.acceptInvitation.mockImplementation(
-    async () => ({ message: 'Cuenta activada' }),
-  );
+  authSvcMock.acceptInvitation.mockImplementation(async () => ({
+    message: 'Cuenta activada',
+  }));
   invitationSvcMock.validateAcceptPayload.mockReturnValue({});
 });
 
@@ -138,7 +138,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       // validateAcceptPayload is called synchronously after submit.
       expect(invitationSvcMock.validateAcceptPayload).toHaveBeenCalledWith({
@@ -161,7 +163,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       expect(authSvcMock.acceptInvitation).not.toHaveBeenCalled();
     });
@@ -179,7 +183,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       const errorEl = document.querySelector('[data-error-for="password"]');
       expect(errorEl.classList.contains('d-none')).toBe(false);
@@ -197,7 +203,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       // Wait for async auth.acceptInvitation to be called.
       await vi.waitFor(() => {
@@ -216,9 +224,9 @@ describe('accept-invite — WU-4', () => {
       vi.useFakeTimers();
 
       // auth.acceptInvitation resolves successfully.
-      authSvcMock.acceptInvitation.mockImplementation(
-        async () => ({ message: 'Cuenta activada' }),
-      );
+      authSvcMock.acceptInvitation.mockImplementation(async () => ({
+        message: 'Cuenta activada',
+      }));
 
       await mountComponent('/accept-invite?token=validtoken');
 
@@ -228,7 +236,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       // Wait for auth.acceptInvitation to be called.
       await vi.waitFor(() => {
@@ -257,7 +267,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       await vi.waitFor(() => {
         expect(authSvcMock.acceptInvitation).toHaveBeenCalledTimes(1);
@@ -284,7 +296,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       await vi.waitFor(() => {
         expect(authSvcMock.acceptInvitation).toHaveBeenCalledTimes(1);
@@ -313,7 +327,9 @@ describe('accept-invite — WU-4', () => {
 
       document
         .getElementById('accept-invite-form')
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        .dispatchEvent(
+          new Event('submit', { bubbles: true, cancelable: true }),
+        );
 
       await vi.waitFor(() => {
         expect(authSvcMock.acceptInvitation).toHaveBeenCalledTimes(1);

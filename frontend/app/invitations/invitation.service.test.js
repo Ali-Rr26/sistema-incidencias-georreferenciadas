@@ -127,7 +127,13 @@ describe('invitation.service — WU-4', () => {
       const { acceptInvitation } = await import('./invitation.service.js');
       http.post.mockResolvedValueOnce({ message: 'Cuenta activada' });
 
-      await acceptInvitation('myplain token', 'ValidPass1', 'ValidPass1', true, 'v0');
+      await acceptInvitation(
+        'myplain token',
+        'ValidPass1',
+        'ValidPass1',
+        true,
+        'v0',
+      );
 
       expect(http.post).toHaveBeenCalledTimes(1);
       const [path] = http.post.mock.calls[0];
@@ -139,7 +145,13 @@ describe('invitation.service — WU-4', () => {
       const { acceptInvitation } = await import('./invitation.service.js');
       http.post.mockResolvedValueOnce({ message: 'Cuenta activada' });
 
-      await acceptInvitation('token123', 'MyPassword1', 'MyPassword1', true, 'v0');
+      await acceptInvitation(
+        'token123',
+        'MyPassword1',
+        'MyPassword1',
+        true,
+        'v0',
+      );
 
       const [, payload] = http.post.mock.calls[0];
       expect(payload).toEqual({
@@ -162,22 +174,26 @@ describe('invitation.service — WU-4', () => {
     });
 
     it('throws InvitationGoneError on 410 response', async () => {
-      const { acceptInvitation, InvitationGoneError } = await import(
-        './invitation.service.js'
-      );
+      const { acceptInvitation, InvitationGoneError } =
+        await import('./invitation.service.js');
       const err = new Error('Token expirado');
       err.status = 410;
       http.post.mockRejectedValueOnce(err);
 
       await expect(
-        acceptInvitation('expiredtoken', 'ValidPass1', 'ValidPass1', true, 'v0'),
+        acceptInvitation(
+          'expiredtoken',
+          'ValidPass1',
+          'ValidPass1',
+          true,
+          'v0',
+        ),
       ).rejects.toThrow(InvitationGoneError);
     });
 
     it('throws InvitationNotFoundError on 404 response', async () => {
-      const { acceptInvitation, InvitationNotFoundError } = await import(
-        './invitation.service.js'
-      );
+      const { acceptInvitation, InvitationNotFoundError } =
+        await import('./invitation.service.js');
       const err = new Error('Not found');
       err.status = 404;
       http.post.mockRejectedValueOnce(err);
