@@ -55,6 +55,19 @@ class Router {
 
   init() {
     window.addEventListener('hashchange', () => this.resolve());
+
+    // Deep-link support (R-INV-11 / WU-4): when a user lands on a
+    // non-root URL without a hash (typical for invitation emails that
+    // produce `/accept-invite?token=...`), the router used to treat
+    // the empty hash as `/` and redirect to `/login`, dropping the
+    // route AND the token. Seed the hash from pathname + search so
+    // resolve() finds the real route on the next microtask.
+    if (!window.location.hash && window.location.pathname !== '/') {
+      window.location.hash =
+        '#' + window.location.pathname + window.location.search;
+      return; // hashchange listener above will trigger resolve()
+    }
+
     this.resolve();
   }
 
