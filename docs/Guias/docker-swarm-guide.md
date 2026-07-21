@@ -16,7 +16,7 @@ el rolling update sin downtime — no por clustering multi-máquina.
   - `DB_PASSWORD`
   - `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` (credenciales de RustFS)
   - `CLOUDFLARE_TUNNEL_TOKEN`
-- `backend/.env` con los secretos de Laravel/FrankenPHP (`APP_KEY`, JWT,
+- `backend/.env` con los secretos de Laravel/Swoole (`APP_KEY`, JWT,
   Firebase, etc. — igual que hoy con Compose, no cambia).
 - Swarm mode **activado una sola vez** en la máquina (ver abajo). Esto no se
   hace automático en cada deploy — es un bootstrap de una vez, no una

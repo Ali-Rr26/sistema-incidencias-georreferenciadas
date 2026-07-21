@@ -34,8 +34,8 @@ flowchart LR
     end
 
     %% ============ BACKEND CONTAINER ============
-    subgraph BE["🖥️ Backend container · FrankenPHP 1.12.4"]
-        Octane["Laravel 13.15 + Octane 2.17.5<br/>PHP ≥8.3 · driver=frankenphp<br/>Caddy embebido (HTTP server)<br/>QUEUE_CONNECTION=sync<br/>(sin queue worker · sin scheduler)"]
+    subgraph BE["🖥️ Backend container · PHP 8.3 + Swoole 5"]
+        Octane["Laravel 13.15 + Octane 2.17.5<br/>PHP ≥8.3 · driver=swoole<br/>Swoole HTTP server (workers + task workers)<br/>QUEUE_CONNECTION=sync<br/>(sin queue worker · sin scheduler)"]
     end
 
     %% ============ MERCURE (separate service) ============
