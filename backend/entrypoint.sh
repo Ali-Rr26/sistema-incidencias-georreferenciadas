@@ -102,5 +102,4 @@ exec php artisan octane:swoole \
     --port=8000 \
     --workers=4 \
     --max-requests=500 \
-    --task-workers=2 \
-    --watch=false
+    --task-workers=2
