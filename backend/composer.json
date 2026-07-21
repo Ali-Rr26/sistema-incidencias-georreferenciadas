@@ -13,7 +13,7 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "clickbar/laravel-magellan": "^2.2",
         "dedoc/scramble": "^0.13.28",
-        "ext-swoole": "^5.0",
+        "ext-swoole": "^5.0 || ^6.0",
         "intervention/image": "^4.2",
         "kreait/firebase-php": "^8.0",
         "laravel/framework": "^13.8",
