@@ -136,9 +136,9 @@ describe('invitation.service — WU-4', () => {
       );
 
       expect(http.post).toHaveBeenCalledTimes(1);
-      const [path] = http.post.mock.calls[0];
-      // Tokens with spaces are URL-encoded when embedded in the path.
-      expect(path).toBe('/invitations/myplain%20token/accept');
+      const [path, payload] = http.post.mock.calls[0];
+      expect(path).toBe('/invitations/accept');
+      expect(payload.token).toBe('myplain token');
     });
 
     it('sends the correct payload shape to the endpoint', async () => {
@@ -155,6 +155,7 @@ describe('invitation.service — WU-4', () => {
 
       const [, payload] = http.post.mock.calls[0];
       expect(payload).toEqual({
+        token: 'token123',
         password: 'MyPassword1',
         password_confirmation: 'MyPassword1',
         accept_terms: true,
@@ -170,6 +171,7 @@ describe('invitation.service — WU-4', () => {
       await acceptInvitation('token123', 'MyPassword1', 'MyPassword1', true);
 
       const [, payload] = http.post.mock.calls[0];
+      expect(payload.token).toBe('token123');
       expect(payload.terms_version).toBe('v0');
     });
 

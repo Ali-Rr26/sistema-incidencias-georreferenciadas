@@ -24,12 +24,12 @@ class InvitationAcceptController
      * @throws InvitationNotFoundException 404
      * @throws InvitationGoneException 410
      */
-    public function accept(InvitationAcceptRequest $request, string $token): JsonResponse
+    public function accept(InvitationAcceptRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
         $this->invitationService->acceptInvitation(
-            tokenPlain: $token,
+            tokenPlain: $validated['token'],
             password: $validated['password'],
             acceptTerms: (bool) $validated['accept_terms'],
             termsVersion: $validated['terms_version'],

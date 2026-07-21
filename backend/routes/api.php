@@ -32,7 +32,7 @@ Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware(
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
 // Invitation acceptance — public (no auth required), rate-limited
-Route::post('/invitations/{token}/accept', [InvitationAcceptController::class, 'accept'])
+Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
 Route::middleware('jwt')->group(function () {

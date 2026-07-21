@@ -54,7 +54,8 @@ it('full invitation flow: admin creates user → invitation sent → token accep
     expect(strlen($tokenPlain))->toBe(64);
 
     // ── Step 2: Accept invitation with token, password, and T&C ──
-    $acceptResponse = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $acceptResponse = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'NewPassword1',
         'password_confirmation' => 'NewPassword1',
         'accept_terms' => true,
@@ -90,7 +91,8 @@ it('full invitation flow: admin creates user → invitation sent → token accep
         ]);
 
     // ── Step 5: Same token cannot be used again ──
-    $reuseResponse = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $reuseResponse = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'AnotherPass1',
         'password_confirmation' => 'AnotherPass1',
         'accept_terms' => true,

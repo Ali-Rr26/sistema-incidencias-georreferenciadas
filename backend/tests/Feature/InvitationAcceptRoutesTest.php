@@ -26,7 +26,8 @@ it('accepts invitation via HTTP with valid token and payload', function (): void
         'terms_version' => 'v0',
     ]);
 
-    $response = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'ValidPass1',
         'password_confirmation' => 'ValidPass1',
         'accept_terms' => true,
@@ -38,7 +39,8 @@ it('accepts invitation via HTTP with valid token and payload', function (): void
 });
 
 it('returns 404 for nonexistent token via HTTP', function (): void {
-    $response = $this->postJson('/api/invitations/nonexistent-token-plaintext-64-chars-xxx/accept', [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => 'nonexistent-token-plaintext-64-chars-xxx',
         'password' => 'ValidPass1',
         'password_confirmation' => 'ValidPass1',
         'accept_terms' => true,
@@ -60,7 +62,8 @@ it('returns 422 when accept_terms is false via HTTP', function (): void {
         'terms_version' => 'v0',
     ]);
 
-    $response = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'ValidPass1',
         'password_confirmation' => 'ValidPass1',
         'accept_terms' => false,
@@ -83,7 +86,8 @@ it('returns 422 when password is weak via HTTP', function (): void {
         'terms_version' => 'v0',
     ]);
 
-    $response = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'weakpass',
         'password_confirmation' => 'weakpass',
         'accept_terms' => true,
@@ -107,7 +111,8 @@ it('returns 410 when invitation is already consumed via HTTP', function (): void
         'terms_version' => 'v0',
     ]);
 
-    $response = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'ValidPass1',
         'password_confirmation' => 'ValidPass1',
         'accept_terms' => true,
@@ -132,7 +137,8 @@ it('is rate limited: 11th request returns 429', function (): void {
 
     // Make 10 requests (limit is 10/min)
     for ($i = 0; $i < 10; $i++) {
-        $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+        $this->postJson('/api/invitations/accept', [
+            'token' => $tokenPlain,
             'password' => 'ValidPass1',
             'password_confirmation' => 'ValidPass1',
             'accept_terms' => true,
@@ -141,7 +147,8 @@ it('is rate limited: 11th request returns 429', function (): void {
     }
 
     // 11th request should be rate limited
-    $response = $this->postJson("/api/invitations/{$tokenPlain}/accept", [
+    $response = $this->postJson('/api/invitations/accept', [
+        'token' => $tokenPlain,
         'password' => 'ValidPass1',
         'password_confirmation' => 'ValidPass1',
         'accept_terms' => true,
