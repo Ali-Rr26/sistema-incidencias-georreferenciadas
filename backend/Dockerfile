@@ -7,7 +7,7 @@ RUN apk add --no-cache bash
 # Laravel logs → stderr for docker logs visibility
 ENV LOG_CHANNEL=stderr
 
-RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium pcov gd
+RUN install-php-extensions pdo_pgsql zip mbstring bcmath sockets pcntl redis sodium pcov gd swoole
 
 # Raise upload limits for avatar uploads.
 # MUST stay in sync with App\Domains\Users\Models\User::AVATAR_MAX_KB (800 KB).
