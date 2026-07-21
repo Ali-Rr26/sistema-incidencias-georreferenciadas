@@ -6,6 +6,8 @@ namespace App\Domains\Incidents\Observers;
 
 use App\Domains\Incidents\Enums\AssignmentRole;
 use App\Domains\Incidents\Models\Assignment;
+use App\Domains\Incidents\Models\Incident;
+use App\Domains\Mail\Services\MailSenderInterface;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
@@ -20,27 +22,36 @@ use Illuminate\Support\Facades\Log;
  *   - IncidentNotificationObserver escucha cambios en el modelo Incident
  *     (columna claimed_by) y notifica al dueño de la incidencia.
  *   - Este observer escucha la creación de filas en `assignments` y
- *     notifica al OPERADOR que fue asignado.
+ *     notifica al OPERADOR que fue asignado (in-app + Mercure + email).
  *
  * Eventos cubiertos:
  *   - created (Assignment $a)  → notifica al operador asignado con type
- *     NotificationType::Assigned, mensaje según assignment_role.
+ *     NotificationType::Assigned, mensaje según assignment_role, y
+ *     dispara un mail vía MailSenderInterface dedicado.
  *
  * Garantías:
  *   - Idempotencia S-3: si la asignación es al mismo operador que ya tiene
  *     el claim activo en la misma incidencia y el rol es responsable, no
  *     se crea notification adicional (admin formalizando lo que el
- *     operador ya se auto-asignó).
+ *     operador ya se auto-asignó). El mail también se omite en este caso.
  *   - Tolerancia S-7: cualquier excepción se loguea vía Log::warning y
  *     NO se propaga. La creación de la fila en `assignments` es lo
- *     importante para el negocio; la notification es side-effect.
+ *     importante para el negocio; la notification (in-app + Mercure +
+ *     email) es side-effect. MailSenderInterface::sendAssignedIncident
+ *     también absorbe fallos SMTP internamente (mismo patrón), pero el
+ *     try/catch de este observer es un safety net final por si un mock
+ *     o un remplazo futuro no honra el contrato.
  *   - La deduplicación 60s dentro de NotificationService::notify cubre
  *     ataques de doble-clic y reintentos del cliente.
+ *   - Mail NO es deduplicado: dos reasignaciones rápidas al mismo
+ *     operador generan dos mails. La deduplicación de mail queda
+ *     como follow-up (ver NOTIF-MAIL-DEDUP TODO).
  */
 class AssignmentNotificationObserver
 {
     public function __construct(
         private readonly NotificationService $service,
+        private readonly MailSenderInterface $mailSender,
     ) {}
 
     public function created(Assignment $a): void
@@ -117,5 +128,10 @@ class AssignmentNotificationObserver
                 'incident_title' => $title,
             ],
         );
+
+        // Side-effect: enviar mail al operador. SmtpMailSender absorbe
+        // excepciones SMTP internamente y solo loguea; el try/catch
+        // exterior en `created()` es un safety net final.
+        $this->mailSender->sendAssignedIncident($a->user, $a->incident, $role);
     }
 }

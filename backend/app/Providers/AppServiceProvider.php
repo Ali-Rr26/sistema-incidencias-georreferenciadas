@@ -18,6 +18,8 @@ use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Notifications\Http\Policies\NotificationPolicy;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Observers\IncidentNotificationObserver;
@@ -65,6 +67,14 @@ class AppServiceProvider extends ServiceProvider
         // (which would fail without FIREBASE_CREDENTIALS configured).
         // The closure also resolves `services.firebase.leeway_seconds`
         // (default 5s) per the Kreait SDK's clock-skew tolerance.
+        // SMTP mail sender for incident-assignment notifications.
+        // Singleton: solo guarda dependencias inyectadas (Mailer contract)
+        // y la config se resuelve en cada llamada. Esta dedicado
+        // exclusivamente a AssignmentNotificationObserver — NO se comparte
+        // con otros observadores ni con el sistema de mail transaccional
+        // general (registros, recuperación de contraseña, etc.).
+        $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
         $this->app->singleton(FirebaseTokenVerifier::class, function () {
             $credentialsPath = (string) (config('services.firebase.credentials_path')
                 ?: env('FIREBASE_CREDENTIALS', ''));
