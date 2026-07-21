@@ -71,7 +71,7 @@ flowchart LR
     Octane -->|spatial queries| PG
     Octane -->|CQRS sync listeners| Redis
     Octane -->|upload imágenes| RustFS
-    Octane -.->|publish (sync, sin queue)| Mercure
+    Octane -.->|publish sync sin queue| Mercure
     Mercure -->|SSE / EventSource| Browser
 
     %% Observability (dashed)
@@ -87,7 +87,7 @@ flowchart LR
     %% Quality
     GH -->|lint + test + build| FE
     GH -->|lint + test + build| BE
-    GH -.->|scan condicional (si SONAR_TOKEN)| Sonar
+    GH -.->|scan condicional si SONAR_TOKEN| Sonar
 
     %% ============ STYLES ============
     classDef browserCls fill:#fff3e0,stroke:#e65100,color:#bf360c
