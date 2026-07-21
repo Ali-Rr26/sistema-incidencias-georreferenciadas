@@ -48,6 +48,8 @@ class User extends Authenticatable
         'avatar',
         'profile_image_path',
         'email_verified_at',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [

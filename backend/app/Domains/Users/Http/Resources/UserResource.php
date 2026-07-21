@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Users\Http\Resources;
 
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -47,13 +48,26 @@ class UserResource extends JsonResource
         ];
 
         if ($this->withCatalog) {
-            $data['roles'] = Role::orderBy('name')
-                ->get(['id', 'name'])
+            $user = $request->user();
+
+            $rolesQuery = Role::orderBy('name');
+            $orgsQuery = Organization::orderBy('name');
+
+            if ($user !== null && ! $user->isSystemAdmin()) {
+                $rolesQuery->whereNotIn('name', [
+                    UserRole::AdminSistema->value,
+                    UserRole::OperadorSistema->value,
+                    UserRole::AdminLegacy->value,
+                ]);
+
+                $orgsQuery->where('id', $user->organization_id);
+            }
+
+            $data['roles'] = $rolesQuery->get(['id', 'name'])
                 ->map(fn (Role $r) => ['id' => $r->id, 'name' => $r->name])
                 ->values();
 
-            $data['organizations'] = Organization::orderBy('name')
-                ->get(['id', 'name'])
+            $data['organizations'] = $orgsQuery->get(['id', 'name'])
                 ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name])
                 ->values();
         }

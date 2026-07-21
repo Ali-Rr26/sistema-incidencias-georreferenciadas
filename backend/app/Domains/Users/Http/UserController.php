@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Http;
 
+use App\Domains\Invitations\Services\InvitationService;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Organizations\Repositories\OrganizationRepository;
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Roles\Repositories\RoleRepository;
 use App\Domains\Users\Http\Requests\StoreUserRequest;
 use App\Domains\Users\Http\Requests\UpdateUserRequest;
@@ -18,6 +22,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -28,6 +33,7 @@ class UserController extends Controller
         private readonly ProfileImageService $profileImageService,
         private readonly RoleRepository $roles,
         private readonly OrganizationRepository $organizations,
+        private readonly InvitationService $invitationService,
     ) {
         $this->authorizeResource(User::class, 'user');
     }
@@ -46,6 +52,17 @@ class UserController extends Controller
         $user = $this->users->create(
             $request->validated(),
         );
+
+        // Capture inviter before the closure — $request is not available after the
+        // HTTP response is sent (afterCommit runs after request lifecycle).
+        $inviter = $request->user();
+
+        // Dispatch invitation mail after the transaction commits successfully.
+        // If the transaction rolls back, the invitation is never created.
+        DB::afterCommit(function () use ($user, $inviter): void {
+            $this->invitationService->createAndSendInvitation($user, $inviter);
+        });
+
         $user->load(['role', 'organization']);
 
         return (new UserResource($user))
@@ -113,10 +130,26 @@ class UserController extends Controller
     public function formData(Request $request): JsonResponse
     {
         $this->authorize('viewAny', User::class);
+        $user = $request->user();
+
+        $rolesQuery = Role::orderBy('name');
+        $orgsQuery = Organization::orderBy('name');
+
+        if ($user !== null && ! $user->isSystemAdmin()) {
+            // Exclude administrative/system roles for non-system admins
+            $rolesQuery->whereNotIn('name', [
+                UserRole::AdminSistema->value,
+                UserRole::OperadorSistema->value,
+                UserRole::AdminLegacy->value,
+            ]);
+
+            // Non-system admins can only create users in their own organization
+            $orgsQuery->where('id', $user->organization_id);
+        }
 
         return response()->json([
-            'roles' => $this->roles->catalog(),
-            'organizations' => $this->organizations->catalog(),
+            'roles' => $rolesQuery->get(['id', 'name'])->map(fn ($r) => ['id' => $r->id, 'name' => $r->name])->values(),
+            'organizations' => $orgsQuery->get(['id', 'name'])->map(fn ($o) => ['id' => $o->id, 'name' => $o->name])->values(),
         ]);
     }
 }
