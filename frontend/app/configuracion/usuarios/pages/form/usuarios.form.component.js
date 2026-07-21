@@ -178,12 +178,6 @@ export default {
           ...(wantsDelete ? { _delete_avatar: true } : {}),
         };
 
-        if (!id) {
-          // Generar una contraseña temporal de invitación
-          basePayload.password =
-            'Invite_' + Math.random().toString(36).substring(2, 10) + '!';
-        }
-
         let payload;
         if (avatarFile) {
           // Multipart when an avatar file is present.
@@ -209,7 +203,9 @@ export default {
             await http.post('/users', payload);
           }
           mostrarToast(
-            id ? 'Usuario actualizado.' : 'Usuario creado.',
+            id
+              ? 'Usuario actualizado.'
+              : 'Usuario creado. Le llegará un mail con el link de activación.',
             'success',
           );
 

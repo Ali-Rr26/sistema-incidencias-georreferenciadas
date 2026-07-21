@@ -142,6 +142,30 @@ class AuthService {
   }
 
   /**
+   * Accept an invitation and set the user's password.
+   *
+   * POSTs to /invitations/{token}/accept with password + T&C acceptance.
+   * Unlike login(), this endpoint does NOT issue a JWT — the user must
+   * log in with their new credentials after the redirect.
+   *
+   * @param {string} tokenPlain       — plaintext token from the URL
+   * @param {string} password         — new password
+   * @param {string} confirmPassword  — password confirmation (mirrors backend confirmed rule)
+   * @param {boolean} acceptTerms      — must be true
+   * @returns {Promise<{message: string}>}
+   * @throws {InvitationGoneError}     on 410 (expired/consumed)
+   * @throws {InvitationNotFoundError} on 404 (invalid token)
+   * @throws {Error} status=422 with err.errors for field-level errors
+   */
+  async acceptInvitation(tokenPlain, password, confirmPassword, acceptTerms) {
+    // Lazy-import to avoid a circular dependency at module load time.
+    const { acceptInvitation: svcAccept } = await import(
+      '../invitations/invitation.service.js'
+    );
+    return svcAccept(tokenPlain, password, confirmPassword, acceptTerms, 'v0');
+  }
+
+  /**
    * Fetch current user from backend. ALWAYS hits /me.
    * Never cached — see SECURITY PRINCIPLE above.
    */
