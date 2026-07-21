@@ -16,6 +16,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Invitations\Services\InvitationService;
 use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
@@ -78,6 +79,9 @@ class AppServiceProvider extends ServiceProvider
 
         // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
         $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
+
+        // InvitationService — depends on InvitationTokenGenerator + MailSenderInterface.
+        $this->app->singleton(InvitationService::class, InvitationService::class);
 
         $this->app->singleton(FirebaseTokenVerifier::class, function () {
             $credentialsPath = (string) (config('services.firebase.credentials_path')
@@ -186,6 +190,12 @@ class AppServiceProvider extends ServiceProvider
         // the SDK, not from our backend.
         RateLimiter::for('google', function (Request $request): Limit {
             return Limit::perMinute(20)->by($request->ip());
+        });
+
+        // /invitations/{token}/accept — rate limit para evitar fuerza bruta
+        // sobre el token de invitación. 10/min por IP, mismo rango que register.
+        RateLimiter::for('invitations', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
         });
 
         // Admins bypass all gate/policy checks

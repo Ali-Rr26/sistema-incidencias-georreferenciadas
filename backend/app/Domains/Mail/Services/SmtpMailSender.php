@@ -6,6 +6,7 @@ namespace App\Domains\Mail\Services;
 
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Mail\Messages\IncidentAssignedMail;
+use App\Domains\Mail\Messages\UserInvitedMail;
 use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Mail\Mailer;
 use Illuminate\Support\Facades\Log;
@@ -112,13 +113,35 @@ class SmtpMailSender implements MailSenderInterface
         $fromAddress = $this->resolveFromAddress();
         $fromName = $this->resolveFromName();
 
-        // TODO (WU-2): Reemplazar por new UserInvitedMail($user, $tokenPlain)
-        // cuando el mailable y la vista estén creados.
-        Log::info('UserInvitation mail would be sent', [
+        $baseUrl = $_ENV['FRONTEND_BASE_URL'] ?? $_ENV['APP_URL'] ?? 'http://localhost:3000';
+        $acceptUrl = rtrim($baseUrl, '/').'/accept-invite?token='.$tokenPlain;
+
+        $mailable = new UserInvitedMail($user, $tokenPlain, $acceptUrl);
+        $mailable->from = [
+            [
+                'address' => $fromAddress,
+                'name' => $fromName,
+            ],
+        ];
+
+        try {
+            $this->mailer->to($user->email)->send($mailable);
+        } catch (\Throwable $e) {
+            // S-7: fallo SMTP no bloquea la creación del usuario
+            Log::warning('UserInvitation mail failed', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'from' => $fromAddress,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        Log::info('UserInvitation mail sent', [
             'user_id' => $user->id,
             'user_email' => $user->email,
-            'token_plain' => $tokenPlain,
-            'from' => $fromAddress,
+            'email_sent' => true,
         ]);
     }
 }

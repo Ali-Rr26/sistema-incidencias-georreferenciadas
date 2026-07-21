@@ -13,6 +13,7 @@ use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
 use App\Domains\Incidents\Http\MapFilterController;
+use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -29,6 +30,10 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
+
+// Invitation acceptance — public (no auth required), rate-limited
+Route::post('/invitations/{token}/accept', [InvitationAcceptController::class, 'accept'])
+    ->middleware('throttle:invitations');
 
 Route::middleware('jwt')->group(function () {
 
