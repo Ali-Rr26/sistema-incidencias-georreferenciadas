@@ -62,8 +62,8 @@ class InvitationService
         $invitation = UserInvitation::create([
             'user_id' => $user->id,
             'token_hash' => $tokenHash,
-            'expires_at' => Carbon::now()->addHours((int) env('INVITATION_TTL_HOURS', 48)),
-            'terms_version' => env('TERMS_VERSION', 'v0'),
+            'expires_at' => Carbon::now()->addHours((int) config('invitations.ttl_hours', 48)),
+            'terms_version' => config('invitations.terms_version', 'v0'),
             'invited_by_user_id' => $inviter?->id,
         ]);
 
