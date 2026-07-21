@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\ReadModels;
 
+use App\Console\Commands\FeedRebuildCommand;
+use App\Domains\Incidents\Http\FeedController;
+use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Models\FeedService;
 use App\Domains\Incidents\Models\Incident;
 
 /**
  * Fuente única de verdad del shape que el read model Redis espera por Incidencia.
  *
- * Si modificás este método, también tenés que actualizar {@see \App\Domains\Incidents\Http\FeedController}
- * / {@see \App\Domains\Incidents\Models\FeedService} si consumen los campos nuevos — pero el SERIALIZER
- * es lo único que {@see \App\Domains\Incidents\Listeners\RedisIncidentSync} y
- * {@see \App\Console\Commands\FeedRebuildCommand} usan para escribir. Antes de este extractor, el
+ * Si modificás este método, también tenés que actualizar {@see FeedController}
+ * / {@see FeedService} si consumen los campos nuevos — pero el SERIALIZER
+ * es lo único que {@see RedisIncidentSync} y
+ * {@see FeedRebuildCommand} usan para escribir. Antes de este extractor, el
  * shape estaba duplicado en esos dos sitios y un cambio silencioso en uno degradaba el feed
  * sin que el otro se enterara (versión live vs versión rebuild quedaban desincronizadas).
  */

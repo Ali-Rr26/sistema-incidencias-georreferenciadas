@@ -93,13 +93,13 @@ echo "═══════════════════"
 echo ""
 
 # -------------------------------------------------------
-# Start Octane (FrankenPHP) — exec replaces shell process
+# Start Octane (Swoole) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
-echo "Starting Octane (FrankenPHP) on 0.0.0.0:8000..."
-exec php artisan octane:start \
-    --server=frankenphp \
+echo "Starting Octane (Swoole) on 0.0.0.0:8000..."
+exec php artisan octane:swoole \
     --host=0.0.0.0 \
     --port=8000 \
     --workers=4 \
-    --max-requests=500
+    --max-requests=500 \
+    --task-workers=2

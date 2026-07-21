@@ -242,6 +242,20 @@ async function refreshDashboard() {
 // ─────────────────────────────────────────────
 // Setup de event listeners para filtros
 // ─────────────────────────────────────────────
+
+// Backend endpoints that return ResourceCollections wrap responses
+// as { data: [...] }. Direct array responses are also possible when
+// the controller returns a non-paginated bare collection. This helper
+// normalises both to a plain array of items, and falls back to [] on
+// any other shape (null, undefined, error envelope).
+function unwrapCollection(response) {
+  if (response == null) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (Array.isArray(response.items)) return response.items;
+  return [];
+}
+
 function setupFilterListeners() {
   // Cargar árbol de ubicaciones y categorías
   Promise.all([
@@ -249,8 +263,12 @@ function setupFilterListeners() {
     http.get('/incident-categories/tree'),
   ])
     .then(([locTree, catTree]) => {
-      filterState.locationTree = locTree ?? [];
-      filterState.categories = catTree ?? [];
+      // Backend wraps both endpoints as { data: [...] } (ResourceCollection
+      // convention). Defensive: handle three shapes — wrapped, bare array,
+      // or null. Other services in this codebase already use this pattern
+      // (see dashboard fetch at line 494 and every shared/* service).
+      filterState.locationTree = unwrapCollection(locTree);
+      filterState.categories = unwrapCollection(catTree);
     })
     .catch(() => {
       console.warn('Failed to load filter options');

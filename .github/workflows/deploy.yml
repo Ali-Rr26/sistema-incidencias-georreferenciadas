@@ -11,7 +11,7 @@
 #     manual bootstrap — see docs/docker-swarm-guide.md)
 #   - .env files placed in the runner workspace:
 #     - Root .env (for deploy.yml variables)
-#     - backend/.env (for Laravel/FrankenPHP application secrets)
+#     - backend/.env (for Laravel/Swoole application secrets)
 #     (clean: false preserves these between runs)
 #
 # NOTE: `docker stack deploy` does NOT read .env files the way

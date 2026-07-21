@@ -74,7 +74,7 @@ services:
       AWS_ENDPOINT: ${AWS_ENDPOINT:-http://rustfs:9000}
       AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-true}
       FILESYSTEM_STORAGE_DISK: ${FILESYSTEM_STORAGE_DISK:-s3}
-      OCTANE_SERVER: frankenphp
+      OCTANE_SERVER: swoole
       LOG_CHANNEL: stderr_json
       MERCURE_PUBLIC_URL: >-
         ${MERCURE_PUBLIC_URL:-http://mercure/.well-known/mercure}
