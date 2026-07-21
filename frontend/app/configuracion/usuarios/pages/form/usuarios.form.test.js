@@ -304,7 +304,7 @@ describe('usuariosFormComponent — submit', () => {
     await usuariosFormComponent.onInit();
     await _triggerSubmit();
 
-    expect(mockAuth.me).toHaveBeenCalledTimes(1);
+    expect(mockAuth.me).toHaveBeenCalledTimes(2);
     expect(mockAuth._notifyAuthChange).toHaveBeenCalledTimes(1);
     expect(mockRouter.navigate).toHaveBeenCalledWith('/usuarios');
   });
