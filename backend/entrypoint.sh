@@ -93,7 +93,7 @@ echo "═══════════════════"
 echo ""
 
 # -------------------------------------------------------
-# Start Octane (FrankenPHP) — exec replaces shell process
+# Start Octane (Swoole) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
 echo "Starting Octane (Swoole) on 0.0.0.0:8000..."
