@@ -79,4 +79,20 @@ class UpdateIncidentRequest extends FormRequest
             'priority.in' => 'Priority must be: low, medium or high.',
         ];
     }
+
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated($key, $default);
+
+        if (is_array($data)) {
+            if (isset($data['title'])) {
+                $data['title'] = htmlspecialchars($data['title'] ?? '', ENT_QUOTES, 'UTF-8');
+            }
+            if (isset($data['description'])) {
+                $data['description'] = htmlspecialchars($data['description'] ?? '', ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        return $data;
+    }
 }
