@@ -210,12 +210,19 @@ export default {
    */
   _handleRegisterSubmit(registerForm, registerBanner, setMode) {
     const payload = {
-      first_name: registerForm.querySelector('#first_name').value.trim(),
-      last_name: registerForm.querySelector('#last_name').value.trim(),
-      email: registerForm.querySelector('#register-email').value.trim(),
+      first_name: registerForm
+        .querySelector('#first_name')
+        .value.trim(),
+      last_name: registerForm
+        .querySelector('#last_name')
+        .value.trim(),
+      email: registerForm
+        .querySelector('#register-email')
+        .value.trim(),
       phone: registerForm.querySelector('#phone').value.trim(),
       password: registerForm.querySelector('#register-password').value,
-      password_confirmation: registerForm.querySelector('#password_confirmation').value,
+      password_confirmation: registerForm
+        .querySelector('#password_confirmation').value,
     };
 
     this._clearFieldErrors();
