@@ -49,7 +49,7 @@
 
 | Componente | Versión |
 |---|---|
-| Framework backend | **Laravel 12.x** sobre **Frankenphp/Octane** |
+| Framework backend | **Laravel 13.x** sobre **Swoole 5.0+ / Octane** |
 | Base de datos | **PostgreSQL 15 con PostGIS** |
 | Autenticación | **JWT** (`tymon/jwt-auth`) |
 | Frontend | HTML5 + CSS3 + Bootstrap + JS vanilla + AngularJS |
@@ -126,7 +126,7 @@ El sistema NO incluirá (fuera de alcance):
 | **Docker** | Plataforma de contenedores |
 | **ER** | Entity Relationship |
 | **FK** | Foreign Key |
-| **Frankenphp** | Servidor de aplicaciones PHP moderno basado en Caddy; usado con Laravel Octane. |
+| **Swoole** | Runtime PHP async event-driven con coroutines nativas. Implementación elegida vs FrankenPHP por mejor soporte StreamedResponse. |
 | **HTTP** | Hypertext Transfer Protocol |
 | **JSON** | JavaScript Object Notation |
 | **JWT** | JSON Web Token; mecanismo de autenticación stateless. |
@@ -174,7 +174,7 @@ Este documento v3.0 sigue la estructura IEEE 830. La Sección 2 describe el prod
 El sistema es una aplicación web con arquitectura de tres capas, desplegada en contenedores Docker:
 
 - **Capa de Presentación (Frontend)**: HTML5 + CSS3 + Bootstrap + JavaScript vanilla con AngularJS.
-- **Capa de Lógica de Negocio (Backend)**: API REST en **Laravel 12** corriendo sobre **Frankenphp/Octane**. Organizada en 13 dominios DDD.
+- **Capa de Lógica de Negocio (Backend)**: API REST en **Laravel 13** corriendo sobre **Swoole 5.0+ + Octane** (workers pool, coroutines nativas). Organizada en 13 dominios DDD.
 - **Capa de Datos**: **PostgreSQL 15** con extensión **PostGIS**. Redis como cache y bus.
 
 ### 2.2 Funcionalidades del Producto
@@ -424,6 +424,48 @@ Trigger PostgreSQL inserta en `status_history` cada cambio de estado. Campos: `i
 ### Apéndice A: SRS v2.0 (versión anterior)
 
 El contenido íntegro de **v2.0** se preserva en [`SRS.md`](./SRS.md) como referencia de la visión previa (4 estados + Publicador).
+
+---
+
+## 6. Estado de Implementación Actualizado (22 Julio 2026)
+
+### Progreso por Módulo
+
+| Módulo | Status | Detalles |
+|---|---|---|
+| M01 — Gestión Incidencias | ✅ 100% | CRUD completo, soft delete, PostGIS geom |
+| M02 — Gestión Estados | ✅ 100% | 3-state workflow, audit trail via trigger |
+| M03 — Asignación Responsables | ✅ 100% | Claim/release actions, role-based |
+| M04 — Sistema Comentarios | ✅ 100% | Nested comments, soft delete |
+| M05 — Ubicación Normalizada | ✅ 100% | País → Provincia → Ciudad + geom |
+| M06 — Clasificación Jerárquica | ✅ 100% | IncidentCategory parent_id |
+| M07 — Notificaciones | ✅ 100% | Real-time Mercure SSE |
+| M08 — Prioridad/Control | ✅ 100% | Enum (low/medium/high), CHECK constraints |
+| M09 — Dashboard/Métricas | ⏳ 90% | Básico OK; filtros avanzados pendientes |
+| M10 — Validaciones | ✅ 100% | Double-layer (backend FormRequest + frontend) |
+
+**Total:** 95%+ completado.
+
+### Hallazgos Post-Implementación (E7 — Load Testing)
+
+**Crítico (Bloqueante Pre-Production):**
+- Load test Swoole (50 VUs): p(95)=2650ms vs <500ms SLA
+- Causa: N+1 queries (eager loading no aplicado) + índices PostGIS faltantes
+- Status: P1 remediación en progreso (Alisson backend, Yandris BD)
+- ETA: 2-4 horas post-fixes, re-test k6 requerido
+- Veredicto: NO VIABLE PRODUCCIÓN hasta P1 fixes
+
+Ver **Entregable 7 (E7)** para análisis completo k6 + remediation plan.
+
+### Stack Actualizado (22 Julio 2026)
+
+| Componente | Versión Original | Versión Actual | Cambios |
+|---|---|---|---|
+| Framework | Laravel 12.x | Laravel 13.8 | Última versión estable |
+| Runtime | FrankenPHP/Octane | **Swoole 5.0+ / Octane** | Mejor async I/O, coroutines nativas |
+| PHP | 8.2+ | 8.4-cli-alpine | JIT compilation enabled |
+| BD | PostgreSQL 15 | PostgreSQL 17 + PostGIS 3.5 | Latest LTS + geospatial |
+| Cache | Redis (no spec) | Redis 8 | Requerido para feed caching |
 
 ---
 

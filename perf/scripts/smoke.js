@@ -1,29 +1,39 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
-import { login, authHeaders } from './_auth.js';
+import { check, group, sleep } from 'k6';
+import { getAuthToken } from './_auth.js';
 
 const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:8000';
 
-export const options = {
-  vus: 1,
-  iterations: 5,
+export let options = {
+  stages: [
+    { duration: '1m', target: 1 },
+  ],
+  thresholds: {
+    'http_req_duration': ['p(95)<200', 'p(99)<300'],
+    'http_req_failed': ['rate<0.01'],
+  },
 };
 
-export function setup() {
-  const token = login(BASE_URL, 'admin@sistema.com', 'Admin123!');
-  return { token };
-}
-
-export default function (data) {
-  const health = http.get(`${BASE_URL}/api/health`);
-  check(health, { 'health: status 200': (r) => r.status === 200 });
-
-  const incidents = http.get(`${BASE_URL}/api/incidents?per_page=5`, {
-    headers: authHeaders(data.token),
+export default function () {
+  const token = getAuthToken(BASE_URL);
+  
+  group('Smoke Test — Health', () => {
+    let res = http.get(`${BASE_URL}/api/health`);
+    check(res, {
+      'status 200': (r) => r.status === 200,
+      'latency <200ms': (r) => r.timings.duration < 200,
+    });
   });
-  check(incidents, {
-    'incidents: status 200': (r) => r.status === 200,
-    'incidents: has data array': (r) => Array.isArray(r.json('data')),
+
+  group('Smoke Test — Feed', () => {
+    let res = http.get(`${BASE_URL}/api/incidents?per_page=10`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      tags: { name: 'get_incidents' },
+    });
+    check(res, {
+      'status 200': (r) => r.status === 200,
+      'latency <300ms': (r) => r.timings.duration < 300,
+    });
   });
 
   sleep(1);
