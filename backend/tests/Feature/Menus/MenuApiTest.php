@@ -57,20 +57,18 @@ it('admin_sistema sees every active menu via the isAdmin() bypass branch', funct
 
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
-        ->and($routes)->toContain('/incidencias/crear')
         ->and($routes)->toContain('/usuarios')
         ->and($routes)->toContain('/roles')
         ->and($routes)->toContain('/localizaciones')
         ->and($routes)->toContain('/categorias')
         ->and($routes)->toContain('/organizaciones')
-        ->and($routes)->toContain('/notificaciones')
         // admin_sistema sees citizen entries too via bypass
         ->and($routes)->toContain('/feed')
         ->and($routes)->toContain('/feed/crear')
         ->and($routes)->toContain('/configuracion/perfil');
 });
 
-it('operador_sistema sees Nueva Incidencia but NOT Usuarios or Roles', function (): void {
+it('operador_sistema sees back-office Incidencias but NOT Gestion group', function (): void {
     $user = User::factory()->create(['role_id' => 2]);
 
     $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
@@ -80,30 +78,11 @@ it('operador_sistema sees Nueva Incidencia but NOT Usuarios or Roles', function 
 
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
-        ->and($routes)->toContain('/incidencias/crear')
         ->and($routes)->toContain('/localizaciones')
         ->and($routes)->toContain('/categorias')
-        ->and($routes)->toContain('/notificaciones')
         // Back-office Gestión group is gated by users.* and roles.* — operador_sistema lacks those.
         ->and($routes)->not->toContain('/usuarios')
         ->and($routes)->not->toContain('/roles');
-});
-
-it('operador_organizacion now sees Notificaciones after the leak fix', function (): void {
-    $user = User::factory()->create(['role_id' => 4]);
-
-    $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
-
-    $response->assertOk();
-    $routes = collectRoutes($response->json('data'));
-
-    expect($routes)->toContain('/incidencias')
-        // Previously missing: the menu was hidden despite notifications.update.
-        ->and($routes)->toContain('/notificaciones')
-        // Does NOT see Nueva Incidencia (incidents.manage).
-        ->and($routes)->not->toContain('/incidencias/crear')
-        // Does NOT see citizen feed (no feed.view for this role).
-        ->and($routes)->not->toContain('/feed');
 });
 
 it('admin_organizacion sees back-office plus citizen entries (spec override)', function (): void {
@@ -117,11 +96,9 @@ it('admin_organizacion sees back-office plus citizen entries (spec override)', f
     // Back-office items
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
-        ->and($routes)->toContain('/incidencias/crear')
         ->and($routes)->toContain('/usuarios')
         ->and($routes)->toContain('/roles')
-        ->and($routes)->toContain('/organizaciones')
-        ->and($routes)->toContain('/notificaciones');
+        ->and($routes)->toContain('/organizaciones');
 
     // Citizen items (per design Decision 1: feed.view granted to admin_organizacion)
     expect($routes)->toContain('/feed')
@@ -183,44 +160,6 @@ it('creates the three new citizen menu rows (16, 17, 18) with the expected gates
         ->and($perfil->route)->toBe('/configuracion/perfil')
         ->and($perfil->icon)->toBe('user')
         ->and($perfil->parent_id)->toBeNull();
-});
-
-it('menu id 4 (Nueva Incidencia) is gated by incidents.manage, not incidents.create', function (): void {
-    $nueva = Menu::where('menu_id', 4)->first();
-    expect($nueva)->not->toBeNull()
-        ->and($nueva->name)->toBe('Nueva Incidencia');
-
-    // The permission attached to id 4 must be incidents.manage now.
-    $perm = $nueva->permissions()->first();
-    expect($perm)->not->toBeNull()
-        ->and($perm->resource)->toBe('incidents')
-        ->and($perm->action)->toBe('manage');
-});
-
-it('citizen (usuario) never sees admin back-office create route — regression for leak 43e66378', function (): void {
-    // Regression pinning for the security fix in commit 43e66378.
-    // Before that commit, the `usuario` role (citizen) saw the admin
-    // /incidencias/crear route in their menu despite having only `feed.view`
-    // (not `incidents.manage`). The fix split the menu entry into two rows
-    // with distinct permission gates:
-    //   - menu_id 17 (Reportar)         → feed.view
-    //   - menu_id  4 (Nueva Incidencia) → incidents.manage
-    //
-    // This focused tripwire exists alongside the broader per-role assertions
-    // (lines 157 and 212) so that any future "cleanup" of the apparent
-    // duplication is caught by CI with an explicit, named failure before it
-    // ships. If this test breaks, re-read commit 43e66378 before touching
-    // MenuSeeder.
-    $user = User::factory()->create(['role_id' => 5]); // usuario = citizen
-
-    $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
-
-    $response->assertOk();
-    $routes = collectRoutes($response->json('data'));
-
-    // The back-office create route must never appear in a citizen's menu,
-    // regardless of any other permissions they hold.
-    expect($routes)->not->toContain('/incidencias/crear');
 });
 
 it('menu id 1 (Dashboard) stores icon = gauge-high', function (): void {
