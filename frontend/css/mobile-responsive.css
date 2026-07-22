@@ -404,68 +404,37 @@ a:hover {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   15. MAPS Z-INDEX FIX (mobile — always lower than sidebar/header)
+   15. MAPS INTERACTION FIX (mobile — disable when sidebar open)
    ───────────────────────────────────────────────────────────────────────── */
 
-/* On mobile, Leaflet maps (z-index 100-800+) must NOT overlay sidebar (150)
-   or header (50). Force all Leaflet layers BELOW navigation. */
+/* On mobile, when sidebar opens, disable map interactions via pointer-events.
+   This prevents Leaflet's absolute-positioned elements (z-index 100-800+)
+   from capturing clicks meant for the sidebar. The sidebar stays at z-index 150
+   and captures all events while maps are inert but still visible. */
 @media (max-width: 767.98px) {
-  /* Feed minimap containers — prevent Leaflet from escaping */
-  .feed-minimap {
-    position: relative;
-    z-index: 1 !important;
-    overflow: hidden;
+  /* When sidebar is open, make ALL maps non-interactive */
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-container,
+  .app-shell-sidebar.is-open ~ .app-shell-main .feed-minimap,
+  .app-shell-sidebar.is-open ~ .app-shell-main .ici-map,
+  .app-shell-sidebar.is-open ~ .app-shell-main #map,
+  .app-shell-sidebar.is-open ~ .app-shell-main .mp-canvas {
+    pointer-events: none;
   }
 
-  .feed-minimap .leaflet-container {
-    z-index: 1 !important;
+  /* Disable pointer events on all Leaflet elements when sidebar open */
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-pane {
+    pointer-events: none;
   }
 
-  /* Leaflet main container — lower than sidebar backdrop (140) */
-  .leaflet-container {
-    position: relative;
-    z-index: 10 !important;
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-popup {
+    pointer-events: auto; /* Allow popup to close, if visible */
   }
 
-  /* All Leaflet panes */
-  .leaflet-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-map-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-tile-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-overlay-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-shadow-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-marker-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-tooltip-pane {
-    z-index: auto !important;
-  }
-
-  .leaflet-popup-pane {
-    z-index: auto !important;
-  }
-
-  /* Custom map wrappers */
-  .ici-map,
-  #map,
-  .mp-canvas {
-    position: relative;
-    z-index: 10 !important;
+  /* Fallback: global disable for all maps on mobile */
+  @supports not (selector(.app-shell-sidebar.is-open ~ .app-shell-main)) {
+    .leaflet-container {
+      z-index: 1 !important;
+    }
   }
 }
 
