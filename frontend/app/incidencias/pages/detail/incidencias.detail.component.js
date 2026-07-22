@@ -8,7 +8,6 @@ import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
-import { bindView } from '../../../utils/dom.js';
 import { commentService } from '../../../shared/comment.service.js';
 import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
@@ -102,8 +101,6 @@ async function cargarIncidencia(id) {
 }
 
 function renderizarIncidencia(inc) {
-  const view = bindView(document);
-
   const fechaTexto = inc.created_at
     ? new Date(inc.created_at).toLocaleDateString('es-EC', {
         year: 'numeric',
@@ -118,36 +115,35 @@ function renderizarIncidencia(inc) {
     ? [inc.user.first_name, inc.user.last_name].filter(Boolean).join(' ')
     : '—';
 
-  view.set({
-    // Toggle loading vs content in one shot.
-    'detalle-loading': { d_none: true },
-    'detalle-content': { d_none: false },
+  // Toggle loading vs content in one shot.
+  document.getElementById('detalle-loading').classList.toggle('d-none', true);
+  document.getElementById('detalle-content').classList.toggle('d-none', false);
 
-    // Plain text fields.
-    'detalle-titulo': inc.title ?? 'Sin título',
-    'detalle-breadcrumb': inc.title ?? 'Detalle',
-    'detalle-priority': PRIORITY_LABEL[inc.priority] ?? inc.priority,
-    'detalle-fecha': fechaTexto,
-    'detalle-descripcion': inc.description ?? 'Sin descripción',
-    'detalle-categoria': inc.category?.name ?? '—',
-    'detalle-ubicacion': inc.location?.name ?? '—',
-    'detalle-usuario': usuarioTexto,
-    'detalle-organizacion': inc.organization?.name ?? '—',
+  // Plain text fields.
+  document.getElementById('detalle-titulo').textContent = inc.title ?? 'Sin título';
+  document.getElementById('detalle-breadcrumb').textContent = inc.title ?? 'Detalle';
+  document.getElementById('detalle-priority').textContent =
+    PRIORITY_LABEL[inc.priority] ?? inc.priority;
+  document.getElementById('detalle-fecha').textContent = fechaTexto;
+  document.getElementById('detalle-descripcion').textContent = inc.description ?? 'Sin descripción';
+  document.getElementById('detalle-categoria').textContent = inc.category?.name ?? '—';
+  document.getElementById('detalle-ubicacion').textContent = inc.location?.name ?? '—';
+  document.getElementById('detalle-usuario').textContent = usuarioTexto;
+  document.getElementById('detalle-organizacion').textContent = inc.organization?.name ?? '—';
 
-    // Status badge: text + dynamic className based on the status.
-    'detalle-status': {
-      text: STATUS_LABEL[inc.status] ?? inc.status,
-      className: `ig-status-badge ig-status-${inc.status}`,
-    },
+  // Status badge: text + dynamic className based on the status.
+  const statusEl = document.getElementById('detalle-status');
+  statusEl.textContent = STATUS_LABEL[inc.status] ?? inc.status;
+  statusEl.className = `ig-status-badge ig-status-${inc.status}`;
 
-    // Thumbnail: shown only when the backend provides a URL.
-    'detalle-thumbnail': inc.thumbnail_url
-      ? {
-          html: `<img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />`,
-          d_none: false,
-        }
-      : { d_none: true },
-  });
+  // Thumbnail: shown only when the backend provides a URL.
+  const thumbEl = document.getElementById('detalle-thumbnail');
+  if (inc.thumbnail_url) {
+    thumbEl.innerHTML = `<img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />`;
+    thumbEl.classList.toggle('d-none', false);
+  } else {
+    thumbEl.classList.toggle('d-none', true);
+  }
 
   renderMap(inc);
 }
