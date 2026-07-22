@@ -7,7 +7,7 @@ namespace App\Domains\Incidents\Observers;
 use App\Domains\Incidents\Enums\AssignmentRole;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Mail\Services\MailJobDispatcher;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
@@ -37,21 +37,24 @@ use Illuminate\Support\Facades\Log;
  *   - Tolerancia S-7: cualquier excepción se loguea vía Log::warning y
  *     NO se propaga. La creación de la fila en `assignments` es lo
  *     importante para el negocio; la notification (in-app + Mercure +
- *     email) es side-effect. MailSenderInterface::sendAssignedIncident
- *     también absorbe fallos SMTP internamente (mismo patrón), pero el
- *     try/catch de este observer es un safety net final por si un mock
- *     o un remplazo futuro no honra el contrato.
+ *     email) es side-effect. MailJobDispatcher encola el Job de mail,
+ *     y `SendAssignmentMailJob::handle()` + `MailSenderInterface`
+ *     (SmtpMailSender) absorben fallos SMTP internamente (mismo patrón),
+ *     pero el try/catch de este observer es un safety net final por si
+ *     un mock o un remplazo futuro no honra el contrato.
  *   - La deduplicación 60s dentro de NotificationService::notify cubre
  *     ataques de doble-clic y reintentos del cliente.
- *   - Mail NO es deduplicado: dos reasignaciones rápidas al mismo
- *     operador generan dos mails. La deduplicación de mail queda
- *     como follow-up (ver NOTIF-MAIL-DEDUP TODO).
+ *   - Mail dedup: `SendAssignmentMailJob` implementa `ShouldBeUnique`
+ *     con `uniqueId = sha1(assignment:incident_id:user_id)` y
+ *     `uniqueFor = 300s`. Esto evita que dos reasignaciones rápidas
+ *     al mismo operador (mismo incident + mismo user) encolen dos
+ *     mails duplicados dentro de la ventana de retries.
  */
 class AssignmentNotificationObserver
 {
     public function __construct(
         private readonly NotificationService $service,
-        private readonly MailSenderInterface $mailSender,
+        private readonly MailJobDispatcher $mailDispatcher,
     ) {}
 
     public function created(Assignment $a): void
@@ -129,9 +132,14 @@ class AssignmentNotificationObserver
             ],
         );
 
-        // Side-effect: enviar mail al operador. SmtpMailSender absorbe
-        // excepciones SMTP internamente y solo loguea; el try/catch
-        // exterior en `created()` es un safety net final.
-        $this->mailSender->sendAssignedIncident($a->user, $a->incident, $role);
+        // Side-effect: encolar mail al operador. El dispatcher delega
+        // en `SendAssignmentMailJob` (ShouldQueue + ShouldBeUnique)
+        // que el worker procesa fuera del request HTTP. La tolerancia
+        // S-7 sigue activa porque el Job, al ejecutarse, llama a
+        // `SmtpMailSender::sendAssignedIncident()` que absorbe
+        // excepciones SMTP internamente. El try/catch exterior en
+        // `created()` es un safety net final por si la cola está
+        // caída y `dispatch()` falla (ej. Redis no responde).
+        $this->mailDispatcher->dispatchAssignmentMail($a->user, $a->incident, $role);
     }
 }

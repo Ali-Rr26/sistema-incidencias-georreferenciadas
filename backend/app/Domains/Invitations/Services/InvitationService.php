@@ -7,7 +7,7 @@ namespace App\Domains\Invitations\Services;
 use App\Domains\Invitations\Exceptions\InvitationGoneException;
 use App\Domains\Invitations\Exceptions\InvitationNotFoundException;
 use App\Domains\Invitations\Models\UserInvitation;
-use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Mail\Services\MailJobDispatcher;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -22,8 +22,15 @@ use Illuminate\Support\Facades\Log;
  * ## Creación de invitación
  *
  * `createAndSendInvitation()` genera un token, lo persiste en `UserInvitation`
- * y dispara el mail de invitación. El mail usa tolerancia S-7 (no propaga
- * errores SMTP).
+ * y encola el mail de invitación vía `MailJobDispatcher`. La cola Redis
+ * absorbe la latencia SMTP (el request HTTP que crea la invitación no
+ * espera al SMTP), y un worker dedicado procesa el `SendInvitationMailJob`
+ * con backoff exponencial (5 intentos, hasta ~1h entre el último reintento).
+ * La tolerancia S-7 sigue activa porque el Job, al ejecutarse, llama a
+ * `SmtpMailSender::sendUserInvitation()` que absorbe excepciones SMTP
+ * internamente. El try/catch exterior en este método es un safety net
+ * final por si la cola está caída y `dispatch()` falla (ej. Redis no
+ * responde).
  *
  * ## Aceptación de invitación
  *
@@ -43,7 +50,7 @@ class InvitationService
 {
     public function __construct(
         private readonly InvitationTokenGenerator $tokenGenerator,
-        private readonly MailSenderInterface $mailSender,
+        private readonly MailJobDispatcher $mailDispatcher,
     ) {}
 
     /**
@@ -68,10 +75,14 @@ class InvitationService
         ]);
 
         try {
-            $this->mailSender->sendUserInvitation($user, $plain);
+            $this->mailDispatcher->dispatchInvitationMail($user, $plain);
         } catch (\Throwable $e) {
-            // S-7: fallo de mail no bloquea la creación del usuario
-            Log::warning('Invitation mail failed to send', [
+            // S-7: fallo al encolar no bloquea la creación del usuario.
+            // El dispatcher en sí mismo no debería fallar salvo que Redis
+            // esté caído o haya un error de configuración; en ese caso la
+            // invitación queda creada pero sin Job encolado. Un admin
+            // puede reenviar manualmente (out of scope de este slice).
+            Log::warning('Invitation mail failed to enqueue', [
                 'user_id' => $user->id,
                 'invitation_id' => $invitation->id,
                 'error' => $e->getMessage(),
