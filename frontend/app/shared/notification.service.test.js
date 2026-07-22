@@ -19,7 +19,6 @@ describe('notificationService', () => {
   beforeEach(() => {
     clearAuthState();
     setAccessToken('test-token');
-    notificationService.clearCache();
     vi.clearAllMocks();
   });
 
