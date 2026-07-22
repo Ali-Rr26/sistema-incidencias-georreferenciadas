@@ -19,4 +19,15 @@ class UpdateCommentRequest extends FormRequest
             'message' => ['required', 'string', 'max:5000'],
         ];
     }
+
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated($key, $default);
+
+        if (is_array($data) && isset($data['message'])) {
+            $data['message'] = htmlspecialchars($data['message'] ?? '', ENT_QUOTES, 'UTF-8');
+        }
+
+        return $data;
+    }
 }
