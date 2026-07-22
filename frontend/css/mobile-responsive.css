@@ -342,7 +342,58 @@ video {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   14. HORIZONTAL SCROLL PREVENTION
+   14. FEED CARD TEXT TRUNCATION (mobile)
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 576px) {
+  /* Composer bar text truncation */
+  .composer-input-wrap {
+    min-width: 0;
+  }
+
+  .composer-placeholder {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    font-size: clamp(13px, 3vw, 14px);
+  }
+
+  /* Feed card header: truncate userName + location on mobile */
+  .feed-card .card-header {
+    gap: clamp(8px, 2vw, 12px);
+    padding: clamp(8px, 2vw, 12px);
+  }
+
+  .feed-card .card-header .flex-grow-1 {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .feed-card .card-header .flex-grow-1 > div:nth-child(1) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(13px, 3vw, 14px);
+  }
+
+  .feed-card .card-header .flex-grow-1 > div:nth-child(2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(11px, 2.5vw, 12px);
+  }
+
+  /* Badges on mobile: shrink font + padding */
+  .feed-card .card-header > .badge {
+    font-size: clamp(10px, 2vw, 11px);
+    padding: clamp(3px, 1vw, 4px) clamp(8px, 1.5vw, 10px);
+    white-space: nowrap;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   14a. HORIZONTAL SCROLL PREVENTION
    ───────────────────────────────────────────────────────────────────────── */
 
 /* Force all elements to respect viewport width on tiny screens */
