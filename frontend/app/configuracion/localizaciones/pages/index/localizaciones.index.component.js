@@ -5,7 +5,7 @@ import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
 // eslint-disable-next-line no-unused-vars
 import { permissionService } from '../../../../shared/permission.service.js';
-import { mount } from '../../../../shared/table-actions/table-actions.component.js';
+import { hydrateKebabActions } from '../../../../shared/kebab-actions.js';
 import {
   isDesktop,
   mostrarEstado,
@@ -98,6 +98,10 @@ export default {
 
       const flat = buildFlatList(treeRoots, 0, []);
       const esDesktop = isDesktop();
+      const slugSet = {
+        update: 'locations.update',
+        delete: 'locations.delete',
+      };
 
       if (esDesktop) {
         tbody().innerHTML = flat
@@ -127,16 +131,10 @@ export default {
           })
           .join('');
 
-        flat.forEach((loc) => {
-          const el = document.getElementById('ta-tree-' + loc.id);
-          if (el) {
-            mount(el, {
-              id: loc.id,
-              titulo: loc.name,
-              slugs: { update: 'locations.update', delete: 'locations.delete' },
-              showView: false,
-            });
-          }
+        hydrateKebabActions(tbody(), flat, {
+          slugs: slugSet,
+          showView: false,
+          itemTitle: (loc) => loc.name,
         });
 
         document.getElementById('contenedor-cards').innerHTML = '';
@@ -159,16 +157,10 @@ export default {
           )
           .join('');
 
-        flat.forEach((loc) => {
-          const el = document.getElementById('ta-mobile-' + loc.id);
-          if (el) {
-            mount(el, {
-              id: loc.id,
-              titulo: loc.name,
-              slugs: { update: 'locations.update', delete: 'locations.delete' },
-              showView: false,
-            });
-          }
+        hydrateKebabActions(document.getElementById('contenedor-cards'), flat, {
+          slugs: slugSet,
+          showView: false,
+          itemTitle: (loc) => loc.name,
         });
       }
 
@@ -236,16 +228,10 @@ export default {
           )
           .join('');
 
-        datos.forEach((loc) => {
-          const el = document.getElementById('ta-flat-' + loc.id);
-          if (el) {
-            mount(el, {
-              id: loc.id,
-              titulo: loc.name,
-              slugs: { update: 'locations.update', delete: 'locations.delete' },
-              showView: false,
-            });
-          }
+        hydrateKebabActions(tbody(), datos, {
+          slugs: { update: 'locations.update', delete: 'locations.delete' },
+          showView: false,
+          itemTitle: (loc) => loc.name,
         });
 
         document.getElementById('contenedor-cards').innerHTML = '';
@@ -269,17 +255,15 @@ export default {
           )
           .join('');
 
-        datos.forEach((loc) => {
-          const el = document.getElementById('ta-mobile-' + loc.id);
-          if (el) {
-            mount(el, {
-              id: loc.id,
-              titulo: loc.name,
-              slugs: { update: 'locations.update', delete: 'locations.delete' },
-              showView: false,
-            });
-          }
-        });
+        hydrateKebabActions(
+          document.getElementById('contenedor-cards'),
+          datos,
+          {
+            slugs: { update: 'locations.update', delete: 'locations.delete' },
+            showView: false,
+            itemTitle: (loc) => loc.name,
+          },
+        );
       }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
@@ -334,18 +318,21 @@ export default {
 
     // ─── Events ─────────────────────────────────────────────────────────
 
-    // Delegated event handlers for table-actions custom events
-    function manejarTableActions(e) {
-      const { id, titulo } = e.detail;
-      if (e.type === 'table-actions:view') {
+    // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
+    function manejarAcciones(e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const { id, titulo, action } = target.dataset;
+      e.preventDefault();
+      if (action === 'view') {
         router.navigate('/localizaciones/' + id);
         return;
       }
-      if (e.type === 'table-actions:edit') {
+      if (action === 'edit') {
         router.navigate('/localizaciones/crear?id=' + id);
         return;
       }
-      if (e.type === 'table-actions:delete') {
+      if (action === 'delete') {
         idEliminar = id;
         document.getElementById('modal-eliminar-nombre').textContent = titulo;
         new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
@@ -369,15 +356,8 @@ export default {
     const contenedorCards = document.getElementById('contenedor-cards');
 
     tablaBody.addEventListener('click', manejarToggle);
-    tablaBody.addEventListener('table-actions:view', manejarTableActions);
-    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
-    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
-    contenedorCards.addEventListener(
-      'table-actions:delete',
-      manejarTableActions,
-    );
+    tablaBody.addEventListener('click', manejarAcciones);
+    contenedorCards.addEventListener('click', manejarAcciones);
 
     document
       .getElementById('btn-confirmar-eliminar')
