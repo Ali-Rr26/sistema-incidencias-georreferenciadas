@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Comments\Http;
 
+use App\Domains\Comments\Http\Policies\CommentPolicy;
 use App\Domains\Comments\Http\Requests\StoreCommentRequest;
 use App\Domains\Comments\Http\Requests\UpdateCommentRequest;
 use App\Domains\Comments\Http\Resources\CommentCollection;
@@ -21,7 +22,7 @@ class CommentController extends Controller
     use AuthorizesRequests;
 
     public function __construct(
-        private readonly CommentRepository $commentRepository,
+        private readonly CommentRepository $comments,
     ) {
         // Wires resource-level policy checks for every method:
         //   index   → viewAny  (PermissionPolicy::viewAny → comments.view)
@@ -38,7 +39,7 @@ class CommentController extends Controller
     {
         $this->authorizeIncidentOrgScope($incident);
 
-        $comments = $this->commentRepository->paginate(
+        $comments = $this->comments->paginate(
             filters: ['incident_id' => $incident->id],
             perPage: (int) $request->integer('per_page', 20),
         );
@@ -50,13 +51,30 @@ class CommentController extends Controller
     {
         $this->authorizeIncidentOrgScope($incident);
 
-        $comment = $this->commentRepository->create([
+        $parentId = $request->input('parent_id');
+
+        if ($parentId !== null) {
+            $parent = Comment::with('parent')->findOrFail($parentId);
+
+            // Parent must belong to the same incident
+            if ($parent->incident_id !== $incident->id) {
+                abort(422, 'El comentario al que intentas responder pertenece a otra incidencia.');
+            }
+
+            // Depth must be < 2 (max 2 levels: top-level = 0, first reply = 1, second reply = 2)
+            if ($parent->depth >= 2) {
+                abort(422, 'No se puede responder a un comentario de segundo nivel.');
+            }
+        }
+
+        $comment = $this->comments->create([
             'incident_id' => $incident->id,
             'user_id' => auth()->id(),
             'message' => $request->input('message'),
+            'parent_id' => $parentId,
         ]);
 
-        $comment->load('user');
+        $comment->load(['user', 'images', 'parent', 'replies']);
 
         return (new CommentResource($comment))
             ->response()
@@ -72,7 +90,7 @@ class CommentController extends Controller
 
     public function update(UpdateCommentRequest $request, Comment $comment): CommentResource
     {
-        $this->commentRepository->update($comment->id, [
+        $this->comments->update($comment->id, [
             'message' => $request->input('message'),
         ]);
 
@@ -84,7 +102,7 @@ class CommentController extends Controller
 
     public function destroy(Comment $comment): JsonResponse
     {
-        $this->commentRepository->delete($comment->id);
+        $this->comments->delete($comment->id);
 
         return response()->json(null, 204);
     }
@@ -92,9 +110,8 @@ class CommentController extends Controller
     /**
      * viewAny/create (index/store) never receive the parent Incident via
      * Laravel's authorizeResource wiring, so CommentPolicy can't org-scope
-     * them — org-scoping happens here instead, mirroring
-     * CommentPolicy::inSameOrg exactly. Users without an organization
-     * (citizens, operador_sistema) are exempt, same as the Policy.
+     * them — the check runs here against the resolved route param, but the
+     * rule itself lives in CommentPolicy::hasOrgAccess (single owner).
      */
     private function authorizeIncidentOrgScope(Incident $incident): void
     {
@@ -104,14 +121,8 @@ class CommentController extends Controller
             abort(401);
         }
 
-        if ($user->isSystemAdmin() || $user->organization_id === null) {
-            return;
+        if (! CommentPolicy::hasOrgAccess($user, $incident->organization_id)) {
+            abort(403, 'No tienes acceso a los comentarios de esta organización.');
         }
-
-        if ($incident->organization_id !== null && $incident->organization_id === $user->organization_id) {
-            return;
-        }
-
-        abort(403, 'No tienes acceso a los comentarios de esta organización.');
     }
 }

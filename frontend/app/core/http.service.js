@@ -49,7 +49,7 @@ class HttpService {
     this.baseUrl = API_URL;
   }
 
-  async request(method, path, body = null) {
+  async request(method, path, body = null, { responseType = 'json' } = {}) {
     const headers = {};
 
     if (body && !(body instanceof FormData)) {
@@ -69,12 +69,44 @@ class HttpService {
 
     // 401 → token inválido/expirado, intentar refresh
     if (res.status === 401) {
+      // Binary responses can't be re-tried cleanly after refresh
+      // (the response body is already consumed by the time we get here),
+      // so we only retry JSON / text calls.
+      if (responseType === 'blob') {
+        const err = new Error('No autorizado');
+        err.status = 401;
+        throw err;
+      }
       return this.handle401({ method, path, body });
     }
 
-    // 204 → sin cuerpo, no intentes parsearlo como JSON
+    // 204 → sin cuerpo, no intentes parsearlo
     if (res.status === 204) {
       return null;
+    }
+
+    // Honour the caller-requested response shape. The default ('json')
+    // is what every other call site expects; binary endpoints (export,
+    // downloads) opt in via `responseType: 'blob'`. Anything non-2xx
+    // is still surfaced as a thrown Error so callers can branch on
+    // `err.status` / `err.message`.
+    if (responseType === 'blob') {
+      if (!res.ok) {
+        const err = new Error(`Error en la solicitud (${res.status})`);
+        err.status = res.status;
+        throw err;
+      }
+      return res.blob();
+    }
+
+    if (responseType === 'text') {
+      if (!res.ok) {
+        const text = await res.text();
+        const err = new Error(text || 'Error en la solicitud');
+        err.status = res.status;
+        throw err;
+      }
+      return res.text();
     }
 
     const data = await res.json();
@@ -124,18 +156,8 @@ class HttpService {
       );
       return result;
     } catch (err) {
-      // Refresh failed. Clear state and redirect to login. We redirect
-      // directly here instead of dispatching a custom event: there's exactly
-      // one consumer (the login redirect), and the indirection was hiding
-      // a memory leak (listener registered on every app boot, never
-      // removed). If a future feature needs to react to "session expired",
-      // it can subscribe to router's `currentRoute` change.
       clearAuthState();
-      // Use history.replaceState to avoid a hashchange loop with the router.
-      const target = '/login';
-      if (window.location.hash !== `#${target}`) {
-        window.location.hash = `#${target}`;
-      }
+      window.dispatchEvent(new CustomEvent('auth:expired'));
       // Reject all queued requests
       queue.forEach(({ reject }) =>
         reject(new Error('Sesión expirada. Inicia sesión nuevamente.')),
@@ -163,17 +185,20 @@ class HttpService {
     return data;
   }
 
-  get(path) {
-    return this.request('GET', path);
+  get(path, options) {
+    return this.request('GET', path, null, options);
   }
-  post(path, body) {
-    return this.request('POST', path, body);
+  post(path, body, options) {
+    return this.request('POST', path, body, options);
   }
-  put(path, body) {
-    return this.request('PUT', path, body);
+  put(path, body, options) {
+    return this.request('PUT', path, body, options);
   }
-  delete(path) {
-    return this.request('DELETE', path);
+  patch(path, body, options) {
+    return this.request('PATCH', path, body, options);
+  }
+  delete(path, options) {
+    return this.request('DELETE', path, null, options);
   }
 }
 

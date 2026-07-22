@@ -1,141 +1,226 @@
-<!-- Feed — single responsive template (CSS-grid reflows 1-col → 2-col ≥ 992px) -->
-<div id="feed" class="feed">
-  <div class="feed-main">
+<!-- Feed — Bootstrap 5 responsive layout (1-col → 2-col ≥ 992px) -->
+<div id="feed" class="row">
+  <div class="col-12 col-lg-8">
     <!-- Composer bar (only when auth) -->
-    <div class="composer-bar d-none" id="composer-bar">
-      <div class="composer-avatar" id="composer-avatar">MR</div>
-      <div class="composer-input-wrap">
-        <span class="composer-placeholder"
-          >¿Qué incidencia deseas reportar hoy?</span
+    <div class="composer-bar d-none card mb-3" id="composer-bar">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="composer-avatar" id="composer-avatar">MR</div>
+        <button
+          type="button"
+          class="composer-input-wrap btn flex-grow-1"
+          aria-label="Reportar nueva incidencia"
         >
+          <span class="composer-placeholder"
+            >¿Qué incidencia deseas reportar hoy?</span
+          >
+        </button>
+        <button class="composer-btn btn btn-primary">
+          <i class="fa-solid fa-location-dot"></i> Reportar
+        </button>
       </div>
-      <button class="composer-btn">
-        <i class="fa-solid fa-location-dot"></i> Reportar
-      </button>
     </div>
 
     <!-- Filter chips (shared across viewports) -->
-    <div class="feed-filters" id="feed-filters">
-      <button class="feed-chip active" data-status="">Todo</button>
-      <button class="feed-chip" data-status="in_progress">En proceso</button>
-      <button class="feed-chip" data-status="pending">Pendientes</button>
-      <button class="feed-chip" data-status="resolved">Resueltos</button>
+    <div class="feed-filters d-flex flex-wrap gap-2 mb-3" id="feed-filters">
+      <button
+        class="feed-chip active btn btn-outline-primary btn-sm"
+        data-status=""
+      >
+        Todo
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="in_progress"
+      >
+        En proceso
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="pending"
+      >
+        Pendientes
+      </button>
+      <button
+        class="feed-chip btn btn-outline-primary btn-sm"
+        data-status="resolved"
+      >
+        Resueltos
+      </button>
     </div>
 
     <!-- Loading skeleton -->
     <div id="feed-cargando" class="feed-skeleton-wrap">
-      <div class="feed-skeleton-card">
-        <div class="feed-skel-head">
-          <div class="feed-skel-avatar"></div>
-          <div class="feed-skel-line w-40"></div>
-        </div>
-        <div class="feed-skel-preview"></div>
-        <div class="feed-skel-body">
-          <div class="feed-skel-line w-60"></div>
-          <div class="feed-skel-line w-30"></div>
+      <div class="feed-skeleton-card card">
+        <div class="card-body">
+          <div class="feed-skel-head d-flex align-items-center gap-2 mb-3">
+            <div class="feed-skel-avatar"></div>
+            <div class="feed-skel-line w-40"></div>
+          </div>
+          <div class="feed-skel-preview mb-3"></div>
+          <div class="feed-skel-body">
+            <div class="feed-skel-line w-60 mb-2"></div>
+            <div class="feed-skel-line w-30"></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="feed-vacio" class="feed-empty d-none">
-      <div class="feed-empty-icon">📭</div>
-      <p>No hay incidencias publicadas.</p>
+    <div id="feed-vacio" class="feed-empty d-none card text-center">
+      <div class="card-body">
+        <div class="feed-empty-icon">📭</div>
+        <p>No hay incidencias publicadas.</p>
+      </div>
     </div>
 
-    <div id="feed-list" class="feed-cards"></div>
+    <div id="feed-scroll-region" class="feed-scroll-region">
+      <div id="feed-list" class="feed-cards row g-3"></div>
 
-    <!-- Infinite scroll sentinel -->
-    <div id="feed-sentinel" class="feed-sentinel">
-      <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
+      <!-- Infinite scroll sentinel -->
+      <div
+        id="feed-sentinel"
+        class="feed-sentinel d-flex justify-content-center"
+      >
+        <div class="feed-sentinel-spinner">
+          <div class="feed-spinner"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Right panel (CSS hides it < 992px, no DOM swap) -->
-  <aside class="feed-aside">
+  <!-- Right panel (hidden on mobile, visible ≥ 992px, sticky) -->
+  <aside class="col-lg-4 position-sticky top-0">
     <!-- Filtros -->
-    <div class="rp-card">
-      <div class="rp-card-title">Filtrar feed</div>
-      <div class="rp-card-section-label">ESTADO</div>
-      <div class="rp-filter-chips" id="rp-status-filters">
-        <div class="rp-filter-chip active" data-status="">Todo</div>
-        <div class="rp-filter-chip" data-status="in_progress">En proceso</div>
-        <div class="rp-filter-chip" data-status="pending">Pendiente</div>
-        <div class="rp-filter-chip" data-status="resolved">Resuelto</div>
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
+      <div
+        class="rp-card-section-label text-muted small fw-bold text-uppercase"
+      >
+        ESTADO
       </div>
-      <div class="rp-card-section-label">TIPO</div>
+      <div
+        class="rp-filter-chips d-flex flex-wrap gap-2 mb-3"
+        id="rp-status-filters"
+      >
+        <div class="rp-filter-chip active badge bg-primary" data-status="">
+          Todo
+        </div>
+        <div
+          class="rp-filter-chip badge bg-secondary"
+          data-status="in_progress"
+        >
+          En proceso
+        </div>
+        <div class="rp-filter-chip badge bg-secondary" data-status="pending">
+          Pendiente
+        </div>
+        <div class="rp-filter-chip badge bg-secondary" data-status="resolved">
+          Resuelto
+        </div>
+      </div>
+      <div
+        class="rp-card-section-label text-muted small fw-bold text-uppercase"
+      >
+        TIPO
+      </div>
       <div class="rp-category-filters" id="rp-category-filters">
-        <label class="rp-checkbox-label" data-category="1">
-          <span class="rp-checkbox-box checked"
-            ><i class="fa-solid fa-check"></i
-          ></span>
-          Infraestructura
-        </label>
-        <label class="rp-checkbox-label" data-category="2">
-          <span class="rp-checkbox-box checked"
-            ><i class="fa-solid fa-check"></i
-          ></span>
-          Servicios públicos
-        </label>
-        <label class="rp-checkbox-label" data-category="3">
-          <span class="rp-checkbox-box"></span>
-          Medio ambiente
-        </label>
-        <label class="rp-checkbox-label" data-category="4">
-          <span class="rp-checkbox-box"></span>
-          Seguridad
-        </label>
+        <div class="form-check">
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-1"
+            data-category="1"
+            checked
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-1"
+            >Infraestructura</label
+          >
+        </div>
+        <div class="form-check">
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-2"
+            data-category="2"
+            checked
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-2"
+            >Servicios públicos</label
+          >
+        </div>
+        <div class="form-check">
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-3"
+            data-category="3"
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-3"
+            >Medio ambiente</label
+          >
+        </div>
+        <div class="form-check">
+          <input
+            class="rp-checkbox-box form-check-input"
+            type="checkbox"
+            id="cat-4"
+            data-category="4"
+          />
+          <label class="rp-checkbox-label form-check-label" for="cat-4"
+            >Seguridad</label
+          >
+        </div>
       </div>
     </div>
 
     <!-- Estadísticas rápidas -->
-    <div class="rp-card">
-      <div class="rp-card-title">Estadísticas hoy</div>
-      <div class="rp-stat">
-        <div class="rp-stat-icon rp-stat-icon--purple">
-          <i class="fa-solid fa-circle-plus"></i>
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Estadísticas hoy</div>
+      <div class="rp-stat row align-items-center mb-2">
+        <div class="rp-stat-icon col-auto">
+          <i class="fa-solid fa-circle-plus text-purple"></i>
         </div>
-        <div>
-          <div class="rp-stat-value">14</div>
-          <div class="rp-stat-label">Nuevas hoy</div>
-        </div>
-      </div>
-      <div class="rp-stat">
-        <div class="rp-stat-icon rp-stat-icon--green">
-          <i class="fa-solid fa-circle-check"></i>
-        </div>
-        <div>
-          <div class="rp-stat-value">8</div>
-          <div class="rp-stat-label">Resueltas hoy</div>
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold">14</div>
+          <div class="rp-stat-label small text-muted">Nuevas hoy</div>
         </div>
       </div>
-      <div class="rp-stat rp-stat--last">
-        <div class="rp-stat-icon rp-stat-icon--yellow">
-          <i class="fa-regular fa-clock"></i>
+      <div class="rp-stat row align-items-center mb-2">
+        <div class="rp-stat-icon col-auto">
+          <i class="fa-solid fa-circle-check text-success"></i>
         </div>
-        <div>
-          <div class="rp-stat-value">2.4 d</div>
-          <div class="rp-stat-label">Promedio resolución</div>
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold">8</div>
+          <div class="rp-stat-label small text-muted">Resueltas hoy</div>
+        </div>
+      </div>
+      <div class="rp-stat row align-items-center">
+        <div class="rp-stat-icon col-auto">
+          <i class="fa-regular fa-clock text-warning"></i>
+        </div>
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold">2.4 d</div>
+          <div class="rp-stat-label small text-muted">Promedio resolución</div>
         </div>
       </div>
     </div>
 
     <!-- Zonas activas -->
-    <div class="rp-card">
-      <div class="rp-card-title">Zonas activas</div>
-      <div class="rp-zone">
-        <div class="rp-zone-rank rp-zone-rank--1">1</div>
-        <div class="rp-zone-name">Quito, Pichincha</div>
-        <div class="rp-zone-count">386</div>
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Zonas activas</div>
+      <div class="rp-zone row align-items-center mb-2">
+        <div class="rp-zone-rank badge rounded-2 bg-primary col-auto">1</div>
+        <div class="col">Quito, Pichincha</div>
+        <div class="rp-zone-count col-auto text-muted">386</div>
       </div>
-      <div class="rp-zone">
-        <div class="rp-zone-rank rp-zone-rank--2">2</div>
-        <div class="rp-zone-name">Guayaquil, Guayas</div>
-        <div class="rp-zone-count">298</div>
+      <div class="rp-zone row align-items-center mb-2">
+        <div class="rp-zone-rank badge rounded-2 bg-secondary col-auto">2</div>
+        <div class="col">Guayaquil, Guayas</div>
+        <div class="rp-zone-count col-auto text-muted">298</div>
       </div>
-      <div class="rp-zone">
-        <div class="rp-zone-rank rp-zone-rank--3">3</div>
-        <div class="rp-zone-name">Cuenca, Azuay</div>
-        <div class="rp-zone-count">174</div>
+      <div class="rp-zone row align-items-center">
+        <div class="rp-zone-rank badge rounded-2 bg-secondary col-auto">3</div>
+        <div class="col">Cuenca, Azuay</div>
+        <div class="rp-zone-count col-auto text-muted">174</div>
       </div>
     </div>
   </aside>

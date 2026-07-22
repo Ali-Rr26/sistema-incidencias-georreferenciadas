@@ -28,12 +28,21 @@ class Router {
     this.routeParams = {};
     this.queryParams = new URLSearchParams();
     this._shellMounted = false; // first-time mount only
+    this._currentUserRole = null; // the bucket consulted by the role-mismatch short-circuit in resolve()
   }
 
   // ─── Public API ──────────────────────────────────────────────────────
 
   setShell(shell) {
     this.shell = shell;
+  }
+
+  setCurrentUserRole(role) {
+    // Stores the user's classified role ('guest' | 'citizen' | 'admin' | …).
+    // Login flow sets this synchronously with the user returned by /me,
+    // BEFORE changing the hash, so resolve() can short-circuit role
+    // mismatches without invoking roleGuard's heavier /me fetch path.
+    this._currentUserRole = role;
   }
 
   addRoute(pattern, component, guards = [], role = undefined) {
@@ -46,6 +55,19 @@ class Router {
 
   init() {
     window.addEventListener('hashchange', () => this.resolve());
+
+    // Deep-link support (R-INV-11 / WU-4): when a user lands on a
+    // non-root URL without a hash (typical for invitation emails that
+    // produce `/accept-invite?token=...`), the router used to treat
+    // the empty hash as `/` and redirect to `/login`, dropping the
+    // route AND the token. Seed the hash from pathname + search so
+    // resolve() finds the real route on the next microtask.
+    if (!window.location.hash && window.location.pathname !== '/') {
+      window.location.hash =
+        '#' + window.location.pathname + window.location.search;
+      return; // hashchange listener above will trigger resolve()
+    }
+
     this.resolve();
   }
 
@@ -86,6 +108,27 @@ class Router {
     // Each guard receives the same context the component will receive,
     // so role-based checks can run with the matched route info.
     const ctx = { params, query: this.queryParams, role: route.role };
+
+    // Role-bucket short-circuit: when the login flow has classified the
+    // user and stashed the role on the router, resolve() can redirect to
+    // /feed without waiting for roleGuard to fetch /me. Only admin-tagged
+    // routes are gated here: 'both' routes are open to every authenticated
+    // bucket, and citizen-tagged routes stay reachable for staff — the
+    // backend menu grants Inicio/Reportar/Perfil by permission, and the
+    // per-route guards remain the real authorization source. A strict
+    // bucket !== tag comparison here used to no-op every one of those
+    // clicks for admins (redirecting to /feed, itself citizen-tagged)
+    // until an F5 cleared the bucket. Falls through to the external
+    // guards for the first navigation, where the bucket is still null.
+    if (
+      route.role === 'admin' &&
+      this._currentUserRole &&
+      this._currentUserRole !== 'admin'
+    ) {
+      this.navigate('/feed');
+      return;
+    }
+
     for (const guard of route.guards) {
       if ((await guard.canActivate(ctx)) === false) return;
     }
@@ -131,10 +174,21 @@ class Router {
     return params;
   }
 
+  // Public-by-convention alias for tests that want pattern matching without
+  // route lookup. Same signature as _matchPattern: returns a params object
+  // on hit, null on miss.
+  _matchRoute(pattern, path) {
+    return this._matchPattern(pattern, path);
+  }
+
   async _mountShell() {
     if (this.shell.mount) await this.shell.mount();
     if (this.shell.init) await this.shell.init();
-    if (this.shell.styleUrl) {
+    // `style` is a CSS string bundled at build time (Vite ?raw import) —
+    // preferred. `styleUrl` is the legacy runtime-fetch path.
+    if (this.shell.style) {
+      this._appendStyle(this.shell.style, 'shell-style');
+    } else if (this.shell.styleUrl) {
       await this._injectStyle(this.shell.styleUrl, 'shell-style');
     }
   }
@@ -163,14 +217,34 @@ class Router {
       throw new Error('Router: page outlet not found');
     }
 
-    const html = component.template
-      ? component.template
-      : await this._fetchText(component.templateUrl);
+    // Components bundle their template/CSS as strings (Vite ?raw imports)
+    // via `template`/`style` — zero runtime requests. `templateUrl`/
+    // `styleUrl` remain as the legacy runtime-fetch path; both resolve in
+    // parallel so the component never renders without its styles
+    // (eliminates FOUC between insert and style inject).
+    const htmlPromise = component.template
+      ? Promise.resolve(component.template)
+      : this._fetchText(component.templateUrl);
+    // Append ?raw so Vite's dev server returns the file's bytes verbatim
+    // instead of an HMR-wrapped JS module — wrapping corrupts the CSS
+    // parser when injected into a <style> tag. In production nginx serves
+    // the static CSS file ignoring query strings, so this is a no-op there.
+    const cssPromise = component.style
+      ? Promise.resolve(component.style)
+      : component.styleUrl
+        ? this._fetchText(this._withRaw(component.styleUrl))
+        : Promise.resolve(null);
+
+    const [html, css] = await Promise.all([htmlPromise, cssPromise]);
+
     outlet.innerHTML = html;
 
-    if (component.styleUrl) {
+    if (css !== null) {
       const id = `style-${Date.now()}`;
-      await this._injectStyle(component.styleUrl, id);
+      const style = document.createElement('style');
+      style.id = id;
+      style.textContent = css;
+      document.head.appendChild(style);
       component._styleId = id;
     }
 
@@ -183,11 +257,26 @@ class Router {
   }
 
   async _injectStyle(url, id) {
-    const css = await this._fetchText(url);
+    // See note in _mountPage: ?raw keeps the dev HMR JS wrapper out of the
+    // CSS we feed into the <style> tag, where it would otherwise break the
+    // CSS parser and silently disable every rule in this stylesheet.
+    const css = await this._fetchText(this._withRaw(url));
+    this._appendStyle(css, id);
+  }
+
+  _appendStyle(css, id) {
     const style = document.createElement('style');
     style.id = id;
     style.textContent = css;
     document.head.appendChild(style);
+  }
+
+  _withRaw(url) {
+    // Only append ?raw to actual CSS URLs — leaving HTML alone lets Vite
+    // wrap it with its HMR client (harmless for inline <body> injection).
+    return url.endsWith('.css') && !url.includes('?raw=')
+      ? url + (url.includes('?') ? '&raw=1' : '?raw=1')
+      : url;
   }
 
   _cleanupStyles() {
@@ -199,7 +288,12 @@ class Router {
   }
 
   async _fetchText(url) {
-    const res = await fetch(url, { cache: 'no-store' });
+    // Default HTTP caching on purpose: nginx serves /app and /css with
+    // `Cache-Control: no-cache`, so the browser revalidates via ETag and
+    // gets a cheap 304 when the file hasn't changed — still fresh right
+    // after a deploy or a dev edit, without re-downloading every byte on
+    // every navigation like the previous `cache: 'no-store'` did.
+    const res = await fetch(url);
     if (!res.ok)
       throw new Error(`Router: failed to load ${url} (${res.status})`);
     return res.text();

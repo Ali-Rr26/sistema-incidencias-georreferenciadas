@@ -8,15 +8,12 @@ use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
 use App\Domains\Auth\Firebase\Exceptions\RejectedUnverifiedException;
 use App\Domains\Auth\Firebase\Http\Requests\GoogleLoginRequest;
 use App\Domains\Auth\Firebase\Services\GoogleAuthService;
+use App\Domains\Auth\Mercure\Services\MercureCookieService;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
-use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Signer\Key\InMemory;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,10 +27,9 @@ class GoogleAuthController
 
     private const ACCESS_TTL = 900;
 
-    private const MERCURE_COOKIE = 'mercureAuthorization';
-
     public function __construct(
         private readonly GoogleAuthService $googleAuthService,
+        private readonly MercureCookieService $mercureCookies,
     ) {}
 
     public function login(GoogleLoginRequest $request): JsonResponse
@@ -70,7 +66,7 @@ class GoogleAuthController
             'user' => new UserResource($user),
         ])
             ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureAuthCookie($user));
+            ->withCookie($this->mercureCookies->build($user));
     }
 
     // Cookie builders
@@ -82,40 +78,6 @@ class GoogleAuthController
             $token,
             self::COOKIE_MINUTES,
             self::COOKIE_PATH,
-            null,
-            app()->isProduction(),
-            true,
-            false,
-            'Strict',
-        );
-    }
-
-    private function mercureAuthCookie(User $user): Cookie
-    {
-        $secret = (string) config('octane.mercure.subscriber_jwt');
-        if ($secret === '') {
-            Log::warning('MERCURE_SUBSCRIBER_JWT_SECRET is not configured — issuing a placeholder Mercure cookie that the hub will reject.');
-
-            $secret = 'insecure-placeholder-configure-MERCURE_SUBSCRIBER_JWT_SECRET';
-        }
-
-        $config = Configuration::forSymmetricSigner(
-            new Sha256,
-            InMemory::plainText($secret),
-        );
-        $now = new \DateTimeImmutable;
-
-        $token = $config->builder()
-            ->issuedAt($now)
-            ->expiresAt($now->modify('+'.self::ACCESS_TTL.' seconds'))
-            ->withClaim('mercure', ['subscribe' => [NotificationService::topicFor($user->id)]])
-            ->getToken($config->signer(), $config->signingKey());
-
-        return cookie(
-            self::MERCURE_COOKIE,
-            $token->toString(),
-            (int) (self::ACCESS_TTL / 60),
-            '/',
             null,
             app()->isProduction(),
             true,

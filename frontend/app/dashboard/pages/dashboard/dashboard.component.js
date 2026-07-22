@@ -1,3 +1,5 @@
+import template from './dashboard.component.html?raw';
+import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
 
 // ─────────────────────────────────────────────
@@ -167,11 +169,15 @@ async function loadStats() {
   if (filterState.fin) params.append('fin', filterState.fin);
   if (filterState.tipo_id) params.append('tipo_id', filterState.tipo_id);
   if (filterState.ciudad_id) params.append('ciudad_id', filterState.ciudad_id);
-  if (filterState.provincia_id) params.append('provincia_id', filterState.provincia_id);
+  if (filterState.provincia_id)
+    params.append('provincia_id', filterState.provincia_id);
   if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
 
+  const query = params.toString();
   try {
-    const stats = await http.get(`/incidents/stats?${params}`);
+    const stats = await http.get(
+      query ? `/incidents/stats?${query}` : '/incidents/stats',
+    );
     return stats ?? {};
   } catch (e) {
     console.error('Error loading stats:', e);
@@ -227,24 +233,46 @@ async function refreshDashboard() {
   initDonut(pendientes, en_proceso, resueltas, total);
 
   // Cerrar modal de filtros si está abierto
-  const modal = bootstrap?.Modal?.getOrCreateInstance?.(document.getElementById('filter-modal'));
+  const modal = bootstrap?.Modal?.getOrCreateInstance?.(
+    document.getElementById('filter-modal'),
+  );
   if (modal) modal.hide();
 }
 
 // ─────────────────────────────────────────────
 // Setup de event listeners para filtros
 // ─────────────────────────────────────────────
+
+// Backend endpoints that return ResourceCollections wrap responses
+// as { data: [...] }. Direct array responses are also possible when
+// the controller returns a non-paginated bare collection. This helper
+// normalises both to a plain array of items, and falls back to [] on
+// any other shape (null, undefined, error envelope).
+function unwrapCollection(response) {
+  if (response == null) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (Array.isArray(response.items)) return response.items;
+  return [];
+}
+
 function setupFilterListeners() {
   // Cargar árbol de ubicaciones y categorías
   Promise.all([
     http.get('/locations/tree'),
     http.get('/incident-categories/tree'),
-  ]).then(([locTree, catTree]) => {
-    filterState.locationTree = locTree ?? [];
-    filterState.categories = catTree ?? [];
-  }).catch(() => {
-    console.warn('Failed to load filter options');
-  });
+  ])
+    .then(([locTree, catTree]) => {
+      // Backend wraps both endpoints as { data: [...] } (ResourceCollection
+      // convention). Defensive: handle three shapes — wrapped, bare array,
+      // or null. Other services in this codebase already use this pattern
+      // (see dashboard fetch at line 494 and every shared/* service).
+      filterState.locationTree = unwrapCollection(locTree);
+      filterState.categories = unwrapCollection(catTree);
+    })
+    .catch(() => {
+      console.warn('Failed to load filter options');
+    });
 
   // Botón "Aplicar" — ejecuta refreshDashboard
   const btnAplicar = document.getElementById('btn-filter-apply');
@@ -272,14 +300,18 @@ function setupFilterListeners() {
   const selectTipo = document.getElementById('filter-tipo');
   if (selectTipo) {
     // Poblar con categorías raíz
-    filterState.categories.filter(c => !c.parent_id).forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat.id;
-      opt.textContent = cat.name;
-      selectTipo.appendChild(opt);
-    });
+    filterState.categories
+      .filter((c) => !c.parent_id)
+      .forEach((cat) => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.name;
+        selectTipo.appendChild(opt);
+      });
     selectTipo.addEventListener('change', (e) => {
-      filterState.tipo_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.tipo_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
     });
   }
 
@@ -287,32 +319,40 @@ function setupFilterListeners() {
   const selectPais = document.getElementById('filter-pais');
   if (selectPais) {
     // Poblar con raíces (países)
-    filterState.locationTree.filter(l => !l.parent_id).forEach(loc => {
-      const opt = document.createElement('option');
-      opt.value = loc.id;
-      opt.textContent = loc.name;
-      selectPais.appendChild(opt);
-    });
+    filterState.locationTree
+      .filter((l) => !l.parent_id)
+      .forEach((loc) => {
+        const opt = document.createElement('option');
+        opt.value = loc.id;
+        opt.textContent = loc.name;
+        selectPais.appendChild(opt);
+      });
     selectPais.addEventListener('change', (e) => {
-      filterState.pais_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.pais_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
       // Limpiar provincia y ciudad
       filterState.provincia_id = null;
       filterState.ciudad_id = null;
       const selectProvia = document.getElementById('filter-provincia');
       if (selectProvia) {
-        selectProvia.innerHTML = '<option value="">-- Seleccione provincia --</option>';
+        selectProvia.innerHTML =
+          '<option value="">-- Seleccione provincia --</option>';
         selectProvia.disabled = !filterState.pais_id;
       }
       const selectCiudad = document.getElementById('filter-ciudad');
       if (selectCiudad) {
-        selectCiudad.innerHTML = '<option value="">-- Seleccione ciudad --</option>';
+        selectCiudad.innerHTML =
+          '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = true;
       }
       // Poblar provincia si país seleccionado
       if (filterState.pais_id) {
-        const pais = filterState.locationTree.find(l => l.id === filterState.pais_id);
+        const pais = filterState.locationTree.find(
+          (l) => l.id === filterState.pais_id,
+        );
         if (pais && pais.children) {
-          pais.children.forEach(prov => {
+          pais.children.forEach((prov) => {
             const opt = document.createElement('option');
             opt.value = prov.id;
             opt.textContent = prov.name;
@@ -327,20 +367,23 @@ function setupFilterListeners() {
   const selectProvia = document.getElementById('filter-provincia');
   if (selectProvia) {
     selectProvia.addEventListener('change', (e) => {
-      filterState.provincia_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.provincia_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
       filterState.ciudad_id = null;
       const selectCiudad = document.getElementById('filter-ciudad');
       if (selectCiudad) {
-        selectCiudad.innerHTML = '<option value="">-- Seleccione ciudad --</option>';
+        selectCiudad.innerHTML =
+          '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = !filterState.provincia_id;
       }
       // Poblar ciudad si provincia seleccionada
       if (filterState.provincia_id) {
         const prov = filterState.locationTree
-          .flatMap(p => p.children || [])
-          .find(c => c.id === filterState.provincia_id);
+          .flatMap((p) => p.children || [])
+          .find((c) => c.id === filterState.provincia_id);
         if (prov && prov.children) {
-          prov.children.forEach(ciudad => {
+          prov.children.forEach((ciudad) => {
             const opt = document.createElement('option');
             opt.value = ciudad.id;
             opt.textContent = ciudad.name;
@@ -355,8 +398,88 @@ function setupFilterListeners() {
   const selectCiudad = document.getElementById('filter-ciudad');
   if (selectCiudad) {
     selectCiudad.addEventListener('change', (e) => {
-      filterState.ciudad_id = e.target.value ? parseInt(e.target.value, 10) : null;
+      filterState.ciudad_id = e.target.value
+        ? parseInt(e.target.value, 10)
+        : null;
     });
+  }
+}
+
+// ─────────────────────────────────────────────
+// Export dropdown — hits GET /api/incidents/exportar with the active
+// filterState. Browsers start the download via a temporary anchor so
+// the user stays on the dashboard (no navigation).
+// ─────────────────────────────────────────────
+// Only the real backend filters live here. `locationTree` and
+// `categories` are dropdown data cached on filterState for the picker
+// UI — they are NOT query params the endpoint accepts, and serialising
+// them via URLSearchParams would yield "locationTree=[object Object]"
+// which 422s the request.
+const EXPORT_FILTER_KEYS = [
+  'inicio',
+  'fin',
+  'tipo_id',
+  'ciudad_id',
+  'provincia_id',
+  'pais_id',
+];
+
+function setupExportListeners() {
+  document.querySelectorAll('[data-export-format]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const format = e.currentTarget.dataset.exportFormat;
+      if (!format) return;
+
+      const params = new URLSearchParams();
+      params.set('format', format);
+      for (const key of EXPORT_FILTER_KEYS) {
+        const value = filterState[key];
+        if (value !== null && value !== undefined && value !== '') {
+          params.set(key, String(value));
+        }
+      }
+
+      triggerDownload(`/incidents/exportar?${params.toString()}`);
+    });
+  });
+}
+
+async function triggerDownload(path) {
+  try {
+    // Reuse the shared http service so JWT header / refresh flow is
+    // identical to every other dashboard call. `responseType: 'blob'`
+    // tells the service not to JSON-parse.
+    // `path` must be a RELATIVE path (e.g. `/incidents/exportar?...`)
+    // because http.get() prepends API_URL = '/api' for us. Passing a
+    // full URL would double the prefix and 404.
+    const blob = await http.get(path, { responseType: 'blob' });
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    // The server sets the filename via Content-Disposition, but a
+    // deterministic local fallback keeps the file usable when the
+    // header is stripped (e.g. some corporate proxies).
+    const format =
+      new URLSearchParams(path.split('?')[1] || '').get('format') || 'reporte';
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `incidencias-${date}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch (err) {
+    // The previous fallback (`window.location.assign(url)`) navigated
+    // full-page without the JWT header, so the request came back as
+    // 401 'Token de autenticación no proporcionado.' — confusing
+    // because the user IS logged in, the request just can't carry
+    // headers on a top-level navigation. Show the error instead and
+    // let the user retry.
+    console.error('Error al exportar:', err);
+    const message =
+      err && err.status
+        ? `No se pudo exportar (HTTP ${err.status}). Reintentá.`
+        : 'No se pudo exportar. Reintentá o revisá tu conexión.';
+    window.alert(message);
   }
 }
 
@@ -364,8 +487,8 @@ function setupFilterListeners() {
 // Componente
 // ─────────────────────────────────────────────
 export default {
-  templateUrl: 'app/dashboard/pages/dashboard/dashboard.component.html',
-  styleUrl: 'app/dashboard/pages/dashboard/dashboard.component.css',
+  template,
+  style,
 
   async onInit() {
     // C3 y feed de actividad en paralelo
@@ -376,6 +499,7 @@ export default {
 
     // Setup de filtros (carga listener e inicializa opciones)
     setupFilterListeners();
+    setupExportListeners();
 
     // Cargar stats iniciales (sin filtros)
     await refreshDashboard();

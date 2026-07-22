@@ -57,12 +57,14 @@ describe('feed component — single responsive template', () => {
   });
 
   it('component exports defineComponent contract', () => {
-    expect(feedComponent).toHaveProperty('templateUrl');
-    expect(feedComponent).toHaveProperty('styleUrl');
+    expect(feedComponent).toHaveProperty('template');
+    expect(feedComponent).toHaveProperty('style');
     expect(feedComponent).toHaveProperty('onInit');
     expect(feedComponent).toHaveProperty('onDestroy');
-    expect(feedComponent.templateUrl).toBe('app/feed/feed.component.html');
-    expect(feedComponent.styleUrl).toBe('app/feed/feed.component.css');
+    // Bundled at build time via Vite ?raw imports — real file contents,
+    // not URLs, so the router mounts without any runtime fetch.
+    expect(feedComponent.template).toContain('<');
+    expect(feedComponent.style).toBeTruthy();
   });
 
   it('onInit handles missing DOM gracefully', async () => {
@@ -82,9 +84,10 @@ describe('feed component — single responsive template', () => {
     expect(feedHtml).not.toMatch(/id="feed-vacio-mobile"/);
   });
 
-  it('template uses .feed-main + .feed-aside siblings under #feed', () => {
-    expect(feedHtml).toMatch(/id="feed"[^>]*>\s*<div class="feed-main"/);
-    expect(feedHtml).toMatch(/<aside class="feed-aside"/);
+  it('template uses Bootstrap row layout (col-lg-8 main + col-lg-4 aside) under #feed', () => {
+    expect(feedHtml).toMatch(/id="feed"[^>]*class="row"/);
+    expect(feedHtml).toMatch(/<div class="col-12 col-lg-8">/);
+    expect(feedHtml).toMatch(/class="col-lg-4/);
   });
 
   it('component does not probe #main-wrapper for context detection', () => {

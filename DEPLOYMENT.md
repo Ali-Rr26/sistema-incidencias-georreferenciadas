@@ -8,7 +8,7 @@
 | Composer | 2.x | |
 | PostgreSQL | 17 | with PostGIS 3.5 extension |
 | Redis | 8.x | |
-| FrankenPHP | latest | only for Octane mode |
+| Swoole | latest (PHP extension) | required only for Octane mode |
 
 ---
 
@@ -57,13 +57,13 @@ php artisan serve
 # http://localhost:8000
 ```
 
-**Option B — Octane + FrankenPHP (same as production):**
+**Option B — Octane + Swoole (same as production):**
 
 ```bash
-php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8000
+php artisan octane:start --server=swoole --host=0.0.0.0 --port=8000
 ```
 
-> The `frankenphp` binary is already included in the repo root.
+> Production requires the `swoole` PHP extension (auto-installed in the docker image via `install-php-extensions swoole`).
 
 ---
 
@@ -89,7 +89,7 @@ Services started:
 
 | Service | Port | Image |
 |---------|------|-------|
-| backend | 8000 | FrankenPHP 1.12.4 + PHP 8.4 Alpine |
+| backend | 8000 | PHP 8.3 + Octane 2.17 over Swoole 5 |
 | frontend | 3000 | nginx:alpine |
 | db | 5432 | postgis/postgis:17-3.5-alpine |
 | redis | 6379 | redis:8-alpine |

@@ -1,13 +1,25 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo } from '../../../utils/format.js';
+import template from './incidencias.detail.component.html?raw';
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  escapeHtml,
+} from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { bindView } from '../../../utils/dom.js';
 import { commentService } from '../../../shared/comment.service.js';
+import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { renderCommentThread } from '../../../shared/comment-thread.js';
+import {
+  sortStatusHistoryDesc,
+  statusHistoryEntry,
+} from '../../../utils/status-history.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
+import { openInlineReplyForm } from '../../../shared/comment-reply.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -25,7 +37,7 @@ const DROPDOWN_STATUSES = [
 ];
 
 export default {
-  templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
+  template,
 
   async onInit({ params } = {}) {
     const id = params?.id;
@@ -49,8 +61,8 @@ export default {
     setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
-    setupComments(id);
-    setupAssignments(id, inc, inc.assignments ?? []);
+    setupComments(id, inc.comments);
+    setupAssignments(id, inc, inc.assignments);
   },
 
   onDestroy() {
@@ -337,17 +349,9 @@ function renderHistorial(items) {
   }
 
   // más reciente primero (DESC)
-  listEl.innerHTML = [...items]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  listEl.innerHTML = sortStatusHistoryDesc(items)
     .map((item) => {
-      const prev =
-        STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
-      const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-      const user = item.user
-        ? [item.user.first_name, item.user.last_name]
-            .filter(Boolean)
-            .join(' ')
-        : 'Sistema';
+      const { prev, next, userName } = statusHistoryEntry(item);
       const fecha = new Date(item.created_at).toLocaleString('es-EC', {
         year: 'numeric',
         month: '2-digit',
@@ -358,7 +362,7 @@ function renderHistorial(items) {
       return `
         <div class="border-start border-2 border-primary ps-3 mb-3">
           <div class="small fw-semibold">${prev} → ${next}</div>
-          <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+          <div class="text-muted" style="font-size:0.75rem;">${userName} · ${fecha}</div>
         </div>`;
     })
     .join('');
@@ -366,52 +370,22 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-function buildCommentLi(comment, currentUserId) {
-  const li = document.createElement('li');
-  li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
-
-  const userName = comment.user
-    ? [comment.user.first_name, comment.user.last_name]
-        .filter(Boolean)
-        .join(' ') || comment.user.email
-    : 'Usuario';
-
-  const isOwner = comment.user_id === currentUserId;
-  const deleteBtn = isOwner
-    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-comentario" data-id="${escapeHtml(String(comment.id))}" title="Eliminar comentario">
-        <i class="fas fa-trash-alt"></i>
-      </button>`
-    : '';
-
-  li.innerHTML = `
-    <div class="d-flex justify-content-between">
-      <span class="fw-semibold small">${escapeHtml(userName)}</span>
-      <div class="d-flex gap-2 align-items-center">
-        <small class="text-muted">${timeAgo(comment.created_at)}</small>
-        ${deleteBtn}
-      </div>
-    </div>
-    <div class="small">${escapeHtml(comment.message)}</div>`;
-
-  return li;
-}
+// Module-scoped index of commentId → full comment object. Populated by
+// renderComments and read by the inline-reply click handler in
+// setupComments.
+let commentById = new Map();
 
 function renderComments(items, currentUserId) {
-  const listEl = document.getElementById('detalle-comments-list');
-  const vacioEl = document.getElementById('detalle-comments-vacio');
-  if (!listEl) return;
-
-  if (!items || items.length === 0) {
-    listEl.replaceChildren();
-    vacioEl?.classList.remove('d-none');
-    return;
-  }
-
-  vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId)));
+  commentById = renderCommentThread({
+    items,
+    listEl: document.getElementById('detalle-comments-list'),
+    emptyEl: document.getElementById('detalle-comments-vacio'),
+    currentUserId,
+    canDelete: true,
+  });
 }
 
-async function setupComments(incidentId) {
+async function setupComments(incidentId, initialComments) {
   const loadingEl = document.getElementById('detalle-comments-loading');
   const form = document.getElementById('detalle-comment-form');
   const input = document.getElementById('detalle-comment-input');
@@ -419,32 +393,75 @@ async function setupComments(incidentId) {
   const submitBtn = document.getElementById('detalle-comment-submit');
   const counterEl = document.getElementById('detalle-comment-counter');
   const listEl = document.getElementById('detalle-comments-list');
+  const fileInput = document.getElementById('detalle-comment-images');
+  const previewEl = document.getElementById('detalle-comment-previews');
+  const replyBadgeEl = document.getElementById('detalle-reply-badge');
+  const replyParentIdEl = document.getElementById('detalle-reply-parent-id');
 
   if (!form || !input) return;
 
-  let currentUserId;
-  try {
-    const user = await auth.me();
-    currentUserId = user?.id;
-  } catch {
-    currentUserId = null;
-  }
+  let currentUserId = null;
+
+  const replyState = { parentId: null, parentComment: null };
+  const selectedFiles = [];
+  const previewUrls = [];
+  let hasLoadedComments = false;
 
   function updateCounter() {
     const len = input.value.length;
     if (counterEl) {
       counterEl.textContent = `${len}/5000`;
-      if (len >= 4000) {
-        counterEl.classList.add('text-danger');
-      } else {
-        counterEl.classList.remove('text-danger');
-      }
+      counterEl.classList.toggle('text-danger', len >= 4000);
     }
   }
 
   function updateSubmitBtn() {
-    const isEmpty = input.value.trim() === '';
-    if (submitBtn) submitBtn.disabled = isEmpty;
+    if (submitBtn) submitBtn.disabled = input.value.trim() === '';
+  }
+
+  function renderPreviews() {
+    if (!previewEl) return;
+    previewEl.innerHTML = selectedFiles
+      .map((_, i) => {
+        const url = previewUrls[i];
+        if (!url) return '';
+        return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
+          <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
+          <button type="button" class="incid-detail__preview-remove btn-quitar-preview" data-index="${i}">&times;</button>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function cancelReply() {
+    const prefix = '> @';
+    if (input.value.startsWith(prefix)) {
+      const nlIdx = input.value.indexOf('\n');
+      input.value = nlIdx >= 0 ? input.value.slice(nlIdx + 1) : '';
+    }
+    if (replyBadgeEl) replyBadgeEl.classList.add('d-none');
+    if (replyParentIdEl) replyParentIdEl.value = '';
+    replyState.parentId = null;
+    replyState.parentComment = null;
+    updateSubmitBtn();
+  }
+
+  function handleFileSelect(files) {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      selectedFiles.push(file);
+      previewUrls.push(URL.createObjectURL(file));
+    }
+    renderPreviews();
+  }
+
+  function removeFile(index) {
+    if (index < 0 || index >= previewUrls.length) return;
+    URL.revokeObjectURL(previewUrls[index]);
+    previewUrls.splice(index, 1);
+    selectedFiles.splice(index, 1);
+    renderPreviews();
   }
 
   input.addEventListener('input', () => {
@@ -452,19 +469,37 @@ async function setupComments(incidentId) {
     updateSubmitBtn();
   });
 
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      handleFileSelect(fileInput.files);
+      fileInput.value = '';
+    });
+  }
+
+  if (replyBadgeEl) {
+    replyBadgeEl.addEventListener('click', cancelReply);
+    replyBadgeEl.style.cursor = 'pointer';
+    replyBadgeEl.title = 'Clic para cancelar';
+  }
+
   async function cargarComentarios() {
     loadingEl?.classList.remove('d-none');
     try {
-      const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data, currentUserId);
+      // On first load, use embedded comments if available. On subsequent
+      // refreshes (after create/delete), always fetch fresh data.
+      if (!hasLoadedComments && initialComments) {
+        renderComments(initialComments, currentUserId);
+      } else {
+        const { data } = await commentService.list(incidentId, { perPage: 50 });
+        renderComments(data, currentUserId);
+      }
     } catch (err) {
       console.error('Error al cargar comentarios:', err);
     } finally {
       loadingEl?.classList.add('d-none');
+      hasLoadedComments = true;
     }
   }
-
-  cargarComentarios();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -481,12 +516,62 @@ async function setupComments(incidentId) {
 
     if (submitBtn) submitBtn.disabled = true;
     try {
-      await commentService.create(incidentId, message);
+      const parentId = replyParentIdEl?.value
+        ? Number(replyParentIdEl.value)
+        : null;
+      const imageIds = [];
+
+      if (selectedFiles.length > 0) {
+        const created = await commentService.create(incidentId, {
+          message,
+          parentId,
+          imageIds: [],
+        });
+        const commentId = created?.id ?? created?.data?.id;
+        if (!commentId) throw new Error('No se pudo crear el comentario.');
+
+        const results = await Promise.allSettled(
+          selectedFiles.map((file) =>
+            commentService.uploadImages(commentId, [file]),
+          ),
+        );
+        const failed = results.filter(
+          (r) =>
+            r.status === 'rejected' ||
+            (r.status === 'fulfilled' && r.value?.status >= 400),
+        );
+        if (failed.length > 0) {
+          for (const url of previewUrls) URL.revokeObjectURL(url);
+          selectedFiles.length = 0;
+          previewUrls.length = 0;
+          renderPreviews();
+          if (errorEl) {
+            errorEl.textContent =
+              'Error al subir una o más imágenes. El comentario no fue publicado.';
+            errorEl.classList.remove('d-none');
+          }
+          await commentService.delete(commentId);
+          throw new Error('Upload failed');
+        }
+      } else {
+        await commentService.create(incidentId, {
+          message,
+          parentId,
+          imageIds,
+        });
+      }
+
       input.value = '';
+      for (const url of previewUrls) URL.revokeObjectURL(url);
+      selectedFiles.length = 0;
+      previewUrls.length = 0;
+      renderPreviews();
+      cancelReply();
       updateCounter();
       updateSubmitBtn();
       await cargarComentarios();
     } catch (err) {
+      if (err.message === 'Upload failed') return;
       if (errorEl) {
         errorEl.textContent =
           err.message || 'No se pudo publicar el comentario.';
@@ -500,24 +585,106 @@ async function setupComments(incidentId) {
   if (listEl) {
     listEl.addEventListener('click', async (e) => {
       const deleteBtn = e.target.closest('.btn-eliminar-comentario');
-      if (!deleteBtn) return;
+      if (deleteBtn) {
+        const commentId = deleteBtn.dataset.id;
+        if (!commentId) return;
+        if (!confirm('¿Eliminar este comentario?')) return;
+        deleteBtn.disabled = true;
+        try {
+          await commentService.delete(commentId);
+          await cargarComentarios();
+        } catch (err) {
+          console.error('Error al eliminar comentario:', err);
+          alert('No se pudo eliminar el comentario.');
+        } finally {
+          deleteBtn.disabled = false;
+        }
+        return;
+      }
 
-      const commentId = deleteBtn.dataset.id;
-      if (!commentId) return;
+      const replyBtn = e.target.closest('.btn-responder-comentario');
+      if (replyBtn) {
+        const commentId = Number(replyBtn.dataset.id);
+        const found = commentById.get(commentId);
+        if (found) {
+          const li = replyBtn.closest('li');
+          openInlineReplyForm({
+            incidentId,
+            comment: found,
+            li,
+            getUserName: (u) =>
+              [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email,
+            onPosted: cargarComentarios,
+          });
+        }
+        return;
+      }
 
-      if (!confirm('¿Eliminar este comentario?')) return;
+      const previewRemoveBtn = e.target.closest('.btn-quitar-preview');
+      if (previewRemoveBtn) {
+        const index = Number(previewRemoveBtn.dataset.index);
+        removeFile(index);
+        return;
+      }
 
-      deleteBtn.disabled = true;
-      try {
-        await commentService.delete(commentId);
-        await cargarComentarios();
-      } catch (err) {
-        console.error('Error al eliminar comentario:', err);
-        alert('No se pudo eliminar el comentario.');
-      } finally {
-        deleteBtn.disabled = false;
+      const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
+      if (thumb) {
+        const src = thumb.dataset.src;
+        const caption = thumb.dataset.caption || '';
+        openLightbox(src, caption);
+        return;
+      }
+
+      const delImgBtn = e.target.closest('.btn-eliminar-imagen');
+      if (delImgBtn) {
+        const commentId = Number(delImgBtn.dataset.commentId);
+        const imageId = Number(delImgBtn.dataset.imageId);
+        if (!confirm('¿Eliminar esta imagen?')) return;
+        delImgBtn.disabled = true;
+        try {
+          await commentService.deleteImage(commentId, imageId);
+          await cargarComentarios();
+        } catch (err) {
+          console.error('Error al eliminar imagen:', err);
+          alert('No se pudo eliminar la imagen.');
+        } finally {
+          delImgBtn.disabled = false;
+        }
       }
     });
+  }
+
+  const lightboxEl = document.getElementById('incid-detail__lightbox');
+  const lightboxClose = document.getElementById('incid-detail__lightbox-close');
+
+  if (lightboxEl) {
+    lightboxClose?.addEventListener('click', closeLightbox);
+    lightboxEl.addEventListener('click', (e) => {
+      if (e.target === lightboxEl) closeLightbox();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightboxEl.classList.contains('d-none')) {
+        closeLightbox();
+      }
+    });
+  }
+
+  try {
+    const user = await auth.me();
+    currentUserId = user?.id;
+  } catch {
+    currentUserId = null;
+  }
+
+  // Initialize: use embedded comments if available (from incident detail),
+  // otherwise fetch from separate endpoint. After this first load, subsequent
+  // refreshes (post-create, post-delete) go via cargarComentarios() → fetch.
+  if (initialComments && initialComments.length > 0) {
+    loadingEl?.classList.add('d-none');
+    renderComments(initialComments, currentUserId);
+    hasLoadedComments = true;
+  } else {
+    await cargarComentarios();
   }
 }
 
@@ -615,7 +782,8 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
     const usuarios = resp.data ?? [];
 
     if (usuarios.length === 0) {
-      selectEl.innerHTML = '<option value="">Sin operadores disponibles</option>';
+      selectEl.innerHTML =
+        '<option value="">Sin operadores disponibles</option>';
       return;
     }
 
@@ -727,7 +895,7 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
   }
 
   // Initial render — use embedded data if available, otherwise fetch.
-  if (initialAssignments !== null) {
+  if (initialAssignments != null) {
     loadingEl?.classList.add('d-none');
     renderAssignments(initialAssignments, puedeEliminar);
   } else {
@@ -853,7 +1021,7 @@ function setupActionButtons(incidentId, inc) {
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
 
-function setupBuscarResponsables(incidentId) {
+function setupBuscarResponsables(_incidentId) {
   const inputEl = document.getElementById('buscar-responsables-input');
   const loadingEl = document.getElementById('buscar-responsables-loading');
   const resultsEl = document.getElementById('buscar-responsables-results');
@@ -861,7 +1029,9 @@ function setupBuscarResponsables(incidentId) {
   const vacioEl = document.getElementById('buscar-responsables-vacio');
   const errorEl = document.getElementById('buscar-responsables-error');
   const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
-  const operatorSelectEl = document.getElementById('detalle-asignaciones-select');
+  const operatorSelectEl = document.getElementById(
+    'detalle-asignaciones-select',
+  );
   const formEl = document.getElementById('detalle-asignaciones-form');
 
   if (!inputEl) return;
@@ -890,8 +1060,7 @@ function setupBuscarResponsables(incidentId) {
     listEl.replaceChildren(
       ...users.map((user) => {
         const li = document.createElement('li');
-        li.className =
-          'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
+        li.className = 'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
         li.style.cursor = 'pointer';
 
         const name = responsablesService.formatUserName(user);
@@ -932,7 +1101,7 @@ function setupBuscarResponsables(incidentId) {
         });
 
         return li;
-      })
+      }),
     );
   }
 

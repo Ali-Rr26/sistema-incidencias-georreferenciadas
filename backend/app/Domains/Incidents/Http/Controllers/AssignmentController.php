@@ -18,6 +18,14 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
+ * HTTP shell del command side para el sub-recurso `assignments`.
+ *
+ * @cqrs-role command-http-shell
+ *
+ * Cubre index/store/update/destroy de asignaciones. No embebe reglas de
+ * negocio: delega en AssignmentService, que es quien valida invariantes
+ * antes de tocar Postgres.
+ *
  * HTTP shell for the `assignments` sub-resource.
  *
  *   GET    /api/incidents/{incident}/assignments

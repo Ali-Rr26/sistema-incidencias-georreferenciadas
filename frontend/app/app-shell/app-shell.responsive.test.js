@@ -127,13 +127,9 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       expect(css).toMatch(/grid-template-columns:\s*240px\s+1fr/);
     });
 
-    it('hides bottom nav by default and shows it on mobile', () => {
-      // Default: bottom nav is hidden (display: none)
+    it('hides bottom nav by default', () => {
+      // Bottom nav is hidden by default (display: none) — mobile uses off-canvas sidebar
       expect(css).toMatch(/\.app-shell-bottom-nav[^}]*display:\s*none/);
-      // Mobile breakpoint: bottom nav is shown (display: flex or block)
-      expect(css).toMatch(
-        /@media[^{]*\(max-width:[\s\S]*?\.app-shell-bottom-nav[^}]*display:\s*(flex|block|grid)/,
-      );
     });
 
     it('declares a sidebar toggle button styled to match the header chrome', () => {
@@ -182,11 +178,13 @@ describe('appShell — responsive CSS (T-1.9)', () => {
       // Class selectors begin with `.` followed by an identifier char.
       // The root grid container is intentionally `.app-shell` (no dash)
       // so we allow either `.app-shell` standalone OR `.app-shell-...`.
+      // Bootstrap utility classes (toast / position-fixed / bottom-0 etc.)
+      // are external framework tokens and live in the allowlist below.
       const customClasses = cssNoComments.match(/\.[a-z][\w-]*/g) || [];
       const offenders = customClasses.filter(
         (cls) =>
           !/^\.app-shell(-|_|$)/.test(cls) &&
-          !/^\.(d-|form-control|fa-|active|is-|show|hide|nav-|text-|btn|gr-)/.test(
+          !/^\.(d-|form-control|fa-|active|is-|show|hide|nav-|text-|btn|gr-|toast|toast-|position-|bottom-)/.test(
             cls,
           ),
       );

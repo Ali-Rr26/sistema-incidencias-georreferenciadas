@@ -14,6 +14,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Implementación Eloquent del repositorio de Incidencias.
+ *
+ * @cqrs-role command-repository
+ *
+ * Pertenece al command side: toda mutación pasa por DB::transaction(),
+ * lockForUpdate() en operaciones con race (claim/release) y el bind del
+ * actor de auditoría vía set_config('app.current_user_id', ...) para que
+ * el trigger Postgres registre quién hizo el cambio.
+ *
+ * `applyFilters()` es la única superficie que también consume el query side
+ * (FeedController::staffFeed()), pero sólo para casos staff — el feed
+ * ciudadano NUNCA debe llegar a este repositorio.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class EloquentIncidentRepository extends EloquentRepository implements IncidentRepository
 {
     public function __construct()
@@ -48,8 +64,17 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
         /** @var User|null $user */
         $user = Auth::user();
         if ($user !== null && ! $user->isSystemAdmin()) {
-            if ($user->isOrganizationAdmin() || $user->isOperator()) {
+            if ($user->isOrganizationAdmin()) {
                 $query->where('organization_id', $user->organization_id);
+            }
+            if ($user->isOperator()) {
+                $query->where('organization_id', $user->organization_id);
+                // Solo incidencias donde el operador está asignado explícitamente
+                $query->whereIn('id', function ($q) use ($user): void {
+                    $q->select('incident_id')
+                        ->from('assignments')
+                        ->where('user_id', $user->id);
+                });
             }
             if ($user->isRegularUser()) {
                 $query->whereRaw('1 = 0'); // no ven nada en index()

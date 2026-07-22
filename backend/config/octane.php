@@ -27,11 +27,15 @@ return [
     | Octane Server
     |--------------------------------------------------------------------------
     |
-    | Supported: "roadrunner", "swoole", "frankenphp"
+    | Swoole is the project standard. StreamedResponse works natively under
+    | Swoole (vendor/laravel/octane/src/Swoole/SwooleClient.php uses
+    | ob_start() + $swooleResponse->write()) without the buffering bug that
+    | affected FrankenPHP and the Generator-refactor-only nature of
+    | RoadRunner. See Issue #102 for the migration decision log.
     |
     */
 
-    'server' => env('OCTANE_SERVER', 'roadrunner'),
+    'server' => env('OCTANE_SERVER', 'swoole'),
 
     /*
     |--------------------------------------------------------------------------
@@ -124,22 +128,48 @@ return [
     | Mercure Hub
     |--------------------------------------------------------------------------
     |
-    | Real-time notification push (the bell dropdown) is delivered via
-    | FrankenPHP's built-in Mercure hub instead of a manual SSE loop —
-    | Octane's FrankenPHP driver has no StreamedResponse support (confirmed
-    | via source: FrankenPhpClient::respond() vs RoadRunnerClient's
-    | resolveStreamResponseCallback()), and a hand-rolled while(true) loop
-    | never holds the connection open (github.com/laravel/octane#903 — the
-    | same buffering issue also reproduces under RoadRunner, so switching
-    | driver isn't a reliable fix either). Mercure sidesteps this entirely:
-    | a dedicated Go process holds subscriber connections, PHP just POSTs.
+    | Real-time notification push (the bell dropdown) is delivered via a
+    | standalone Mercure hub (docker-compose service `mercure`) rather than
+    | an in-process SSE loop on the PHP server. Trade-off documented in
+    | Issue #102: reimplementing Mercure on top of Swoole's native SSE
+    | would cost ~2-3 weeks (JWT topic ACL, connection map, history
+    | replay, frontend EventSource) for ~5-30 ms of latency improvement.
+    | Mercure handles all of that out of the box and stays in the stack.
+    |
+    | Swoole makes Mercure implementation-agnostic: Laravel talks to the
+    | hub via HTTP through Symfony\Component\Mercure\HubInterface; the
+    | Octane driver is irrelevant to the publish path. Subscribers are the
+    | browser EventSource against config('mercure.hub.url'), independent of
+    | the PHP runtime.
     |
     */
 
-    'mercure' => [
-        'anonymous' => false,
-        'publisher_jwt' => env('MERCURE_PUBLISHER_JWT_SECRET'),
-        'subscriber_jwt' => env('MERCURE_SUBSCRIBER_JWT_SECRET'),
+    /*
+    |--------------------------------------------------------------------------
+    | Swoole-specific options
+    |--------------------------------------------------------------------------
+    |
+    | Mirroring the Octane defaults. enable_coroutine is required for any
+    | future use of \Swoole\Coroutine\HTTP\Client or Octane::concurrently()
+    | — the project doesn't currently exploit them, but turning the flag on
+    | now keeps the door open without requiring another infra change.
+    |
+    */
+
+    'swoole' => [
+        'options' => [
+            'enable_coroutine' => true,
+            'open_http2_protocol' => false,
+            'open_websocket_protocol' => false,
+            'task_worker_num' => 2,
+        ],
+        'max_request' => 500,
+        'task_max_request' => 100,
+        'watch' => false,
+        'memory' => 256,
     ],
+
+    // Mercure config now lives in config/mercure.php. See
+    // docs/Security/secret-rotation.md for rotation guidance.
 
 ];

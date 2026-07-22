@@ -11,7 +11,7 @@
 #     manual bootstrap — see docs/docker-swarm-guide.md)
 #   - .env files placed in the runner workspace:
 #     - Root .env (for deploy.yml variables)
-#     - backend/.env (for Laravel/FrankenPHP application secrets)
+#     - backend/.env (for Laravel/Swoole application secrets)
 #     (clean: false preserves these between runs)
 #
 # NOTE: `docker stack deploy` does NOT read .env files the way
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
           clean: false
@@ -63,10 +63,15 @@ jobs:
             exit 1
           fi
 
+      # Images are tagged with the commit SHA so every deploy changes the
+      # service spec — Swarm skips updates when the image reference is
+      # unchanged (a plain :latest tag makes deploys silent no-ops on a
+      # single-node stack without a registry).
       - name: Build images
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker compose -f deploy.yml build
 
@@ -75,6 +80,7 @@ jobs:
           set -a
           source .env
           set +a
+          export IMAGE_TAG=${{ github.sha }}
           docker stack deploy -c deploy.yml incidencias-stack
 
       - name: Health check

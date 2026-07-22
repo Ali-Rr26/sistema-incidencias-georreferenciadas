@@ -33,6 +33,16 @@ echo "Running migrations..."
 php artisan migrate --force || echo "WARNING: Migrations failed. Continuing startup."
 
 # -------------------------------------------------------
+# Sync permission catalog and role grants (idempotent).
+# Permissions are code-defined; the seeders are the source
+# of truth and re-running them keeps every environment in
+# sync. Manual grants for roles 1-5 are reset on purpose.
+# -------------------------------------------------------
+echo "Syncing permissions..."
+php artisan db:seed --class=PermissionSeeder --force || echo "WARNING: Permission sync failed."
+php artisan db:seed --class=RolePermissionSeeder --force || echo "WARNING: Role permission sync failed."
+
+# -------------------------------------------------------
 # Health checks — quick connectivity diagnostics
 # -------------------------------------------------------
 echo ""
@@ -83,13 +93,13 @@ echo "═══════════════════"
 echo ""
 
 # -------------------------------------------------------
-# Start Octane (FrankenPHP) — exec replaces shell process
+# Start Octane (Swoole) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
-echo "Starting Octane (FrankenPHP) on 0.0.0.0:8000..."
-exec php artisan octane:start \
-    --server=frankenphp \
+echo "Starting Octane (Swoole) on 0.0.0.0:8000..."
+exec php artisan octane:swoole \
     --host=0.0.0.0 \
     --port=8000 \
     --workers=4 \
-    --max-requests=500
+    --max-requests=500 \
+    --task-workers=2

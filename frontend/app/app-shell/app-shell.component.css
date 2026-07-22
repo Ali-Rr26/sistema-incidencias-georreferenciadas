@@ -11,11 +11,10 @@
 .app-shell {
   display: grid;
   grid-template-columns: 240px 1fr;
-  grid-template-rows: 64px 1fr 64px;
+  grid-template-rows: 64px 1fr;
   grid-template-areas:
     'sidebar header'
-    'sidebar main'
-    'sidebar bottom';
+    'sidebar main';
   min-height: 100vh;
   background: #f3f4f9;
   font-family: var(--font-family, 'Be Vietnam Pro', -apple-system, sans-serif);
@@ -35,19 +34,18 @@
   min-height: 0;
 }
 .app-shell-bottom-nav {
-  grid-area: bottom;
+  display: none;
 }
 
-/* ─── Mobile (<768px): hide sidebar, show bottom nav ─ */
+/* ─── Mobile (<768px): sidebar becomes off-canvas overlay ─ */
 
 @media (max-width: 767.98px) {
   .app-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: 64px 1fr 64px;
+    grid-template-rows: 64px 1fr;
     grid-template-areas:
       'header'
-      'main'
-      'bottom';
+      'main';
   }
   .app-shell-sidebar {
     /* On mobile, the sidebar becomes an off-canvas overlay toggled by
@@ -75,7 +73,7 @@
     top: 64px;
     left: 0;
     right: 0;
-    bottom: 64px;
+    bottom: 0;
     background: rgba(35, 40, 59, 0.4);
     z-index: 140;
     opacity: 0;
@@ -86,25 +84,10 @@
     opacity: 1;
     pointer-events: auto;
   }
-  .app-shell-bottom-nav {
-    display: flex !important;
-    position: sticky;
-    bottom: 0;
-    z-index: 100;
-    height: 64px;
-    background: #fff;
-    border-top: 1px solid #eef0f5;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0 8px;
-  }
-  /* T-4.2 + Concern A: display: contents makes the <ul> a layout-transparent
-     wrapper so children participate in parent flex layout. Without this, the
-     single <ul> becomes 1 flex child and justify-content: space-around
-     distributes ONE item instead of 3-4. */
-  .app-shell-bottom-nav-list,
-  .app-shell-citizen-bottom-nav-list {
-    display: contents;
+  /* When sidebar opens, lower main content z-index so backdrop (140) +
+     sidebar (150) stay on top of any maps/content with high z-index */
+  .app-shell-sidebar.is-open ~ .app-shell-main {
+    z-index: 1;
   }
 }
 
@@ -434,13 +417,13 @@ body[data-role='guest']
 
 .app-shell-bell-panel__item {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 10px 16px;
+  align-items: center;
+  padding: 10px 12px;
   cursor: pointer;
   border-bottom: 1px solid #f5f6fb;
   font-size: 0.85rem;
   color: #23283b;
+  transition: background-color 0.15s ease;
 }
 
 .app-shell-bell-panel__item:hover {
@@ -452,12 +435,18 @@ body[data-role='guest']
   font-weight: 600;
 }
 
-.app-shell-bell-panel__item-time {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: #8a90a0;
+.app-shell-bell-panel__item--unread:hover {
+  background: #e7e1ff;
+}
+
+.app-shell-bell-panel__item .app-shell-bell-panel__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #23283b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .app-shell-bell-panel__empty {
@@ -761,5 +750,19 @@ body[data-role='guest']
     right: 8px;
     left: 8px;
     min-width: 0;
+  }
+}
+
+/* REQ-MR-5: admin header collapse at <=480px — search + name hidden, icons only */
+@media (max-width: 480px) {
+  body[data-role='admin'] .app-shell-header__search,
+  body[data-role='admin'] .app-shell-user-menu__name,
+  body[data-role='admin'] .app-shell-user-menu__arrow {
+    display: none !important;
+  }
+  body[data-role='admin'] .app-shell-header__icon-btn,
+  body[data-role='admin'] .app-shell-sidebar-toggle {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

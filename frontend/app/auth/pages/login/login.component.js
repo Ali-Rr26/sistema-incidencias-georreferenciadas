@@ -16,8 +16,11 @@
  *   - La validación cliente espeja las reglas del backend: ≥8 chars, ≥1
  *     mayúscula, ≥1 minúscula, ≥1 dígito, y `password === password_confirmation`.
  */
+import template from './login.component.html?raw';
+import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
+import { classifyRole } from '../../../app-shell/app-shell.component.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -64,8 +67,8 @@ export function validateRegisterPayload(payload) {
 }
 
 export default {
-  templateUrl: 'app/auth/pages/login/login.component.html',
-  styleUrl: 'app/auth/pages/login/login.component.css',
+  template,
+  style,
 
   onInit(ctx) {
     // Ocultar preloader (vanilla, nada de jQuery)
@@ -173,11 +176,19 @@ export default {
         // role. The login response's `user` field lacks `role` and is for
         // UI display only.
         const user = await auth.me();
-        const role = user?.role?.name;
+        // Classify to a router-side bucket ('citizen' | 'admin' | 'guest')
+        // so the role-bucket short-circuit in router.resolve() can mount
+        // the right shell without a hashchange race.
+        const classifiedRole = classifyRole(user);
+        // CRITICAL: set the bucket BEFORE changing the hash. The router
+        // listens to hashchange and runs resolve() on the next tick;
+        // if we navigate first the role-bucket check sees a stale
+        // 'guest' and redirects the citizen back to /feed with no mount.
+        router.setCurrentUserRole(classifiedRole);
         // citizen-style users land on /feed; everyone else on /dashboard.
         // Using router.navigate() (not window.location.hash) so the router
         // re-resolves and the role-based guards run with the fresh token.
-        if (role === 'usuario') {
+        if (classifiedRole === 'citizen') {
           router.navigate('/feed');
         } else {
           router.navigate('/dashboard');

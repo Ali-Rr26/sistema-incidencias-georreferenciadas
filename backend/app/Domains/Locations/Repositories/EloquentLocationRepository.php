@@ -29,8 +29,22 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
 
     public function findByPoint(Point $point): ?Location
     {
+        // A point inside a cantón is necessarily also inside that cantón's
+        // parent province (nested polygons), so more than one row can
+        // legitimately match. Callers want the most specific one (e.g.
+        // `LocationGeomConsistentRule` walks *up* from the match via
+        // `ancestorsAndSelf()` — an arbitrary coarser match, like a
+        // province instead of its cantón, would never contain a
+        // deeper-level submitted `location_id` in that chain).
         return $this->newQuery()
             ->whereContains('geom', $point)
+            ->orderByRaw("CASE level
+                WHEN 'neighborhood' THEN 0
+                WHEN 'city' THEN 1
+                WHEN 'province' THEN 2
+                WHEN 'country' THEN 3
+                ELSE 4
+            END")
             ->first();
     }
 

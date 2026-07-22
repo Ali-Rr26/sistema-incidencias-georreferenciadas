@@ -122,10 +122,14 @@ describe('feed-detail — citizen comments', () => {
     await component.onInit({ params: { id: 7 }, role: 'citizen' });
     await vi.waitUntil(
       () =>
-        !document.getElementById('fd-comments-empty').classList.contains('d-none'),
+        !document
+          .getElementById('fd-comments-empty')
+          .classList.contains('d-none'),
     );
 
-    expect(document.getElementById('fd-comments-list').children).toHaveLength(0);
+    expect(document.getElementById('fd-comments-list').children).toHaveLength(
+      0,
+    );
   });
 
   it('posts a new comment via POST /incidents/{id}/comments and appends it after reload', async () => {
@@ -142,7 +146,11 @@ describe('feed-detail — citizen comments', () => {
         return Promise.resolve({
           data: [
             commentFixture(),
-            commentFixture({ id: 2, message: 'Ya lo reportamos', user: { first_name: 'Ana' } }),
+            commentFixture({
+              id: 2,
+              message: 'Ya lo reportamos',
+              user: { first_name: 'Ana' },
+            }),
           ],
         });
       }
@@ -191,7 +199,9 @@ describe('feed-detail — citizen comments', () => {
     await component.onInit({ params: { id: 7 }, role: 'citizen' });
     await vi.waitUntil(
       () =>
-        !document.getElementById('fd-comments-empty').classList.contains('d-none'),
+        !document
+          .getElementById('fd-comments-empty')
+          .classList.contains('d-none'),
     );
 
     document.getElementById('fd-comment-input').value = '   ';

@@ -5,32 +5,49 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
+use App\Domains\Incidents\Http\Requests\UpdateIncidentStatusRequest;
 use App\Domains\Incidents\Http\Resources\IncidentCollection;
 use App\Domains\Incidents\Http\Resources\IncidentResource;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Incidents\Services\IncidentImageService;
+use App\Domains\Organizations\Repositories\OrganizationRepository;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
-use App\Storage\StorageService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
+/**
+ * HTTP shell del command side de Incidencias.
+ *
+ * @cqrs-role command-http-shell
+ *
+ * Cubre el CRUD administrativo (index/show/store/update/updateStatus).
+ * No embebe reglas de negocio: delega a IncidentRepository y a los
+ * Services (AssignmentService, IncidentClaimService, IncidentImageService).
+ * Cualquier mutación que pase por acá dispara los eventos Eloquent que
+ * RedisIncidentSync escucha para mantener el read model.
+ *
+ * Si necesitás un endpoint que sirva datos sin escribir, considerá si
+ * corresponde al command side (show/update con lectura incidental) o al
+ * query side (FeedController / un nuevo ReadModel Controller).
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class IncidentController extends Controller
 {
     use AuthorizesRequests;
 
     public function __construct(
         private readonly IncidentRepository $incidents,
-        private readonly StorageService $storage,
+        private readonly OrganizationRepository $organizations,
+        private readonly IncidentImageService $images,
     ) {
         $this->authorizeResource(Incident::class, 'incident');
     }
@@ -92,21 +109,23 @@ class IncidentController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        // Convertir GeoJSON string a Point object para el cast espacial
-        if (isset($data['geom']) && is_string($data['geom'])) {
-            $geom = json_decode($data['geom'], true);
-            if (isset($geom['coordinates'])) {
-                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
-            }
-        }
+        $data = $this->castGeomToPoint($data);
 
         // Los archivos se manejan aparte — no mezclar con el create
         unset($data['images']);
 
+        // Auto-asignar organización basada en la ubicación (B-02)
+        if (empty($data['organization_id']) && ! empty($data['location_id'])) {
+            $org = $this->organizations->findForLocation((int) $data['location_id']);
+            if ($org !== null) {
+                $data['organization_id'] = $org->id;
+            }
+        }
+
         $incident = $this->incidents->create($data);
 
         if ($request->hasFile('images')) {
-            $images = $this->uploadImages($request->file('images'), $incident->id, true);
+            $images = $this->images->upload($request->file('images'), $incident->id, true);
             if (! empty($images)) {
                 $incident->update(['images' => $images]);
             }
@@ -134,21 +153,13 @@ class IncidentController extends Controller
 
     public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
     {
-        $data = $request->validated();
-
-        // Convertir GeoJSON string a Point object para el cast espacial
-        if (isset($data['geom']) && is_string($data['geom'])) {
-            $geom = json_decode($data['geom'], true);
-            if (isset($geom['coordinates'])) {
-                $data['geom'] = new Point($geom['coordinates'][1], $geom['coordinates'][0]);
-            }
-        }
+        $data = $this->castGeomToPoint($request->validated());
 
         unset($data['images']);
 
         if ($request->hasFile('images')) {
             $hasExisting = ! empty($incident->images);
-            $images = $this->uploadImages($request->file('images'), $incident->id, ! $hasExisting);
+            $images = $this->images->upload($request->file('images'), $incident->id, ! $hasExisting);
             $existing = $incident->images ?? [];
             $data['images'] = array_merge($existing, $images);
         }
@@ -165,28 +176,44 @@ class IncidentController extends Controller
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 
-    public function updateStatus(Request $request, Incident $incident): JsonResponse
+    public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): JsonResponse
     {
-        $this->authorize('update', $incident);
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'status' => ['required', Rule::in([IncidentStatus::Pending->value, IncidentStatus::InProgress->value, IncidentStatus::Resolved->value])],
-        ]);
-
-        if ($validated['status'] !== $incident->status->value) {
-            $isResponsable = $incident->assignedUsers()
-                ->where('user_id', $request->user()->id)
-                ->where('assignment_role', 'responsable')
-                ->exists();
-
-            if (! $isResponsable) {
-                abort(403, 'No estás asignado como responsable de esta incidencia.');
-            }
-        }
+        // Permiso de update + regla de responsable, ambos en la Policy.
+        $this->authorize('updateStatus', [$incident, $validated['status']]);
 
         $incident = $this->incidents->update($incident->id, ['status' => $validated['status']]);
 
         return (new IncidentResource($incident))->response();
+    }
+
+    /**
+     * Normalizes accepted `geom` input shapes for spatial persistence.
+     */
+    private function castGeomToPoint(array $data): array
+    {
+        if (! isset($data['geom'])) {
+            return $data;
+        }
+
+        $geom = match (true) {
+            $data['geom'] instanceof Point => $data['geom'],
+            is_array($data['geom']) => $data['geom'],
+            is_string($data['geom']) => json_decode($data['geom'], true),
+            default => null,
+        };
+
+        if ($geom instanceof Point) {
+            return $data;
+        }
+
+        $coordinates = is_array($geom) ? ($geom['coordinates'] ?? null) : null;
+        if (is_array($coordinates) && isset($coordinates[0], $coordinates[1])) {
+            $data['geom'] = new Point((float) $coordinates[1], (float) $coordinates[0]);
+        }
+
+        return $data;
     }
 
     /**
@@ -223,38 +250,5 @@ class IncidentController extends Controller
                 'email' => $u->email,
             ])->values(),
         ]);
-    }
-
-    /**
-     * Sube archivos a S3 y retorna array de metadata.
-     *
-     * @param  UploadedFile[]|UploadedFile|null  $files
-     * @param  bool  $firstIsThumbnail  Si el primer archivo debe marcarse como thumbnail
-     * @return array<int, array{path: string, original_name: string, mime_type: string, size: int, is_thumbnail: bool}>
-     */
-    private function uploadImages(array|UploadedFile|null $files, int $incidentId, bool $firstIsThumbnail): array
-    {
-        $files = is_array($files) ? $files : ($files ? [$files] : []);
-        $files = array_filter($files);
-
-        if (empty($files)) {
-            return [];
-        }
-
-        $images = [];
-
-        foreach ($files as $i => $file) {
-            $key = $this->storage->uploadImage($file, $incidentId);
-
-            $images[] = [
-                'path' => $key,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'is_thumbnail' => $firstIsThumbnail && $i === 0,
-            ];
-        }
-
-        return $images;
     }
 }

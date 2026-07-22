@@ -18,16 +18,16 @@
  * then the shell is fully self-contained and can be mounted manually for
  * visual QA.
  */
+import template from './app-shell.component.html?raw';
+import style from './app-shell.component.css?raw';
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
+import { resolveAvatar } from '../utils/avatar.js';
 import { menuService } from '../shared/menu.service.js';
 import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
 import { router } from '../core/router.js';
 import { timeAgo } from '../utils/format.js';
-
-const TEMPLATE_URL = 'app/app-shell/app-shell.component.html';
-const STYLE_URL = 'app/app-shell/app-shell.component.css';
 
 let _unsubAuth = null;
 
@@ -91,18 +91,13 @@ export function classifyRole(user) {
 }
 
 export const appShell = {
-  templateUrl: TEMPLATE_URL,
-  styleUrl: STYLE_URL,
+  template,
+  style,
 
   async mount() {
-    const response = await fetch(TEMPLATE_URL, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load appShell template: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const html = await response.text();
+    // Template is bundled at build time (Vite ?raw import) — no runtime
+    // fetch, so the shell can never render before its markup is available.
+    const html = template;
     if (!html.trim()) {
       throw new Error('appShell.mount: template body is empty');
     }
@@ -170,10 +165,6 @@ export const appShell = {
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
-      // T-3.3: Wire bottom-nav hydration alongside sidebar
-      renderBottomNavMenu().catch(() => {
-        // No-op: empty bottom-nav is preferable to crashing the shell.
-      });
       connectNotificationStream(user?.id);
     }
 
@@ -197,10 +188,6 @@ export const appShell = {
       if (document.body.dataset.role !== 'guest') {
         await renderSidebarMenu().catch(() => {
           // No-op: empty sidebar is preferable to crashing the shell.
-        });
-        // T-3.3: Wire bottom-nav hydration alongside sidebar on auth change
-        await renderBottomNavMenu().catch(() => {
-          // No-op: empty bottom-nav is preferable to crashing the shell.
         });
         connectNotificationStream(u?.id);
       }
@@ -237,17 +224,9 @@ export const appShell = {
 
   /**
    * Toggle .active on every nav item whose data-route matches `path`.
-   * The "+" plus button and the admin "Crear" item are always skipped —
-   * they are action triggers, not navigation destinations.
    */
   updateActive(path) {
     document.querySelectorAll('.app-shell-nav-item').forEach((item) => {
-      if (
-        item.classList.contains('app-shell-bottom-nav__plus') ||
-        item.classList.contains('app-shell-bottom-nav__create')
-      ) {
-        return;
-      }
       const isMatch = item.dataset.route === path;
       item.classList.toggle('active', isMatch);
     });
@@ -525,119 +504,6 @@ function buildLeafLink(item) {
   return li;
 }
 
-/**
- * T-3.2: renderBottomNavMenu - hydrates bottom-nav from /api/menus/my
- * with dual-whitelist logic (ADMIN_FULL / ADMIN_LIMITED / CITIZEN).
- */
-const BOTTOM_NAV_WHITELIST = {
-  ADMIN_FULL: [
-    '/dashboard',
-    '/incidencias',
-    '/incidencias/crear',
-    '/configuracion/perfil',
-  ],
-  ADMIN_LIMITED: ['/incidencias', '/configuracion/perfil'],
-  CITIZEN: ['/feed', '/configuracion/perfil'],
-};
-
-function pickBottomNavTarget() {
-  const role = document.body.dataset.role;
-  if (role === 'admin')
-    return document.getElementById('app-shell-bottom-nav-list');
-  if (role === 'citizen')
-    return document.getElementById('app-shell-citizen-bottom-nav-list');
-  return null;
-}
-
-function pickBottomNavWhitelist(tree) {
-  const role = document.body.dataset.role;
-  // Citizen uses a separate whitelist
-  if (role === 'citizen') return BOTTOM_NAV_WHITELIST.CITIZEN;
-  // For admin role, check if /incidencias/crear exists in the tree - indicates ADMIN_FULL
-  const hasCrear = tree.some(
-    (n) =>
-      n.route === '/incidencias/crear' ||
-      n.children?.some((c) => c.route === '/incidencias/crear'),
-  );
-  return hasCrear
-    ? BOTTOM_NAV_WHITELIST.ADMIN_FULL
-    : BOTTOM_NAV_WHITELIST.ADMIN_LIMITED;
-}
-
-async function renderBottomNavMenu() {
-  const listEl = pickBottomNavTarget();
-  if (!listEl) return;
-
-  const tree = await menuService.getMyMenu();
-  if (!Array.isArray(tree) || tree.length === 0) {
-    listEl.replaceChildren();
-    return;
-  }
-
-  const whitelist = pickBottomNavWhitelist(tree);
-  const nodes = [];
-
-  for (const item of tree) {
-    const leaves = item.children?.length ? item.children : [item];
-    for (const leaf of leaves) {
-      if (!leaf.route || !whitelist.includes(leaf.route)) continue;
-      const li = buildLeafLink(leaf);
-      // R3.5: Add __create class to /incidencias/crear for CSS variant + updateActive skip-list
-      if (leaf.route === '/incidencias/crear') {
-        li.querySelector('a').classList.add('app-shell-bottom-nav__create');
-      }
-      nodes.push(li);
-    }
-  }
-
-  // Cleanup: citizen-only "+" plus button. The hardcoded sibling of the
-  // <ul> was placed at the trailing slot 3/3 because the <ul> has
-  // display: contents and doesn't occupy a grid cell. Synthesizing the
-  // "+" as an <li> inside the <ul> at index 1 restores the original
-  // centered slot 2/3 between Feed and Perfil.
-  //
-  // Admin role does NOT inject a "+" — admin already renders
-  // /incidencias/crear via the __create class, which is visually the
-  // same affordance with a different shape.
-  if (document.body.dataset.role === 'citizen' && nodes.length >= 1) {
-    const plusLi = document.createElement('li');
-    const plusA = document.createElement('a');
-    plusA.href = 'javascript:void(0)';
-    plusA.className = 'app-shell-nav-item app-shell-bottom-nav__plus';
-    plusA.id = 'app-shell-bottom-plus';
-    plusA.setAttribute('aria-label', 'Reportar incidencia');
-    const plusI = document.createElement('i');
-    plusI.className = 'fa-solid fa-circle-plus';
-    plusA.appendChild(plusI);
-    plusLi.appendChild(plusA);
-    nodes.splice(1, 0, plusLi);
-    // The synthesized <a> only exists from this point onward — wire its
-    // click handler at the same lifecycle point so auth-change re-renders
-    // get a fresh handler attached to the fresh element.
-    wirePlusButton(plusA);
-  }
-
-  listEl.replaceChildren(...nodes);
-}
-
-/**
- * Wire the click handler on the synthesized citizen "+" plus button.
- * Pre-Cleanup this logic lived in wireNav() against the hardcoded
- * <a id="app-shell-bottom-plus">; post-Cleanup the element only exists
- * once renderBottomNavMenu() has run, so the wiring must follow the
- * same lifecycle.
- */
-function wirePlusButton(plusA) {
-  plusA.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (auth.isAuthenticated()) {
-      router.navigate('/feed/crear');
-    } else {
-      router.navigate('/login');
-    }
-  });
-}
-
 async function populateHeader() {
   const u = await auth.me().catch(() => null);
   if (!u) return;
@@ -653,7 +519,7 @@ async function populateHeader() {
         'Usuario';
     }
     if (avatarEl) {
-      avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
+      renderAvatar(avatarEl, u, 'admin');
     }
 
     refreshBellBadges();
@@ -664,10 +530,35 @@ async function populateHeader() {
   if (role === 'citizen') {
     const avatarEl = document.getElementById('app-shell-avatar');
     if (avatarEl) {
-      avatarEl.textContent = (u.first_name || u.email || '?')[0].toUpperCase();
+      renderAvatar(avatarEl, u, 'citizen');
     }
 
     refreshBellBadges();
+  }
+}
+
+/**
+ * Render an <img> avatar inside avatarEl when resolveAvatar returns a URL,
+ * otherwise fall back to initials.
+ *
+ * @param {Element} avatarEl  - the span element to populate
+ * @param {object}  u        - the user object
+ * @param {string}  role     - 'admin' | 'citizen'
+ */
+function renderAvatar(avatarEl, u, _role) {
+  // Try profile_image_path first, then legacy avatar object
+  const rawKey = u.profile_image_path ?? null;
+  const resolvedUrl = resolveAvatar(rawKey || u.avatar);
+
+  if (resolvedUrl) {
+    // Normalize a raw storage key to a full /storage/ URL.
+    // A raw key looks like "users/5/uuid.webp".
+    // A full URL (e.g. Google) is returned as-is.
+    const src = rawKey ? '/storage/' + rawKey : resolvedUrl;
+    avatarEl.innerHTML = `<img src="${src}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+  } else {
+    const initial = (u.first_name || u.email || '?')[0].toUpperCase();
+    avatarEl.textContent = initial;
   }
 }
 
@@ -676,8 +567,8 @@ async function populateHeader() {
  * populateHeader() (init + auth change) and again in real time by
  * connectNotificationStream() when the SSE connection is alive.
  */
-function refreshBellBadges(force = false) {
-  _bellPanels.forEach((bell) => bell.updateBadge(force));
+function refreshBellBadges() {
+  _bellPanels.forEach((bell) => bell.updateBadge());
 }
 
 /**
@@ -924,7 +815,14 @@ function teardownBellPanels() {
  * No-op (returns null) if the bell/panel/list markup isn't present in
  * the DOM (e.g. shell test fixtures that mount a trimmed-down header).
  */
-function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRoute }) {
+function createBellPanel({
+  btnId,
+  panelId,
+  listId,
+  badgeId,
+  markAllId,
+  detailRoute,
+}) {
   const btn = document.getElementById(btnId);
   const panel = document.getElementById(panelId);
   const list = document.getElementById(listId);
@@ -940,26 +838,72 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
   function buildEmptyState() {
     const li = document.createElement('li');
     li.className = 'app-shell-bell-panel__empty';
+    // Derive the id from the parent list's id (citizen `app-shell-bell-list`
+    // → `app-shell-bell-empty`; admin `app-shell-bell-list-admin` →
+    // `app-shell-bell-empty-admin`) so tests and integration scripts can
+    // target the dynamically-rendered empty state by id, mirroring the
+    // static template markup (#app-shell-bell-empty on the citizen list).
+    li.id = list.id.replace('-list', '-empty');
     li.textContent = 'Sin notificaciones';
     return li;
   }
 
   /**
+   * Map a NotificationType enum value to a (icon, color) pair that
+   * matches the FreeDash template's colored btn-circle pattern.
+   *
+   * NotificationType: claim | assignment | status_change | assigned |
+   *                   comment | legacy
+   */
+  const _NOTIF_META = {
+    claim: { icon: 'fa-flag', color: 'btn-danger' },
+    assignment: { icon: 'fa-user-plus', color: 'btn-info' },
+    assigned: { icon: 'fa-user-check', color: 'btn-info' },
+    status_change: { icon: 'fa-exchange-alt', color: 'btn-success' },
+    comment: { icon: 'fa-comment', color: 'btn-primary' },
+    legacy: { icon: 'fa-bell', color: 'btn-secondary' },
+  };
+  function notifIconMeta(type) {
+    return _NOTIF_META[type] || _NOTIF_META.legacy;
+  }
+
+  /**
    * Build a single notification <li>. Clicking it marks the notification
    * as read (if unread) and redirects to this instance's detail route.
+   *
+   * Layout follows the FreeDash "ui-notification.html" pattern: a colored
+   * icon circle on the left, then a vertical stack with the message
+   * (h6), the linked incident title, and the relative time.
    */
   function buildItem(notif) {
     const li = document.createElement('li');
-    li.className = `app-shell-bell-panel__item${notif.read ? '' : ' app-shell-bell-panel__item--unread'}`;
+    li.className = `message-item app-shell-bell-panel__item d-flex align-items-center border-bottom px-3 py-2${notif.read ? '' : ' app-shell-bell-panel__item--unread'}`;
     li.dataset.id = String(notif.id);
 
-    const body = document.createElement('div');
-    const msg = document.createElement('span');
-    msg.textContent = notif.message ?? '';
-    body.appendChild(msg);
+    const meta = notifIconMeta(notif.type);
 
-    const time = document.createElement('small');
-    time.className = 'app-shell-bell-panel__item-time';
+    const iconWrap = document.createElement('span');
+    iconWrap.className = `btn ${meta.color} rounded-circle btn-circle d-flex align-items-center justify-content-center flex-shrink-0`;
+    iconWrap.style.width = '38px';
+    iconWrap.style.height = '38px';
+    iconWrap.innerHTML = `<i class="fa-solid ${meta.icon} text-white" aria-hidden="true"></i>`;
+    li.appendChild(iconWrap);
+
+    const body = document.createElement('div');
+    body.className = 'w-75 d-inline-block v-middle ps-2';
+
+    const title = document.createElement('h6');
+    title.className = 'app-shell-bell-panel__title mb-0 mt-1';
+    title.textContent = notif.message ?? '';
+    body.appendChild(title);
+
+    const sub = document.createElement('span');
+    sub.className = 'font-12 text-nowrap d-block text-muted text-truncate';
+    sub.textContent = notif.incident?.title ?? notif.data?.title ?? '';
+    body.appendChild(sub);
+
+    const time = document.createElement('span');
+    time.className = 'font-12 text-nowrap d-block text-muted';
     time.textContent = timeAgo(notif.created_at);
     body.appendChild(time);
 
@@ -973,7 +917,10 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
         } catch {
           // Non-fatal — still navigate even if marking as read failed.
         }
-        updateBadge(true);
+        // Refresh every wired bell, not just this one — the citizen bell
+        // also exists in the DOM (hidden by role CSS) and its badge would
+        // otherwise go stale until the next SSE event.
+        refreshBellBadges();
       }
       if (notif.incident?.id) {
         router.navigate(`${detailRoute}/${notif.incident.id}`);
@@ -1019,10 +966,10 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
     await openPanel();
   }
 
-  function updateBadge(force = false) {
+  function updateBadge() {
     if (!badge) return;
     notificationService
-      .unreadCount({ force })
+      .unreadCount()
       .then((count) => {
         if (count > 0) {
           badge.textContent = String(count > 99 ? '99+' : count);
@@ -1038,7 +985,7 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
 
   /** Called by the SSE handler on a live notification event. */
   function prependIfOpen(notif) {
-    updateBadge(true);
+    updateBadge();
     if (isOpen) {
       list.querySelector('.app-shell-bell-panel__empty')?.remove();
       list.prepend(buildItem(notif));
@@ -1052,10 +999,12 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
     } catch {
       return; // non-fatal — badge/list just stay as they were
     }
-    updateBadge(true);
+    refreshBellBadges();
     list
       .querySelectorAll('.app-shell-bell-panel__item--unread')
-      .forEach((li) => li.classList.remove('app-shell-bell-panel__item--unread'));
+      .forEach((li) =>
+        li.classList.remove('app-shell-bell-panel__item--unread'),
+      );
   }
 
   function init() {
@@ -1094,11 +1043,13 @@ function createBellPanel({ btnId, panelId, listId, badgeId, markAllId, detailRou
 
 /**
  * Establish the SSE connection to the Mercure hub for real-time bell
- * updates. Laravel Octane's FrankenPHP driver has no StreamedResponse
- * support (github.com/laravel/octane#903 — reproduces under RoadRunner
- * too, so it isn't a driver-specific quirk), so a hand-rolled SSE loop in
- * the backend never holds the connection open. Mercure sidesteps this: a
- * dedicated Go hub process holds the connection, not a PHP worker.
+ * updates. A hand-rolled SSE loop in the backend would never hold the
+ * connection open because Octane's runtime model — historically with
+ * FrankenPHP/RoadRunner buffering (laravel/octane#903, upstream
+ * closed-PRs #1141/#1144) and now with Swoole's stream-friendly
+ * SwooleClient — needs the actual SSE to be held by an external long-lived
+ * worker. Mercure is that external worker: a dedicated Go hub process
+ * holds the connection, PHP just publishes via Symfony Mercure SDK.
  *
  * The topic (`user:{id}:notifications`) must match
  * `NotificationService::topicFor()` on the backend exactly. Auth is the
@@ -1133,7 +1084,15 @@ function connectNotificationStream(userId) {
     };
 
     _notifStream.onerror = () => {
-      disconnectNotificationStream();
+      // EventSource.onerror fires for both transient blips (where the
+      // browser auto-reconnects, readyState === CONNECTING) and fatal
+      // closures (readyState === CLOSED, no more retries). SSE's killer
+      // feature vs. WebSocket is the auto-reconnect — we must only tear
+      // down on the fatal case, otherwise a single network hiccup kills
+      // the stream until the next page load.
+      if (_notifStream && _notifStream.readyState === EventSource.CLOSED) {
+        disconnectNotificationStream();
+      }
     };
   } catch {
     // Constructing EventSource itself threw — never let this take down

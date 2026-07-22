@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Shared\Services;
 
+use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
@@ -28,7 +29,18 @@ class AuthService
         /** @var User|null $user */
         $user = User::where('email', $email)->first();
 
-        if ($user === null || ! Hash::check($password, $user->password)) {
+        if ($user === null) {
+            throw new AuthenticationException(
+                'Las credenciales proporcionadas son incorrectas.',
+                'email',
+            );
+        }
+
+        if ($user->password === null) {
+            throw new PendingInvitationException;
+        }
+
+        if (! Hash::check($password, $user->password)) {
             throw new AuthenticationException(
                 'Las credenciales proporcionadas son incorrectas.',
                 'email',

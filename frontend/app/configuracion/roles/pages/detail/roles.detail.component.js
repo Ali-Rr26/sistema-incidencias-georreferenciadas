@@ -1,5 +1,6 @@
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
+import { mostrarToast } from '../../../../utils/ui.js';
 
 /**
  * Construye un checkbox accesible con label y descripción opcional.
@@ -188,15 +189,6 @@ export default {
       return;
     }
 
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      if (!el) return;
-      el.className = `toast align-items-center text-white border-0 bg-${tipo} position-fixed bottom-0 end-0 m-4`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      // eslint-disable-next-line no-undef
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
     function mostrarError(msg) {
       document.getElementById('estado-cargando').classList.add('d-none');
       document.getElementById('error-texto').textContent = msg;
@@ -245,14 +237,26 @@ export default {
       .addEventListener('click', async () => {
         const nombre = document.getElementById('rol-nombre').value.trim();
         if (!nombre) {
-          mostrarToast('El nombre es obligatorio.', 'danger');
+          mostrarToast(
+            'El nombre es obligatorio.',
+            'danger',
+            'position-fixed bottom-0 end-0 m-4',
+          );
           return;
         }
         try {
           await http.put(`/roles/${id}`, { name: nombre });
-          mostrarToast('Nombre guardado.', 'success');
+          mostrarToast(
+            'Nombre guardado.',
+            'success',
+            'position-fixed bottom-0 end-0 m-4',
+          );
         } catch {
-          mostrarToast('No se pudo guardar el nombre.', 'danger');
+          mostrarToast(
+            'No se pudo guardar el nombre.',
+            'danger',
+            'position-fixed bottom-0 end-0 m-4',
+          );
         }
       });
 
@@ -267,9 +271,17 @@ export default {
           await http.put(`/roles/${id}/permissions`, {
             permissions: permissionIds,
           });
-          mostrarToast('Permisos guardados.', 'success');
+          mostrarToast(
+            'Permisos guardados.',
+            'success',
+            'position-fixed bottom-0 end-0 m-4',
+          );
         } catch {
-          mostrarToast('No se pudieron guardar los permisos.', 'danger');
+          mostrarToast(
+            'No se pudieron guardar los permisos.',
+            'danger',
+            'position-fixed bottom-0 end-0 m-4',
+          );
         }
       });
 

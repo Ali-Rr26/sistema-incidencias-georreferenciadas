@@ -159,7 +159,8 @@ describe('incidencias.detail — public comments', () => {
 
     await component.onInit({ params: { id: 42 } });
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length > 0,
+      () =>
+        document.getElementById('detalle-comments-list').children.length > 0,
     );
 
     const list = document.getElementById('detalle-comments-list');
@@ -167,7 +168,9 @@ describe('incidencias.detail — public comments', () => {
     expect(list.textContent).toContain('Primer comentario');
     expect(list.textContent).toContain('Ana Lopez');
     expect(
-      document.getElementById('detalle-comments-vacio').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-vacio')
+        .classList.contains('d-none'),
     ).toBe(true);
   });
 
@@ -191,9 +194,13 @@ describe('incidencias.detail — public comments', () => {
     );
 
     expect(
-      document.getElementById('detalle-comments-vacio').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-vacio')
+        .classList.contains('d-none'),
     ).toBe(false);
-    expect(document.getElementById('detalle-comments-list').children).toHaveLength(0);
+    expect(
+      document.getElementById('detalle-comments-list').children,
+    ).toHaveLength(0);
   });
 
   it('posts a new comment via POST /incidents/{id}/comments and appends it after reload', async () => {
@@ -208,7 +215,14 @@ describe('incidencias.detail — public comments', () => {
           return Promise.resolve({ data: [commentFixture()] });
         }
         return Promise.resolve({
-          data: [commentFixture(), commentFixture({ id: 2, message: 'Segundo comentario', user: { first_name: 'Luis' } })],
+          data: [
+            commentFixture(),
+            commentFixture({
+              id: 2,
+              message: 'Segundo comentario',
+              user: { first_name: 'Luis' },
+            }),
+          ],
         });
       }
       return Promise.resolve({ data: [] });
@@ -219,10 +233,12 @@ describe('incidencias.detail — public comments', () => {
 
     await component.onInit({ params: { id: 42 } });
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length > 0,
+      () =>
+        document.getElementById('detalle-comments-list').children.length > 0,
     );
 
-    document.getElementById('detalle-comment-input').value = 'Segundo comentario';
+    document.getElementById('detalle-comment-input').value =
+      'Segundo comentario';
     document
       .getElementById('detalle-comment-form')
       .dispatchEvent(new Event('submit', { cancelable: true }));
@@ -234,11 +250,12 @@ describe('incidencias.detail — public comments', () => {
     });
 
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length === 2,
+      () =>
+        document.getElementById('detalle-comments-list').children.length === 2,
     );
-    expect(document.getElementById('detalle-comments-list').textContent).toContain(
-      'Segundo comentario',
-    );
+    expect(
+      document.getElementById('detalle-comments-list').textContent,
+    ).toContain('Segundo comentario');
     // Input is cleared after a successful post.
     expect(document.getElementById('detalle-comment-input').value).toBe('');
   });
@@ -261,7 +278,9 @@ describe('incidencias.detail — public comments', () => {
     // flips to hidden only once the initial load (and listener wiring)
     // has fully completed, which is a reliable synchronization point.
     await vi.waitUntil(() =>
-      document.getElementById('detalle-comments-loading').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-loading')
+        .classList.contains('d-none'),
     );
 
     document.getElementById('detalle-comment-input').value = '   ';
@@ -401,12 +420,7 @@ describe('incidencias.detail — assignments', () => {
         }
         return Promise.resolve({ data: [assignmentFixture()] });
       }
-      if (path === '/roles?per_page=100') {
-        return Promise.resolve({
-          data: [{ id: 4, name: 'operador_organizacion' }],
-        });
-      }
-      if (path.startsWith('/users?')) {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.resolve({
           data: [{ id: 7, first_name: 'Carla', last_name: 'Ruiz' }],
         });
@@ -423,7 +437,7 @@ describe('incidencias.detail — assignments', () => {
     );
 
     expect(mockHttp.get).toHaveBeenCalledWith(
-      expect.stringContaining('/users?organization_id=9&role_id=4'),
+      expect.stringContaining('/incidents/42/available-operators'),
     );
 
     document.getElementById('detalle-asignaciones-select').value = '7';
@@ -459,12 +473,7 @@ describe('incidencias.detail — assignments', () => {
       if (path.startsWith('/incidents/42/assignments')) {
         return Promise.resolve({ data: [assignmentFixture()] });
       }
-      if (path === '/roles?per_page=100') {
-        return Promise.resolve({
-          data: [{ id: 4, name: 'operador_organizacion' }],
-        });
-      }
-      if (path.startsWith('/users?')) {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.resolve({
           data: [{ id: 8, first_name: 'Luis', last_name: 'Mora' }],
         });
@@ -532,9 +541,7 @@ describe('incidencias.detail — assignments', () => {
     btn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await vi.waitUntil(() => mockHttp.delete.mock.calls.length > 0);
-    expect(mockHttp.delete).toHaveBeenCalledWith(
-      '/incidents/42/assignments/1',
-    );
+    expect(mockHttp.delete).toHaveBeenCalledWith('/incidents/42/assignments/1');
 
     await vi.waitUntil(
       () =>
@@ -594,9 +601,9 @@ describe('incidencias.detail — assignments', () => {
     expect(formEl.contains(errorEl)).toBe(false);
     expect(errorEl.classList.contains('d-none')).toBe(false);
     // The delete button re-enables so the user can retry.
-    expect(
-      document.querySelector('.btn-eliminar-asignacion').disabled,
-    ).toBe(false);
+    expect(document.querySelector('.btn-eliminar-asignacion').disabled).toBe(
+      false,
+    );
   });
 
   it('disables the operator select and submit button, and shows an error option, when the /roles fetch fails', async () => {
@@ -610,7 +617,7 @@ describe('incidencias.detail — assignments', () => {
       if (path.startsWith('/incidents/42/assignments')) {
         return Promise.resolve({ data: [] });
       }
-      if (path === '/roles?per_page=100') {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.reject(new Error('roles fetch failed'));
       }
       return Promise.resolve({ data: [] });
@@ -723,8 +730,8 @@ describe('incidencias.detail — assignments', () => {
     const vacioEl = document.getElementById('detalle-asignaciones-vacio');
     expect(vacioEl.classList.contains('d-none')).toBe(false);
     expect(vacioEl.textContent).toBe('Error al cargar asignaciones.');
-    expect(
-      document.getElementById('detalle-asignaciones-list').innerHTML,
-    ).toBe('');
+    expect(document.getElementById('detalle-asignaciones-list').innerHTML).toBe(
+      '',
+    );
   });
 });

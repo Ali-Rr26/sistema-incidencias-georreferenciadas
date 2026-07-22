@@ -18,6 +18,17 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    /**
+     * Maximum avatar upload size in kilobytes.
+     *
+     * Single source of truth for the avatar upload cap, used by
+     * UpdateProfileRequest and StoreUserAvatarRequest validation rules.
+     * The PHP uploads.ini (`upload_max_filesize`/`post_max_size` in
+     * `backend/Dockerfile`) and nginx.conf (`client_max_body_size`)
+     * MUST be sized to accommodate this value with a small margin.
+     */
+    public const AVATAR_MAX_KB = 800;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 
@@ -35,7 +46,10 @@ class User extends Authenticatable
         'last_name',
         'phone',
         'avatar',
+        'profile_image_path',
         'email_verified_at',
+        'terms_accepted_at',
+        'terms_version',
     ];
 
     protected $hidden = [

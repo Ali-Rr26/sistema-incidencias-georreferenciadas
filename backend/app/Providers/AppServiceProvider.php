@@ -11,11 +11,17 @@ use App\Domains\Comments\Repositories\EloquentCommentRepository;
 use App\Domains\IncidentCategories\Repositories\EloquentIncidentCategoryRepository;
 use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Invitations\Services\InvitationService;
+use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Notifications\Http\Policies\NotificationPolicy;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Observers\IncidentNotificationObserver;
@@ -63,6 +69,20 @@ class AppServiceProvider extends ServiceProvider
         // (which would fail without FIREBASE_CREDENTIALS configured).
         // The closure also resolves `services.firebase.leeway_seconds`
         // (default 5s) per the Kreait SDK's clock-skew tolerance.
+        // SMTP mail sender for incident-assignment notifications.
+        // Singleton: solo guarda dependencias inyectadas (Mailer contract)
+        // y la config se resuelve en cada llamada. Esta dedicado
+        // exclusivamente a AssignmentNotificationObserver — NO se comparte
+        // con otros observadores ni con el sistema de mail transaccional
+        // general (registros, recuperación de contraseña, etc.).
+        $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
+        // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
+        $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
+
+        // InvitationService — depends on InvitationTokenGenerator + MailSenderInterface.
+        $this->app->singleton(InvitationService::class, InvitationService::class);
+
         $this->app->singleton(FirebaseTokenVerifier::class, function () {
             $credentialsPath = (string) (config('services.firebase.credentials_path')
                 ?: env('FIREBASE_CREDENTIALS', ''));
@@ -87,9 +107,22 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Mercure hub — see config/octane.php for why this replaced the
-        // manual SSE loop. Same FrankenPHP process serves the hub, so we
-        // publish to it over loopback.
+        // Mercure hub singleton. The backend publishes notifications
+        // through HubInterface; the app-shell frontend subscribes via
+        // an EventSource pointing at config('mercure.hub.url') (which
+        // defaults to the loopback in dev or to a docker-compose
+        // sidecar in production).
+        //
+        // The publisher JWT is signed with the LcobucciFactory using
+        // `jwtLifetime: $jwtLifetime` so each publish carries an
+        // `exp` claim. Without that cap, a captured token would stay
+        // valid forever — the cap limits blast radius to one hour.
+        //
+        // `publish: $allowedTopics` scopes the publisher to the
+        // patterns configured under `mercure.publisher.allowed_topics`
+        // (comma-separated globs in env; defaults to `['*']` for dev,
+        // should be narrowed to `user:*:notifications` in production
+        // so a leaked publisher secret can't poison arbitrary topics).
         $this->app->singleton(HubInterface::class, function () {
             // LcobucciFactory's Key\InMemory rejects an empty secret at
             // construction time — fall back to a placeholder so
@@ -98,14 +131,24 @@ class AppServiceProvider extends ServiceProvider
             // HubInterface) can still construct the container. Publishing
             // will fail at request time instead, which
             // NotificationService::publish() already swallows.
-            $secret = (string) config('octane.mercure.publisher_jwt');
+            $secret = (string) config('mercure.publisher.jwt');
+            $jwtLifetime = (int) config('mercure.publisher.jwt_ttl_seconds', 60 * 60);
             $jwtFactory = new LcobucciFactory(
-                $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
+                secret: $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
+                jwtLifetime: $jwtLifetime,
             );
-            $provider = new FactoryTokenProvider($jwtFactory, publish: ['*']);
+
+            // Build a provider scoped to the topics configured for
+            // publishers. ['*'] keeps existing behavior for envs that
+            // haven't opted into the restriction yet.
+            $allowedTopics = (array) config('mercure.publisher.allowed_topics', ['*']);
+            $provider = new FactoryTokenProvider(
+                $jwtFactory,
+                publish: $allowedTopics,
+            );
 
             return new Hub(
-                rtrim((string) env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000'), '/').'/.well-known/mercure',
+                rtrim((string) config('mercure.hub.url', env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000/.well-known/mercure')), '/'),
                 $provider,
             );
         });
@@ -149,6 +192,12 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->ip());
         });
 
+        // /invitations/{token}/accept — rate limit para evitar fuerza bruta
+        // sobre el token de invitación. 10/min por IP, mismo rango que register.
+        RateLimiter::for('invitations', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
         // Admins bypass all gate/policy checks
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->isAdmin() ? true : null;
@@ -187,6 +236,16 @@ class AppServiceProvider extends ServiceProvider
             Incident::observe(IncidentNotificationObserver::class);
         } catch (\Throwable) {
             // Notifications tables not ready yet — skip silently.
+        }
+
+        // Register AssignmentNotificationObserver to dispatch user notifications
+        // when an operator is formally assigned to an incident (responsable/apoyo)
+        // via the Assignment model. Companion to IncidentNotificationObserver but
+        // listens to the Assignment lifecycle (not Incident columns).
+        try {
+            Assignment::observe(AssignmentNotificationObserver::class);
+        } catch (\Throwable) {
+            // Assignments table not ready yet — skip silently.
         }
 
         // Register RedisCommentSync as observer for Comment model events

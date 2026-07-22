@@ -58,7 +58,7 @@ describe('notificationService', () => {
     );
   });
 
-  it('unreadCount caches the response', async () => {
+  it('unreadCount siempre pide fresco al backend', async () => {
     http.get.mockResolvedValue({ unread_count: 5 });
 
     const first = await notificationService.unreadCount();
@@ -68,42 +68,34 @@ describe('notificationService', () => {
     expect(first).toBe(5);
     expect(second).toBe(5);
     expect(third).toBe(5);
-    expect(http.get).toHaveBeenCalledTimes(1);
+    // Sin caché — cada llamada es un fetch.
+    expect(http.get).toHaveBeenCalledTimes(3);
   });
 
-  it('unreadCount with force refetches', async () => {
-    http.get.mockResolvedValue({ unread_count: 3 });
-
-    await notificationService.unreadCount();
-    await notificationService.unreadCount({ force: true });
-
-    expect(http.get).toHaveBeenCalledTimes(2);
-  });
-
-  it('markRead invalidates the unread count cache', async () => {
+  it('markRead y unreadCount son independientes', async () => {
     http.get.mockResolvedValue({ unread_count: 2 });
     http.patch.mockResolvedValue({});
 
     await notificationService.unreadCount();
     await notificationService.markRead(99);
-
-    // After markRead the cache is invalidated — next unreadCount re-fetches.
     await notificationService.unreadCount();
+
+    // markRead es PATCH, no GET; los dos unreadCount son GETs independientes.
     expect(http.get).toHaveBeenCalledTimes(2);
   });
 
-  it('markAllRead resets the cache to 0', async () => {
+  it('markAllRead no afecta el fetch del badge', async () => {
     http.get.mockResolvedValue({ unread_count: 7 });
-    http.patch.mockResolvedValue({ updated: 7, unread_count: 0 });
+    http.patch.mockResolvedValue({ updated: 7 });
 
     await notificationService.unreadCount();
     const after = await notificationService.markAllRead();
 
     expect(after.updated).toBe(7);
 
-    // Cached value is now 0, no extra fetch.
+    // Sin caché — el segundo unreadCount fetchea de nuevo.
     const cached = await notificationService.unreadCount();
-    expect(cached).toBe(0);
-    expect(http.get).toHaveBeenCalledTimes(1);
+    expect(cached).toBe(7);
+    expect(http.get).toHaveBeenCalledTimes(2);
   });
 });

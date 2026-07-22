@@ -16,12 +16,8 @@ abstract class EloquentRepository implements Repository
 
     /**
      * Paginación compartida para todos los repositorios.
-     * Cada repositorio concreto solo necesita definir applyFilters().
-     *
-     * TODO: Migrate `EloquentOrganizationRepository::paginate()` and
-     * `EloquentIncidentCategoryRepository::paginate()` to delegate here so
-     * they pick up the configurable `$hardCap` automatically. They still
-     * hard-cap at 100 today.
+     * Cada repositorio concreto solo necesita definir applyFilters() y,
+     * si pagina con relaciones eager, paginateRelations().
      */
     public function paginate(
         array $filters = [],
@@ -31,10 +27,19 @@ abstract class EloquentRepository implements Repository
         $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
         unset($filters['per_page']);
 
-        $query = $this->newQuery();
+        $query = $this->newQuery()->with($this->paginateRelations());
         $this->applyFilters($query, $filters);
 
         return $query->paginate(min($perPage, $hardCap ?? 100));
+    }
+
+    /**
+     * Relaciones eager-loaded solo por paginate(). Vacío por defecto para
+     * no cargar de más en findById()/create()/update().
+     */
+    protected function paginateRelations(): array
+    {
+        return [];
     }
 
     public function findById(int $id): ?Model

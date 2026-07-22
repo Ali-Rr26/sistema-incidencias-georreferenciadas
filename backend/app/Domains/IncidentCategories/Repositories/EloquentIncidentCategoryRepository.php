@@ -6,7 +6,6 @@ namespace App\Domains\IncidentCategories\Repositories;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Shared\Repositories\EloquentRepository;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -17,15 +16,9 @@ class EloquentIncidentCategoryRepository extends EloquentRepository implements I
         parent::__construct(new IncidentCategory);
     }
 
-    public function paginate(array $filters = [], int $perPage = 20, ?int $hardCap = null): LengthAwarePaginator
+    protected function paginateRelations(): array
     {
-        $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
-        unset($filters['per_page']);
-
-        return $this->newQuery()
-            ->with('parent')
-            ->when(count($filters) > 0, fn (Builder $query) => $this->applyFilters($query, $filters))
-            ->paginate(min($perPage, $hardCap ?? 100));
+        return ['parent'];
     }
 
     public function tree(): Collection

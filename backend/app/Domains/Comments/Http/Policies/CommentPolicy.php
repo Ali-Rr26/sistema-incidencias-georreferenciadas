@@ -53,7 +53,7 @@ class CommentPolicy extends PermissionPolicy
             return false;
         }
 
-        return $user->isSystemAdmin() || self::inSameOrg($user, $comment);
+        return self::hasOrgAccess($user, self::incidentOrgId($comment));
     }
 
     public function update(User $user, Model $comment): bool
@@ -67,7 +67,7 @@ class CommentPolicy extends PermissionPolicy
             return false;
         }
 
-        return $user->isSystemAdmin() || self::inSameOrg($user, $comment);
+        return self::hasOrgAccess($user, self::incidentOrgId($comment));
     }
 
     public function delete(User $user, Model $comment): bool
@@ -80,23 +80,31 @@ class CommentPolicy extends PermissionPolicy
             return false;
         }
 
-        return $user->isSystemAdmin() || self::inSameOrg($user, $comment);
+        return self::hasOrgAccess($user, self::incidentOrgId($comment));
     }
 
     /**
-     * Users with no organization (citizens, operador_sistema) are not
-     * org-scoped by this Policy — they're gated by the permission check
-     * alone, same as the rest of this codebase treats org-less roles.
+     * Regla única de scope organizacional sobre comentarios, compartida con
+     * CommentController::authorizeIncidentOrgScope() (index/store nunca
+     * reciben la Incident vía authorizeResource, así que el controller la
+     * aplica directo sobre el route param).
+     *
+     * System admins pasan siempre; users sin organización (citizens,
+     * operador_sistema) no se org-scopean — los gobierna solo el gate de
+     * permisos, como en el resto del codebase.
      */
-    public static function inSameOrg(User $user, Model $comment): bool
+    public static function hasOrgAccess(User $user, ?int $incidentOrgId): bool
     {
-        if ($user->organization_id === null) {
+        if ($user->isSystemAdmin() || $user->organization_id === null) {
             return true;
         }
 
-        /** @var Comment $comment */
-        $incidentOrgId = $comment->incident?->organization_id;
-
         return $incidentOrgId !== null && $incidentOrgId === $user->organization_id;
+    }
+
+    private static function incidentOrgId(Model $comment): ?int
+    {
+        /** @var Comment $comment */
+        return $comment->incident?->organization_id;
     }
 }

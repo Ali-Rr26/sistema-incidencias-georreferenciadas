@@ -9,6 +9,7 @@ enum NotificationType: string
     case Claim = 'claim';
     case Assignment = 'assignment';
     case StatusChange = 'status_change';
+    case Assigned = 'assigned';
     case Comment = 'comment';
     case Legacy = 'legacy';
 }

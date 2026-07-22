@@ -1,7 +1,16 @@
+import template from './localizaciones.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { mount } from '../../../../shared/table-actions/table-actions.component.js';
+import {
+  isDesktop,
+  mostrarEstado,
+  mostrarToast,
+} from '../../../../utils/ui.js';
 
 const POR_PAGINA = 15;
 const NIVEL_LABELS = {
@@ -12,8 +21,7 @@ const NIVEL_LABELS = {
 };
 
 export default {
-  templateUrl:
-    'app/configuracion/localizaciones/pages/index/localizaciones.index.component.html',
+  template,
 
   async onInit() {
     let paginaActual = 1;
@@ -27,22 +35,6 @@ export default {
 
     const tbody = () => document.getElementById('tabla-body');
     const thead = () => document.getElementById('thead-locs');
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
 
     function nivelBadge(level) {
       const map = {
@@ -101,17 +93,19 @@ export default {
           <th>NOMBRE</th>
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
       const flat = buildFlatList(treeRoots, 0, []);
+      const esDesktop = isDesktop();
 
-      tbody().innerHTML = flat
-        .map((loc) => {
-          const hasChildren = loc.children?.length > 0;
-          const isExpanded = expandedIds.has(loc.id);
-          const indent = loc._depth * 24;
-          return `
+      if (esDesktop) {
+        tbody().innerHTML = flat
+          .map((loc) => {
+            const hasChildren = loc.children?.length > 0;
+            const isExpanded = expandedIds.has(loc.id);
+            const indent = loc._depth * 24;
+            return `
             <tr>
               <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td style="padding-left:${10 + indent}px">
@@ -127,22 +121,30 @@ export default {
               <td><code style="font-size:12px">${loc.code ?? '—'}</code></td>
               <td>${nivelBadge(loc.level)}</td>
               <td>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}" title="Editar">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}" title="Eliminar">
-                    <i class="fa-solid fa-trash-alt"></i>
-                  </button>
-                </div>
+                <table-actions id="ta-tree-${loc.id}"></table-actions>
               </td>
             </tr>`;
-        })
-        .join('');
+          })
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = flat
-        .map(
-          (loc) => `
+        flat.forEach((loc) => {
+          const el = document.getElementById('ta-tree-' + loc.id);
+          if (el) {
+            mount(el, {
+              id: loc.id,
+              titulo: loc.name,
+              slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
+            });
+          }
+        });
+
+        document.getElementById('contenedor-cards').innerHTML = '';
+      } else {
+        tbody().innerHTML = '';
+        document.getElementById('contenedor-cards').innerHTML = flat
+          .map(
+            (loc) => `
             <div class="card mb-2 shadow-sm" style="margin-left:${loc._depth * 16}px">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -150,26 +152,25 @@ export default {
                     <h6 class="mb-0">${loc.name} <code style="font-size:11px">${loc.code ?? ''}</code></h6>
                     <div class="mt-1">${nivelBadge(loc.level)}</div>
                   </div>
-                  <div class="d-flex gap-1">
-                    ${
-                      loc.children?.length
-                        ? `<button class="btn btn-sm btn-outline-primary btn-toggle" data-id="${loc.id}">
-                             <i class="fa-solid ${expandedIds.has(loc.id) ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
-                           </button>`
-                        : ''
-                    }
-                    <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}">
-                      <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                  </div>
+                  <table-actions id="ta-mobile-${loc.id}"></table-actions>
                 </div>
               </div>
             </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        flat.forEach((loc) => {
+          const el = document.getElementById('ta-mobile-' + loc.id);
+          if (el) {
+            mount(el, {
+              id: loc.id,
+              titulo: loc.name,
+              slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
+            });
+          }
+        });
+      }
 
       document.getElementById('info-resultados').textContent =
         `${flat.length} localización${flat.length !== 1 ? 'es' : ''} visible${flat.length !== 1 ? 's' : ''}`;
@@ -206,6 +207,8 @@ export default {
         return;
       }
 
+      const esDesktop = isDesktop();
+
       thead().innerHTML = `
         <tr>
           <th style="width: 40px;" class="text-center"><input type="checkbox" class="form-check-input check-select-all" /></th>
@@ -213,12 +216,13 @@ export default {
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
           <th style="width:130px">PADRE</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
-      tbody().innerHTML = datos
-        .map(
-          (loc) => `
+      if (esDesktop) {
+        tbody().innerHTML = datos
+          .map(
+            (loc) => `
             <tr>
               <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td class="fw-semibold">${loc.name}</td>
@@ -226,22 +230,30 @@ export default {
               <td>${nivelBadge(loc.level)}</td>
               <td class="text-muted">${loc.parent?.name ?? '—'}</td>
               <td>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}" title="Editar">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}" title="Eliminar">
-                    <i class="fa-solid fa-trash-alt"></i>
-                  </button>
-                </div>
+                <table-actions id="ta-flat-${loc.id}"></table-actions>
               </td>
             </tr>`,
-        )
-        .join('');
+          )
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = datos
-        .map(
-          (loc) => `
+        datos.forEach((loc) => {
+          const el = document.getElementById('ta-flat-' + loc.id);
+          if (el) {
+            mount(el, {
+              id: loc.id,
+              titulo: loc.name,
+              slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
+            });
+          }
+        });
+
+        document.getElementById('contenedor-cards').innerHTML = '';
+      } else {
+        tbody().innerHTML = '';
+        document.getElementById('contenedor-cards').innerHTML = datos
+          .map(
+            (loc) => `
             <div class="card mb-2 shadow-sm">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -250,19 +262,25 @@ export default {
                     <div class="mt-1">${nivelBadge(loc.level)}</div>
                     ${loc.parent ? `<small class="text-muted">Padre: ${loc.parent.name}</small>` : ''}
                   </div>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}">
-                      <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                  </div>
+                  <table-actions id="ta-mobile-${loc.id}"></table-actions>
                 </div>
               </div>
             </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        datos.forEach((loc) => {
+          const el = document.getElementById('ta-mobile-' + loc.id);
+          if (el) {
+            mount(el, {
+              id: loc.id,
+              titulo: loc.name,
+              slugs: { update: 'locations.update', delete: 'locations.delete' },
+              showView: false,
+            });
+          }
+        });
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -314,41 +332,52 @@ export default {
       }
     }
 
-    // ─── Events ───────────────────────────────────────────────────────────
+    // ─── Events ─────────────────────────────────────────────────────────
 
-    function delegarClicks(contenedor) {
-      contenedor.addEventListener('click', (e) => {
-        const toggle = e.target.closest('.btn-toggle');
-        const editar = e.target.closest('.btn-editar');
-        const eliminar = e.target.closest('.btn-eliminar');
-
-        if (toggle && modoArbol) {
-          const id = parseInt(toggle.dataset.id);
-          if (expandedIds.has(id)) {
-            removeDescendants(id, treeRoots);
-            expandedIds.delete(id);
-          } else {
-            expandedIds.add(id);
-          }
-          renderArbol();
-          return;
-        }
-
-        if (editar) {
-          router.navigate('/localizaciones/crear?id=' + editar.dataset.id);
-        }
-
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated event handlers for table-actions custom events
+    function manejarTableActions(e) {
+      const { id, titulo } = e.detail;
+      if (e.type === 'table-actions:view') {
+        router.navigate('/localizaciones/' + id);
+        return;
+      }
+      if (e.type === 'table-actions:edit') {
+        router.navigate('/localizaciones/crear?id=' + id);
+        return;
+      }
+      if (e.type === 'table-actions:delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
+    function manejarToggle(e) {
+      const toggle = e.target.closest('.btn-toggle');
+      if (!toggle || !modoArbol) return;
+      const id = parseInt(toggle.dataset.id);
+      if (expandedIds.has(id)) {
+        removeDescendants(id, treeRoots);
+        expandedIds.delete(id);
+      } else {
+        expandedIds.add(id);
+      }
+      renderArbol();
+    }
+
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('click', manejarToggle);
+    tablaBody.addEventListener('table-actions:view', manejarTableActions);
+    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
+    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
+    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
+    contenedorCards.addEventListener(
+      'table-actions:delete',
+      manejarTableActions,
+    );
 
     document
       .getElementById('btn-confirmar-eliminar')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Listeners\RedisIncidentSync;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
@@ -52,7 +53,7 @@ it('calls HMSET and ZADD when incident is created', function (): void {
         ->once()
         ->with('feed:v2:index', Mockery::any(), '42');
 
-    $sync = new RedisIncidentSync;
+    $sync = new RedisIncidentSync(new IncidentFeedSerializer);
     $sync->created($incident);
 });
 
@@ -69,7 +70,7 @@ it('calls DEL and ZREM when incident is deleted', function (): void {
         ->once()
         ->with('feed:v2:index', '99');
 
-    $sync = new RedisIncidentSync;
+    $sync = new RedisIncidentSync(new IncidentFeedSerializer);
     $sync->deleted($incident);
 });
 
@@ -112,7 +113,7 @@ it('calls HMSET and ZADD when incident is updated', function (): void {
         ->once()
         ->with('feed:v2:index', Mockery::any(), '7');
 
-    $sync = new RedisIncidentSync;
+    $sync = new RedisIncidentSync(new IncidentFeedSerializer);
     $sync->updated($incident);
 });
 
@@ -125,7 +126,7 @@ it('does not throw when Redis is unreachable', function (): void {
         ->once()
         ->andThrow(new RuntimeException('Connection refused'));
 
-    $sync = new RedisIncidentSync;
+    $sync = new RedisIncidentSync(new IncidentFeedSerializer);
 
     try {
         $sync->deleted($incident);

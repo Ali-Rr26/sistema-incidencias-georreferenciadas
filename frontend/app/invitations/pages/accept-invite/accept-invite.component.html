@@ -1,0 +1,123 @@
+<div class="gr-accept-invite">
+  <div class="gr-accept-invite__hero">
+    <div class="gr-accept-invite__hero-logo">
+      <div class="gr-accept-invite__hero-icon">
+        <i class="fa-solid fa-location-dot"></i>
+      </div>
+      <span>GeoReporta</span>
+    </div>
+    <div class="gr-accept-invite__hero-content">
+      <h1 class="gr-accept-invite__hero-title">
+        Bienvenido/a a Sistema de Incidencias
+      </h1>
+      <p class="gr-accept-invite__hero-desc">
+        Completá el formulario para activar tu cuenta.
+      </p>
+    </div>
+  </div>
+
+  <div class="gr-accept-invite__form-wrap">
+    <div class="gr-accept-invite__form-box">
+      <h2 class="gr-accept-invite__form-title">Activar mi cuenta</h2>
+      <p class="gr-accept-invite__form-sub">
+        Ingresá tu nueva contraseña y aceptá los términos.
+      </p>
+
+      <div
+        id="accept-invite-error"
+        class="gr-accept-invite__error d-none"
+        role="alert"
+      ></div>
+
+      <div
+        id="accept-invite-success"
+        class="gr-accept-invite__success d-none"
+        role="status"
+      >
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        Cuenta activada, redirigiendo...
+      </div>
+
+      <form id="accept-invite-form" novalidate>
+        <input type="hidden" id="invite-terms-version" value="v0" />
+
+        <label class="gr-form-label" for="invite-password">Contraseña</label>
+        <div class="gr-input-wrap">
+          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <input
+            type="password"
+            id="invite-password"
+            class="gr-input gr-input--pad-right"
+            placeholder="Mínimo 8 caracteres, una mayúscula, una minúscula y un dígito"
+            required
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="gr-input-eye"
+            aria-label="Mostrar contraseña"
+          >
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div class="gr-input-error d-none" data-error-for="password"></div>
+
+        <label class="gr-form-label" for="invite-password-confirm"
+          >Confirmar contraseña</label
+        >
+        <div class="gr-input-wrap">
+          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <input
+            type="password"
+            id="invite-password-confirm"
+            class="gr-input gr-input--pad-right"
+            placeholder="Repetí tu contraseña"
+            required
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="gr-input-eye"
+            aria-label="Mostrar confirmación"
+          >
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div
+          class="gr-input-error d-none"
+          data-error-for="passwordConfirmation"
+        ></div>
+
+        <div class="gr-accept-invite__terms">
+          <label class="gr-accept-invite__checkbox-label">
+            <input type="checkbox" id="invite-terms" required />
+            <span class="gr-accept-invite__checkbox-custom">
+              <i class="fa-solid fa-check"></i>
+            </span>
+            <span>
+              He leído y acepto los
+              <a
+                href="/docs/terminos-y-condiciones"
+                target="_blank"
+                rel="noopener"
+                >Términos y Condiciones</a
+              >
+            </span>
+          </label>
+          <div class="gr-input-error d-none" data-error-for="acceptTerms"></div>
+        </div>
+
+        <button type="submit" class="gr-btn-primary w-100" id="btn-activar">
+          <span id="btn-activar-texto">Activar mi cuenta</span>
+          <span id="btn-activar-loading" class="d-none">
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span
+            >Activando...
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

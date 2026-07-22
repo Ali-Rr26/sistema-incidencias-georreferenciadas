@@ -32,7 +32,7 @@ class UpdateUserRequest extends FormRequest
             return false;
         }
 
-        if ($user->isOrganizationAdmin()) {
+        if (! $user->isSystemAdmin()) {
             // Cannot assign administrative roles (admin_sistema, operador_sistema)
             if ($this->has('role_id')) {
                 $roleId = $this->input('role_id');
@@ -64,13 +64,17 @@ class UpdateUserRequest extends FormRequest
                 'email',
                 Rule::unique('users', 'email')->ignore($this->route('user')),
             ],
-            'password' => 'nullable|string|min:8|regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])/',
+            'password' => 'nullable|string|min:8',
             'role_id' => 'sometimes|integer|exists:roles,id',
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
             'phone' => 'nullable|string|max:50',
-            'avatar' => 'nullable|array',
+            // Avatar handling: the user form sends multipart when a new avatar
+            // is selected, OR a `_delete_avatar=true` flag when removing the
+            // existing one. Both are processed by UserController::update.
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:'.User::AVATAR_MAX_KB,
+            '_delete_avatar' => 'nullable|boolean',
         ];
     }
 
@@ -80,7 +84,9 @@ class UpdateUserRequest extends FormRequest
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
-            'password.regex' => 'La contraseña debe contener: mayúscula (A-Z), minúscula (a-z) y dígito (0-9)',
+            'avatar.image' => 'El archivo debe ser una imagen válida.',
+            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
+            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
         ];
     }
 }

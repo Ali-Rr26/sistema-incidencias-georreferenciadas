@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Services\AssignmentService;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Notifications\Models\Notification;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
@@ -155,6 +157,45 @@ it('removes an existing assignment via unassign', function (): void {
     $this->service->unassign($this->incident, $assignmentId);
 
     expect(DB::table('assignments')->where('incident_id', $this->incident->id)->count())->toBe(0);
+});
+
+it('fires the AssignmentNotificationObserver so the assignee gets a notification', function (): void {
+    // Regression: the service used to call $incident->assignedUsers()
+    // ->attach($userId, ['assignment_role' => $role]) which performs a
+    // raw INSERT on the pivot table and therefore does NOT dispatch
+    // Eloquent's `created` event on the Assignment model. The
+    // observer listens for `created` and never fired, so the operator
+    // was assigned in the DB but received no notification. The fix was
+    // to use Assignment::create([...]) directly; this test pins the
+    // contract end-to-end so a future "let's just go back to attach()"
+    // refactor would fail the suite immediately.
+    expect(Notification::count())->toBe(0);
+
+    $this->service->assign($this->incident, $this->alice->id, 'responsable');
+
+    $notification = Notification::where('user_id', $this->alice->id)
+        ->where('incident_id', $this->incident->id)
+        ->where('type', 'assigned')
+        ->first();
+    expect($notification)->not->toBeNull();
+    expect($notification->message)->toContain('responsable');
+});
+
+it('fires the observer for apoyo too, not just responsable', function (): void {
+    // Triangulation of the production bug: the user reported
+    // notifications arriving for responsable but not for apoyo. Root
+    // cause was the same attach() path issue; the fix is also covered
+    // here. Pin both roles so a future regression cannot hide behind
+    // the "responsable works" symptom.
+    $this->service->assign($this->incident, $this->alice->id, 'apoyo');
+
+    $notification = Notification::where('user_id', $this->alice->id)
+        ->where('incident_id', $this->incident->id)
+        ->where('type', 'assigned')
+        ->first();
+    expect($notification)->not->toBeNull();
+    expect($notification->message)->toContain('apoyo');
+    expect($notification->message)->not->toContain('responsable');
 });
 
 it('rejects unassign for an unknown assignment id', function (): void {

@@ -4,12 +4,16 @@ use App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
 use App\Domains\Comments\Http\CommentController;
+use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\Controllers\AssignmentController;
+use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
+use App\Domains\Incidents\Http\MapFilterController;
+use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -27,12 +31,20 @@ Route::post('/register', [RegisterController::class, 'register'])->middleware('t
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
+// Invitation acceptance — public (no auth required), rate-limited
+Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
+    ->middleware('throttle:invitations');
+
 Route::middleware('jwt')->group(function () {
 
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Avatar handling is owned by PUT /users/{user} now (avatar file or
+    // `_delete_avatar` flag in the same FormData/JSON payload) — see
+    // UserController::update and UpdateUserRequest.
 
     // Operator tracking
     Route::post('/operator/location', [OperatorLocationController::class, 'update']);
@@ -41,11 +53,16 @@ Route::middleware('jwt')->group(function () {
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
+    Route::get('incidents/exportar', ExportIncidenciasController::class);
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
     Route::post('incidents/{incident}/release', [IncidentWorkflowController::class, 'release'])->where('incident', '\d+')->middleware('can:release,incident');
     Route::put('incidents/{incident}/estado', [IncidentController::class, 'updateStatus'])->where('incident', '\d+');
     Route::apiResource('incidents', IncidentController::class)->where(['incident' => '\d+']);
     Route::apiResource('incidents.comments', CommentController::class)->shallow();
+
+    // Comment images (nested under comments for image CRUD) — inherits jwt group middleware
+    Route::post('/comments/{comment}/images', [CommentImageController::class, 'store']);
+    Route::delete('/comments/{comment}/images/{image}', [CommentImageController::class, 'destroy']);
 
     // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
     // Explicit named routes instead of `apiResource` because we only expose
@@ -68,6 +85,7 @@ Route::middleware('jwt')->group(function () {
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
 
     // Catálogos
+    Route::get('map/filters', MapFilterController::class);
     Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);

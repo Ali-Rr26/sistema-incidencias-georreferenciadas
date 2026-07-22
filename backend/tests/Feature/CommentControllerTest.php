@@ -134,6 +134,30 @@ it('lists comments for an incident', function (): void {
     $response->assertJsonCount(3, 'data');
 });
 
+it('lists top level comments and nests replies without duplicating at root level', function (): void {
+    $parent = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Parent comment',
+    ]);
+
+    $child = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Child reply',
+        'parent_id' => $parent->id,
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->getJson("/api/incidents/{$this->incident->id}/comments");
+
+    $response->assertOk();
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.id', $parent->id);
+    $response->assertJsonPath('data.0.replies.0.id', $child->id);
+});
+
 it('shows a single comment', function (): void {
     $comment = Comment::create([
         'incident_id' => $this->incident->id,
@@ -213,9 +237,14 @@ it('R-15 denies comment creation for user without comments.create permission', f
 // (Existing "lists comments for an incident" test covers the allow path.)
 
 it('R-16 denies comment listing for user without comments.view permission', function (): void {
-    // operador_organizacion (role 4) has comments.create but NOT comments.view.
-    $operator = User::factory()->create(['role_id' => 4]);
-    $this->actingAs($operator);
+    // Fresh role with no pivot rows — mirrors R-15's seam. The original
+    // description referenced operador_organizacion (role 4), but that role
+    // now grants comments.view per RolePermissionSeeder, which would let
+    // the index route return 200. Use a no-permission role so the gate
+    // truly denies comments.view without ambiguity.
+    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
+    $this->actingAs($stranger);
 
     // Real comment so the 0-row case doesn't trivially satisfy assertForbidden.
     Comment::create([
@@ -428,4 +457,104 @@ it('R-18 allows comment owner to delete their own comment without comments.delet
 
     $response->assertStatus(204);
     $this->assertSoftDeleted('comments', ['id' => $comment->id]);
+});
+
+it('creates a reply comment with parent_id and returns 201', function (): void {
+    $parent = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Parent comment',
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'Reply comment',
+            'parent_id' => $parent->id,
+        ]);
+
+    $response->assertStatus(201);
+    $response->assertJsonPath('data.parent_id', $parent->id);
+    $response->assertJsonPath('data.message', 'Reply comment');
+});
+
+it('allows second-level reply (depth 2)', function (): void {
+    $parent = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Parent comment',
+    ]);
+    $reply = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'First-level reply',
+        'parent_id' => $parent->id,
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'Second-level reply',
+            'parent_id' => $reply->id,
+        ]);
+
+    $response->assertStatus(201);
+    $response->assertJsonPath('data.parent_id', $reply->id);
+});
+
+it('rejects third-level reply (depth 3) with 422', function (): void {
+    $parent = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Parent comment',
+    ]);
+    $reply = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'First-level reply',
+        'parent_id' => $parent->id,
+    ]);
+    $reply2 = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Second-level reply',
+        'parent_id' => $reply->id,
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'Third-level reply',
+            'parent_id' => $reply2->id,
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertSee('No se puede responder a un comentario de segundo nivel');
+});
+
+it('rejects parent_id from different incident with 422', function (): void {
+    $otherIncident = Incident::create([
+        'incident_category_id' => $this->incident->incident_category_id,
+        'organization_id' => $this->incident->organization_id,
+        'user_id' => $this->user->id,
+        'location_id' => $this->incident->location_id,
+        'title' => 'Other Incident',
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_MEDIUM,
+    ]);
+    $otherComment = Comment::create([
+        'incident_id' => $otherIncident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Other incident comment',
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'Cross-incident reply',
+            'parent_id' => $otherComment->id,
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertSee('pertenece a otra incidencia');
 });

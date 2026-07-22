@@ -1,3 +1,5 @@
+import template from './feed.component.html?raw';
+import style from './feed.component.css?raw';
 import {
   escapeHtml,
   timeAgo,
@@ -28,7 +30,7 @@ function renderCard(inc) {
   const avatarUrl = resolveAvatar(inc.user?.avatar);
   const avatarHtml = avatarUrl
     ? `<img class="ig-avatar-img" src="${avatarUrl}" alt="${userName}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" />`
-    : `<div class="feed-avatar" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#a06bf5,#6a5cf3);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials}</div>`;
+    : `<button type="button" class="feed-avatar feed-avatar-btn" aria-label="Perfil de ${userName}" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#a06bf5,#6a5cf3);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:0;padding:0;cursor:pointer">${initials}</button>`;
 
   const priorityLabel = PRIORITY_LABEL[inc.priority] ?? inc.priority ?? 'Baja';
   const priorityClass = inc.priority ?? 'low';
@@ -85,8 +87,8 @@ function renderCard(inc) {
   let coordsHtml = '';
   if (geomCoords) {
     coordsHtml = `
-      <div style="position:absolute;left:16px;bottom:12px;background:rgba(255,255,255,.9);border-radius:8px;padding:6px 11px;font-size:11.5px;color:#6b7180;display:flex;align-items:center;gap:6px;backdrop-filter:blur(4px)">
-        <i class="fa-solid fa-location-crosshairs" style="color:#5a6ff0;font-size:11px"></i>
+      <div class="position-absolute bottom-0 start-0 m-2 bg-white bg-opacity-90 rounded-2 px-2 py-1 d-flex align-items-center gap-1" style="font-size:11px;color:#6b7180;backdrop-filter:blur(4px)">
+        <i class="fa-solid fa-location-crosshairs" style="color:#5a6ff0;font-size:10px"></i>
         ${geomCoords.lat.toFixed(4)}, ${geomCoords.lng.toFixed(4)}
       </div>
     `;
@@ -95,17 +97,16 @@ function renderCard(inc) {
   let mediaHtml = '';
   if (inc.thumbnail_url) {
     mediaHtml = `
-      <div class="feed-card-preview" style="margin:0 18px 14px;height:180px;border-radius:12px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
-        <img src="${inc.thumbnail_url}" style="width:100%;height:100%;object-fit:cover;" />
+      <div class="feed-card-preview rounded-3 overflow-hidden position-relative mx-3 mb-3" style="height:180px">
+        <img src="${inc.thumbnail_url}" class="w-100 h-100" style="object-fit:cover" />
         ${coordsHtml}
       </div>
     `;
   } else if (geomCoords) {
-    // Real Leaflet minimap — initMiniMaps() hydrates it after DOM insert
     mediaHtml = `
-      <div id="feed-mm-${inc.id}" class="feed-minimap"
+      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3"
            data-lat="${geomCoords.lat}" data-lng="${geomCoords.lng}"
-           style="margin:0 18px 14px;height:180px;border-radius:12px;overflow:hidden;position:relative;background:#e8ecf1">
+           style="height:180px;background:#e8ecf1">
         ${coordsHtml}
       </div>
     `;
@@ -113,26 +114,30 @@ function renderCard(inc) {
 
   const commentCount = inc.comments_count ?? 0;
 
+  // Status badge — soft-fill chip
+  const statusBadgeClass = `feed-status-chip feed-status-${inc.status || 'default'}`;
+
   return `
-    <div class="feed-card feed-priority-${priorityClass}" data-route="/feed/${inc.id}" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(20,20,50,.04);border:1px solid #eef0f5;margin-bottom:16px;cursor:pointer">
-      <div class="feed-card-head" style="display:flex;align-items:center;gap:12px;padding:16px 18px 12px">
+    <div class="card feed-card feed-priority-${priorityClass} mb-3" data-route="/feed/${inc.id}" tabindex="0" role="link" aria-label="Ver detalle de ${escapeHtml(inc.title || 'Sin título')}" style="cursor:pointer;background-color:#ffffff!important">
+      <div class="card-header bg-transparent d-flex align-items-center gap-3 py-3 px-3">
         ${avatarHtml}
-        <div class="feed-card-user" style="flex:1">
-          <div class="feed-card-name" style="font-size:14px;font-weight:700;color:#23283b">${escapeHtml(userName)}</div>
-          <div style="font-size:12px;color:#b3b8c6;display:flex;align-items:center;gap:6px;margin-top:1px">
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-bold" style="font-size:14px;color:#23283b">${escapeHtml(userName)}</div>
+          <div class="text-muted d-flex align-items-center gap-1" style="font-size:12px">
             <i class="fa-solid fa-location-dot" style="color:#a06bf5;font-size:10px"></i>
             ${escapeHtml(locName) || 'Ubicación no especificada'} &nbsp;·&nbsp; ${tiempo}
           </div>
         </div>
-        <span class="feed-status-badge feed-status-${inc.status}">${statusLabel}</span>
-        <span class="feed-priority-badge feed-priority-${priorityClass}" style="margin-left: 8px;">● ${priorityLabel}</span>
+        <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+        <span class="badge feed-priority-badge feed-priority-${priorityClass}">● ${priorityLabel}</span>
       </div>
-      
-      <div class="feed-card-body" style="padding:0 18px 12px">
-        <div style="font-size:15px;font-weight:700;color:#23283b;margin-bottom:5px">
-          ${escapeHtml(inc.title || 'Sin título')} · <span style="font-size:13px;color:#a3a8b8;font-weight:400">INC-${String(inc.id).padStart(4, '0')}</span>
+
+      <div class="card-body pt-0 pb-2 px-3">
+        <div class="fw-bold mb-1" style="font-size:15px;color:#23283b">
+          ${escapeHtml(inc.title || 'Sin título')}
+          <span class="fw-normal text-muted" style="font-size:13px">INC-${String(inc.id).padStart(4, '0')}</span>
         </div>
-        <div class="feed-card-desc" style="font-size:13.5px;color:#5b6172;line-height:1.55;margin-bottom:10px">
+        <div class="feed-card-desc text-secondary mb-2" style="font-size:13.5px;line-height:1.55">
           ${escapeHtml(descText)}
         </div>
         ${resolutionHtml}
@@ -141,24 +146,21 @@ function renderCard(inc) {
 
       ${mediaHtml}
 
-      <div class="feed-card-actions" style="display:flex;align-items:center;padding:10px 18px 14px;border-top:1px solid #f5f6fa">
-        <div style="display:flex;gap:4px;flex:1">
-          <button style="height:36px;border-radius:22px;border:1px solid #eef0f5;background:#fff;padding:0 14px;font-size:13px;font-weight:500;color:#6b7180;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px" onclick="event.stopPropagation()">
-            <i class="fa-regular fa-comment" style="font-size:13px;color:#a3a8b8"></i>
-            ${commentCount} ${commentCount === 1 ? 'comentario' : 'comentarios'}
+      <div class="card-footer bg-transparent d-flex align-items-center gap-2 px-3 py-2 feed-card-footer">
+        <div class="d-flex gap-1 flex-grow-1 flex-wrap">
+          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
+            <i class="fa-regular fa-comment me-1"></i>
+            ${commentCount}
           </button>
-          <button style="height:36px;border-radius:22px;border:1px solid #eef0f5;background:#fff;padding:0 14px;font-size:13px;font-weight:500;color:#6b7180;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px" onclick="event.stopPropagation()">
-            <i class="fa-regular fa-eye" style="font-size:13px;color:#a3a8b8"></i>
-            Seguir
+          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
+            <i class="fa-regular fa-eye me-1"></i>Seguir
           </button>
-          <button style="height:36px;border-radius:22px;border:1px solid #eef0f5;background:#fff;padding:0 14px;font-size:13px;font-weight:500;color:#6b7180;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px" onclick="event.stopPropagation()">
-            <i class="fa-solid fa-triangle-exclamation" style="font-size:12px;color:#a3a8b8"></i>
-            Yo también reporto
+          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>Yo también reporto
           </button>
         </div>
-        <button class="feed-action-btn" data-route="/feed/${inc.id}" title="Ver detalle" style="height:36px;border-radius:22px;border:none;background:linear-gradient(118deg,#6a5cf3,#a06bf5);padding:0 18px;font-size:13px;font-weight:600;color:#fff;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 6px 14px -6px rgba(106,92,243,.55)">
-          <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:11px"></i>
-          Ver detalle
+        <button class="feed-action-btn btn btn-primary btn-sm rounded-pill" data-route="/feed/${inc.id}" title="Ver detalle" style="white-space:nowrap" onclick="event.stopPropagation()">
+          <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Ver detalle
         </button>
       </div>
     </div>
@@ -168,7 +170,9 @@ function renderCard(inc) {
 // ── Mini-map initializer ──────────────────────────────────
 
 async function initMiniMaps() {
-  const containers = document.querySelectorAll('.feed-minimap:not([data-map-init])');
+  const containers = document.querySelectorAll(
+    '.feed-minimap:not([data-map-init])',
+  );
   if (!containers.length) return;
 
   try {
@@ -221,13 +225,14 @@ const FILTERS = 'feed-filters';
 const SKELETON = 'feed-cargando';
 const VACIO = 'feed-vacio';
 const SENTINEL = 'feed-sentinel';
+const SCROLL_REGION = 'feed-scroll-region';
 const CHIP_SELECTOR = '.feed-chip';
 
 // ── Component ──────────────────────────────────────────────
 
 export default {
-  templateUrl: 'app/feed/feed.component.html',
-  styleUrl: 'app/feed/feed.component.css',
+  template,
+  style,
 
   async onInit() {
     let paginaActual = 1;
@@ -266,11 +271,27 @@ export default {
     // onclick="window.location.hash=..." inline handlers were removed
     // in favor of this single delegated listener — it works for any
     // card appended later by infinite scroll without re-binding.
+    // Keyboard parity: Enter / Space on the card root (or any non-button
+    // descendant) triggers the same navigation. Internal buttons still
+    // fire their own native handlers.
+    function navigateFromTarget(target, originalEvent) {
+      if (!target) return;
+      originalEvent.preventDefault();
+      router.navigate(target.dataset.route);
+    }
+
     feedList.addEventListener('click', (e) => {
       const target = e.target.closest('[data-route]');
       if (!target) return;
-      e.preventDefault();
-      router.navigate(target.dataset.route);
+      navigateFromTarget(target, e);
+    });
+
+    feedList.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const target = e.target.closest('[data-route]');
+      if (!target) return;
+      if (e.target.closest('button')) return;
+      navigateFromTarget(target, e);
     });
 
     // ── Fetch ───────────────────────────────────────────────
@@ -350,6 +371,21 @@ export default {
       const sentinel = document.getElementById(SENTINEL);
       if (!sentinel || sentinel.classList.contains('done')) return;
 
+      // The feed-scroll-region is the only scrollable area when the
+      // feed is mounted (we force `body.feed-view { overflow: hidden }`
+      // in the component CSS to disable the app-shell-main scroll).
+      // Scope the IntersectionObserver to it so the infinite-scroll
+      // trigger fires when the sentinel reaches its bottom. Guard
+      // against a missing root so we don't silently fall back to the
+      // viewport (REL-1 fix).
+      const root = document.getElementById(SCROLL_REGION);
+      if (!root) {
+        console.warn(
+          '[feed] #feed-scroll-region not found, skipping infinite scroll',
+        );
+        return;
+      }
+
       observer = new IntersectionObserver(
         (entries) => {
           if (
@@ -361,7 +397,7 @@ export default {
             fetchIncidencias(paginaActual + 1, true);
           }
         },
-        { rootMargin: '200px' },
+        { root, rootMargin: '0px 0px 200px 0px' },
       );
 
       observer.observe(sentinel);

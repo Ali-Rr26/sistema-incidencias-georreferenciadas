@@ -1,8 +1,14 @@
 # ADR-0006: Frankenphp + Laravel Octane
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0007](./0007-migrate-octane-swoole.md)
 - **Date:** 2026-07-07
+- **Superseded on:** 2026-07-21
 - **Deciders:** Equipo de Proyecto
+
+> ⚠️ This ADR documents the state of the project as of July 7, 2026 and is preserved
+> here for historical reference. The current runtime is Swoole under Octane; see
+> [ADR-0007](./0007-migrate-octane-swoole.md) for the supersession rationale and
+> what changed since.
 
 ## Context and Problem Statement
 

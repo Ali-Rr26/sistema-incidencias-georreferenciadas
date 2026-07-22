@@ -1,7 +1,12 @@
 <?php
 
 use App\Storage\StorageProxyController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', fn () => response()->json([
     'app' => 'Sistema Incidencias API',
@@ -16,4 +21,11 @@ Route::get('/', fn () => response()->json([
  * Ej: /storage/images--42--uuid--jpg → key: images/42/uuid.jpg
  */
 Route::get('/storage/{path}', [StorageProxyController::class, 'serve'])
-    ->where('path', '.*');
+    ->where('path', '.*')
+    ->withoutMiddleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+    ]);
