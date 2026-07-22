@@ -26,11 +26,16 @@
   display: flex;
   align-items: center;
   padding: 0 18px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .composer-placeholder {
   font-size: 14px;
   color: #b3b8c6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Composer gradient button (custom gradient Bootstrap can't do) --- */
