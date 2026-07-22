@@ -167,8 +167,7 @@ export default {
 
       // Estado loading
       submitBtn.disabled = true;
-      submitBtn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Ingresando...';
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Ingresando...';
 
       try {
         await auth.login(emailInput.value, passwordInput.value);
@@ -216,9 +215,7 @@ export default {
       email: registerForm.querySelector('#register-email').value.trim(),
       phone: registerForm.querySelector('#phone').value.trim(),
       password: registerForm.querySelector('#register-password').value,
-      password_confirmation: registerForm.querySelector(
-        '#password_confirmation',
-      ).value,
+      password_confirmation: registerForm.querySelector('#password_confirmation').value,
     };
 
     this._clearFieldErrors();
@@ -232,8 +229,7 @@ export default {
     const submitBtn = registerForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     const originalLabel = submitBtn.textContent;
-    submitBtn.innerHTML =
-      '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Creando...';
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Creando...';
 
     // Strip empty optional phone so backend receives null instead of ''.
     const wirePayload = { ...payload };
@@ -294,8 +290,7 @@ export default {
 
     googleBtn.disabled = true;
     const originalLabel = googleBtn.innerHTML;
-    googleBtn.innerHTML =
-      '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Conectando...';
+    googleBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Conectando...';
 
     try {
       // Step 1: dynamic import — the lazy-load. In tests, vi.mock
