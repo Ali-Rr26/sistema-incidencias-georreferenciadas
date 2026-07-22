@@ -16,16 +16,22 @@ class MenuSeeder extends Seeder
      * Rutas alineadas con frontend/app/app.js. Padres de sección tienen
      * `route => null` (no son navegables, solo agrupan hijos).
      *
-     * IDs con huecos: 5 era Asignaciones (borrado paso 06),
+     * IDs con huecos: 4 era "Nueva Incidencia" (removida — el back-office
+     *                  ya tiene su punto de entrada por otra vía),
+     *                  5 era Asignaciones (borrado paso 06),
      *                  9 era Permisos (borrado paso 05-A),
      *                  10 era Menús (sin contraparte, removido),
+     *                  15 era Notificaciones (removida — el bell-icon del
+     *                  header sigue dando acceso a /notificaciones, no hace
+     *                  falta fila duplicada en el sidebar),
      *                  20 era el "Mapa" espejo ciudadano (/mapa-ciudadano) —
      *                  removido al fusionar los dos mapas en un solo endpoint
      *                  + componente (ver comentario en la entrada 19).
      *
-     * 4 (Nueva Incidencia) y 15 (Notificaciones) re-introducidos como filas
-     * visibles del menú (idempotentes). Originalmente habían sido removidas
-     * del sidebar — los tests de MenuApiTest ahora requieren su presencia.
+     * Los permissions `incidents.manage` y `notifications.update` SIGUEN
+     * vivos en PermissionSeeder / RolePermissionSeeder aunque no haya fila
+     * de menú aquí que los consuma — la lógica de negocio (controllers,
+     * gates) los usa aunque no estén expuestos en el sidebar.
      *
      * `permission` acepta un solo spec {resource, action} o una lista de
      * specs — una lista asigna varios permisos al mismo menú (OR: alcanza
@@ -38,14 +44,6 @@ class MenuSeeder extends Seeder
         // Incidencias group (parent header, no navegable)
         2 => ['name' => 'Incidencias',            'route' => null,                     'icon' => 'map-pin',          'parent_id' => null, 'permission' => null],
         3 => ['name' => 'Lista de Incidencias',   'route' => '/incidencias',           'icon' => 'list',             'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'view']],
-        // menu_id 4 — back-office create entry. Re-introduced as a sidebar
-        // row so /incidencias/crear appears next to "Lista de Incidencias"
-        // for staff with incidents.manage. The gate is incidents.manage
-        // (NOT incidents.create) on purpose — see test
-        // `menu id 4 (Nueva Incidencia) is gated by incidents.manage,
-        // not incidents.create`. menu_id 17 (Reportar) is a fully separate
-        // citizen entry under feed.view — never conflate the two.
-        4 => ['name' => 'Nueva Incidencia',       'route' => '/incidencias/crear',    'icon' => 'square-plus',      'parent_id' => 2,    'permission' => ['resource' => 'incidents',           'action' => 'manage']],
         // Gestión group (admin area, parent header)
         7 => ['name' => 'Gestión',                'route' => null,                     'icon' => 'shield-halved',    'parent_id' => null, 'permission' => null],
         8 => ['name' => 'Usuarios',               'route' => '/usuarios',              'icon' => 'user',             'parent_id' => 7,    'permission' => ['resource' => 'users',               'action' => 'view']],
@@ -55,11 +53,6 @@ class MenuSeeder extends Seeder
         11 => ['name' => 'Ubicaciones',           'route' => '/localizaciones',        'icon' => 'map',              'parent_id' => 10,   'permission' => ['resource' => 'locations',           'action' => 'view']],
         12 => ['name' => 'Categorías',            'route' => '/categorias',            'icon' => 'tag',              'parent_id' => 10,   'permission' => ['resource' => 'incident-categories', 'action' => 'view']],
         13 => ['name' => 'Organizaciones',        'route' => '/organizaciones',        'icon' => 'building',         'parent_id' => 10,   'permission' => ['resource' => 'organizations',       'action' => 'view']],
-        // Notificaciones — re-introduced. Originally removed in favor of
-        // the bell-icon header, but MenuApiTest now pins the menu row as the
-        // visible entry for back-office roles. Operator_organizacion relies
-        // on notifications.update to surface it (the "leak fix" test).
-        15 => ['name' => 'Notificaciones',        'route' => '/notificaciones',        'icon' => 'bell',             'parent_id' => null, 'permission' => ['resource' => 'notifications',       'action' => 'update']],
         // Citizen entries (no parent header, flat at the root)
         16 => ['name' => 'Inicio',                'route' => '/feed',                  'icon' => 'house',            'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
         17 => ['name' => 'Reportar',              'route' => '/feed/crear',            'icon' => 'circle-plus',      'parent_id' => null, 'permission' => ['resource' => 'feed',                'action' => 'view']],
