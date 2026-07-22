@@ -34,9 +34,13 @@ class LocationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $locations = $this->locations->paginate(
-            $request->only(['search', 'level', 'parent_id', 'per_page']),
-        );
+        $filters = $request->only(['search', 'level', 'parent_id', 'per_page']);
+
+        if ($filters['level'] && !$filters['search'] && !isset($filters['per_page'])) {
+            $filters['per_page'] = 500;
+        }
+
+        $locations = $this->locations->paginate($filters);
 
         return (new LocationCollection($locations))->response();
     }
