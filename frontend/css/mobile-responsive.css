@@ -410,48 +410,61 @@ a:hover {
 /* On mobile, Leaflet maps (z-index 100-800+) must NOT overlay sidebar (150)
    or header (50). Force all Leaflet layers BELOW navigation. */
 @media (max-width: 767.98px) {
+  /* Feed minimap containers — prevent Leaflet from escaping */
+  .feed-minimap {
+    position: relative;
+    z-index: 1 !important;
+    overflow: hidden;
+  }
+
+  .feed-minimap .leaflet-container {
+    z-index: 1 !important;
+  }
+
   /* Leaflet main container — lower than sidebar backdrop (140) */
   .leaflet-container {
+    position: relative;
     z-index: 10 !important;
   }
 
   /* All Leaflet panes */
   .leaflet-pane {
-    z-index: 10 !important;
+    z-index: auto !important;
   }
 
   .leaflet-map-pane {
-    z-index: 10 !important;
+    z-index: auto !important;
   }
 
   .leaflet-tile-pane {
-    z-index: 1 !important;
+    z-index: auto !important;
   }
 
   .leaflet-overlay-pane {
-    z-index: 2 !important;
+    z-index: auto !important;
   }
 
   .leaflet-shadow-pane {
-    z-index: 3 !important;
+    z-index: auto !important;
   }
 
   .leaflet-marker-pane {
-    z-index: 5 !important;
+    z-index: auto !important;
   }
 
   .leaflet-tooltip-pane {
-    z-index: 10 !important;
+    z-index: auto !important;
   }
 
   .leaflet-popup-pane {
-    z-index: 11 !important;
+    z-index: auto !important;
   }
 
   /* Custom map wrappers */
   .ici-map,
   #map,
   .mp-canvas {
+    position: relative;
     z-index: 10 !important;
   }
 }
