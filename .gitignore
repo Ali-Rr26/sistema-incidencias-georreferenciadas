@@ -28,3 +28,6 @@ frontend/node_modules/.package-lock.json
 
 # FreeDash template — kept locally for reference, not tracked
 plantilla_Frontend/FreeDash-lite-master/
+
+# -- foglamp local scan --
+.foglamp/
