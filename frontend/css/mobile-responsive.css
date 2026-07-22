@@ -366,7 +366,27 @@ a:hover {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   15. PRINT STYLES
+   15. MAPS Z-INDEX FIX (mobile sidebar overlay)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* When mobile sidebar opens, lower all map layers so sidebar (z-index: 150)
+   stays on top. Leaflet uses z-index 100-800+, so we force map panes below
+   the sidebar backdrop (140) + sidebar (150). */
+@media (max-width: 767.98px) {
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-map-pane,
+  .app-shell-sidebar.is-open ~ .app-shell-main .ici-map,
+  .app-shell-sidebar.is-open ~ .app-shell-main #map {
+    z-index: 10 !important;
+  }
+
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-pane,
+  .app-shell-sidebar.is-open ~ .app-shell-main .leaflet-popup {
+    z-index: 10 !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   16. PRINT STYLES
    ───────────────────────────────────────────────────────────────────────── */
 
 @media print {
