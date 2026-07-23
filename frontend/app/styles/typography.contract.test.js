@@ -76,6 +76,31 @@ describe('typography stylesheet contract', () => {
     expect(dashboardCss).not.toMatch(/\.gr-breadcrumb\s*\{/);
   });
 
+  it('form-check radios escape the generic input min-height stretch', () => {
+    // Regression: the assignment role radios in the incidencias detail page
+    // use <input class="form-check-input" type="radio">. Bootstrap renders them
+    // as a 1em square, but the mobile-first `input` rule above sets
+    // `min-height: clamp(40px, 10vw, 44px)`, which stretched the 16px-wide
+    // radio into a 40-44px vertical ellipse. The anti-stretch block must
+    // cover radios explicitly with a square 1em reset.
+    const radioBlock = responsiveCss.match(
+      /\.form-check-input\[type="radio"\]\s*\{([^}]*)\}/,
+    );
+    expect(
+      radioBlock,
+      'expected a .form-check-input[type="radio"] reset block in mobile-responsive.css',
+    ).not.toBeNull();
+
+    const body = radioBlock[1];
+    expect(body).toMatch(/min-height:\s*0\b/);
+    expect(body).toMatch(/min-width:\s*0\b/);
+    expect(body).toMatch(/flex-shrink:\s*0\b/);
+    // 1em × 1em preserves the Bootstrap default; the global input rule sets
+    // font-size: 16px !important so this resolves to a 16px square.
+    expect(body).toMatch(/width:\s*1em\b/);
+    expect(body).toMatch(/height:\s*1em\b/);
+  });
+
   it('copies the responsive stylesheet into a production build', () => {
     buildOutDir = mkdtempSync(resolve(tmpdir(), 'typography-build-'));
 

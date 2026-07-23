@@ -630,6 +630,18 @@ td .form-check-input,
   flex-shrink: 0 !important;
 }
 
+/* Restore Bootstrap's 1em square shape for radios (assignment role selectors)
+   — the global `input` rule above sets `min-height: clamp(40px, 10vw, 44px)`,
+   which would otherwise stretch a 1em radio into a 40–44px vertical ellipse.
+   Higher selector specificity than the global rule, so no `!important` needed. */
+.form-check-input[type="radio"] {
+  width: 1em;
+  height: 1em;
+  min-width: 0;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    18. PRINT STYLES
    ───────────────────────────────────────────────────────────────────────── */
