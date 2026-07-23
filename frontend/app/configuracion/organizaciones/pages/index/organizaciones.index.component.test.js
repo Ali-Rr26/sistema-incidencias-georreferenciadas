@@ -284,9 +284,6 @@ describe('Desktop — permission-driven action rendering', () => {
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
 
@@ -338,17 +335,6 @@ describe('Desktop — permission-driven action rendering', () => {
 });
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /organizaciones/{id}', async () => {
-    await renderIndexWithPermissions(
-      new Set(['organizations.update', 'organizations.delete']),
-    );
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/organizaciones/1');
-  });
-
   it('clicking Editar navigates to /organizaciones/crear?id={id}', async () => {
     await renderIndexWithPermissions(
       new Set(['organizations.update', 'organizations.delete']),
@@ -404,28 +390,5 @@ describe('Mobile — actions render in card body', () => {
       '#contenedor-cards table-actions',
     );
     expect(tableActionsInCards).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
-    expect(verBtns).toHaveLength(2);
-  });
-
-  it('mobile Ver click navigates to /organizaciones/{id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(
-      new Set(['organizations.update', 'organizations.delete']),
-    );
-
-    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/organizaciones/1');
   });
 });

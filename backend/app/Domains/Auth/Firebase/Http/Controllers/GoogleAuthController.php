@@ -54,6 +54,17 @@ class GoogleAuthController
             return response()->json($e->toResponse(), Response::HTTP_UNAUTHORIZED);
         } catch (AuthenticationException $e) {
             return response()->json($e->toResponse(), Response::HTTP_UNAUTHORIZED);
+        } catch (\Throwable $e) {
+            Log::error('auth.google.unexpected_error', [
+                'exception' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Error interno al procesar la autenticación con Google.',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         /** @var User $user */

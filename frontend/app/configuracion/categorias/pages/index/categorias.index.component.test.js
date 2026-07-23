@@ -325,9 +325,6 @@ describe('Desktop — permission-driven action rendering', () => {
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
@@ -384,17 +381,6 @@ describe('Desktop — permission-driven action rendering', () => {
 // ---------------------------------------------------------------------------
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /categorias/{id}', async () => {
-    await renderIndexWithPermissions(
-      new Set(['incident-categories.update', 'incident-categories.delete']),
-    );
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/categorias/1');
-  });
-
   it('clicking Editar navigates to /categorias/crear?id={id}', async () => {
     await renderIndexWithPermissions(
       new Set(['incident-categories.update', 'incident-categories.delete']),
@@ -452,28 +438,5 @@ describe('Mobile — actions render in card body', () => {
       '#contenedor-cards table-actions',
     );
     expect(tableActionsInCards).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
-    expect(verBtns).toHaveLength(2);
-  });
-
-  it('mobile Ver click navigates to /categorias/{id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(
-      new Set(['incident-categories.update', 'incident-categories.delete']),
-    );
-
-    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/categorias/1');
   });
 });

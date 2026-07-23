@@ -36,6 +36,7 @@ beforeEach(function (): void {
 });
 
 it('rebuilds the Redis feed from PostgreSQL', function (): void {
+    config()->set('cache.feed_ttl_seconds', 86400);
     // Wipe-first pattern: FeedRebuildCommand must be authoritative, so it
     // calls Redis::del on both v2 keys before repopulating. Without this
     // expectation the Mockery facade throws BadMethodCallException because
@@ -60,14 +61,13 @@ it('rebuilds the Redis feed from PostgreSQL', function (): void {
     Redis::shouldReceive('exec')
         ->once();
 
-    // TTL on v2 keys + old key
     Redis::shouldReceive('expire')
         ->once()
-        ->with('feed:v2:items', 604800);
+        ->with('feed:v2:items', 86400);
 
     Redis::shouldReceive('expire')
         ->once()
-        ->with('feed:v2:index', 604800);
+        ->with('feed:v2:index', 86400);
 
     $this->artisan('feed:rebuild')
         ->expectsOutputToContain('Synced 1 incidents to Redis feed v2.')
