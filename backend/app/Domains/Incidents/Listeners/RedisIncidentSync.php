@@ -67,6 +67,10 @@ class RedisIncidentSync
 
             Redis::hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
             Redis::zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
+
+            $feedTtlSeconds = (int) config('cache.feed_ttl_seconds');
+            Redis::expire(self::V2_ITEMS_KEY, $feedTtlSeconds);
+            Redis::expire(self::V2_INDEX_KEY, $feedTtlSeconds);
         } catch (\Throwable $e) {
             Log::warning('Failed to sync incident to Redis', [
                 'incident_id' => $incident->id,
