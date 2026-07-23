@@ -4,28 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domains\Notifications\Observers;
 
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Notifications\Enums\NotificationType;
-use App\Domains\Notifications\Services\NotificationService;
+use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Crea notificaciones a partir de cambios en Incident.
- *
- * Eventos cubiertos:
- *  - claim (claimed_by pasa de null a un usuario) → notifica al usuario que reporta la incidencia
- *  - release (claimed_by pasa de un usuario a null) → notifica al usuario que reporta
- *  - confirm (status pasa a resolved y se asigna organización) → notifica al usuario que reportó
- *
- * Este observer NO se dispara para cambios que no afecten al dueño de la
- * incidencia. La deduplicación (60s) está dentro de NotificationService.
- */
 class IncidentNotificationObserver
 {
-    public function __construct(
-        private readonly NotificationService $service,
-    ) {}
-
     public function updated(Incident $incident): void
     {
         try {
@@ -33,7 +20,6 @@ class IncidentNotificationObserver
             $this->handleReleaseChange($incident);
             $this->handleConfirmChange($incident);
         } catch (\Throwable $e) {
-            // No queremos que un fallo de notificaciones rompa el flujo principal.
             Log::warning('IncidentNotificationObserver failed', [
                 'incident_id' => $incident->id,
                 'error' => $e->getMessage(),
@@ -47,21 +33,15 @@ class IncidentNotificationObserver
             return;
         }
 
-        $previous = $incident->getOriginal('claimed_by');
+        $previous = $incident->getRawOriginal('claimed_by');
         $current = $incident->claimed_by;
 
         if ($previous === null && $current !== null) {
-            // Claim — notifica al dueño de la incidencia
-            $owner = $incident->user;
-            if ($owner === null) {
-                return;
-            }
-            $this->service->notify(
-                user: $owner,
-                type: NotificationType::Claim,
-                message: "Tu incidencia \"{$incident->title}\" fue reclamada.",
-                incidentId: $incident->id,
-                data: ['claimed_by' => $current],
+            $this->queueNotification(
+                $incident,
+                NotificationType::Claim,
+                "Tu incidencia \"{$incident->title}\" fue reclamada.",
+                ['claimed_by' => $current],
             );
         }
     }
@@ -72,20 +52,15 @@ class IncidentNotificationObserver
             return;
         }
 
-        $previous = $incident->getOriginal('claimed_by');
+        $previous = $incident->getRawOriginal('claimed_by');
         $current = $incident->claimed_by;
 
         if ($previous !== null && $current === null) {
-            $owner = $incident->user;
-            if ($owner === null) {
-                return;
-            }
-            $this->service->notify(
-                user: $owner,
-                type: NotificationType::Assignment,
-                message: "Tu incidencia \"{$incident->title}\" fue liberada.",
-                incidentId: $incident->id,
-                data: ['released_from' => $previous],
+            $this->queueNotification(
+                $incident,
+                NotificationType::Assignment,
+                "Tu incidencia \"{$incident->title}\" fue liberada.",
+                ['released_from' => $previous],
             );
         }
     }
@@ -96,22 +71,50 @@ class IncidentNotificationObserver
             return;
         }
 
-        $previous = $incident->getOriginal('status');
-        $current = (string) $incident->status?->value;
+        $previous = (string) $incident->getRawOriginal('status');
+        $current = $incident->status;
+        $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
 
-        // "resolved" es el estado terminal — confirma la incidencia.
-        if ($previous !== 'resolved' && $current === 'resolved') {
-            $owner = $incident->user;
-            if ($owner === null) {
-                return;
-            }
-            $this->service->notify(
-                user: $owner,
-                type: NotificationType::StatusChange,
-                message: "Tu incidencia \"{$incident->title}\" fue resuelta.",
-                incidentId: $incident->id,
-                data: ['status' => 'resolved'],
+        if ($previous !== IncidentStatus::Resolved->value && $currentValue === IncidentStatus::Resolved->value) {
+            $this->queueNotification(
+                $incident,
+                NotificationType::StatusChange,
+                "Tu incidencia \"{$incident->title}\" fue resuelta.",
+                ['status' => IncidentStatus::Resolved->value],
             );
         }
+    }
+
+    private function queueNotification(
+        Incident $incident,
+        NotificationType $type,
+        string $message,
+        array $data,
+    ): void {
+        $userId = (int) $incident->user_id;
+        $incidentId = (int) $incident->id;
+
+        if ($userId <= 0 || $incidentId <= 0) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($userId, $incidentId, $type, $message, $data): void {
+            try {
+                SendIncidentNotificationJob::dispatch(
+                    $userId,
+                    $incidentId,
+                    $type->value,
+                    $message,
+                    $data,
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Failed to queue incident notification', [
+                    'incident_id' => $incidentId,
+                    'user_id' => $userId,
+                    'type' => $type->value,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
     }
 }
