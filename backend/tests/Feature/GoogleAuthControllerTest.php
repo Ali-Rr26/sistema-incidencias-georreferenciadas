@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Auth\Firebase\Contracts\FirebaseTokenVerifier;
 use App\Domains\Auth\Firebase\Services\FakeFirebaseTokenVerifier;
+use App\Domains\Auth\Firebase\Services\GoogleAuthService;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
@@ -280,9 +281,9 @@ it('R13b (link path): linking to an existing verified email never escalates that
 it('logs unexpected exceptions and returns 500 when an unhandled error occurs', function (): void {
     Log::spy();
 
-    $this->mock(\App\Domains\Auth\Firebase\Services\GoogleAuthService::class)
+    $this->mock(GoogleAuthService::class)
         ->shouldReceive('login')
-        ->andThrow(new \RuntimeException('Unexpected database or system error'));
+        ->andThrow(new RuntimeException('Unexpected database or system error'));
 
     $response = $this->postJson('/api/auth/google', [
         'id_token' => 'valid-format-token',
