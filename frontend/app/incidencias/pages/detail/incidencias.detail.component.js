@@ -120,16 +120,22 @@ function renderizarIncidencia(inc) {
   document.getElementById('detalle-content').classList.toggle('d-none', false);
 
   // Plain text fields.
-  document.getElementById('detalle-titulo').textContent = inc.title ?? 'Sin título';
-  document.getElementById('detalle-breadcrumb').textContent = inc.title ?? 'Detalle';
+  document.getElementById('detalle-titulo').textContent =
+    inc.title ?? 'Sin título';
+  document.getElementById('detalle-breadcrumb').textContent =
+    inc.title ?? 'Detalle';
   document.getElementById('detalle-priority').textContent =
     PRIORITY_LABEL[inc.priority] ?? inc.priority;
   document.getElementById('detalle-fecha').textContent = fechaTexto;
-  document.getElementById('detalle-descripcion').textContent = inc.description ?? 'Sin descripción';
-  document.getElementById('detalle-categoria').textContent = inc.category?.name ?? '—';
-  document.getElementById('detalle-ubicacion').textContent = inc.location?.name ?? '—';
+  document.getElementById('detalle-descripcion').textContent =
+    inc.description ?? 'Sin descripción';
+  document.getElementById('detalle-categoria').textContent =
+    inc.category?.name ?? '—';
+  document.getElementById('detalle-ubicacion').textContent =
+    inc.location?.name ?? '—';
   document.getElementById('detalle-usuario').textContent = usuarioTexto;
-  document.getElementById('detalle-organizacion').textContent = inc.organization?.name ?? '—';
+  document.getElementById('detalle-organizacion').textContent =
+    inc.organization?.name ?? '—';
 
   // Status badge: text + dynamic className based on the status.
   const statusEl = document.getElementById('detalle-status');
