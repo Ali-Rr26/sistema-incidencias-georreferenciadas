@@ -480,6 +480,33 @@ export default {
       });
     }
 
+    // ── Right panel collapsible toggle (mobile only) ──
+    const rpFilterToggle = document.getElementById('rp-filter-toggle');
+    if (rpFilterToggle) {
+      // Mobile only: start collapsed (panels hidden by default)
+      const isMobile = window.innerWidth <= 576;
+      if (isMobile) {
+        rpFilterToggle.classList.add('collapsed');
+        rpFilterToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      function toggleFilterPanel() {
+        rpFilterToggle.classList.toggle('collapsed');
+        rpFilterToggle.setAttribute(
+          'aria-expanded',
+          rpFilterToggle.classList.contains('collapsed') ? 'false' : 'true'
+        );
+      }
+
+      rpFilterToggle.addEventListener('click', toggleFilterPanel);
+      rpFilterToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFilterPanel();
+        }
+      });
+    }
+
     // ── First load ──
     await fetchIncidencias(1, false);
     setupInfiniteScroll();

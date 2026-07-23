@@ -454,6 +454,7 @@ video {
   /* Right panel card reduced padding on mobile */
   .rp-card {
     padding: clamp(12px, 3vw, 16px);
+    z-index: 10; /* Below Leaflet zoom controls (z-index: 1000+) */
   }
 }
 
@@ -555,7 +556,116 @@ a:hover {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   16. PRINT STYLES
+   16. FEED FILTER PANEL COLLAPSIBLE (mobile only)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* On mobile: reorder layout & make aside visible */
+@media (max-width: 991.98px) {
+  #feed {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #feed > .col-lg-8 {
+    order: 2; /* Feed cards BELOW */
+  }
+
+  #feed > .col-lg-4 {
+    order: 1; /* Filters panel ABOVE */
+    position: static !important;
+  }
+}
+
+/* Hide main filter buttons on mobile — use right panel collapsible instead */
+@media (max-width: 576px) {
+  #feed-filters {
+    display: none !important;
+  }
+
+  /* Filter toggle: clickable header with chevron */
+  .rp-filter-toggle {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .rp-filter-toggle:hover {
+    opacity: 0.8;
+  }
+
+  .rp-filter-toggle:focus-visible {
+    outline: 2px solid var(--color-primary, #6a5cf3);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Chevron icon: starts pointing DOWN (collapsed) */
+  .rp-filter-chevron {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+    color: #6a5cf3;
+    transform: rotate(0deg); /* Down by default */
+  }
+
+  /* When expanded (no .collapsed class), rotate chevron UP */
+  .rp-filter-toggle:not(.collapsed) .rp-filter-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Filter content: hidden by default (collapsed state) */
+  .rp-filter-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+  }
+
+  /* When expanded, show content with smooth animation */
+  .rp-filter-toggle:not(.collapsed) ~ .rp-filter-content {
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  /* Accessibility: focus visible on toggle */
+  .rp-filter-toggle {
+    padding: 8px;
+    margin: -8px;
+  }
+
+  /* Hide stats & zones panels on mobile — only show filters */
+  #feed aside .rp-card:nth-child(2),
+  #feed aside .rp-card:nth-child(3) {
+    display: none !important;
+  }
+}
+
+/* Desktop: always expanded, no toggle behavior */
+@media (min-width: 577px) {
+  .rp-filter-chevron {
+    display: none;
+  }
+
+  .rp-filter-content {
+    display: block !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   17. TABLE CHECKBOXES — FIX STRETCHING
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Prevent checkbox stretching in table cells */
+td .form-check-input,
+.form-check-input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   18. PRINT STYLES
    ───────────────────────────────────────────────────────────────────────── */
 
 @media print {
