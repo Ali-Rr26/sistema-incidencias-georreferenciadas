@@ -10,7 +10,6 @@
 const mockMenuService = vi.hoisted(() => ({
   getMyMenu: vi.fn(),
   invalidateMyMenu: vi.fn(),
-  clearCache: vi.fn(),
 }));
 const mockPermissionService = vi.hoisted(() => ({
   getMyPermissions: vi.fn(),
@@ -28,7 +27,6 @@ describe('permissionGuard', () => {
   beforeEach(() => {
     mockMenuService.getMyMenu.mockReset();
     mockMenuService.invalidateMyMenu.mockReset();
-    mockMenuService.clearCache.mockReset();
     mockPermissionService.getMyPermissions.mockReset();
     mockPermissionService.invalidateMyPermissions.mockReset();
     window.location.hash = '';

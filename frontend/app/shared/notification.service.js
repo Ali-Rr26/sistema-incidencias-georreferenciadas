@@ -56,12 +56,4 @@ export const notificationService = {
   async markAllRead() {
     return await http.patch('/notifications/read-all');
   },
-
-  /**
-   * No-op: se mantiene por compatibilidad con callers que limpiaban
-   * la caché (logout, auth change, etc.).
-   */
-  clearCache() {
-    /* ya no hay caché que limpiar */
-  },
 };
