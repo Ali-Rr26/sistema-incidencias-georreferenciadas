@@ -51,8 +51,8 @@ export default {
       itemTitle: nombreCompleto,
       buildRow: (u) => `
                 <tr>
-                    ${renderAvatarCell(u)}
                     <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${u.id}" /></td>
+                    ${renderAvatarCell(u)}
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <span class="fw-semibold">${nombreCompleto(u)}</span>

@@ -363,3 +363,96 @@
   padding-left: 0;
   list-style: none;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   DASHBOARD RESPONSIVO
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: clamp(12px, 3vw, 20px);
+  padding: clamp(12px, 4vw, 24px);
+}
+
+/* En móvil: 1 columna */
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: 2 columnas */
+@media (min-width: 576px) and (max-width: 991px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: 4 columnas */
+@media (min-width: 992px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Card individual */
+.dashboard-card {
+  background: white;
+  border-radius: clamp(8px, 2vw, 12px);
+  padding: clamp(14px, 3vw, 20px);
+  border: 1px solid #e5e7eb;
+}
+
+.dashboard-card__title {
+  font-size: clamp(12px, 3vw, 14px);
+  color: #666;
+  font-weight: 500;
+}
+
+.dashboard-card__value {
+  font-size: clamp(20px, 6vw, 32px);
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+/* Gráficos (C3.js, Charts) */
+#chart-estados,
+#chart-timeline,
+.chart-container {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+/* C3.js: forzar responsive */
+.c3 {
+  width: 100% !important;
+}
+
+.c3 svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* En móvil: gráficos más pequeños */
+@media (max-width: 576px) {
+  .dashboard-card {
+    padding: 12px;
+  }
+
+  .dashboard-card__value {
+    font-size: 20px;
+  }
+
+  /* Gráficos: reducir altura */
+  #chart-estados {
+    height: 200px !important;
+  }
+
+  /* Esconder labels pequeños */
+  .c3-axis-y text,
+  .c3-axis-x text {
+    font-size: 10px;
+  }
+}
