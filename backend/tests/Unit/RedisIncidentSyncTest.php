@@ -14,7 +14,8 @@ use Tests\TestCase;
 
 uses(TestCase::class);
 
-it('calls HMSET and ZADD when incident is created', function (): void {
+it('writes the incident and refreshes both feed TTLs when created', function (): void {
+    config()->set('cache.feed_ttl_seconds', 1234);
     $user = User::factory()->make(['id' => 3, 'first_name' => 'John', 'last_name' => 'Doe']);
     $category = new IncidentCategory(['id' => 1, 'name' => 'Test Category']);
 
@@ -53,6 +54,14 @@ it('calls HMSET and ZADD when incident is created', function (): void {
         ->once()
         ->with('feed:v2:index', Mockery::any(), '42');
 
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:items', 1234);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:index', 1234);
+
     $sync = new RedisIncidentSync(new IncidentFeedSerializer);
     $sync->created($incident);
 });
@@ -74,7 +83,8 @@ it('calls DEL and ZREM when incident is deleted', function (): void {
     $sync->deleted($incident);
 });
 
-it('calls HMSET and ZADD when incident is updated', function (): void {
+it('writes the incident and refreshes both feed TTLs when updated', function (): void {
+    config()->set('cache.feed_ttl_seconds', 4321);
     $user = User::factory()->make(['id' => 3, 'first_name' => 'Jane', 'last_name' => 'Smith']);
     $category = new IncidentCategory(['id' => 1, 'name' => 'Test Category']);
 
@@ -112,6 +122,14 @@ it('calls HMSET and ZADD when incident is updated', function (): void {
     Redis::shouldReceive('zadd')
         ->once()
         ->with('feed:v2:index', Mockery::any(), '7');
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:items', 4321);
+
+    Redis::shouldReceive('expire')
+        ->once()
+        ->with('feed:v2:index', 4321);
 
     $sync = new RedisIncidentSync(new IncidentFeedSerializer);
     $sync->updated($incident);

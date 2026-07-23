@@ -159,9 +159,8 @@ export const appShell = {
     // or the user is a guest. The target <ul> is picked from
     // body[data-role] inside renderSidebarMenu itself.
     if (document.body.dataset.role !== 'guest') {
-      menuService.clearCache();
+      menuService.invalidateMyMenu();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
@@ -180,9 +179,8 @@ export const appShell = {
       // was a real bug: logging out of an admin_sistema session and into
       // a less-privileged one within the TTL window let permissionGuard
       // serve the PREVIOUS user's full permission set to the new user.
-      menuService.clearCache();
+      menuService.invalidateMyMenu();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       await populateHeader();
       disconnectNotificationStream();
       if (document.body.dataset.role !== 'guest') {

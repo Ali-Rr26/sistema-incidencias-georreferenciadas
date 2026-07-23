@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Cache\FeedTtl;
 use Illuminate\Support\Str;
 
 return [
@@ -16,6 +17,8 @@ return [
     */
 
     'default' => env('CACHE_STORE', 'database'),
+
+    'feed_ttl_seconds' => FeedTtl::fromConfig(),
 
     /*
     |--------------------------------------------------------------------------
