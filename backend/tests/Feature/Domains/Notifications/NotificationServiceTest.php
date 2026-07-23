@@ -6,6 +6,7 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Enums\NotificationType;
+use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Organizations\Models\Organization;
@@ -95,4 +96,23 @@ it('does not publish a second update for a deduplicated notification', function 
 
     expect($second)->toBeNull();
     expect(Notification::count())->toBe(1);
+});
+
+it('creates at most one notification when the queued job is retried', function (): void {
+    $this->mock(HubInterface::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('publish')->once();
+    });
+
+    $job = new SendIncidentNotificationJob(
+        $this->user->id,
+        $this->incident->id,
+        NotificationType::Claim->value,
+        'Tu incidencia fue reclamada.',
+        ['claimed_by' => 15],
+    );
+
+    $job->handle(app(NotificationService::class));
+    $job->handle(app(NotificationService::class));
+
+    expect(Notification::query()->where('type', NotificationType::Claim->value)->count())->toBe(1);
 });

@@ -39,6 +39,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      QUEUE_CONNECTION: redis
       # Mercure hub JWT secrets (see config/octane.php) — set these in the
       # shell/CI environment, not committed here. Empty in dev falls back
       # to an insecure placeholder (AppServiceProvider/AuthController);
@@ -71,6 +72,47 @@ services:
       redis:
         condition: service_healthy
       rustfs:
+        condition: service_healthy
+    networks:
+      - dev-network
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      QUEUE_CONNECTION: redis
+      OCTANE_SERVER: ""
+      LOG_CHANNEL: stderr_json
+      MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+      MERCURE_PUBLIC_URL: "http://mercure/.well-known/mercure"
+      MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+    volumes:
+      - ./backend/app:/var/www/backend/app
+      - ./backend/routes:/var/www/backend/routes
+      - ./backend/config:/var/www/backend/config
+      - ./backend/resources:/var/www/backend/resources
+      - ./backend/database:/var/www/backend/database
+    command:
+      - php
+      - artisan
+      - queue:work
+      - redis
+      - "--tries=3"
+      - "--backoff=10"
+      - "--max-time=3600"
+      - "--sleep=3"
+      - "--timeout=60"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - dev-network
