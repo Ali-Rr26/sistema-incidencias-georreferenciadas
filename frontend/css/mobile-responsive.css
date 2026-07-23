@@ -12,15 +12,28 @@
    1. TYPOGRAPHY — FLUID SCALING WITH CLAMP()
    ───────────────────────────────────────────────────────────────────────── */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-size: clamp(18px, 5vw, 32px);
   line-height: 1.2;
 }
 
-h1 { font-size: clamp(28px, 7vw, 48px); }
-h2 { font-size: clamp(24px, 6vw, 36px); }
-h3 { font-size: clamp(20px, 5.5vw, 28px); }
-h4 { font-size: clamp(18px, 5vw, 24px); }
+h1 {
+  font-size: clamp(28px, 7vw, 48px);
+}
+h2 {
+  font-size: clamp(24px, 6vw, 36px);
+}
+h3 {
+  font-size: clamp(20px, 5.5vw, 28px);
+}
+h4 {
+  font-size: clamp(18px, 5vw, 24px);
+}
 
 .gr-page__title,
 .page-title {
@@ -68,7 +81,7 @@ select,
    ───────────────────────────────────────────────────────────────────────── */
 
 button,
-a[role="button"],
+a[role='button'],
 .btn,
 .gr-btn-primary,
 .gr-btn-google {
@@ -306,7 +319,12 @@ video {
     font-size: 14px;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-size: clamp(14px, 4vw, 20px);
     margin-bottom: clamp(8px, 2vw, 12px);
   }
@@ -616,7 +634,9 @@ a:hover {
   .rp-filter-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
+    transition:
+      max-height 0.3s ease,
+      opacity 0.3s ease;
     opacity: 0;
   }
 
@@ -656,7 +676,7 @@ a:hover {
 
 /* Prevent checkbox stretching in table cells */
 td .form-check-input,
-.form-check-input[type="checkbox"] {
+.form-check-input[type='checkbox'] {
   width: 18px !important;
   height: 18px !important;
   min-width: 18px !important;
@@ -713,8 +733,8 @@ td .form-check-input,
 /* En móvil: esconder columnas no-críticas (5+) */
 @media (max-width: 576px) {
   /* Mostrar solo primeras 4 columnas */
-  .gr-table th:nth-child(n+5),
-  .gr-table td:nth-child(n+5) {
+  .gr-table th:nth-child(n + 5),
+  .gr-table td:nth-child(n + 5) {
     display: none;
   }
 
@@ -734,7 +754,7 @@ td .form-check-input,
 
   /* Agregar hint: "scroll para más" */
   .gr-table-wrap::after {
-    content: "← Desliza para ver más →";
+    content: '← Desliza para ver más →';
     display: block;
     font-size: 10px;
     color: #999;
@@ -745,8 +765,8 @@ td .form-check-input,
 
 /* En desktop: ancho normal */
 @media (min-width: 992px) {
-  .gr-table th:nth-child(n+5),
-  .gr-table td:nth-child(n+5) {
+  .gr-table th:nth-child(n + 5),
+  .gr-table td:nth-child(n + 5) {
     display: table-cell; /* Mostrar todas */
   }
 }
