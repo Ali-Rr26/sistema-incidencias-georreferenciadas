@@ -2,7 +2,7 @@ import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
 import { renderPaginacion } from './pagination/pagination.js';
 import { isForbidden } from './forbidden.js';
-import { mount } from './table-actions/table-actions.component.js';
+import { hydrateKebabActions } from './kebab-actions.js';
 import { isDesktop, mostrarEstado, mostrarToast } from '../utils/ui.js';
 
 /**
@@ -22,7 +22,7 @@ import { isDesktop, mostrarEstado, mostrarToast } from '../utils/ui.js';
  * @param {string} config.endpoint  API resource path (e.g. '/roles') —
  *   used for both the paginated GET and the DELETE.
  * @param {number} [config.porPagina]
- * @param {{update: string, delete: string}} config.slugs  table-actions
+ * @param {{update: string, delete: string}} config.slugs  kebab-actions
  *   permission slugs.
  * @param {boolean} [config.showView]
  * @param {(item: object) => string} config.buildRow  `<tr>` html; must
@@ -55,18 +55,17 @@ export function createCrudIndexPage({
   let paginaActual = 1;
   let totalPaginas = 1;
   let idEliminar = null;
+  let unsubscribeKebab = null;
 
-  function mountActions(datos, prefix) {
-    datos.forEach((item) => {
-      const el = document.getElementById(prefix + item.id);
-      if (el) {
-        mount(el, {
-          id: item.id,
-          titulo: itemTitle(item),
-          slugs,
-          showView,
-        });
-      }
+  async function renderKebabEn(container, datos) {
+    if (unsubscribeKebab) {
+      unsubscribeKebab();
+      unsubscribeKebab = null;
+    }
+    unsubscribeKebab = await hydrateKebabActions(container, datos, {
+      slugs,
+      showView,
+      itemTitle,
     });
   }
 
@@ -82,12 +81,12 @@ export function createCrudIndexPage({
 
     if (esDesktop) {
       tbody.innerHTML = datos.map(buildRow).join('');
-      mountActions(datos, 'ta-desktop-');
       cards.innerHTML = '';
+      renderKebabEn(tbody, datos);
     } else {
       tbody.innerHTML = '';
       cards.innerHTML = datos.map(buildCard).join('');
-      mountActions(datos, 'ta-mobile-');
+      renderKebabEn(cards, datos);
     }
 
     const desde = (paginaActual - 1) * porPagina + 1;
@@ -126,33 +125,39 @@ export function createCrudIndexPage({
     }
   }
 
-  // Delegated event handlers for table-actions custom events
-  function manejarTableActions(e) {
-    const { id, titulo } = e.detail;
-    if (e.type === 'table-actions:view') {
+  // Single delegated click listener: catches [data-action="view|edit|delete"]
+  // anywhere inside the rendered table body or mobile cards container.
+  function manejarAccionesDelegadas(e, target) {
+    const id = target.dataset.id;
+    const titulo = target.dataset.titulo;
+    if (target.dataset.action === 'view') {
       router.navigate(viewPath(id));
       return;
     }
-    if (e.type === 'table-actions:edit') {
+    if (target.dataset.action === 'edit') {
       router.navigate(editPath(id));
       return;
     }
-    if (e.type === 'table-actions:delete') {
+    if (target.dataset.action === 'delete') {
       idEliminar = id;
       document.getElementById('modal-eliminar-nombre').textContent = titulo;
       new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
     }
   }
 
+  function onContainerClick(e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    e.preventDefault();
+    manejarAccionesDelegadas(e, target);
+  }
+
   function init() {
     const tablaBody = document.getElementById('tabla-body');
     const contenedorCards = document.getElementById('contenedor-cards');
 
-    for (const target of [tablaBody, contenedorCards]) {
-      target.addEventListener('table-actions:view', manejarTableActions);
-      target.addEventListener('table-actions:edit', manejarTableActions);
-      target.addEventListener('table-actions:delete', manejarTableActions);
-    }
+    tablaBody.addEventListener('click', onContainerClick);
+    contenedorCards.addEventListener('click', onContainerClick);
 
     document
       .getElementById('btn-confirmar-eliminar')

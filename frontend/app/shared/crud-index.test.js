@@ -2,16 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCrudIndexPage } from './crud-index.js';
 import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
-import { mount } from './table-actions/table-actions.component.js';
+import { permissionService } from './permission.service.js';
 
 vi.mock('../core/http.service.js', () => ({
   http: { get: vi.fn(), delete: vi.fn() },
 }));
 vi.mock('../core/router.js', () => ({
   router: { navigate: vi.fn() },
-}));
-vi.mock('./table-actions/table-actions.component.js', () => ({
-  mount: vi.fn(),
 }));
 
 function mountFixture() {
@@ -63,9 +60,13 @@ describe('createCrudIndexPage', () => {
       data: [{ id: 1, name: 'Uno' }],
       meta: { total: 1 },
     });
+    vi.spyOn(permissionService, 'getMyPermissions').mockResolvedValue(
+      new Set(['widgets.update', 'widgets.delete']),
+    );
+    vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
   });
 
-  it('loads page 1 on init, renders rows and mounts table-actions', async () => {
+  it('loads page 1 on init and renders rows with kebab placeholders', async () => {
     makePage().init();
     await vi.waitFor(() => {
       expect(document.getElementById('tabla-body').innerHTML).toContain('Uno');
@@ -73,14 +74,6 @@ describe('createCrudIndexPage', () => {
 
     expect(http.get).toHaveBeenCalledWith(
       '/widgets?page=1&per_page=15&search=',
-    );
-    expect(mount).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        id: 1,
-        titulo: 'Uno',
-        slugs: { update: 'widgets.update', delete: 'widgets.delete' },
-      }),
     );
     expect(
       document.getElementById('contenedor-tabla').classList.contains('d-none'),
@@ -109,7 +102,7 @@ describe('createCrudIndexPage', () => {
     });
   });
 
-  it('navigates on edit events and opens the delete flow end to end', async () => {
+  it('navigates on edit clicks and opens the delete flow end to end', async () => {
     http.delete.mockResolvedValue({});
     makePage().init();
     await vi.waitFor(() =>
@@ -117,18 +110,12 @@ describe('createCrudIndexPage', () => {
     );
 
     const tbody = document.getElementById('tabla-body');
-    tbody.dispatchEvent(
-      new CustomEvent('table-actions:edit', {
-        detail: { id: 1, titulo: 'Uno' },
-      }),
-    );
+    const editItem = tbody.querySelector('.table-actions-edit');
+    editItem.click();
     expect(router.navigate).toHaveBeenCalledWith('/widgets/crear?id=1');
 
-    tbody.dispatchEvent(
-      new CustomEvent('table-actions:delete', {
-        detail: { id: 1, titulo: 'Uno' },
-      }),
-    );
+    const deleteItem = tbody.querySelector('.table-actions-delete');
+    deleteItem.click();
     expect(document.getElementById('modal-eliminar-nombre').textContent).toBe(
       'Uno',
     );

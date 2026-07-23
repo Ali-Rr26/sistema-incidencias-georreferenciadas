@@ -14,7 +14,7 @@ import {
   clearSelect,
   destroyAll,
 } from '../../../shared/select-search.js';
-import { mount } from '../../../shared/table-actions/table-actions.component.js';
+import { hydrateKebabActions } from '../../../shared/kebab-actions.js';
 import { isDesktop, mostrarEstado, mostrarToast } from '../../../utils/ui.js';
 
 const POR_PAGINA = 10;
@@ -63,16 +63,10 @@ export default {
           })
           .join('');
 
-        // Mount table-actions on each row (async — does not block DOM insertion)
-        datos.forEach((inc) => {
-          const el = document.getElementById('ta-desktop-' + inc.id);
-          if (el) {
-            mount(el, {
-              id: inc.id,
-              titulo: inc.title || 'Sin título',
-              slugs: { update: 'incidents.update', delete: 'incidents.delete' },
-            });
-          }
+        hydrateKebabActions(tbody, datos, {
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+          showView: false,
+          itemTitle: (inc) => inc.title || 'Sin título',
         });
 
         cards.innerHTML = '';
@@ -113,7 +107,7 @@ export default {
                   </div>
                 </div>
 
-                <!-- table-actions component (Ver + kebab dropdown) -->
+                <!-- kebab actions placeholder (Ver + kebab dropdown) -->
                 <div class="d-flex gap-1 justify-content-end">
                   <table-actions id="ta-mobile-${inc.id}"></table-actions>
                 </div>
@@ -123,15 +117,10 @@ export default {
           .join('');
 
         // Mount table-actions on each mobile card (async — does not block DOM insertion)
-        datos.forEach((inc) => {
-          const el = document.getElementById('ta-mobile-' + inc.id);
-          if (el) {
-            mount(el, {
-              id: inc.id,
-              titulo: inc.title || 'Sin título',
-              slugs: { update: 'incidents.update', delete: 'incidents.delete' },
-            });
-          }
+        hydrateKebabActions(cards, datos, {
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+          showView: false,
+          itemTitle: (inc) => inc.title || 'Sin título',
         });
       }
 
@@ -173,18 +162,21 @@ export default {
       }
     }
 
-    // Delegated event listeners for table-actions custom events
-    function manejarTableActions(e) {
-      const { id, titulo } = e.detail;
-      if (e.type === 'table-actions:view') {
+    // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
+    function manejarAcciones(e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const { id, titulo, action } = target.dataset;
+      e.preventDefault();
+      if (action === 'view') {
         router.navigate('/incidencias/' + id);
         return;
       }
-      if (e.type === 'table-actions:edit') {
+      if (action === 'edit') {
         router.navigate('/incidencias/crear?id=' + id);
         return;
       }
-      if (e.type === 'table-actions:delete') {
+      if (action === 'delete') {
         idEliminar = id;
         document.getElementById('modal-eliminar-titulo').textContent = titulo;
         new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
@@ -194,16 +186,8 @@ export default {
     const tablaBody = document.getElementById('tabla-body');
     const contenedorCards = document.getElementById('contenedor-cards');
 
-    // Delegate table-actions:view/edit/delete from both desktop table and mobile cards
-    tablaBody.addEventListener('table-actions:view', manejarTableActions);
-    tablaBody.addEventListener('table-actions:edit', manejarTableActions);
-    tablaBody.addEventListener('table-actions:delete', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:view', manejarTableActions);
-    contenedorCards.addEventListener('table-actions:edit', manejarTableActions);
-    contenedorCards.addEventListener(
-      'table-actions:delete',
-      manejarTableActions,
-    );
+    tablaBody.addEventListener('click', manejarAcciones);
+    contenedorCards.addEventListener('click', manejarAcciones);
 
     // Double-click handlers: abrir detalle
     function manejarDobleClic(e) {

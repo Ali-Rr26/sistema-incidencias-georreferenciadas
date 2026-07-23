@@ -382,7 +382,6 @@ beforeEach(async () => {
   vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
     getMyPermissionsMock,
   );
-  vi.spyOn(permissionService, 'onInvalidate').mockReturnValue(() => {});
 
   // HTTP mock for cargarIncidencias
   const { http } = await import('../../../core/http.service.js');
@@ -483,10 +482,6 @@ describe('Desktop — permission-driven action rendering', () => {
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions).toHaveLength(2);
 
-    // Ver button is always present
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     // Kebab toggle is NOT disabled (has both actions)
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
     expect(toggles).toHaveLength(2);
@@ -513,10 +508,6 @@ describe('Desktop — permission-driven action rendering', () => {
     );
     expect(tableActionsEls).toHaveLength(2);
 
-    // Ver is present
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     // Edit item is present
     const editItems = document.querySelectorAll(
       '#tabla-body .table-actions-edit-item',
@@ -538,10 +529,6 @@ describe('Desktop — permission-driven action rendering', () => {
     );
     expect(tableActionsEls).toHaveLength(2);
 
-    // Ver is present
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     // Edit item is NOT in DOM
     const editItems = document.querySelectorAll(
       '#tabla-body .table-actions-edit-item',
@@ -562,10 +549,6 @@ describe('Desktop — permission-driven action rendering', () => {
       '#tabla-body table-actions',
     );
     expect(tableActionsEls).toHaveLength(2);
-
-    // Ver button is always present (even without action permissions)
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
 
     // Kebab toggle is disabled
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
@@ -592,17 +575,6 @@ describe('Desktop — permission-driven action rendering', () => {
 // ---------------------------------------------------------------------------
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /incidencias/{id}', async () => {
-    await renderIndexWithPermissions(
-      new Set(['incidents.update', 'incidents.delete']),
-    );
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/incidencias/1');
-  });
-
   it('clicking Editar in kebab navigates to /incidencias/crear?id={id}', async () => {
     await renderIndexWithPermissions(
       new Set(['incidents.update', 'incidents.delete']),
@@ -674,36 +646,12 @@ describe('Mobile — actions render in card body', () => {
     );
     expect(tableActionsInCards).toHaveLength(2);
 
-    // Ver button is present in cards
-    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     // Kebab toggle is NOT disabled
     const toggles = document.querySelectorAll(
       '#contenedor-cards .dropdown-toggle',
     );
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
-  });
-
-  it('mobile Ver click navigates to /incidencias/{id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(
-      new Set(['incidents.update', 'incidents.delete']),
-    );
-
-    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/incidencias/1');
   });
 
   it('mobile Editar click navigates to /incidencias/crear?id={id}', async () => {
@@ -764,8 +712,6 @@ describe('Mobile — actions render in card body', () => {
 
 describe('Re-hydration — permission invalidation re-evaluates actions', () => {
   it('calling invalidateMyPermissions() re-evaluates the kebab state without page reload', async () => {
-    // The mock's mount() calls permissionService.onInvalidate(rehydrate), so
-    // the rehydrate callback is captured in tableActionsInstances.
     await renderIndexWithPermissions(
       new Set(['incidents.update', 'incidents.delete']),
     );
@@ -782,17 +728,26 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
     expect(editItems).toHaveLength(2);
     expect(deleteItems).toHaveLength(2);
 
-    // Simulate permission change: after re-hydration, only delete remains
-    // Update the module-level getMyPermissionsMock so the mock's rehydrate uses it
+    // Simulate permission change: after re-hydration, only delete remains.
+    // Update the spy's implementation so the rehydrate callback sees fresh perms.
     getMyPermissionsMock = vi
       .fn()
       .mockResolvedValue(new Set(['incidents.delete']));
+    vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+      getMyPermissionsMock,
+    );
 
-    // Trigger re-hydration by calling ALL captured callbacks (one per instance)
-    // NOTE: tableActionsInstances has an entry per mounted table-actions (2 rows × 2 instances = 4)
-    for (const instance of tableActionsInstances) {
-      await instance._rehydrate();
-    }
+    // Trigger the real re-hydration flow (kebab-actions subscribes to
+    // permissionService.onInvalidate).
+    permissionService.invalidateMyPermissions();
+
+    await vi.waitFor(() => {
+      const items = document.querySelectorAll(
+        '#tabla-body .table-actions-edit-item',
+      );
+      if (items.length !== 0)
+        throw new Error(`edit items still present: ${items.length}`);
+    });
 
     // After re-hydration: kebab is still NOT disabled (has delete)
     // but Edit item should be removed
@@ -815,18 +770,19 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
       new Set(['incidents.update', 'incidents.delete']),
     );
 
-    const capturedRehydrateCb = tableActionsInstances[0]._rehydrate;
-
     // Verify initial: kebab NOT disabled
     let toggle = document.querySelector('#tabla-body .dropdown-toggle');
     expect(toggle.hasAttribute('disabled')).toBe(false);
 
-    // Simulate: all action permissions revoked
+    // Simulate: all action permissions revoked.
     getMyPermissionsMock = vi
       .fn()
       .mockResolvedValue(new Set(['incidents.view']));
+    vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+      getMyPermissionsMock,
+    );
 
-    await capturedRehydrateCb();
+    permissionService.invalidateMyPermissions();
 
     await vi.waitFor(() => {
       const t = document.querySelector('#tabla-body .dropdown-toggle');
