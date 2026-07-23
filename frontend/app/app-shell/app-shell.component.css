@@ -74,7 +74,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(35, 40, 59, 0.4);
+    background: rgba(35, 40, 59, 0.7);
     z-index: 140;
     opacity: 0;
     pointer-events: none;

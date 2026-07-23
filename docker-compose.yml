@@ -38,6 +38,7 @@ services:
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       # Mercure hub JWT secrets (see config/octane.php) — set these in the
       # shell/CI environment, not committed here. Empty in dev falls back
       # to an insecure placeholder (AppServiceProvider/AuthController);

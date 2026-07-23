@@ -78,6 +78,9 @@ class IncidentSeeder extends Seeder
 
         $organizations = Organization::all()->keyBy('name');
 
+        $created = 0;
+        $skipped = 0;
+
         foreach (self::INCIDENTS as $spec) {
             $category = $categories->get($spec['category'])?->first();
             $location = $locations->get($spec['location']);
@@ -86,6 +89,7 @@ class IncidentSeeder extends Seeder
 
             if (! $category || ! $location || ! $user) {
                 $this->command?->warn("Skipping incident — missing: category=[{$spec['category']}] location=[{$spec['location']}] user=[{$spec['user']}]");
+                $skipped++;
 
                 continue;
             }
@@ -111,8 +115,9 @@ class IncidentSeeder extends Seeder
                     'geom' => new Point($lat + $latOffset, $lng + $lngOffset, 4326),
                 ],
             );
+            $created++;
         }
 
-        $this->command?->info(count(self::INCIDENTS).' incidents seeded.');
+        $this->command?->info("Incidents seeded: $created created, $skipped skipped (total: ".count(self::INCIDENTS).')');
     }
 }
