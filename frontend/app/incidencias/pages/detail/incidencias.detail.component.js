@@ -7,18 +7,15 @@ import {
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
+import setupCommentsForm from '../../../shared/setup-comments-form.js';
 import initMapView from '../../../shared/init-map-view.js';
-import { commentService } from '../../../shared/comment.service.js';
-import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
-import { renderCommentThread } from '../../../shared/comment-thread.js';
 import {
   sortStatusHistoryDesc,
   statusHistoryEntry,
 } from '../../../utils/status-history.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
-import { openInlineReplyForm } from '../../../shared/comment-reply.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -372,322 +369,29 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-// Module-scoped index of commentId → full comment object. Populated by
-// renderComments and read by the inline-reply click handler in
-// setupComments.
-let commentById = new Map();
-
-function renderComments(items, currentUserId) {
-  commentById = renderCommentThread({
-    items,
-    listEl: document.getElementById('detalle-comments-list'),
-    emptyEl: document.getElementById('detalle-comments-vacio'),
-    currentUserId,
-    canDelete: true,
-  });
-}
-
 async function setupComments(incidentId, initialComments) {
-  const loadingEl = document.getElementById('detalle-comments-loading');
-  const form = document.getElementById('detalle-comment-form');
-  const input = document.getElementById('detalle-comment-input');
-  const errorEl = document.getElementById('detalle-comment-error');
-  const submitBtn = document.getElementById('detalle-comment-submit');
-  const counterEl = document.getElementById('detalle-comment-counter');
-  const listEl = document.getElementById('detalle-comments-list');
-  const fileInput = document.getElementById('detalle-comment-images');
-  const previewEl = document.getElementById('detalle-comment-previews');
-  const replyBadgeEl = document.getElementById('detalle-reply-badge');
-  const replyParentIdEl = document.getElementById('detalle-reply-parent-id');
-
-  if (!form || !input) return;
-
-  let currentUserId = null;
-
-  const replyState = { parentId: null, parentComment: null };
-  const selectedFiles = [];
-  const previewUrls = [];
-  let hasLoadedComments = false;
-
-  function updateCounter() {
-    const len = input.value.length;
-    if (counterEl) {
-      counterEl.textContent = `${len}/5000`;
-      counterEl.classList.toggle('text-danger', len >= 4000);
-    }
-  }
-
-  function updateSubmitBtn() {
-    if (submitBtn) submitBtn.disabled = input.value.trim() === '';
-  }
-
-  function renderPreviews() {
-    if (!previewEl) return;
-    previewEl.innerHTML = selectedFiles
-      .map((_, i) => {
-        const url = previewUrls[i];
-        if (!url) return '';
-        return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
-          <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
-          <button type="button" class="incid-detail__preview-remove btn-quitar-preview" data-index="${i}">&times;</button>
-        </div>`;
-      })
-      .join('');
-  }
-
-  function cancelReply() {
-    const prefix = '> @';
-    if (input.value.startsWith(prefix)) {
-      const nlIdx = input.value.indexOf('\n');
-      input.value = nlIdx >= 0 ? input.value.slice(nlIdx + 1) : '';
-    }
-    if (replyBadgeEl) replyBadgeEl.classList.add('d-none');
-    if (replyParentIdEl) replyParentIdEl.value = '';
-    replyState.parentId = null;
-    replyState.parentComment = null;
-    updateSubmitBtn();
-  }
-
-  function handleFileSelect(files) {
-    if (!files) return;
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) continue;
-      selectedFiles.push(file);
-      previewUrls.push(URL.createObjectURL(file));
-    }
-    renderPreviews();
-  }
-
-  function removeFile(index) {
-    if (index < 0 || index >= previewUrls.length) return;
-    URL.revokeObjectURL(previewUrls[index]);
-    previewUrls.splice(index, 1);
-    selectedFiles.splice(index, 1);
-    renderPreviews();
-  }
-
-  input.addEventListener('input', () => {
-    updateCounter();
-    updateSubmitBtn();
+  return setupCommentsForm({
+    incidentId,
+    initialComments,
+    loadingId: 'detalle-comments-loading',
+    formId: 'detalle-comment-form',
+    inputId: 'detalle-comment-input',
+    submitId: 'detalle-comment-submit',
+    counterId: 'detalle-comment-counter',
+    listId: 'detalle-comments-list',
+    emptyId: 'detalle-comments-vacio',
+    errorId: 'detalle-comment-error',
+    previewId: 'detalle-comment-previews',
+    fileInputId: 'detalle-comment-images',
+    replyBadgeId: 'detalle-reply-badge',
+    replyParentIdId: 'detalle-reply-parent-id',
+    lightboxId: 'incid-detail__lightbox',
+    lightboxCloseId: 'incid-detail__lightbox-close',
+    thumbnailSelector: '.incid-detail__thumbnail[data-src]',
+    canDelete: true,
+    getUserName: (user) =>
+      [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
   });
-
-  if (fileInput) {
-    fileInput.addEventListener('change', () => {
-      handleFileSelect(fileInput.files);
-      fileInput.value = '';
-    });
-  }
-
-  if (replyBadgeEl) {
-    replyBadgeEl.addEventListener('click', cancelReply);
-    replyBadgeEl.style.cursor = 'pointer';
-    replyBadgeEl.title = 'Clic para cancelar';
-  }
-
-  async function cargarComentarios() {
-    loadingEl?.classList.remove('d-none');
-    try {
-      // On first load, use embedded comments if available. On subsequent
-      // refreshes (after create/delete), always fetch fresh data.
-      if (!hasLoadedComments && initialComments) {
-        renderComments(initialComments, currentUserId);
-      } else {
-        const { data } = await commentService.list(incidentId, { perPage: 50 });
-        renderComments(data, currentUserId);
-      }
-    } catch (err) {
-      console.error('Error al cargar comentarios:', err);
-    } finally {
-      loadingEl?.classList.add('d-none');
-      hasLoadedComments = true;
-    }
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errorEl?.classList.add('d-none');
-
-    const message = input.value.trim();
-    if (!message) {
-      if (errorEl) {
-        errorEl.textContent = 'El comentario no puede estar vacío.';
-        errorEl.classList.remove('d-none');
-      }
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-    try {
-      const parentId = replyParentIdEl?.value
-        ? Number(replyParentIdEl.value)
-        : null;
-      const imageIds = [];
-
-      if (selectedFiles.length > 0) {
-        const created = await commentService.create(incidentId, {
-          message,
-          parentId,
-          imageIds: [],
-        });
-        const commentId = created?.id ?? created?.data?.id;
-        if (!commentId) throw new Error('No se pudo crear el comentario.');
-
-        const results = await Promise.allSettled(
-          selectedFiles.map((file) =>
-            commentService.uploadImages(commentId, [file]),
-          ),
-        );
-        const failed = results.filter(
-          (r) =>
-            r.status === 'rejected' ||
-            (r.status === 'fulfilled' && r.value?.status >= 400),
-        );
-        if (failed.length > 0) {
-          for (const url of previewUrls) URL.revokeObjectURL(url);
-          selectedFiles.length = 0;
-          previewUrls.length = 0;
-          renderPreviews();
-          if (errorEl) {
-            errorEl.textContent =
-              'Error al subir una o más imágenes. El comentario no fue publicado.';
-            errorEl.classList.remove('d-none');
-          }
-          await commentService.delete(commentId);
-          throw new Error('Upload failed');
-        }
-      } else {
-        await commentService.create(incidentId, {
-          message,
-          parentId,
-          imageIds,
-        });
-      }
-
-      input.value = '';
-      for (const url of previewUrls) URL.revokeObjectURL(url);
-      selectedFiles.length = 0;
-      previewUrls.length = 0;
-      renderPreviews();
-      cancelReply();
-      updateCounter();
-      updateSubmitBtn();
-      await cargarComentarios();
-    } catch (err) {
-      if (err.message === 'Upload failed') return;
-      if (errorEl) {
-        errorEl.textContent =
-          err.message || 'No se pudo publicar el comentario.';
-        errorEl.classList.remove('d-none');
-      }
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-    }
-  });
-
-  if (listEl) {
-    listEl.addEventListener('click', async (e) => {
-      const deleteBtn = e.target.closest('.btn-eliminar-comentario');
-      if (deleteBtn) {
-        const commentId = deleteBtn.dataset.id;
-        if (!commentId) return;
-        if (!confirm('¿Eliminar este comentario?')) return;
-        deleteBtn.disabled = true;
-        try {
-          await commentService.delete(commentId);
-          await cargarComentarios();
-        } catch (err) {
-          console.error('Error al eliminar comentario:', err);
-          alert('No se pudo eliminar el comentario.');
-        } finally {
-          deleteBtn.disabled = false;
-        }
-        return;
-      }
-
-      const replyBtn = e.target.closest('.btn-responder-comentario');
-      if (replyBtn) {
-        const commentId = Number(replyBtn.dataset.id);
-        const found = commentById.get(commentId);
-        if (found) {
-          const li = replyBtn.closest('li');
-          openInlineReplyForm({
-            incidentId,
-            comment: found,
-            li,
-            getUserName: (u) =>
-              [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email,
-            onPosted: cargarComentarios,
-          });
-        }
-        return;
-      }
-
-      const previewRemoveBtn = e.target.closest('.btn-quitar-preview');
-      if (previewRemoveBtn) {
-        const index = Number(previewRemoveBtn.dataset.index);
-        removeFile(index);
-        return;
-      }
-
-      const thumb = e.target.closest('.incid-detail__thumbnail[data-src]');
-      if (thumb) {
-        const src = thumb.dataset.src;
-        const caption = thumb.dataset.caption || '';
-        openLightbox(src, caption);
-        return;
-      }
-
-      const delImgBtn = e.target.closest('.btn-eliminar-imagen');
-      if (delImgBtn) {
-        const commentId = Number(delImgBtn.dataset.commentId);
-        const imageId = Number(delImgBtn.dataset.imageId);
-        if (!confirm('¿Eliminar esta imagen?')) return;
-        delImgBtn.disabled = true;
-        try {
-          await commentService.deleteImage(commentId, imageId);
-          await cargarComentarios();
-        } catch (err) {
-          console.error('Error al eliminar imagen:', err);
-          alert('No se pudo eliminar la imagen.');
-        } finally {
-          delImgBtn.disabled = false;
-        }
-      }
-    });
-  }
-
-  const lightboxEl = document.getElementById('incid-detail__lightbox');
-  const lightboxClose = document.getElementById('incid-detail__lightbox-close');
-
-  if (lightboxEl) {
-    lightboxClose?.addEventListener('click', closeLightbox);
-    lightboxEl.addEventListener('click', (e) => {
-      if (e.target === lightboxEl) closeLightbox();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !lightboxEl.classList.contains('d-none')) {
-        closeLightbox();
-      }
-    });
-  }
-
-  try {
-    const user = await auth.me();
-    currentUserId = user?.id;
-  } catch {
-    currentUserId = null;
-  }
-
-  // Initialize: use embedded comments if available (from incident detail),
-  // otherwise fetch from separate endpoint. After this first load, subsequent
-  // refreshes (post-create, post-delete) go via cargarComentarios() → fetch.
-  if (initialComments && initialComments.length > 0) {
-    loadingEl?.classList.add('d-none');
-    renderComments(initialComments, currentUserId);
-    hasLoadedComments = true;
-  } else {
-    await cargarComentarios();
-  }
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────
