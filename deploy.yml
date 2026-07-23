@@ -357,8 +357,9 @@ services:
     image: prom/prometheus:latest
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
-    volumes:
-      - ./ops/prometheus/prometheus.swarm.yml:/etc/prometheus/prometheus.yml
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
     networks:
       - incidencias-network
     deploy:
@@ -389,8 +390,9 @@ services:
     image: grafana/loki:latest
     ports:
       - "${LOKI_PORT:-3100}:3100"
-    volumes:
-      - ./ops/loki/loki.yml:/etc/loki/loki.yml
+    configs:
+      - source: loki_config
+        target: /etc/loki/loki.yml
     networks:
       - incidencias-network
     deploy:
@@ -401,8 +403,10 @@ services:
   promtail:
     image: grafana/promtail:latest
     user: root
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/config.yml
     volumes:
-      - ./ops/promtail/promtail.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - incidencias-network
@@ -575,3 +579,11 @@ volumes:
 networks:
   incidencias-network:
     driver: overlay
+
+configs:
+  prometheus_config:
+    file: ./ops/prometheus/prometheus.swarm.yml
+  loki_config:
+    file: ./ops/loki/loki.yml
+  promtail_config:
+    file: ./ops/promtail/promtail.yml
