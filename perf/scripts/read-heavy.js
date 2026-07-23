@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { getAuthToken } from './_auth.js';
 
-const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = __ENV.API_BASE_URL || 'https://api2.dihm-muertos.site';
 
 export const options = {
   stages: [
