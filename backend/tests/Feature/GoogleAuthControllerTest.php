@@ -276,3 +276,24 @@ it('R13b (link path): linking to an existing verified email never escalates that
         ->toBe(Role::where('name', UserRole::AdminSistema->value)->value('id'))
         ->toBeIn($denyListIds); // sanity: they ARE the admin they were before
 });
+
+it('logs unexpected exceptions and returns 500 when an unhandled error occurs', function (): void {
+    Log::spy();
+
+    $this->mock(\App\Domains\Auth\Firebase\Services\GoogleAuthService::class)
+        ->shouldReceive('login')
+        ->andThrow(new \RuntimeException('Unexpected database or system error'));
+
+    $response = $this->postJson('/api/auth/google', [
+        'id_token' => 'valid-format-token',
+    ]);
+
+    $response->assertStatus(500)
+        ->assertJson(['message' => 'Error interno al procesar la autenticación con Google.']);
+
+    Log::shouldHaveReceived('error')
+        ->once()
+        ->with('auth.google.unexpected_error', Mockery::subset([
+            'exception' => 'Unexpected database or system error',
+        ]));
+});
