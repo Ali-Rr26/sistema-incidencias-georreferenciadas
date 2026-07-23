@@ -161,7 +161,6 @@ export const appShell = {
     if (document.body.dataset.role !== 'guest') {
       menuService.clearCache();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
@@ -182,7 +181,6 @@ export const appShell = {
       // serve the PREVIOUS user's full permission set to the new user.
       menuService.clearCache();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       await populateHeader();
       disconnectNotificationStream();
       if (document.body.dataset.role !== 'guest') {
