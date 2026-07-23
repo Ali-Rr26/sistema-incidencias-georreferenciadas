@@ -26,7 +26,7 @@ x-backend-env: &x-backend-env
   APP_ENV: ${APP_ENV:-production}
   APP_DEBUG: ${APP_DEBUG:-false}
   APP_KEY: ${APP_KEY:-base64:u6tjIC/VFXSw3JCFREITtaD1jjhDj7ekTQN4WQXcft8=}
-  APP_URL: ${APP_URL:-http://localhost}
+  APP_URL: ${APP_URL:-https://app2.dihm-muertos.site}
   APP_LOCALE: ${APP_LOCALE:-es}
   APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-es}
   APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-es_ES}
@@ -52,7 +52,7 @@ x-backend-env: &x-backend-env
   # yamllint disable-line rule:line-length
   JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-jwt_refresh_secret_for_development_only_change_in_prod}
   JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,https://app2.dihm-muertos.site}
   API_VERSION: ${API_VERSION:-1.0.0}
   # Storage: AWS_* is read by Laravel directly (S3 driver, filesystems
   # cache, queue, StorageService). One source of truth, no rename.
