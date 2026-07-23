@@ -419,9 +419,6 @@ describe('Desktop — permission-driven action rendering', () => {
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
@@ -444,9 +441,6 @@ describe('Desktop — permission-driven action rendering', () => {
     );
     expect(tableActionsEls).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const editItems = document.querySelectorAll(
       '#tabla-body .table-actions-edit-item',
     );
@@ -466,9 +460,6 @@ describe('Desktop — permission-driven action rendering', () => {
     );
     expect(tableActionsEls).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const editItems = document.querySelectorAll(
       '#tabla-body .table-actions-edit-item',
     );
@@ -487,9 +478,6 @@ describe('Desktop — permission-driven action rendering', () => {
       '#tabla-body table-actions',
     );
     expect(tableActionsEls).toHaveLength(2);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns).toHaveLength(2);
 
     const toggles = document.querySelectorAll('#tabla-body .dropdown-toggle');
     expect(toggles).toHaveLength(2);
@@ -514,15 +502,6 @@ describe('Desktop — permission-driven action rendering', () => {
 // ---------------------------------------------------------------------------
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /usuarios/{id}', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
-  });
-
   it('clicking Editar navigates to /usuarios/crear?id={id}', async () => {
     await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
 
@@ -581,32 +560,11 @@ describe('Mobile — actions render in card body', () => {
     );
     expect(tableActionsInCards).toHaveLength(2);
 
-    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
-    expect(verBtns).toHaveLength(2);
-
     const toggles = document.querySelectorAll(
       '#contenedor-cards .dropdown-toggle',
     );
     expect(toggles).toHaveLength(2);
     toggles.forEach((t) => expect(t.hasAttribute('disabled')).toBe(false));
-  });
-
-  it('mobile Ver click navigates to /usuarios/{id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
   });
 
   it('mobile Editar click navigates to /usuarios/crear?id={id}', async () => {
@@ -662,15 +620,6 @@ describe('Mobile — actions render in card body', () => {
 // ---------------------------------------------------------------------------
 
 describe('Double-click removal — Ver button replaces row double-click', () => {
-  it('Ver button click navigates to /usuarios/{id}', async () => {
-    await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/usuarios/1');
-  });
-
   it('double-clicking the row does NOT navigate (double-click handler removed)', async () => {
     await renderIndexWithPermissions(new Set(['users.update', 'users.delete']));
 

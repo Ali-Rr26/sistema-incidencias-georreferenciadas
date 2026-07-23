@@ -87,87 +87,99 @@
     </div>
   </div>
 
-  <!-- Right panel (hidden on mobile, visible ≥ 992px, sticky) -->
-  <aside class="col-lg-4 position-sticky top-0">
+  <!-- Right panel (full width mobile, sticky ≥ 992px) -->
+  <aside class="col-12 col-lg-4 position-sticky top-0">
     <!-- Filtros -->
     <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
-      <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
       <div
-        class="rp-card-section-label text-muted small fw-bold text-uppercase"
+        class="rp-filter-toggle d-flex align-items-center justify-content-between cursor-pointer mb-3"
+        id="rp-filter-toggle"
+        role="button"
+        tabindex="0"
+        aria-expanded="true"
+        aria-controls="rp-filter-content"
       >
-        ESTADO
+        <div class="rp-card-title card-title fw-bold mb-0">Filtrar feed</div>
+        <i class="fa-solid fa-chevron-down rp-filter-chevron"></i>
       </div>
-      <div
-        class="rp-filter-chips d-flex flex-wrap gap-2 mb-3"
-        id="rp-status-filters"
-      >
-        <div class="rp-filter-chip active badge bg-primary" data-status="">
-          Todo
+      <div id="rp-filter-content" class="rp-filter-content">
+        <div
+          class="rp-card-section-label text-muted small fw-bold text-uppercase"
+        >
+          ESTADO
         </div>
         <div
-          class="rp-filter-chip badge bg-secondary"
-          data-status="in_progress"
+          class="rp-filter-chips d-flex flex-wrap gap-2 mb-3"
+          id="rp-status-filters"
         >
-          En proceso
-        </div>
-        <div class="rp-filter-chip badge bg-secondary" data-status="pending">
-          Pendiente
-        </div>
-        <div class="rp-filter-chip badge bg-secondary" data-status="resolved">
-          Resuelto
-        </div>
-      </div>
-      <div
-        class="rp-card-section-label text-muted small fw-bold text-uppercase"
-      >
-        TIPO
-      </div>
-      <div class="rp-category-filters" id="rp-category-filters">
-        <div class="form-check">
-          <input
-            class="rp-checkbox-box form-check-input"
-            type="checkbox"
-            id="cat-1"
-            data-category="1"
-            checked
-          />
-          <label class="rp-checkbox-label form-check-label" for="cat-1"
-            >Infraestructura</label
+          <div class="rp-filter-chip active badge bg-primary" data-status="">
+            Todo
+          </div>
+          <div
+            class="rp-filter-chip badge bg-secondary"
+            data-status="in_progress"
           >
+            En proceso
+          </div>
+          <div class="rp-filter-chip badge bg-secondary" data-status="pending">
+            Pendiente
+          </div>
+          <div class="rp-filter-chip badge bg-secondary" data-status="resolved">
+            Resuelto
+          </div>
         </div>
-        <div class="form-check">
-          <input
-            class="rp-checkbox-box form-check-input"
-            type="checkbox"
-            id="cat-2"
-            data-category="2"
-            checked
-          />
-          <label class="rp-checkbox-label form-check-label" for="cat-2"
-            >Servicios públicos</label
-          >
+        <div
+          class="rp-card-section-label text-muted small fw-bold text-uppercase"
+        >
+          TIPO
         </div>
-        <div class="form-check">
-          <input
-            class="rp-checkbox-box form-check-input"
-            type="checkbox"
-            id="cat-3"
-            data-category="3"
-          />
-          <label class="rp-checkbox-label form-check-label" for="cat-3"
-            >Medio ambiente</label
-          >
-        </div>
-        <div class="form-check">
-          <input
-            class="rp-checkbox-box form-check-input"
-            type="checkbox"
-            id="cat-4"
-            data-category="4"
-          />
-          <label class="rp-checkbox-label form-check-label" for="cat-4"
-            >Seguridad</label
-          >
+        <div class="rp-category-filters" id="rp-category-filters">
+          <div class="form-check">
+            <input
+              class="rp-checkbox-box form-check-input"
+              type="checkbox"
+              id="cat-1"
+              data-category="1"
+              checked
+            />
+            <label class="rp-checkbox-label form-check-label" for="cat-1"
+              >Infraestructura</label
+            >
+          </div>
+          <div class="form-check">
+            <input
+              class="rp-checkbox-box form-check-input"
+              type="checkbox"
+              id="cat-2"
+              data-category="2"
+              checked
+            />
+            <label class="rp-checkbox-label form-check-label" for="cat-2"
+              >Servicios públicos</label
+            >
+          </div>
+          <div class="form-check">
+            <input
+              class="rp-checkbox-box form-check-input"
+              type="checkbox"
+              id="cat-3"
+              data-category="3"
+            />
+            <label class="rp-checkbox-label form-check-label" for="cat-3"
+              >Medio ambiente</label
+            >
+          </div>
+          <div class="form-check">
+            <input
+              class="rp-checkbox-box form-check-input"
+              type="checkbox"
+              id="cat-4"
+              data-category="4"
+            />
+            <label class="rp-checkbox-label form-check-label" for="cat-4"
+              >Seguridad</label
+            >
+          </div>
         </div>
       </div>
     </div>

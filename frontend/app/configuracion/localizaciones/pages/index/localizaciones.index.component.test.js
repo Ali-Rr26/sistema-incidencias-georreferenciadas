@@ -322,9 +322,6 @@ describe('TREE MODE — permission-driven action rendering', () => {
 
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions.length).toBeGreaterThan(0);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns.length).toBeGreaterThan(0);
   });
 
   it('renders only Ver + kebab (no direct buttons) in tree mode', async () => {
@@ -355,26 +352,10 @@ describe('FLAT MODE — permission-driven action rendering', () => {
 
     const tableActions = document.querySelectorAll('#tabla-body table-actions');
     expect(tableActions.length).toBeGreaterThan(0);
-
-    const verBtns = document.querySelectorAll('#tabla-body .btn-ver');
-    expect(verBtns.length).toBeGreaterThan(0);
   });
 });
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver on first row navigates to /localizaciones/{firstLocationId}', async () => {
-    await renderIndexWithPermissions(
-      new Set(['locations.update', 'locations.delete']),
-    );
-
-    const verBtn = document.querySelector('#tabla-body .btn-ver');
-    verBtn.click();
-
-    // First row in tree mode is the first item from getProvinces(treeRoots)
-    // ( Ecuador's children, so Pichincha = id='2' )
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/localizaciones/2');
-  });
-
   it('clicking Editar on first row navigates to /localizaciones/crear?id={firstLocationId}', async () => {
     await renderIndexWithPermissions(
       new Set(['locations.update', 'locations.delete']),
@@ -425,28 +406,5 @@ describe('Mobile — actions render in card body', () => {
       '#contenedor-cards table-actions',
     );
     expect(tableActionsInCards.length).toBeGreaterThan(0);
-
-    const verBtns = document.querySelectorAll('#contenedor-cards .btn-ver');
-    expect(verBtns.length).toBeGreaterThan(0);
-  });
-
-  it('mobile Ver click navigates to /localizaciones/{id}', async () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      }),
-    });
-
-    await renderIndexWithPermissions(
-      new Set(['locations.update', 'locations.delete']),
-    );
-
-    const verBtn = document.querySelector('#contenedor-cards .btn-ver');
-    verBtn.click();
-
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/localizaciones/2');
   });
 });

@@ -29,8 +29,7 @@ import { http } from '../core/http.service.js';
  *
  * Si los permisos del usuario cambian (logout, asignación de rol, etc.),
  * el llamador debe invalidar la caché explícitamente vía
- * `invalidateMyMenu()` (o el alias legacy `clearCache()`) antes de la
- * próxima lectura.
+ * `invalidateMyMenu()` antes de la próxima lectura.
  */
 
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
@@ -84,19 +83,9 @@ export const menuService = {
   /**
    * Invalida la caché forzando una recarga en la próxima lectura. Llamar
    * después de logout, cambio de rol, o cuando se sepa que los permisos
-   * del usuario cambiaron. Es un alias semántico de `clearCache()` —
-   * ambos nombres hacen lo mismo.
+   * del usuario cambiaron.
    */
   invalidateMyMenu() {
-    this.clearCache();
-  },
-
-  /**
-   * Limpia la caché. Llamar después de logout o cambios de permisos.
-   * Mantenido como alias de `invalidateMyMenu()` por compat con los
-   * llamadores existentes (auth.service.js, app-shell.component.js).
-   */
-  clearCache() {
     _cache = null;
     _cachedAt = 0;
     _inflight = null;

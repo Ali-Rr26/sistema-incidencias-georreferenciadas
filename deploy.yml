@@ -5,12 +5,94 @@
 #   - Docker Swarm mode activado
 #   - Archivo .env con variables de entorno (DB_PASSWORD, JWT_SECRET, etc.)
 #   - PostGIS 17+, Redis 8+
+
+# ============================================================================
+# Anchor: variables de entorno compartidas por backend, worker y scheduler
+# ============================================================================
+# Centraliza todas las vars que el backend Laravel necesita (DB, Redis, mail,
+# JWT, Mercure, AWS/S3, Firebase) en un solo lugar. Los tres servicios que
+# ejecutan código Laravel (`backend`, `worker`, `scheduler`) referencian este
+# anchor con `<<: *x-backend-env` y solo agregan las vars que les son
+# exclusivas (ej. `OCTANE_SERVER: swoole` solo en backend).
+#
+# Si agregás una var nueva que el backend necesita, agregala acá: se
+# propaga automáticamente a worker y scheduler sin duplicar.
+#
+# Convenção Docker Compose: anchors que empiezan con `x-` son extensiones
+# del archivo (no servicios) y se ignoran al parsear el stack — solo
+# sirven como plantillas reutilizables.
+x-backend-env: &x-backend-env
+  APP_NAME: ${APP_NAME:-Sistema de Incidencias Georreferenciadas}
+  APP_ENV: ${APP_ENV:-production}
+  APP_DEBUG: ${APP_DEBUG:-false}
+  APP_KEY: ${APP_KEY:-base64:u6tjIC/VFXSw3JCFREITtaD1jjhDj7ekTQN4WQXcft8=}
+  APP_URL: ${APP_URL:-https://app2.dihm-muertos.site}
+  APP_LOCALE: ${APP_LOCALE:-es}
+  APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-es}
+  APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-es_ES}
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_DATABASE: ${DB_DATABASE:-incidencias_db}
+  DB_USERNAME: ${DB_USERNAME:-user}
+  DB_PASSWORD: ${DB_PASSWORD:-password}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+  SESSION_DRIVER: ${SESSION_DRIVER:-file}
+  CACHE_STORE: ${CACHE_STORE:-file}
+  # Default redis desde el slice de encolado por Redis. Si el operador
+  # fuerza QUEUE_CONNECTION=sync en .env, los mails vuelven al path
+  # sincrónico original (útil para tests/debug local).
+  QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
+  # Folded scalar (- preserva contenido al partir el string en lineas).
+  # yamllint disable-line rule:line-length
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-jwt_access_secret_for_development_only_change_in_prod}
+  JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+  # yamllint disable-line rule:line-length
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-jwt_refresh_secret_for_development_only_change_in_prod}
+  JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,https://app2.dihm-muertos.site}
+  API_VERSION: ${API_VERSION:-1.0.0}
+  # Storage: AWS_* is read by Laravel directly (S3 driver, filesystems
+  # cache, queue, StorageService). One source of truth, no rename.
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfsadmin}
+  # yamllint disable-line rule:line-length
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-rustfsadmin}
+  AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+  AWS_BUCKET: ${AWS_BUCKET:-incidencias}
+  AWS_ENDPOINT: ${AWS_ENDPOINT:-http://rustfs:9000}
+  AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-true}
+  FILESYSTEM_STORAGE_DISK: ${FILESYSTEM_STORAGE_DISK:-s3}
+  FILESYSTEM_DISK: ${FILESYSTEM_DISK:-s3}
+  # Mail Setup
+  MAIL_MAILER: ${MAIL_MAILER:-smtp}
+  MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-}
+  # Invitation Setup
+  FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
+  TERMS_VERSION: ${TERMS_VERSION:-v0}
+  INVITATION_TTL_HOURS: ${INVITATION_TTL_HOURS:-48}
+  LOG_CHANNEL: stderr_json
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  MERCURE_PUBLIC_URL: >-
+    ${MERCURE_PUBLIC_URL:-http://mercure/.well-known/mercure}
+  # yamllint disable-line rule:line-length
+  MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
+  # yamllint disable-line rule:line-length
+  MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
+  FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
+  FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+  FIREBASE_LEEWAY_SECONDS: ${FIREBASE_LEEWAY_SECONDS:-}
+
 services:
   frontend:
     image: sistema-incidencias-frontend:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
@@ -34,75 +116,13 @@ services:
 
   backend:
     image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
     environment:
-      APP_NAME: ${APP_NAME:-Sistema de Incidencias Georreferenciadas}
-      APP_ENV: ${APP_ENV:-production}
-      APP_DEBUG: ${APP_DEBUG:-false}
-      APP_KEY: ${APP_KEY:-base64:u6tjIC/VFXSw3JCFREITtaD1jjhDj7ekTQN4WQXcft8=}
-      APP_URL: ${APP_URL:-http://localhost}
-      APP_LOCALE: ${APP_LOCALE:-es}
-      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-es}
-      APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-es_ES}
-      DB_CONNECTION: pgsql
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_DATABASE: ${DB_DATABASE:-incidencias_db}
-      DB_USERNAME: ${DB_USERNAME:-user}
-      DB_PASSWORD: ${DB_PASSWORD:-password}
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      SESSION_DRIVER: ${SESSION_DRIVER:-file}
-      CACHE_STORE: ${CACHE_STORE:-file}
-      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
-      # Folded scalar (- preserva contenido al partir el string en lineas).
-      # yamllint disable-line rule:line-length
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-jwt_access_secret_for_development_only_change_in_prod}
-      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
-      # yamllint disable-line rule:line-length
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-jwt_refresh_secret_for_development_only_change_in_prod}
-      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
-      API_VERSION: ${API_VERSION:-1.0.0}
-      # Storage: AWS_* is read by Laravel directly (S3 driver, filesystems
-      # cache, queue, StorageService). One source of truth, no rename.
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-rustfsadmin}
-      # yamllint disable-line rule:line-length
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-rustfsadmin}
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
-      AWS_BUCKET: ${AWS_BUCKET:-incidencias}
-      AWS_ENDPOINT: ${AWS_ENDPOINT:-http://rustfs:9000}
-      AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-true}
-      FILESYSTEM_STORAGE_DISK: ${FILESYSTEM_STORAGE_DISK:-s3}
-      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-s3}
-      # Mail Setup
-      MAIL_MAILER: ${MAIL_MAILER:-smtp}
-      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
-      MAIL_USERNAME: ${MAIL_USERNAME:-}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-}
-      # Invitation Setup
-      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-}
-      TERMS_VERSION: ${TERMS_VERSION:-v0}
-      INVITATION_TTL_HOURS: ${INVITATION_TTL_HOURS:-48}
+      <<: *x-backend-env
+      # Único override del backend: Octane/Swoole como runtime HTTP.
+      # Worker y scheduler setean OCTANE_SERVER="" explícitamente para
+      # que el comando artisan no intente levantar Octane (que reserva
+      # memoria y pool de Swoole que estos procesos no necesitan).
       OCTANE_SERVER: swoole
-      LOG_CHANNEL: stderr_json
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      MERCURE_PUBLIC_URL: >-
-        ${MERCURE_PUBLIC_URL:-http://mercure/.well-known/mercure}
-      # yamllint disable-line rule:line-length
-      MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
-      # yamllint disable-line rule:line-length
-      MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
-      FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS:-}
-      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
-      FIREBASE_LEEWAY_SECONDS: ${FIREBASE_LEEWAY_SECONDS:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -125,8 +145,85 @@ services:
       restart_policy:
         condition: any
 
+  # ==========================================
+  # QUEUE WORKER (procesa Jobs de mail)
+  # ==========================================
+  # Reusa la misma imagen del backend (mismo composer/vendor, mismas
+  # dependencias, mismo APP_KEY, misma config) y ejecuta
+  # `php artisan queue:work redis` para consumir los Jobs encolados por
+  # MailJobDispatcher (SendAssignmentMailJob, SendInvitationMailJob).
+  #
+  # Sin este worker los Jobs se acumulan en Redis y nadie los procesa:
+  # el `backend` (Octane) solo procesa HTTP requests, no colas.
+  #
+  # Replicas: 1 porque un solo worker es suficiente para el volumen
+  # actual de mails. Si crece, escalar a 2-3 con sharding por queue
+  # (`--queue=mail-assignments,mail-invitations` por worker).
+  worker:
+    image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
+    environment:
+      <<: *x-backend-env
+      # Forzamos redis para el worker aunque el operador haya puesto
+      # QUEUE_CONNECTION=sync en .env: si el worker corre sync, no hay
+      # punto en existir (los Jobs se ejecutarían inline en el backend).
+      QUEUE_CONNECTION: redis
+      # Vacío explícito: el worker NO debe levantar Octane. El comando
+      # artisan queue:work es un proceso CLI standalone.
+      OCTANE_SERVER: ""
+    command:
+      - php
+      - artisan
+      - queue:work
+      - redis
+      - "--tries=3"
+      - "--backoff=10"
+      - "--max-time=3600"
+      - "--sleep=3"
+      - "--timeout=60"
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  # ==========================================
+  # SCHEDULER (cron interno de Laravel)
+  # ==========================================
+  # `php artisan schedule:work` corre indefinidamente y dispara las
+  # tareas programadas (definidas en App\Console\Kernel) cada minuto.
+  # Sin esto, comandos como `inspire`, `queue:prune-batches` o futuros
+  # crons del dominio (ej. expirar invitaciones viejas) nunca corren.
+  #
+  # Replicas: 1 — schedule:work está diseñado para correr una sola
+  # instancia. Si escalara a 2+, Laravel dispatchearía cada tarea 2+ veces.
+  scheduler:
+    image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
+    environment:
+      <<: *x-backend-env
+      # Mismo razonamiento que en worker: no levantamos Octane en un
+      # proceso que solo corre artisan schedule:work.
+      OCTANE_SERVER: ""
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - incidencias-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
   db:
     image: postgis/postgis:17-3.5-alpine
+    command:
+      - postgres
+      - -c
+      - max_connections=250
     environment:
       POSTGRES_DB: ${DB_DATABASE:-incidencias_db}
       POSTGRES_USER: ${DB_USERNAME:-user}
@@ -141,9 +238,14 @@ services:
         condition: any
     healthcheck:
       test:
-        - "CMD-SHELL"
-        - "pg_isready -U ${DB_USERNAME:-user}"
-        - "-d ${DB_DATABASE:-incidencias_db}"
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" &&
+          max_connections="$$(psql
+          -U "$${POSTGRES_USER}"
+          -d "$${POSTGRES_DB}"
+          -Atqc 'SHOW max_connections')" &&
+          test "$$max_connections" -ge 250
       interval: 10s
       timeout: 5s
       retries: 5
@@ -255,8 +357,9 @@ services:
     image: prom/prometheus:latest
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
-    volumes:
-      - ./ops/prometheus/prometheus.swarm.yml:/etc/prometheus/prometheus.yml
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
     networks:
       - incidencias-network
     deploy:
@@ -287,8 +390,9 @@ services:
     image: grafana/loki:latest
     ports:
       - "${LOKI_PORT:-3100}:3100"
-    volumes:
-      - ./ops/loki/loki.yml:/etc/loki/loki.yml
+    configs:
+      - source: loki_config
+        target: /etc/loki/loki.yml
     networks:
       - incidencias-network
     deploy:
@@ -299,8 +403,10 @@ services:
   promtail:
     image: grafana/promtail:latest
     user: root
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/config.yml
     volumes:
-      - ./ops/promtail/promtail.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - incidencias-network
@@ -368,7 +474,6 @@ services:
       - --token
       # yamllint disable-line rule:line-length
       - ${CLOUDFLARE_TUNNEL_TOKEN:-}
-    restart: unless-stopped
     depends_on:
       - frontend
       - backend
@@ -410,11 +515,20 @@ services:
       restart_policy:
         condition: any
     healthcheck:
+      # Single folded scalar — Docker's `test: ["CMD-SHELL", arg1, arg2, ...]`
+      # does NOT concatenate args. Only the first string after CMD-SHELL runs
+      # in the shell; the rest become positional args to `sh` and are discarded
+      # by `pg_isready`. The previous multi-line form silently ran only
+      # `pg_isready -U sonarqube` (default port 5432), which never matched the
+      # actual postgres listener on the overridden port — making sonarqube_db
+      # crashloop and sonarqube unable to resolve its hostname.
+      # Same folded-scalar pattern as `db:` healthcheck (línea 245), which works.
       test:
         - "CMD-SHELL"
-        - "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube}"
-        - "-d ${SONARQUBE_DB_DATABASE:-sonarqube}"
-        - "-p ${SONARQUBE_DB_PORT:-5432}"
+        - >-
+          pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube}
+          -d ${SONARQUBE_DB_DATABASE:-sonarqube}
+          -p ${SONARQUBE_DB_PORT:-5432}
       interval: 10s
       timeout: 5s
       retries: 5
@@ -465,3 +579,11 @@ volumes:
 networks:
   incidencias-network:
     driver: overlay
+
+configs:
+  prometheus_config:
+    file: ./ops/prometheus/prometheus.swarm.yml
+  loki_config:
+    file: ./ops/loki/loki.yml
+  promtail_config:
+    file: ./ops/promtail/promtail.yml
