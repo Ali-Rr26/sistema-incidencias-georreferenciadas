@@ -518,11 +518,20 @@ services:
       restart_policy:
         condition: any
     healthcheck:
+      # Single folded scalar — Docker's `test: ["CMD-SHELL", arg1, arg2, ...]`
+      # does NOT concatenate args. Only the first string after CMD-SHELL runs
+      # in the shell; the rest become positional args to `sh` and are discarded
+      # by `pg_isready`. The previous multi-line form silently ran only
+      # `pg_isready -U sonarqube` (default port 5432), which never matched the
+      # actual postgres listener on the overridden port — making sonarqube_db
+      # crashloop and sonarqube unable to resolve its hostname.
+      # Same folded-scalar pattern as `db:` healthcheck (línea 245), which works.
       test:
         - "CMD-SHELL"
-        - "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube}"
-        - "-d ${SONARQUBE_DB_DATABASE:-sonarqube}"
-        - "-p ${SONARQUBE_DB_PORT:-5432}"
+        - >-
+          pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube}
+          -d ${SONARQUBE_DB_DATABASE:-sonarqube}
+          -p ${SONARQUBE_DB_PORT:-5432}
       interval: 10s
       timeout: 5s
       retries: 5
