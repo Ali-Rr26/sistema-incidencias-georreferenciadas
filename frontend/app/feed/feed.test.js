@@ -87,7 +87,7 @@ describe('feed component — single responsive template', () => {
   it('template uses Bootstrap row layout (col-lg-8 main + col-lg-4 aside) under #feed', () => {
     expect(feedHtml).toMatch(/id="feed"[^>]*class="row"/);
     expect(feedHtml).toMatch(/<div class="col-12 col-lg-8">/);
-    expect(feedHtml).toMatch(/class="col-lg-4/);
+    expect(feedHtml).toMatch(/class="col-12 col-lg-4/);
   });
 
   it('component does not probe #main-wrapper for context detection', () => {

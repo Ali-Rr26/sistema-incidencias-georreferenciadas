@@ -4,6 +4,7 @@ use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Exceptions\HttpExceptionReporter;
 use App\Http\Middleware\InstrumentHttpRequests;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(SecurityHeaders::class);
+
         $middleware->trustProxies(at: [
             '10.0.0.0/8',
             '172.16.0.0/12',

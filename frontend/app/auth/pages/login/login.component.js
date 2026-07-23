@@ -51,14 +51,13 @@ export function validateRegisterPayload(payload) {
   const password = payload.password || '';
   if (password.length < 8) {
     errors.password = 'La contraseña debe tener al menos 8 caracteres.';
-  } else if (!/[A-Z]/.test(password)) {
+  } else if (
+    !/[A-Z]/.test(password) ||
+    !/[a-z]/.test(password) ||
+    !/[0-9]/.test(password)
+  ) {
     errors.password =
-      'La contraseña debe incluir al menos una letra mayúscula.';
-  } else if (!/[a-z]/.test(password)) {
-    errors.password =
-      'La contraseña debe incluir al menos una letra minúscula.';
-  } else if (!/[0-9]/.test(password)) {
-    errors.password = 'La contraseña debe incluir al menos un dígito.';
+      'La contraseña debe contener: mayúscula (A-Z), minúscula (a-z) y dígito (0-9).';
   }
 
   if (

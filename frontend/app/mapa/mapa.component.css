@@ -13,6 +13,7 @@
   height: calc(100dvh - 128px);
   background: #f4f6fa;
   position: relative;
+  overflow-x: hidden;
 }
 @supports not (height: 100dvh) {
   .mp-layout {
@@ -32,7 +33,8 @@
 .mp-filters-panel {
   position: absolute;
   top: 16px;
-  left: 16px;
+  right: 16px;
+  left: auto;
   width: 280px;
   max-height: calc(100% - 32px);
   background: #fff;
@@ -51,7 +53,7 @@
 /* Hide panel + show FAB when user closes it. The body class is
    toggled by mapa.component.js. */
 body:not(.mp-filters-open) .mp-filters-panel {
-  transform: translateX(-120%);
+  transform: translateX(120%);
   pointer-events: none;
 }
 
@@ -112,7 +114,8 @@ body:not(.mp-filters-open) .mp-filters-panel {
 .mp-filters-fab {
   position: absolute;
   top: 16px;
-  left: 16px;
+  right: 16px;
+  left: auto;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -141,7 +144,7 @@ body:not(.mp-filters-open) .mp-filters-panel {
 
 /* Show FAB only when panel is closed. */
 body.mp-filters-open .mp-filters-fab {
-  transform: translateX(-120%);
+  transform: translateX(120%);
   pointer-events: none;
 }
 
@@ -234,5 +237,8 @@ body.mp-filters-open .mp-filters-fab {
   .mp-filters-panel {
     width: calc(100% - 32px);
     max-height: 60%;
+    top: 72px;
+    left: auto;
+    right: 16px;
   }
 }
