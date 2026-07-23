@@ -16,8 +16,6 @@ class FeedRebuildCommand extends Command
 
     private const V2_INDEX_KEY = 'feed:v2:index';
 
-    private const FEED_TTL = 604800; // 7 days
-
     protected $signature = 'feed:rebuild';
 
     protected $description = 'Rebuild Redis feed v2 data from PostgreSQL';
@@ -56,8 +54,9 @@ class FeedRebuildCommand extends Command
             });
 
         // Set TTL on v2 keys once after all inserts
-        Redis::expire(self::V2_ITEMS_KEY, self::FEED_TTL);
-        Redis::expire(self::V2_INDEX_KEY, self::FEED_TTL);
+        $feedTtlSeconds = (int) config('cache.feed_ttl_seconds');
+        Redis::expire(self::V2_ITEMS_KEY, $feedTtlSeconds);
+        Redis::expire(self::V2_INDEX_KEY, $feedTtlSeconds);
 
         $this->info("Synced {$incidentCount} incidents to Redis feed v2.");
 
