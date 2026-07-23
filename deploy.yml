@@ -93,9 +93,6 @@ x-backend-env: &x-backend-env
 services:
   frontend:
     image: sistema-incidencias-frontend:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
@@ -119,9 +116,6 @@ services:
 
   backend:
     image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
     environment:
       <<: *x-backend-env
       # Único override del backend: Octane/Swoole como runtime HTTP.
@@ -476,7 +470,6 @@ services:
       - --token
       # yamllint disable-line rule:line-length
       - ${CLOUDFLARE_TUNNEL_TOKEN:-}
-    restart: unless-stopped
     depends_on:
       - frontend
       - backend
