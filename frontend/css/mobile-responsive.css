@@ -363,11 +363,13 @@ video {
   .feed-card .card-header {
     gap: clamp(8px, 2vw, 12px);
     padding: clamp(8px, 2vw, 12px);
+    flex-wrap: wrap;
   }
 
   .feed-card .card-header .flex-grow-1 {
     min-width: 0;
     overflow: hidden;
+    flex-basis: 100%;
   }
 
   .feed-card .card-header .flex-grow-1 > div:nth-child(1) {
@@ -387,8 +389,71 @@ video {
   /* Badges on mobile: shrink font + padding */
   .feed-card .card-header > .badge {
     font-size: clamp(10px, 2vw, 11px);
-    padding: clamp(3px, 1vw, 4px) clamp(8px, 1.5vw, 10px);
+    padding: clamp(3px, 1vw, 4px) clamp(6px, 1.2vw, 8px);
     white-space: nowrap;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  /* Feed card footer: responsive buttons on mobile */
+  .feed-card .card-footer {
+    gap: clamp(6px, 1.5vw, 8px);
+    padding: clamp(8px, 2vw, 12px);
+    flex-wrap: wrap;
+  }
+
+  .feed-card .card-footer .btn {
+    font-size: clamp(11px, 2.5vw, 13px);
+    padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .feed-card .card-footer .btn-sm {
+    line-height: 1.2;
+  }
+
+  .feed-card .card-footer .feed-action-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Footer button container: stack on very small screens */
+  .feed-card .card-footer > div {
+    width: 100%;
+  }
+
+  /* Checkboxes smaller on mobile */
+  .rp-category-filters .form-check {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .rp-checkbox-box {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+  }
+
+  .rp-checkbox-label {
+    font-size: clamp(12px, 2.5vw, 14px);
+  }
+
+  /* Filter badges responsive */
+  .rp-filter-chip {
+    font-size: clamp(11px, 2vw, 12px);
+    padding: clamp(4px, 1vw, 6px) clamp(10px, 2vw, 12px);
+  }
+
+  /* Right panel section labels smaller on mobile */
+  .rp-card-section-label {
+    font-size: clamp(10px, 1.8vw, 11px);
+  }
+
+  /* Right panel card reduced padding on mobile */
+  .rp-card {
+    padding: clamp(12px, 3vw, 16px);
   }
 }
 
