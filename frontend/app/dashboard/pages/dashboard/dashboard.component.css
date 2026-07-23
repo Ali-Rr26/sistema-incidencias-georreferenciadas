@@ -61,34 +61,6 @@
   }
 }
 
-.gr-page__title {
-  font-size: 23px;
-  font-weight: 700;
-  color: #23283b;
-  margin: 0 0 4px;
-}
-
-@media (max-width: 480px) {
-  .gr-page__title {
-    font-size: 18px;
-  }
-}
-
-.gr-breadcrumb {
-  font-size: 13px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.gr-breadcrumb__sep {
-  opacity: 0.5;
-}
-.gr-breadcrumb__item--active {
-  color: #8a90a0;
-}
-
 .gr-page__actions {
   display: flex;
   gap: 10px;

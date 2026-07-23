@@ -93,6 +93,18 @@ echo "═══════════════════"
 echo ""
 
 # -------------------------------------------------------
+# Honor an overridden command (worker/scheduler containers
+# pass `php artisan queue:work ...` / `schedule:work` via
+# `command:` in deploy.yml). Without this, every container
+# sharing this image would boot Octane regardless of the
+# command override.
+# -------------------------------------------------------
+if [ "$#" -gt 0 ]; then
+    echo "Starting: $*"
+    exec "$@"
+fi
+
+# -------------------------------------------------------
 # Start Octane (Swoole) — exec replaces shell process
 # so signals (SIGTERM) reach Octane directly
 # -------------------------------------------------------
