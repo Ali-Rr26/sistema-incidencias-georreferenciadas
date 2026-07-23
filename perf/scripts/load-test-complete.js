@@ -4,7 +4,7 @@ import { getAuthToken } from './_auth.js';
 
 const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:8000';
 
-export let options = {
+export const options = {
   stages: [
     // Read-heavy: ramp 0→50 VU over 30s, hold 60s, ramp down
     { duration: '30s', target: 50, name: 'read-ramp-up' },
@@ -28,20 +28,23 @@ export let options = {
   },
 };
 
-export default function () {
+export function setup() {
   const token = getAuthToken(BASE_URL);
   if (!token) {
-    console.error('No auth token obtained');
-    return;
+    throw new Error('Authentication failed during setup');
   }
 
+  return { token };
+}
+
+export default function ({ token }) {
   // Read-heavy: 60% incidents, 20% categories, 20% locations
   if (__VU <= 50) {
     const rand = Math.random();
     
     if (rand < 0.6) {
       group('read:incidents', () => {
-        let res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
+        const res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
           headers: { 'Authorization': `Bearer ${token}` },
           tags: { name: 'get_incidents' },
         });
@@ -52,7 +55,7 @@ export default function () {
       });
     } else if (rand < 0.8) {
       group('read:categories', () => {
-        let res = http.get(`${BASE_URL}/api/incident-categories`, {
+        const res = http.get(`${BASE_URL}/api/incident-categories`, {
           headers: { 'Authorization': `Bearer ${token}` },
           tags: { name: 'get_categories' },
         });
@@ -62,7 +65,7 @@ export default function () {
       });
     } else {
       group('read:locations', () => {
-        let res = http.get(`${BASE_URL}/api/locations`, {
+        const res = http.get(`${BASE_URL}/api/locations`, {
           headers: { 'Authorization': `Bearer ${token}` },
           tags: { name: 'get_locations' },
         });
@@ -76,7 +79,7 @@ export default function () {
   // Write-heavy: create incidents (20 VUs, ramp 2-3)
   if (__VU > 50 && __VU <= 70) {
     group('write:create_incident', () => {
-      let res = http.post(`${BASE_URL}/api/incidents`, JSON.stringify({
+      const res = http.post(`${BASE_URL}/api/incidents`, JSON.stringify({
         title: `Test Incident ${__VU}-${Date.now()}`,
         description: 'Load test incident',
         incident_category_id: 2,
@@ -101,7 +104,7 @@ export default function () {
     const rand = Math.random();
     if (rand < 0.7) {
       group('mixed:read', () => {
-        let res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
+        const res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
           headers: { 'Authorization': `Bearer ${token}` },
           tags: { name: 'mixed_read' },
         });
@@ -111,7 +114,7 @@ export default function () {
       });
     } else {
       group('mixed:write', () => {
-        let res = http.post(`${BASE_URL}/api/incidents`, JSON.stringify({
+        const res = http.post(`${BASE_URL}/api/incidents`, JSON.stringify({
           title: `Mixed Incident ${__VU}-${Date.now()}`,
           description: 'Mixed load test',
           incident_category_id: 2,

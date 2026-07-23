@@ -4,7 +4,7 @@ import { getAuthToken } from './_auth.js';
 
 const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:8000';
 
-export let options = {
+export const options = {
   stages: [
     { duration: '30s', target: 50 },
     { duration: '60s', target: 50 },
@@ -16,11 +16,17 @@ export let options = {
   },
 };
 
-export default function () {
+export function setup() {
   const token = getAuthToken(BASE_URL);
-  if (!token) return;
+  if (!token) {
+    throw new Error('Authentication failed during setup');
+  }
 
-  let res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
+  return { token };
+}
+
+export default function ({ token }) {
+  const res = http.get(`${BASE_URL}/api/incidents?per_page=20`, {
     headers: { 'Authorization': `Bearer ${token}` },
     tags: { name: 'get_incidents' },
   });

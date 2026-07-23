@@ -226,6 +226,10 @@ services:
 
   db:
     image: postgis/postgis:17-3.5-alpine
+    command:
+      - postgres
+      - -c
+      - max_connections=250
     environment:
       POSTGRES_DB: ${DB_DATABASE:-incidencias_db}
       POSTGRES_USER: ${DB_USERNAME:-user}
@@ -240,9 +244,14 @@ services:
         condition: any
     healthcheck:
       test:
-        - "CMD-SHELL"
-        - "pg_isready -U ${DB_USERNAME:-user}"
-        - "-d ${DB_DATABASE:-incidencias_db}"
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" &&
+          max_connections="$$(psql
+          -U "$${POSTGRES_USER}"
+          -d "$${POSTGRES_DB}"
+          -Atqc 'SHOW max_connections')" &&
+          test "$$max_connections" -ge 250
       interval: 10s
       timeout: 5s
       retries: 5
