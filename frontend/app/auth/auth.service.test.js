@@ -9,7 +9,7 @@
  *   `POST /logout` call rejects (5xx, network error), because the
  *   local auth state still flips to logged-out regardless.
  *
- * We stub `menuService.clearCache` via `vi.mock` so we can assert on
+ * We stub `menuService.invalidateMyMenu` via `vi.mock` so we can assert on
  * the spy directly. `http.post` is mocked through the existing
  * `http.service.js` module surface.
  */
@@ -32,7 +32,7 @@ vi.mock('../shared/menu.service.js', async (importOriginal) => {
     ...mod,
     menuService: {
       ...mod.menuService,
-      clearCache: vi.fn(),
+      invalidateMyMenu: vi.fn(),
       getMyMenu: vi.fn(),
     },
   };
@@ -60,10 +60,10 @@ describe('auth.logout() — cache invalidation (T-2.10 menu-server-driven)', () 
     http.post.mockResolvedValue({ data: { ok: true } });
   });
 
-  it('calls menuService.clearCache() during logout', async () => {
+  it('calls menuService.invalidateMyMenu() during logout', async () => {
     const { auth } = await import('./auth.service.js');
     await auth.logout();
-    expect(menuService.clearCache).toHaveBeenCalledTimes(1);
+    expect(menuService.invalidateMyMenu).toHaveBeenCalledTimes(1);
   });
 
   // Regression test — found live via Playwright while verifying the
@@ -85,24 +85,24 @@ describe('auth.logout() — cache invalidation (T-2.10 menu-server-driven)', () 
     http.post.mockRejectedValueOnce(new Error('500 Internal Server Error'));
     const { auth } = await import('./auth.service.js');
     await expect(auth.logout()).resolves.toBeUndefined();
-    expect(menuService.clearCache).toHaveBeenCalledTimes(1);
+    expect(menuService.invalidateMyMenu).toHaveBeenCalledTimes(1);
   });
 
   it('still clears the menu cache when POST /logout rejects with a network error', async () => {
     http.post.mockRejectedValueOnce(new TypeError('NetworkError'));
     const { auth } = await import('./auth.service.js');
     await expect(auth.logout()).resolves.toBeUndefined();
-    expect(menuService.clearCache).toHaveBeenCalledTimes(1);
+    expect(menuService.invalidateMyMenu).toHaveBeenCalledTimes(1);
   });
 
-  it('calls menuService.clearCache BEFORE notifying auth-change subscribers', async () => {
+  it('calls invalidateMyMenu BEFORE notifying auth-change subscribers', async () => {
     const { auth } = await import('./auth.service.js');
     const events = [];
     const subscriber = vi.fn(() => {
       events.push('subscriber');
     });
-    menuService.clearCache.mockImplementation(() => {
-      events.push('menu.clearCache');
+    menuService.invalidateMyMenu.mockImplementation(() => {
+      events.push('menu.invalidateMyMenu');
     });
     auth.onAuthChange(subscriber);
 
@@ -111,6 +111,6 @@ describe('auth.logout() — cache invalidation (T-2.10 menu-server-driven)', () 
     // The menu cache clear must run before the subscriber observes the
     // auth state change. If a subscriber queries menuService after the
     // notification, it must see a fresh cache.
-    expect(events).toEqual(['menu.clearCache', 'subscriber']);
+    expect(events).toEqual(['menu.invalidateMyMenu', 'subscriber']);
   });
 });

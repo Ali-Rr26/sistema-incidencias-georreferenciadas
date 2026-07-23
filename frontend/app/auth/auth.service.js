@@ -126,7 +126,7 @@ class AuthService {
     // out of an admin_sistema session and into a less-privileged one
     // within the TTL window serves the PREVIOUS user's full permission
     // set to the guard.
-    menuService.clearCache();
+    menuService.invalidateMyMenu();
     permissionService.invalidateMyPermissions();
     // mapaService is user-agnostic by default (keys on bbox/zoom/filters
     // only). Without an explicit invalidate on logout, a stored bbox-page
