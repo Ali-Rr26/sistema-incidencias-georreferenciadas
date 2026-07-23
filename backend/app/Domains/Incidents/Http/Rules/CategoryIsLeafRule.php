@@ -12,11 +12,11 @@ class CategoryIsLeafRule implements Rule
     public function passes($attribute, $value): bool
     {
         $category = IncidentCategory::find($value);
-        if (!$category) {
+        if (! $category) {
             return false;
         }
 
-        return !$category->children()->exists();
+        return ! $category->children()->exists();
     }
 
     public function message(): string

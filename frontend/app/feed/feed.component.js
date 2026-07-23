@@ -494,7 +494,7 @@ export default {
         rpFilterToggle.classList.toggle('collapsed');
         rpFilterToggle.setAttribute(
           'aria-expanded',
-          rpFilterToggle.classList.contains('collapsed') ? 'false' : 'true'
+          rpFilterToggle.classList.contains('collapsed') ? 'false' : 'true',
         );
       }
 

@@ -36,7 +36,7 @@ class StoreIncidentRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
-            'incident_category_id' => ['required', 'integer', 'exists:incident_categories,id', new CategoryIsLeafRule()],
+            'incident_category_id' => ['required', 'integer', 'exists:incident_categories,id', new CategoryIsLeafRule],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'geom' => ['nullable', app(GeomShapeRule::class)],

@@ -29,12 +29,12 @@ class SecurityHeaders
         // Content Security Policy
         $response->header(
             'Content-Security-Policy',
-            "default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' https://unpkg.com; " .
-            "style-src 'self' 'unsafe-inline' https://unpkg.com; " .
-            "img-src 'self' data: https:; " .
-            "font-src 'self' data: https://unpkg.com; " .
-            "connect-src 'self' http://localhost:8000; " .
+            "default-src 'self'; ".
+            "script-src 'self' 'unsafe-inline' https://unpkg.com; ".
+            "style-src 'self' 'unsafe-inline' https://unpkg.com; ".
+            "img-src 'self' data: https:; ".
+            "font-src 'self' data: https://unpkg.com; ".
+            "connect-src 'self' http://localhost:8000; ".
             "frame-ancestors 'none';"
         );
 
