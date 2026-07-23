@@ -20,6 +20,7 @@ use App\Domains\Invitations\Services\InvitationService;
 use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Mail\Services\MailJobDispatcher;
 use App\Domains\Mail\Services\MailSenderInterface;
 use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Notifications\Http\Policies\NotificationPolicy;
@@ -76,6 +77,17 @@ class AppServiceProvider extends ServiceProvider
         // con otros observadores ni con el sistema de mail transaccional
         // general (registros, recuperación de contraseña, etc.).
         $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
+        // MailJobDispatcher — singleton que centraliza el despacho de
+        // Jobs de mail. No expone interface porque es una decisión
+        // interna del dominio Mail: los observers y services inyectan
+        // la clase concreta directamente. El container comparte la
+        // misma instancia entre todos los callers; los Jobs en sí se
+        // instancian nuevos en cada dispatch() y se serializan a Redis.
+        // Ver docblock de MailJobDispatcher para la justificación del
+        // singleton (no es el antipatrón "Job singleton", es solo
+        // dispatcher compartido).
+        $this->app->singleton(MailJobDispatcher::class, MailJobDispatcher::class);
 
         // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
         $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
