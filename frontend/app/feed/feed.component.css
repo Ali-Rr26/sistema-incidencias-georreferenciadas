@@ -324,10 +324,38 @@ body.feed-view .app-shell-main {
   background: #b0a6f8;
 }
 
-/* --- Checked checkbox state --- */
+/* --- Checkbox sizing --- */
+.rp-category-filters .form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.rp-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .rp-checkbox-box:checked {
   background-color: #5e3bdb;
   border-color: #5e3bdb;
+}
+
+.rp-checkbox-label {
+  margin: 0 !important;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
 }
 
 /* --- Focus styles for clickable wrappers promoted to buttons --- */
