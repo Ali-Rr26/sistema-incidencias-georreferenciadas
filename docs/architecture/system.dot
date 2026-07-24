@@ -10,7 +10,7 @@
  *   solid  = real request traffic
  *   dashed = observability / CI (no user traffic)
  *   cylinder  = datastore
- *   octagon   = hub / pub-sub (Mercure)
+ *   octagon   = hub / pub-sub
  *   note      = external / managed outside the repo
  *   ⚠         = caveat known for the current state
  */
@@ -57,7 +57,7 @@ digraph architecture {
         fontname="Helvetica-Bold";
         penwidth=1.5;
 
-        Nginx [label="Nginx :80\nstatic + reverse proxy",
+        Nginx [label="Nginx :80\nstatic + reverse proxy\nproxy_buffering off",
                fillcolor="#B2DFDB", color="#00695C", fontcolor="#004D40"];
         SPA [label="SPA estática\nBootstrap 5 · Leaflet\nTurf · Tom Select",
              shape=note, fillcolor="#FFFFFF", color="#00695C", fontcolor="#004D40"];
@@ -67,7 +67,7 @@ digraph architecture {
     //  Backend container
     // ------------------------------------------------------------------
     subgraph cluster_be {
-        label="Backend container · PHP 8.3 + Swoole 5";
+        label="Backend container · PHP 8.3 + Swoole 5 · octane:start + schedule:work";
         labeljust=l;
         style=filled;
         fillcolor="#E8EAF6";
@@ -76,15 +76,18 @@ digraph architecture {
         fontname="Helvetica-Bold";
         penwidth=1.5;
 
-        Octane [label="Laravel 13.15\nOctane 2.17.5 · driver=swoole\nQUEUE_CONNECTION=sync",
+        Octane [label="Laravel 13.15\nOctane 2.17.5 · driver=swoole\nQUEUE_CONNECTION=redis",
                 fillcolor="#C5CAE9", color="#283593", fontcolor="#1A237E"];
+
+        Worker [label="Queue worker\nphp artisan queue:work redis\n(mail: SendAssignment, SendInvitation)",
+                shape=note, fillcolor="#FFFFFF", color="#283593", fontcolor="#1A237E"];
     }
 
     // ------------------------------------------------------------------
-    //  Mercure
+    //  Pub/Sub broker (was Mercure, now Redis)
     // ------------------------------------------------------------------
-    Mercure [label="Mercure · dunglas/mercure\nSSE / EventSource\ntopic: user:{id}:notifications",
-             shape=octagon, fillcolor="#FFF8E1", color="#FF8F00", fontcolor="#E65100"];
+    PubSub [label="Redis Pub/Sub\nchannel: user:{id}:notifications\nlive delivery to SSE stream",
+            shape=octagon, fillcolor="#FFF8E1", color="#FF8F00", fontcolor="#E65100"];
 
     // ------------------------------------------------------------------
     //  Data tier
@@ -101,7 +104,7 @@ digraph architecture {
 
         PG [label="PostgreSQL 17\n+ PostGIS 3.5",
             shape=cylinder, fillcolor="#CFD8DC", color="#37474F", fontcolor="#263238"];
-        Redis [label="Redis 8\nCQRS read model\ngeolocation cache",
+        Redis [label="Redis 8\nCQRS read model · cache\nPub/Sub broker for SSE",
                shape=cylinder, fillcolor="#CFD8DC", color="#37474F", fontcolor="#263238"];
         RustFS [label="RustFS\nS3-compatible\nself-hosted",
                 shape=cylinder, fillcolor="#CFD8DC", color="#37474F", fontcolor="#263238"];
@@ -153,15 +156,26 @@ digraph architecture {
     Browser  -> CF      [label="HTTPS"];
     CF       -> Nginx   [label="HTTP :80\n+X-Forwarded-Proto"];
     Nginx    -> SPA     [label="sirve /dist"];
-    Nginx    -> Octane  [label="/api/* · /storage/*"];
-    Nginx    -> Mercure [label="/.well-known/mercure"];
+    Nginx    -> Octane  [label="/api/* · /storage/*\n/.well-known → /api/notifications/stream"];
+
     Octane   -> PG      [label="spatial queries"];
-    Octane   -> Redis   [label="CQRS sync listeners"];
+    Octane   -> Redis   [label="CQRS sync listeners\n+ Pub/Sub subscribe"];
     Octane   -> RustFS  [label="upload imágenes"];
-    Octane   -> Mercure [label="publish sync\n(sin queue)",
-                        style=dashed, color="#FB8C00", fontcolor="#E65100"];
-    Mercure  -> Browser [label="SSE / EventSource",
-                        color="#1565C0", fontcolor="#1565C0", penwidth=1.6];
+
+    // Live notification path: backend writes to Redis Pub/Sub on the
+    // user's channel, the same Redis broker fans out to subscribed
+    // SSE endpoints (one per logged-in user), which the browser keeps
+    // alive via EventSource's automatic reconnect.
+    Octane   -> PubSub  [label="publish\n(user:{id}:notifications)", color="#FB8C00", fontcolor="#E65100"];
+    PubSub   -> Octane  [label="subscribe\n(per request)", color="#1565C0", fontcolor="#1565C0"];
+    Octane   -> Browser [label="SSE stream\nEventSource",
+                         color="#1565C0", fontcolor="#1565C0", penwidth=1.6];
+
+    // Queue worker (mail jobs) runs in its own container in prod; in
+    // compose dev it's still separate. The publish queue is the same
+    // Redis used for Pub/Sub.
+    Octane   -> Redis   [label="dispatch mail jobs", style=dashed, color="#888888"];
+    Worker   -> Redis   [label="consume mail jobs", style=dashed, color="#888888"];
 
     // ------------------------------------------------------------------
     //  Observability (dashed gray)
@@ -188,7 +202,7 @@ digraph architecture {
     // ------------------------------------------------------------------
     { rank=same; Browser; CF; }
     { rank=same; Nginx; SPA; }
-    { rank=same; Octane; Mercure; }
+    { rank=same; Octane; PubSub; Worker; }
     { rank=same; PG; Redis; RustFS; }
     { rank=same; Prom; Loki; Graf; }
     { rank=same; GH; Sonar; }

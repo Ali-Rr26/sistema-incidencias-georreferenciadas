@@ -109,12 +109,15 @@ fi
 
 # -------------------------------------------------------
 # Start Octane (Swoole) — exec replaces shell process
-# so signals (SIGTERM) reach Octane directly
+# so signals (SIGTERM) reach Octane directly.
+#
+# We do NOT pass --workers / --max-requests / --task-workers here.
+# Those CLI flags silently override `config/octane.php`, which would
+# drift between dev (octane.php values), CI (also octane.php), and
+# prod (CLI flags in this file). Making `octane.php` the single
+# source of truth removes that footgun.
 # -------------------------------------------------------
 echo "Starting Octane (Swoole) on 0.0.0.0:8000..."
 exec php artisan octane:swoole \
     --host=0.0.0.0 \
-    --port=8000 \
-    --workers=4 \
-    --max-requests=500 \
-    --task-workers=2
+    --port=8000

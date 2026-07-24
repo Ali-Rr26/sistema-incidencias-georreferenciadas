@@ -1895,8 +1895,12 @@ describe('citizen notification bell — SSE + dropdown', () => {
       this.options = options;
       this.onmessage = null;
       this.onerror = null;
+      this.listeners = new Map();
       this.closed = false;
       MockEventSource.instances.push(this);
+    }
+    addEventListener(type, listener) {
+      this.listeners.set(type, listener);
     }
     close() {
       this.closed = true;
@@ -1959,14 +1963,16 @@ describe('citizen notification bell — SSE + dropdown', () => {
     };
   }
 
-  it('opens an EventSource connection to the Mercure hub with withCredentials for the citizen role', async () => {
+  it('opens an EventSource connection to the native SSE endpoint with withCredentials for the citizen role', async () => {
     const { appShell, unsub } = await mountCitizen();
     try {
       expect(MockEventSource.instances).toHaveLength(1);
       const instance = MockEventSource.instances[0];
-      expect(instance.url).toBe(
-        '/.well-known/mercure?topic=user%3A9%3Anotifications',
-      );
+      // After Fase 3 of openspec/changes/eliminar-mercure-sse-nativo,
+      // the bell streams from /api/notifications/stream (Laravel
+      // Octane/Swoole + Redis Pub/Sub). The `access_token` cookie
+      // set at login authorizes the request server-side.
+      expect(instance.url).toBe('/api/notifications/stream');
       expect(instance.options).toEqual({ withCredentials: true });
     } finally {
       appShell.destroy();
@@ -1974,7 +1980,7 @@ describe('citizen notification bell — SSE + dropdown', () => {
     }
   });
 
-  it('updates the bell badge when an SSE message arrives', async () => {
+  it('updates the bell badge when a named notification SSE event arrives', async () => {
     const { appShell, unsub } = await mountCitizen();
     try {
       const { badge } = bellRefs();
@@ -1982,7 +1988,7 @@ describe('citizen notification bell — SSE + dropdown', () => {
 
       unreadCountSpy.mockResolvedValue(3);
       const instance = MockEventSource.instances[0];
-      instance.onmessage({
+      instance.listeners.get('notification')({
         data: JSON.stringify({
           id: 1,
           message: 'Nueva notificación',
