@@ -315,9 +315,9 @@ services:
     volumes:
       - sonarqube_db_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
+      test: [
           "CMD-SHELL",
+          # yamllint disable-line rule:line-length
           "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube} -p ${SONARQUBE_DB_PORT:-5432}",
         ]
       interval: 5s
@@ -360,6 +360,9 @@ services:
       start_period: 60s
     networks:
       - dev-network
+
+volumes:
+  db_data:
   redis_data:
   rustfs_data:
   grafana_data:
