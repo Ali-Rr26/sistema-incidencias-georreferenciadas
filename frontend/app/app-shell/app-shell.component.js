@@ -1068,7 +1068,7 @@ function connectNotificationStream(userId) {
       withCredentials: true,
     });
 
-    _notifStream.onmessage = (event) => {
+    const handleNotification = (event) => {
       if (!event.data) return;
       let notif;
       try {
@@ -1078,6 +1078,9 @@ function connectNotificationStream(userId) {
       }
       _bellPanels.forEach((bell) => bell.prependIfOpen(notif));
     };
+
+    _notifStream.addEventListener('notification', handleNotification);
+    _notifStream.onmessage = handleNotification;
 
     _notifStream.onerror = () => {
       // EventSource.onerror fires for both transient blips (where the

@@ -1895,8 +1895,12 @@ describe('citizen notification bell — SSE + dropdown', () => {
       this.options = options;
       this.onmessage = null;
       this.onerror = null;
+      this.listeners = new Map();
       this.closed = false;
       MockEventSource.instances.push(this);
+    }
+    addEventListener(type, listener) {
+      this.listeners.set(type, listener);
     }
     close() {
       this.closed = true;
@@ -1976,7 +1980,7 @@ describe('citizen notification bell — SSE + dropdown', () => {
     }
   });
 
-  it('updates the bell badge when an SSE message arrives', async () => {
+  it('updates the bell badge when a named notification SSE event arrives', async () => {
     const { appShell, unsub } = await mountCitizen();
     try {
       const { badge } = bellRefs();
@@ -1984,7 +1988,7 @@ describe('citizen notification bell — SSE + dropdown', () => {
 
       unreadCountSpy.mockResolvedValue(3);
       const instance = MockEventSource.instances[0];
-      instance.onmessage({
+      instance.listeners.get('notification')({
         data: JSON.stringify({
           id: 1,
           message: 'Nueva notificación',
