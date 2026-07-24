@@ -3,6 +3,7 @@ services:
   # FRONTEND (Static Nginx Server)
   # ==========================================
   frontend:
+    image: sistema-incidencias-frontend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -23,6 +24,7 @@ services:
   # BACKEND
   # ==========================================
   backend:
+    image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -312,7 +314,11 @@ services:
     volumes:
       - sonarqube_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube} -p ${SONARQUBE_DB_PORT:-5432}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube} -p ${SONARQUBE_DB_PORT:-5432}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
