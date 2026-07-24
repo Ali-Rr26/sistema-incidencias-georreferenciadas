@@ -53,6 +53,9 @@ php -r "
     try {
         \$r = new Redis();
         \$r->connect('${REDIS_HOST:-redis}', ${REDIS_PORT:-6379}, 2);
+        if (!empty('${REDIS_PASSWORD:-}')) {
+            \$r->auth('${REDIS_PASSWORD}');
+        }
         \$info = \$r->info('server');
         echo 'Connected (v' . (\$info['redis_version'] ?? '?') . ')' . PHP_EOL;
     } catch (\Throwable \$e) {
