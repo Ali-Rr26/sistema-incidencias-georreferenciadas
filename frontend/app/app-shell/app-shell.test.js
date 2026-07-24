@@ -1959,14 +1959,16 @@ describe('citizen notification bell — SSE + dropdown', () => {
     };
   }
 
-  it('opens an EventSource connection to the Mercure hub with withCredentials for the citizen role', async () => {
+  it('opens an EventSource connection to the native SSE endpoint with withCredentials for the citizen role', async () => {
     const { appShell, unsub } = await mountCitizen();
     try {
       expect(MockEventSource.instances).toHaveLength(1);
       const instance = MockEventSource.instances[0];
-      expect(instance.url).toBe(
-        '/.well-known/mercure?topic=user%3A9%3Anotifications',
-      );
+      // After Fase 3 of openspec/changes/eliminar-mercure-sse-nativo,
+      // the bell streams from /api/notifications/stream (Laravel
+      // Octane/Swoole + Redis Pub/Sub). The `access_token` cookie
+      // set at login authorizes the request server-side.
+      expect(instance.url).toBe('/api/notifications/stream');
       expect(instance.options).toEqual({ withCredentials: true });
     } finally {
       appShell.destroy();

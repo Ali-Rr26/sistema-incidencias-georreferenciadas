@@ -51,3 +51,27 @@ it('tunes nginx to handle SSE-heavy concurrent connections', function (): void {
     expect($conf)->toMatch('/events\s*\{[^}]*worker_connections\s+4096/s');
     expect($conf)->toMatch('/events\s*\{[^}]*multi_accept\s+on/s');
 });
+
+it('removes the legacy Mercure location block (SSE native replaces it)', function (): void {
+    $conf = file_get_contents(base_path('../nginx.conf'));
+
+    // The Mercure hub is gone: the location block that proxied long-lived
+    // SSE connections to it must be removed too. Without this, dangling
+    // references would either 502 (hub no longer exists) or, worse,
+    // accidentally proxy `/api/notifications/stream` traffic through it
+    // if upstream name `mercure` happens to resolve.
+    expect($conf)->not->toContain('location /.well-known/mercure');
+    expect($conf)->not->toMatch('/proxy_pass\s+\$backend\s+http:\/\/mercure:80/s');
+});
+
+it('routes the native SSE stream through /api/ with buffering disabled', function (): void {
+    $conf = file_get_contents(base_path('../nginx.conf'));
+
+    // /api/ is now the SSE entry point (the stream lives at
+    // /api/notifications/stream). It must disable buffering and extend
+    // the read timeout so the connection stays open across heartbeat
+    // intervals and proxy idle cutoffs.
+    expect($conf)->toMatch('/location\s+\/api\/\s*\{[^}]*proxy_buffering\s+off/s');
+    expect($conf)->toMatch('/location\s+\/api\/\s*\{[^}]*proxy_cache\s+off/s');
+    expect($conf)->toMatch('/location\s+\/api\/\s*\{[^}]*proxy_read_timeout\s+1d/s');
+});
