@@ -79,7 +79,7 @@
             "./vendor/bin/pint --test"
         ],
 "test:unit": [
-            "@php vendor/bin/pest --parallel --processes=8 --testsuite=Unit"
+            "@php vendor/bin/pest --testsuite=Unit"
         ],
         "test:feature": [
             "@php vendor/bin/pest --parallel --processes=8 --testsuite=Feature"
