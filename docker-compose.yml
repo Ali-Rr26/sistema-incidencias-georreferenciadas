@@ -81,6 +81,7 @@ services:
       QUEUE_CONNECTION: redis
       OCTANE_SERVER: ""
       LOG_CHANNEL: stderr_json
+    volumes:
       - ./backend/routes:/var/www/backend/routes
       - ./backend/config:/var/www/backend/config
       - ./backend/resources:/var/www/backend/resources
