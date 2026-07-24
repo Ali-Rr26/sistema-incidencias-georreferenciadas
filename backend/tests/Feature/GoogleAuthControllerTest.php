@@ -123,8 +123,7 @@ it('R7: creates a new user with role usuario for an unknown Google email and ret
         ->assertJsonPath('user.email', 'newuser@example.com')
         ->assertJsonPath('user.first_name', 'New')
         ->assertJsonPath('user.last_name', 'User')
-        ->assertCookie('refresh_token')
-        ->assertCookie('mercureAuthorization');
+        ->assertCookie('refresh_token');
 
     // New user exists, with role = usuario.
     $newUser = User::where('email', 'newuser@example.com')->firstOrFail();

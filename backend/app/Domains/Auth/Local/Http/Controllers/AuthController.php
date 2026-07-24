@@ -7,7 +7,6 @@ namespace App\Domains\Auth\Local\Http\Controllers;
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
-use App\Domains\Auth\Mercure\Services\MercureCookieService;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
@@ -30,7 +29,6 @@ class AuthController
 
     public function __construct(
         private readonly AuthService $authService,
-        private readonly MercureCookieService $mercureCookies,
         private readonly ProfileImageService $profileImageService,
     ) {}
 
@@ -60,8 +58,7 @@ class AuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($result['user']),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureCookies->build($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -87,8 +84,7 @@ class AuthController
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureCookies->build($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -105,8 +101,7 @@ class AuthController
         return response()->json([
             'message' => 'Sesión cerrada exitosamente.',
         ])
-            ->withCookie($this->expiredCookie())
-            ->withCookie($this->mercureCookies->expire());
+            ->withCookie($this->expiredCookie());
     }
 
     /**

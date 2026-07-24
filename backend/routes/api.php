@@ -17,6 +17,7 @@ use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
+use App\Domains\Notifications\Http\NotificationStreamController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\OperatorLocationController;
@@ -83,6 +84,11 @@ Route::middleware('jwt')->group(function () {
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    // SSE stream for the notification bell. The `jwt` middleware already
+    // supports a cookie-based access_token fallback because native
+    // EventSource cannot set custom request headers.
+    // @see openspec/changes/eliminar-mercure-sse-nativo (Fase 3)
+    Route::get('notifications/stream', NotificationStreamController::class);
 
     // Catálogos
     Route::get('map/filters', MapFilterController::class);

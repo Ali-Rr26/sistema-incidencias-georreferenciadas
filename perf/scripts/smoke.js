@@ -2,9 +2,9 @@ import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { getAuthToken } from './_auth.js';
 
-const BASE_URL = __ENV.API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = __ENV.API_BASE_URL || 'https://api2.dihm-muertos.site';
 
-export let options = {
+export const options = {
   stages: [
     { duration: '1m', target: 1 },
   ],
@@ -14,11 +14,18 @@ export let options = {
   },
 };
 
-export default function () {
+export function setup() {
   const token = getAuthToken(BASE_URL);
-  
+  if (!token) {
+    throw new Error('Authentication failed during setup');
+  }
+
+  return { token };
+}
+
+export default function ({ token }) {
   group('Smoke Test — Health', () => {
-    let res = http.get(`${BASE_URL}/api/health`);
+    const res = http.get(`${BASE_URL}/api/health`);
     check(res, {
       'status 200': (r) => r.status === 200,
       'latency <200ms': (r) => r.timings.duration < 200,
@@ -26,7 +33,7 @@ export default function () {
   });
 
   group('Smoke Test — Feed', () => {
-    let res = http.get(`${BASE_URL}/api/incidents?per_page=10`, {
+    const res = http.get(`${BASE_URL}/api/incidents?per_page=10`, {
       headers: { 'Authorization': `Bearer ${token}` },
       tags: { name: 'get_incidents' },
     });

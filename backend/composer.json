@@ -28,8 +28,7 @@
         "spatie/laravel-prometheus": "*",
         "spiral/roadrunner-cli": "^2.7",
         "spiral/roadrunner-http": "^4.1",
-        "staudenmeir/laravel-adjacency-list": "^1.26",
-        "symfony/mercure": "^0.7.2"
+        "staudenmeir/laravel-adjacency-list": "^1.26"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -13,8 +13,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Mockery\MockInterface;
-use Symfony\Component\Mercure\HubInterface;
+use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
@@ -171,11 +170,9 @@ it('does not create an additional notification when an assignment is updated (S-
 // ──────────────────────────────────────────────────────────────────────
 // S-7: Falla de Mercure no rompe la creación de la notification
 // ──────────────────────────────────────────────────────────────────────
-it('still creates the notification if Mercure publish fails (S-7)', function (): void {
-    $this->mock(HubInterface::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('publish')
-            ->andThrow(new RuntimeException('hub unreachable'));
-    });
+it('still creates the notification if Redis publish fails (S-7)', function (): void {
+    Redis::shouldReceive('publish')
+        ->andThrow(new RuntimeException('redis pub/sub unreachable'));
 
     Assignment::create([
         'incident_id' => $this->incident->id,
