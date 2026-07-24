@@ -107,11 +107,12 @@
 /* --- Cards always white (override any cached priority backgrounds) --- */
 .feed-card {
   background-color: #ffffff !important;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border-radius: clamp(8px, 2vw, 12px);
+  padding: clamp(12px, 3vw, 16px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 .feed-card.feed-priority-high,
 .feed-card.feed-priority-medium,
@@ -176,7 +177,7 @@
 
 /* --- Card hover micro-interaction --- */
 .feed-card:hover {
-  box-shadow: 0 8px 20px rgba(94, 59, 219, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }
 .feed-card:focus-visible {
@@ -389,21 +390,6 @@ body.feed-view .app-shell-main {
   .feed-container {
     grid-template-columns: repeat(3, 1fr);
   }
-}
-
-/* Tarjeta individual */
-.feed-card {
-  border-radius: clamp(8px, 2vw, 12px);
-  padding: clamp(12px, 3vw, 16px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.feed-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* Título tarjeta */
