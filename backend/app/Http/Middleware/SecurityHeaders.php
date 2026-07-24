@@ -15,6 +15,14 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // CSP connect-src: separate by environment
+        // Prod: EventSource uses relative URL (/.well-known/mercure), proxied by nginx
+        //       Only 'self' + WebSocket protocols needed
+        // Dev:  EventSource may hit localhost:8000 (cross-origin dev setup)
+        $connectSrc = app()->environment('production')
+            ? "'self' wss: ws:"
+            : "'self' http://localhost:8000 http://localhost:3000 ws: wss:";
+
         $headers = [
             'X-Frame-Options' => 'DENY',
             'X-Content-Type-Options' => 'nosniff',
@@ -24,7 +32,7 @@ class SecurityHeaders
                 "style-src 'self' 'unsafe-inline' https://unpkg.com; ".
                 "img-src 'self' data: https:; ".
                 "font-src 'self' data: https://unpkg.com; ".
-                "connect-src 'self' " . env('CSP_CONNECT_SRC', 'https: http: wss: ws:') . "; ".
+                "connect-src {$connectSrc}; ".
                 "frame-ancestors 'none';",
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()',
