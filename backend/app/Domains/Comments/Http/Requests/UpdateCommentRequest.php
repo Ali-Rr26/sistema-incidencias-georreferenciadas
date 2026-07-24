@@ -19,5 +19,4 @@ class UpdateCommentRequest extends FormRequest
             'message' => ['required', 'string', 'max:5000'],
         ];
     }
-
 }

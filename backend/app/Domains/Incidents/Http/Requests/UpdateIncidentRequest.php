@@ -76,5 +76,4 @@ class UpdateIncidentRequest extends FormRequest
             'priority.in' => 'Priority must be: low, medium or high.',
         ];
     }
-
 }

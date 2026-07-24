@@ -63,5 +63,4 @@ class StoreIncidentRequest extends FormRequest
             'images.*.max' => 'Each image must not exceed 10 MB.',
         ];
     }
-
 }

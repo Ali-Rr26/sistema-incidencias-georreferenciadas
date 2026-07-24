@@ -33,5 +33,4 @@ class StoreCommentRequest extends FormRequest
             return empty($this->input('image_ids'));
         });
     }
-
 }

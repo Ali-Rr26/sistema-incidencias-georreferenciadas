@@ -9,51 +9,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────
-   1. TYPOGRAPHY — FLUID SCALING WITH CLAMP()
-   ───────────────────────────────────────────────────────────────────────── */
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-size: clamp(18px, 5vw, 32px);
-  line-height: 1.2;
-}
-
-h1 {
-  font-size: clamp(28px, 7vw, 48px);
-}
-h2 {
-  font-size: clamp(24px, 6vw, 36px);
-}
-h3 {
-  font-size: clamp(20px, 5.5vw, 28px);
-}
-h4 {
-  font-size: clamp(18px, 5vw, 24px);
-}
-
-.gr-page__title,
-.page-title {
-  font-size: clamp(20px, 5vw, 28px);
-  line-height: 1.3;
-}
-
-.gr-breadcrumb,
-.breadcrumb {
-  font-size: clamp(11px, 2.5vw, 14px);
-}
-
-.gr-form-label,
-label {
-  font-size: clamp(12px, 2vw, 14px);
-  line-height: 1.4;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   2. FORM CONTROLS — iOS 16px MINIMUM
+   1. FORM CONTROLS — iOS 16px MINIMUM
    ───────────────────────────────────────────────────────────────────────── */
 
 input,
@@ -76,8 +32,19 @@ select,
   }
 }
 
+/* Regression: Bootstrap renders form-check-input[type="radio"] as 1em square,
+   but the mobile-first input rule sets min-height: clamp(40px, 10vw, 44px),
+   which stretches the 16px radio into a 40-44px ellipse. Reset explicitly. */
+.form-check-input[type="radio"] {
+  min-height: 0;
+  min-width: 0;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
-   3. BUTTONS & LINKS — 44x44px WCAG TAP TARGET
+   2. BUTTONS & LINKS — 44x44px WCAG TAP TARGET
    ───────────────────────────────────────────────────────────────────────── */
 
 button,
@@ -101,7 +68,7 @@ a[role='button'],
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   4. PAGE LAYOUT & SPACING — FLUID PADDING
+   3. PAGE LAYOUT & SPACING — FLUID PADDING
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-page,
@@ -116,7 +83,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   5. FORMS — GRID & FLEX RESPONSIVE
+   4. FORMS — GRID & FLEX RESPONSIVE
    ───────────────────────────────────────────────────────────────────────── */
 
 .form-fields,
@@ -147,7 +114,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   6. FILTERS — STACK ON MOBILE
+   5. FILTERS — STACK ON MOBILE
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-filters,
@@ -180,7 +147,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   7. TABLES — SCROLLABLE ON MOBILE
+   6. TABLES — SCROLLABLE ON MOBILE
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-table,
@@ -204,7 +171,7 @@ table {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   8. MAPS & GEOSPATIAL ELEMENTS
+   7. MAPS & GEOSPATIAL ELEMENTS
    ───────────────────────────────────────────────────────────────────────── */
 
 .ici-map,
@@ -224,7 +191,7 @@ table {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   9. CARDS & GRID LAYOUTS
+   8. CARDS & GRID LAYOUTS
    ───────────────────────────────────────────────────────────────────────── */
 
 .card-grid,
@@ -317,16 +284,6 @@ video {
 @media (max-width: 360px) {
   body {
     font-size: 14px;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-size: clamp(14px, 4vw, 20px);
-    margin-bottom: clamp(8px, 2vw, 12px);
   }
 
   .gr-page__title {
