@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Domains\Locations\Models\Location;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\MultiPolygon;
@@ -100,4 +99,3 @@ it('pgsql: findByPoint still returns the province when no cantón polygon contai
     expect($match)->not->toBeNull();
     expect($match->id)->toBe($province->id);
 });
-

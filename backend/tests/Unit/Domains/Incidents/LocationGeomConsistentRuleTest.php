@@ -505,4 +505,3 @@ it('exposes its rejection message in Spanish (end-user readability, pinned)', fu
 
     expect($captured)->toBe('La ubicación seleccionada no contiene el punto marcado en el mapa.');
 });
-

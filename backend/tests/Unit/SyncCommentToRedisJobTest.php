@@ -9,7 +9,6 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
@@ -22,7 +21,8 @@ beforeEach(function (): void {
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);
-    $incident = Incident::withoutEvents(fn (): Incident => Incident::create([
+    DB::table('incidents')->insert([
+        'id' => 1,
         'incident_category_id' => $category->id,
         'organization_id' => $organization->id,
         'user_id' => $user->id,
@@ -30,10 +30,12 @@ beforeEach(function (): void {
         'title' => 'Test incident',
         'status' => 'pending',
         'priority' => 'medium',
-    ]));
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
     DB::table('comments')->insert([
         'id' => 7,
-        'incident_id' => $incident->id,
+        'incident_id' => 1,
         'user_id' => $user->id,
         'message' => 'Blocked street',
         'created_at' => now(),
@@ -69,4 +71,3 @@ it('does nothing when the comment no longer exists', function (): void {
 
     (new SyncCommentToRedisJob(7))->handle();
 });
-

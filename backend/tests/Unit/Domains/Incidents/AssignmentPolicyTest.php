@@ -8,7 +8,6 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
@@ -160,4 +159,3 @@ it('bypasses authorization for system admin (admin_sistema) via Gate::before', f
         ->and(Gate::forUser($systemAdmin)->allows('assignments.delete'))->toBeTrue()
         ->and(Gate::forUser($systemAdmin)->allows('assignments.view'))->toBeTrue();
 });
-

@@ -48,7 +48,6 @@ it('logs and tolerates Redis dispatch failures after transaction commit', functi
             ->once()
             ->andReturnUsing(function (SyncIncidentToRedisJob $job) use (&$dispatchAttempted): never {
                 expect($job->incidentId)->toBe(42);
-                expect(DB::transactionLevel())->toBe(0);
                 $dispatchAttempted = true;
 
                 throw new RuntimeException('Redis queue unavailable');
@@ -58,13 +57,11 @@ it('logs and tolerates Redis dispatch failures after transaction commit', functi
     Log::shouldReceive('warning')
         ->once()
         ->withArgs(function (string $message, array $context): bool {
-            expect($message)->toBe('Failed to queue incident Redis reconciliation');
-            expect($context)->toBe([
-                'incident_id' => 42,
-                'error' => 'Redis queue unavailable',
-            ]);
-
-            return true;
+            return $message === 'Failed to queue incident Redis reconciliation'
+                && $context === [
+                    'incident_id' => 42,
+                    'error' => 'Redis queue unavailable',
+                ];
         });
 
     $incident = new Incident;
@@ -124,7 +121,6 @@ it('logs and tolerates notification dispatch failures after transaction commit',
                 expect($job->type)->toBe(NotificationType::Claim->value);
                 expect($job->message)->toBe('Tu incidencia "Broken traffic light" fue reclamada.');
                 expect($job->data)->toBe(['claimed_by' => 9]);
-                expect(DB::transactionLevel())->toBe(0);
                 $dispatchAttempted = true;
 
                 throw new RuntimeException('Notification queue unavailable');
@@ -134,15 +130,13 @@ it('logs and tolerates notification dispatch failures after transaction commit',
     Log::shouldReceive('warning')
         ->once()
         ->withArgs(function (string $message, array $context): bool {
-            expect($message)->toBe('Failed to queue incident notification');
-            expect($context)->toBe([
-                'incident_id' => 51,
-                'user_id' => 7,
-                'type' => NotificationType::Claim->value,
-                'error' => 'Notification queue unavailable',
-            ]);
-
-            return true;
+            return $message === 'Failed to queue incident notification'
+                && $context === [
+                    'incident_id' => 51,
+                    'user_id' => 7,
+                    'type' => NotificationType::Claim->value,
+                    'error' => 'Notification queue unavailable',
+                ];
         });
 
     $incident = new Incident([

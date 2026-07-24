@@ -2,6 +2,9 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
+putenv('DB_CONNECTION=sqlite');
+putenv('DB_DATABASE=:memory:');
+
 use Tests\TestCase;
 
 /*

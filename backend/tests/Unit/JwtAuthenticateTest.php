@@ -9,7 +9,6 @@ use App\Domains\Sessions\Models\Session;
 use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -173,4 +172,3 @@ it('falls back to the access_token cookie when the Authorization header is absen
 
     $testResponse->assertOk()->assertJson(['user_id' => $user->id]);
 });
-

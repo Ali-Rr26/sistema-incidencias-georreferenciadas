@@ -10,7 +10,6 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -37,9 +36,11 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => UserRole::AdminSistema->value],
-    ]);
+    DB::table('roles')->upsert(
+        [['id' => 1, 'name' => UserRole::AdminSistema->value]],
+        ['id'],
+        ['name']
+    );
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);
@@ -173,4 +174,3 @@ it('authorize returns false when no user is authenticated', function (): void {
 it('extends Illuminate FormRequest (real FormRequest)', function (): void {
     expect(is_subclass_of(StoreAssignmentRequest::class, FormRequest::class))->toBeTrue();
 });
-

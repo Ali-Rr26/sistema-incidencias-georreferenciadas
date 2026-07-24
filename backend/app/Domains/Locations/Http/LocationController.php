@@ -36,7 +36,7 @@ class LocationController extends Controller
     {
         $filters = $request->only(['search', 'level', 'parent_id', 'per_page']);
 
-        if (($filters['level'] ?? false) && !($filters['search'] ?? false) && !isset($filters['per_page'])) {
+        if (($filters['level'] ?? false) && ! ($filters['search'] ?? false) && ! isset($filters['per_page'])) {
             $filters['per_page'] = 500;
         }
 
