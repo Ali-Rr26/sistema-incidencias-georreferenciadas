@@ -12,7 +12,7 @@ use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Objects\Polygon;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 function locationRepoPostgisAvailable(): bool
 {
@@ -100,3 +100,4 @@ it('pgsql: findByPoint still returns the province when no cantón polygon contai
     expect($match)->not->toBeNull();
     expect($match->id)->toBe($province->id);
 });
+

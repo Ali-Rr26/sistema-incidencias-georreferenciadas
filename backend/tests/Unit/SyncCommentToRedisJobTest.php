@@ -14,10 +14,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->upsert(['id' => 1, 'name' => 'admin_sistema'], ['id'], ['name']);
     $user = User::factory()->create(['id' => 3, 'role_id' => 1]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
@@ -69,3 +69,4 @@ it('does nothing when the comment no longer exists', function (): void {
 
     (new SyncCommentToRedisJob(7))->handle();
 });
+

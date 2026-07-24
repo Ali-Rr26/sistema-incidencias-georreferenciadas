@@ -14,12 +14,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert([
+    DB::table('roles')->upsert([
         ['id' => 1, 'name' => 'admin_sistema'],
-    ]);
+    ], ['id'], ['name']);
 
     $user = User::factory()->create(['role_id' => 1]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
@@ -94,3 +94,4 @@ it('lets Redis failures escape so the queue can retry the projection', function 
     expect(fn () => (new SyncIncidentToRedisJob($this->incident->id))->handle(new IncidentFeedSerializer))
         ->toThrow(RuntimeException::class, 'Connection refused');
 });
+

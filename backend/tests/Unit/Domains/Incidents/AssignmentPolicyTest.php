@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 /**
  * Unit-style tests for AssignmentPolicy.
@@ -47,6 +47,7 @@ beforeEach(function (): void {
     // the next free slot — wrong for FK targets in our tests. The
     // existing test suite uses this same approach (see
     // tests/Feature/Domains/Incidents/IncidentAssignmentsTest.php:17).
+    DB::table('roles')->truncate();
     DB::table('roles')->insert([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
@@ -159,3 +160,4 @@ it('bypasses authorization for system admin (admin_sistema) via Gate::before', f
         ->and(Gate::forUser($systemAdmin)->allows('assignments.delete'))->toBeTrue()
         ->and(Gate::forUser($systemAdmin)->allows('assignments.view'))->toBeTrue();
 });
+

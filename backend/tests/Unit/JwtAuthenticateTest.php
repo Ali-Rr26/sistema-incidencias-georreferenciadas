@@ -14,10 +14,10 @@ use Illuminate\Http\Request;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'Admin']);
+    Role::updateOrCreate(['id' => 1], ['name' => 'Admin']);
 });
 
 function makeJwtRequest(?string $token = null): Request
@@ -173,3 +173,4 @@ it('falls back to the access_token cookie when the Authorization header is absen
 
     $testResponse->assertOk()->assertJson(['user_id' => $user->id]);
 });
+

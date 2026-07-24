@@ -13,7 +13,7 @@ use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Objects\Polygon;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 /**
  * Direct unit tests for `LocationGeomConsistentRule::validate()`, bypassing
@@ -505,3 +505,4 @@ it('exposes its rejection message in Spanish (end-user readability, pinned)', fu
 
     expect($captured)->toBe('La ubicación seleccionada no contiene el punto marcado en el mapa.');
 });
+

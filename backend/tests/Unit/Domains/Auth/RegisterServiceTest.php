@@ -9,7 +9,7 @@ use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 /**
  * Unit-level guarantees for the role-assignment logic in
@@ -93,3 +93,4 @@ it('throws a clear RuntimeException when the citizen role row is missing', funct
         'password' => 'Password1',
     ]))->toThrow(RuntimeException::class);
 });
+

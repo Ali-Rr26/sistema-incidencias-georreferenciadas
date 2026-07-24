@@ -34,7 +34,7 @@ use Tests\TestCase;
  * failing input — never relies on the absence of validation to assert
  * success.
  */
-uses(TestCase::class, RefreshDatabase::class);
+uses(TestCase::class);
 
 beforeEach(function (): void {
     DB::table('roles')->insert([
@@ -173,3 +173,4 @@ it('authorize returns false when no user is authenticated', function (): void {
 it('extends Illuminate FormRequest (real FormRequest)', function (): void {
     expect(is_subclass_of(StoreAssignmentRequest::class, FormRequest::class))->toBeTrue();
 });
+
