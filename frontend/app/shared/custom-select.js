@@ -71,10 +71,16 @@ export function setSelectOptions(selectId, options) {
   const menu = selectEl.querySelector('.custom-select-menu');
   if (!menu) return;
 
+  const escapeHtml = (str) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  };
+
   menu.innerHTML = options
     .map(
       (opt) =>
-        `<div class="custom-select-option" data-value="${opt.value}">${opt.label}</div>`,
+        `<div class="custom-select-option" data-value="${escapeHtml(String(opt.value))}">${escapeHtml(String(opt.label))}</div>`,
     )
     .join('');
 

@@ -24,7 +24,7 @@ class SecurityHeaders
                 "style-src 'self' 'unsafe-inline' https://unpkg.com; ".
                 "img-src 'self' data: https:; ".
                 "font-src 'self' data: https://unpkg.com; ".
-                "connect-src 'self' http://localhost:8000; ".
+                "connect-src 'self' " . env('CSP_CONNECT_SRC', 'https: http: wss: ws:') . "; ".
                 "frame-ancestors 'none';",
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()',
