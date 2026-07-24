@@ -121,9 +121,8 @@ class AppServiceProvider extends ServiceProvider
         // delivery is performed by NotificationService publishing to
         // Redis Pub/Sub, and the SSE stream endpoint subscribes to
         // `user:{id}:notifications` directly. The Mercure binding is
-        // intentionally absent; see config/mercure.php for legacy env
-        // keys still consumed by the frontend during the migration
-        // window.
+        // intentionally absent; the mercureAuthorization cookie and
+        // its JWT have also been removed.
     }
 
     public function boot(): void

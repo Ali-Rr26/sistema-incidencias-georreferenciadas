@@ -19,7 +19,7 @@ El sistema simula un entorno real de gestión municipal o técnica, donde múlti
 
 > **Convención visual:** flecha sólida = tráfico real de request · flecha punteada = observabilidad / CI (no transporta tráfico de usuario) · `[(…)]` = datastore · `{{…}}` = hub/puerto · ⚠️ = caveat conocido del estado actual.
 >
-> **Caveats documentados en el diagrama:** (1) TLS termination ocurre en Cloudflare, Nginx escucha HTTP plano en `:80`; (2) Prometheus y Loki **no tienen volúmenes persistentes** — métricas y logs son efímeros; (3) backend usa `QUEUE_CONNECTION=sync`, no hay queue worker / Horizon / scheduler / cron corriendo; (4) Mercure hoy solo emite al topic `user:{id}:notifications` (campana), no al feed/mapa/admin; (5) el coverage report PHP Clover que SonarQube espera **no se genera** con la config actual de phpunit; (6) PHPStan está instalado pero **no corre en CI**.
+> **Caveats documentados en el diagrama:** (1) TLS termination ocurre en Cloudflare, Nginx escucha HTTP plano en `:80`; (2) Prometheus y Loki **no tienen volúmenes persistentes** — métricas y logs son efímeros; (3) el coverage report PHP Clover que SonarQube espera **no se genera** con la config actual de phpunit; (4) PHPStan está instalado pero **no corre en CI**.
 
 ### 📊 Dominios Principales (Domain-Driven Design)
 
