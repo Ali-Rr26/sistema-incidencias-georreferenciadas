@@ -18,12 +18,13 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
-        foreach (self::ROLES as $role) {
-            Role::query()->updateOrCreate(
-                ['id' => $role['id']],
-                $role,
-            );
+        Role::upsert(
+            self::ROLES,
+            ['id'],
+            ['name'],
+        );
 
+        foreach (self::ROLES as $role) {
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
         }
     }
