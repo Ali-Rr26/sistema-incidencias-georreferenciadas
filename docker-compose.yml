@@ -3,6 +3,7 @@ services:
   # FRONTEND (Static Nginx Server)
   # ==========================================
   frontend:
+    image: sistema-incidencias-frontend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -23,6 +24,7 @@ services:
   # BACKEND
   # ==========================================
   backend:
+    image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
