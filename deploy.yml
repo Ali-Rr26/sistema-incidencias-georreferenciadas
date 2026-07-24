@@ -5,6 +5,8 @@
 #   - Docker Swarm mode activado
 #   - Archivo .env con variables de entorno (DB_PASSWORD, JWT_SECRET, etc.)
 #   - PostGIS 17+, Redis 8+
+#   - Red overlay `incidencias-network` ya creada en el host Swarm
+#     (la crea el CI de forma idempotente; ver `.github/workflows/deploy.yml`)
 
 # ============================================================================
 # Anchor: variables de entorno compartidas por backend, worker y scheduler
@@ -577,8 +579,15 @@ volumes:
   sonarqube_db_data:
 
 networks:
+  # Red overlay administrada FUERA del ciclo de vida del stack.
+  # La crea el CI (.github/workflows/deploy.yml) de forma idempotente
+  # en el host Swarm ANTES de `docker stack deploy`, y como `external: true`
+  # el stack la consume sin prefijarla con `incidencias-stack_`.
+  # Beneficios: sobrevive a `docker stack rm`, se puede reusar entre
+  # redeploys, debug con `docker run --network incidencias-network` sin
+  # pasar por service mesh.
   incidencias-network:
-    driver: overlay
+    external: true
 
 configs:
   prometheus_config:

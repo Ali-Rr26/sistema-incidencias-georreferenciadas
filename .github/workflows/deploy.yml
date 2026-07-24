@@ -75,6 +75,42 @@ jobs:
         run: |
           docker compose -f deploy.yml build
 
+      # Independent overlay network. `deploy.yml` declares it as
+      # `external: true`, so the stack will NOT create it and would fail
+      # to deploy if it doesn't exist on the Swarm host. We create it
+      # here, idempotently, after images are built and before
+      # `docker stack deploy`. `--attachable` lets standalone containers
+      # (debug, one-off tooling) join the network without needing to
+      # become Swarm services.
+      #
+      # On the existing-network path we re-validate driver/scope: a same-
+      # named `bridge` or other non-overlay network would be silently
+      # accepted here, and `docker stack deploy` would then fail with a
+      # less actionable "is not in the right scope" message. Failing here
+      # with the exact mismatch keeps the operator on the right path
+      # (recreate the network rather than debugging stack errors).
+      - name: Ensure overlay network exists
+        run: |
+          if ! docker network inspect incidencias-network >/dev/null 2>&1; then
+            echo "Creating overlay network 'incidencias-network'..."
+            docker network create --driver overlay --attachable incidencias-network
+          else
+            EXISTING_DRIVER=$(docker network inspect --format '{{.Driver}}' incidencias-network)
+            EXISTING_SCOPE=$(docker network inspect --format '{{.Scope}}' incidencias-network)
+            if [ "$EXISTING_DRIVER" != "overlay" ] || [ "$EXISTING_SCOPE" != "swarm" ]; then
+              echo "::error::Network 'incidencias-network' exists but is incompatible with Swarm (driver=$EXISTING_DRIVER, scope=$EXISTING_SCOPE). Swarm stacks require driver=overlay and scope=swarm."
+              echo "::error::Recreate it with: docker network rm incidencias-network && docker network create --driver overlay --attachable incidencias-network"
+              exit 1
+            fi
+            EXISTING_ATTACH=$(docker network inspect --format '{{.Attachable}}' incidencias-network)
+            if [ "$EXISTING_ATTACH" != "true" ]; then
+              echo "::warning::Network 'incidencias-network' is not attachable; standalone containers (debug) cannot join it. Services are unaffected."
+            else
+              echo "Network 'incidencias-network' already exists with expected config."
+            fi
+          fi
+          docker network inspect --format '{{.Name}} ({{.Driver}}, scope={{.Scope}}, attachable={{.Attachable}})' incidencias-network
+
       - name: Deploy stack
         run: |
           set -a
