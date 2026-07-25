@@ -33,12 +33,20 @@ vi.mock('../../../../shared/select-search.js', () => ({
   initSelect: vi.fn(),
   getSelect: vi.fn(() => ({ setValue: vi.fn() })),
   clearSelect: vi.fn(),
+  destroySelect: vi.fn(),
   destroyAll: vi.fn(),
 }));
 vi.mock('../../../../utils/ui.js', () => ({
   mostrarToast: vi.fn(),
 }));
 vi.stubGlobal('bootstrap', { Toast: vi.fn(), Modal: vi.fn() });
+
+// Imported (post-mock) to assert call order in the re-selection regression
+// test below.
+import {
+  initSelect,
+  destroySelect,
+} from '../../../../shared/select-search.js';
 
 // ─── DOM fixture ────────────────────────────────────────────────────────────────
 function buildFixture() {
@@ -74,6 +82,14 @@ const PROVINCES = [
 
 const CITIES_PICHINCHA = [
   { id: 4, name: 'Quito', code: 'EC-PI-QT', level: 'city', parent_id: 2 },
+];
+
+const COUNTRIES_2 = [
+  { id: 1, name: 'Ecuador', code: 'EC', level: 'country', parent_id: null },
+  { id: 8, name: 'Perú', code: 'PE', level: 'country', parent_id: null },
+];
+const PROVINCES_PERU = [
+  { id: 9, name: 'Lima', code: 'PE-LI', level: 'province', parent_id: 8 },
 ];
 
 const FORM_CATALOG = {
@@ -152,6 +168,67 @@ describe('organizaciones.form — progressive location loading (WU-3)', () => {
       await new Promise(setImmediate);
 
       expect(mockLocationService.getChildren).toHaveBeenCalledWith({ parentId: 1 });
+    });
+
+    // Regression: same trap as incidencias.form.component.js — initSelect()
+    // destroys the previous tom-select instance internally, and Tom
+    // Select's destroy() reverts the underlying <select> to its
+    // construction-time DOM snapshot. Writing fresh options BEFORE that
+    // destroy (i.e. before the *next* initSelect() call) means the
+    // destroy step silently wipes them. destroySelect() must run before
+    // poblarSelectNativo(), not after.
+    it('destroys the stale provincia tom-select instance before repopulating on país re-selection', async () => {
+      mockHttp.get.mockResolvedValueOnce(FORM_CATALOG);
+      mockLocationService.getRoots.mockResolvedValueOnce(COUNTRIES_2);
+      mockLocationService.getChildren
+        .mockResolvedValueOnce(PROVINCES)
+        .mockResolvedValueOnce(PROVINCES_PERU);
+
+      await component.onInit();
+
+      const paisSel = document.getElementById('org-location-pais');
+      const provinciaSel = document.getElementById('org-location-provincia');
+
+      paisSel.value = '1';
+      paisSel.dispatchEvent(new Event('change'));
+      await new Promise(setImmediate);
+      expect(
+        Array.from(provinciaSel.options).map((o) => o.value),
+      ).toEqual(expect.arrayContaining(['2', '3']));
+
+      vi.mocked(destroySelect).mockClear();
+      vi.mocked(initSelect).mockClear();
+
+      // Re-select a DIFFERENT país — the scenario the user reported.
+      paisSel.value = '8';
+      paisSel.dispatchEvent(new Event('change'));
+      await new Promise(setImmediate);
+
+      const provinciaValues = Array.from(provinciaSel.options).map(
+        (o) => o.value,
+      );
+      expect(provinciaValues).toEqual(expect.arrayContaining(['9']));
+      expect(provinciaValues).not.toContain('2');
+      expect(provinciaValues).not.toContain('3');
+
+      const destroyOrder = vi
+        .mocked(destroySelect)
+        .mock.calls.map((args, i) => ({
+          id: args[0],
+          order: vi.mocked(destroySelect).mock.invocationCallOrder[i],
+        }))
+        .filter((c) => c.id === 'org-location-provincia');
+      const initOrder = vi
+        .mocked(initSelect)
+        .mock.calls.map((args, i) => ({
+          id: args[0],
+          order: vi.mocked(initSelect).mock.invocationCallOrder[i],
+        }))
+        .filter((c) => c.id === 'org-location-provincia');
+
+      expect(destroyOrder.length).toBeGreaterThan(0);
+      expect(initOrder.length).toBeGreaterThan(0);
+      expect(destroyOrder[0].order).toBeLessThan(initOrder[0].order);
     });
   });
 

@@ -7,6 +7,7 @@ import {
   initSelect,
   getSelect,
   clearSelect,
+  destroySelect,
   destroyAll,
 } from '../../../../shared/select-search.js';
 
@@ -110,14 +111,24 @@ export default {
         const provinces = await locationService.getChildren({ parentId: parseInt(val) });
         // Discard stale response
         if (gen !== selectionGeneration) return;
+        // Destroy BEFORE writing fresh <option>s — Tom Select's destroy()
+        // reverts the underlying <select> to its construction-time DOM
+        // snapshot, so doing this AFTER poblarSelectNativo would wipe out
+        // the fresh options just written (initSelect() destroys internally
+        // too, one step later — same trap).
+        destroySelect(provinciaSel);
         poblarSelectNativo(provinciaSel, provinces, '-- Seleccione --');
         setSelectEnabled(provinciaSel, true);
         initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
+        destroySelect(ciudadSel);
         poblarSelectNativo(ciudadSel, [], '-- Opcional --');
         setSelectEnabled(ciudadSel, false);
+        initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
       } else {
         setSelectEnabled(provinciaSel, false);
         setSelectEnabled(ciudadSel, false);
+        initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
+        initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
       }
       actualizarLocationId();
     }
@@ -131,11 +142,13 @@ export default {
         const cities = await locationService.getChildren({ parentId: parseInt(val) });
         // Discard stale response
         if (gen !== selectionGeneration) return;
+        destroySelect(ciudadSel);
         poblarSelectNativo(ciudadSel, cities, '-- Opcional --');
         setSelectEnabled(ciudadSel, true);
         initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
       } else {
         setSelectEnabled(ciudadSel, false);
+        initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
       }
       actualizarLocationId();
     }
@@ -170,6 +183,11 @@ export default {
       poblarSelectNativo(paisSel, countries, '-- Seleccione --');
       initSelect(paisSel, { placeholder: 'Buscar país...' });
 
+      // Dependent fields start disabled/empty but are still wrapped as
+      // tom-select boxes from first paint, matching the enabled look.
+      initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
+      initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
+
       // Attach listeners first
       document.getElementById(paisSel).addEventListener('change', onPaisChange);
       document.getElementById(provinciaSel).addEventListener('change', onProvinciaChange);
@@ -188,6 +206,7 @@ export default {
           const genProv = selectionGeneration;
           const provinces = await locationService.getChildren({ parentId: nivelPais.id });
           if (genProv !== selectionGeneration) return;
+          destroySelect(provinciaSel);
           poblarSelectNativo(provinciaSel, provinces, '-- Seleccione --');
           setSelectEnabled(provinciaSel, true);
           initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
@@ -200,6 +219,7 @@ export default {
           const genCity = selectionGeneration;
           const cities = await locationService.getChildren({ parentId: nivelProvincia.id });
           if (genCity !== selectionGeneration) return;
+          destroySelect(ciudadSel);
           poblarSelectNativo(ciudadSel, cities, '-- Opcional --');
           setSelectEnabled(ciudadSel, true);
           initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });

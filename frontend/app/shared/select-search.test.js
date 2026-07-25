@@ -65,6 +65,15 @@ describe('select-search helpers', () => {
     expect(instance.refreshOptions).toHaveBeenCalledTimes(1);
   });
 
+  it('wraps a disabled select too, so dependent cascade fields render as a tom-select box before their parent is picked', () => {
+    document.getElementById('city').setAttribute('disabled', '');
+
+    const instance = initSelect('city', { placeholder: 'Buscar ciudad...' });
+
+    expect(instance).toBeDefined();
+    expect(document.getElementById('city').tomselect).toBe(instance);
+  });
+
   it('clears and destroys instances', () => {
     const instance = initSelect('country');
 

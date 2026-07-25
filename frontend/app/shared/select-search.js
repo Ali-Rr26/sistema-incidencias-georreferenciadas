@@ -30,9 +30,11 @@ export function initSelect(elementId, customConfig = {}) {
   const el = document.getElementById(elementId);
   if (!el) return null;
 
-  // Si está disabled o vacío, no lo inicializamos (se habilita después)
-  if (el.disabled) return null;
-
+  // Tom Select respeta el atributo disabled del <select> original: lo
+  // envuelve igual, pero renderiza el wrapper en estado deshabilitado
+  // (gris, sin dropdown) mostrando el placeholder configurado. Esto permite
+  // que un campo dependiente (cascada) se vea como tom-select desde el
+  // primer render, aunque todavía no tenga datos ni esté habilitado.
   const config = {
     maxOptions: 200,
     maxItems: 1,

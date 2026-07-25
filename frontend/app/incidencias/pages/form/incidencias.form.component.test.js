@@ -42,6 +42,30 @@ vi.mock('../../../shared/location.service.js', () => ({
   locationService: mockLocationService,
 }));
 
+// select-search.js wraps Tom Select, which isn't loaded in jsdom. Mock it
+// the same way organizaciones.form.component.test.js does, except getSelect
+// here actually writes through to the underlying <select>'s .value — this
+// component (unlike the org form) reads `.value` straight off the select
+// at submit time, with no hidden mirror input, so edit-mode preselection
+// assertions need setValue() to have a real, observable effect.
+vi.mock('../../../shared/select-search.js', () => ({
+  initSelect: vi.fn(),
+  getSelect: vi.fn((elementId) => ({
+    setValue: (value) => {
+      const el = document.getElementById(elementId);
+      if (el) el.value = value;
+    },
+  })),
+  clearSelect: vi.fn(),
+  destroySelect: vi.fn(),
+  destroyAll: vi.fn(),
+}));
+
+// Imported (post-mock) to assert call order in the re-selection regression
+// test below — see "destroys the stale city tom-select instance before
+// repopulating on province re-selection".
+import { initSelect, destroySelect } from '../../../shared/select-search.js';
+
 // initMapView is heavy (Leaflet + tile layer); mock it so onInit doesn't
 // bail out early (`if (!map) return;`) or touch the real Leaflet global.
 function makeFakeMap() {
@@ -113,58 +137,52 @@ function makeFakeL() {
   };
 }
 
-/** Location tree fixture con geom (feature: map-location-boundary). */
-const locationTreeFixtureWithGeom = [
-  {
-    id: 100,
-    name: 'Ecuador',
-    level: 'country',
-    children: [
-      {
-        id: 200,
-        name: 'Pichincha',
-        level: 'province',
-        geom: {
-          type: 'MultiPolygon',
-          coordinates: [
-            [
-              [
-                [-78.6, 0.0],
-                [-78.4, 0.0],
-                [-78.4, 0.2],
-                [-78.6, 0.2],
-                [-78.6, 0.0],
-              ],
-            ],
-          ],
-        },
-        children: [
-          {
-            id: 300,
-            name: 'Quito',
-            level: 'city',
-            parent_id: 200,
-            geom: {
-              type: 'MultiPolygon',
-              coordinates: [
-                [
-                  [
-                    [-78.55, 0.05],
-                    [-78.45, 0.05],
-                    [-78.45, 0.15],
-                    [-78.55, 0.15],
-                    [-78.55, 0.05],
-                  ],
-                ],
-              ],
-            },
-            children: [],
-          },
+/**
+ * Flat progressive-loading fixtures con geom (feature: map-location-boundary).
+ * Shape mirrors what locationService.getRoots/getChildren return — a flat
+ * array per level, each item carrying its own `geom` (see
+ * LocationResource::toArray(), which always includes geom).
+ */
+const PROVINCE_PICHINCHA_GEOM = {
+  id: 200,
+  name: 'Pichincha',
+  level: 'province',
+  parent_id: 100,
+  geom: {
+    type: 'MultiPolygon',
+    coordinates: [
+      [
+        [
+          [-78.6, 0.0],
+          [-78.4, 0.0],
+          [-78.4, 0.2],
+          [-78.6, 0.2],
+          [-78.6, 0.0],
         ],
-      },
+      ],
     ],
   },
-];
+};
+const CITY_QUITO_GEOM = {
+  id: 300,
+  name: 'Quito',
+  level: 'city',
+  parent_id: 200,
+  geom: {
+    type: 'MultiPolygon',
+    coordinates: [
+      [
+        [
+          [-78.55, 0.05],
+          [-78.45, 0.05],
+          [-78.45, 0.15],
+          [-78.55, 0.15],
+          [-78.55, 0.05],
+        ],
+      ],
+    ],
+  },
+};
 
 const categoryTreeFixture = [
   {
@@ -255,17 +273,17 @@ function buildFormDom() {
         </select>
         <div id="ici-error-category"></div>
         <select id="ici-subcategory" disabled>
-          <option value="">-- Seleccione una categoría primero --</option>
+          <option value="">-- Seleccione subcategoría --</option>
         </select>
         <div id="ici-error-subcategory"></div>
         <select id="ici-location-province">
           <option value="">-- Sin ubicación fija --</option>
         </select>
         <select id="ici-location-city" disabled>
-          <option value="">-- Seleccione una provincia primero --</option>
+          <option value="">-- Seleccione cantón --</option>
         </select>
         <select id="ici-location-neighborhood" disabled>
-          <option value="">-- Seleccione un cantón primero --</option>
+          <option value="">-- Seleccione parroquia --</option>
         </select>
         <div id="ici-error-location"></div>
         <div id="ici-image-uploader-container"></div>
@@ -421,7 +439,7 @@ describe('incidencias.form — category/subcategory dropdown reactivity', () => 
     expect(subcatSelect.disabled).toBe(true);
     expect(subcatSelect.options.length).toBe(1);
     expect(subcatSelect.options[0].textContent).toBe(
-      '-- Seleccione una categoría primero --',
+      '-- Seleccione subcategoría --',
     );
   });
 
@@ -1156,10 +1174,7 @@ describe('incidencias.form — 4-step stepper', () => {
  *   - pin outside boundary → marker warn, warning inline
  *   - sin selección → estado neutro, sin warning
  * ──────────────────────────────────────────────────────────────────────── */
-// SKIPPED — boundary tests removed during progressive migration (WU-3).
-// The map boundary feature requires location geom data which is not available in progressive mode.
-// These tests should be restored when boundary support is re-implemented.
-describe.skip('feature: map-location-boundary', () => {
+describe('feature: map-location-boundary', () => {
   let component;
 
   beforeAll(async () => {
@@ -1175,16 +1190,25 @@ describe.skip('feature: map-location-boundary', () => {
     mockRouter.queryParams = new URLSearchParams();
     mockRouter.navigate.mockClear();
 
-    // Usar el tree con geom para que la cascada pueda resolver boundary.
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incident-categories/tree') {
         return Promise.resolve({ data: categoryTreeFixture });
       }
-      if (path === '/locations/tree') {
-        return Promise.resolve({ data: locationTreeFixtureWithGeom });
-      }
       return Promise.resolve({ data: [] });
     });
+
+    // Progressive fetch, with geom on each level, so the boundary cascade
+    // can resolve — mirrors locationService.getRoots/getChildren shape.
+    mockLocationService.getRoots.mockImplementation(({ level }) =>
+      level === 'province'
+        ? Promise.resolve([PROVINCE_PICHINCHA_GEOM])
+        : Promise.resolve([]),
+    );
+    mockLocationService.getChildren.mockImplementation(({ parentId }) =>
+      parentId === 200
+        ? Promise.resolve([CITY_QUITO_GEOM])
+        : Promise.resolve([]),
+    );
   });
 
   afterEach(() => {
@@ -1413,6 +1437,7 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
     { id: 300, name: 'Quito', level: 'city', parent_id: 200 },
     { id: 301, name: 'Rumiñahui', level: 'city', parent_id: 200 },
   ];
+  const CITIES_GUAYAS = [{ id: 500, name: 'Guayaquil', level: 'city', parent_id: 201 }];
   const NEIGHBORHOODS_QUITO = [
     { id: 400, name: 'La Mariscal', level: 'neighborhood', parent_id: 300 },
     { id: 401, name: 'Iñaquito', level: 'neighborhood', parent_id: 300 },
@@ -1684,6 +1709,81 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
       await new Promise(setImmediate);
 
       expect(mockLocationService.getChildren).toHaveBeenCalledWith({ parentId: 200 });
+    });
+
+    // Regression: initSelect() destroys the previous tom-select instance
+    // internally, and Tom Select's destroy() reverts the underlying
+    // <select>'s innerHTML back to whatever it was when THAT instance was
+    // constructed. Calling poblarSelectNativo() (writes fresh <option>s)
+    // BEFORE that destroy — i.e. before the *next* initSelect() call — means
+    // the destroy step silently wipes the fresh options. The fix is to
+    // destroySelect() the stale instance BEFORE writing new options, not
+    // after. This is a call-order guard, not a real Tom Select repro (jsdom
+    // has no Tom Select) — the actual destroy/revert behavior was verified
+    // separately against the real library in a headless browser.
+    it('destroys the stale city tom-select instance before repopulating on province re-selection', async () => {
+      mockHttp.get.mockImplementation((path) => {
+        if (path === '/incident-categories/tree') {
+          return Promise.resolve({ data: [] });
+        }
+        return Promise.reject(new Error('unexpected: ' + path));
+      });
+      mockLocationService.getRoots.mockResolvedValueOnce(PROVINCES);
+      mockLocationService.getChildren
+        .mockResolvedValueOnce(CITIES_PICHINCHA)
+        .mockResolvedValueOnce(CITIES_GUAYAS);
+
+      buildFormDom();
+      mockRouter.queryParams = new URLSearchParams();
+      document.body.classList.add('ici-create-view');
+
+      const { default: component } = await import('./incidencias.form.component.js');
+      await component.onInit();
+
+      const provinceSelect = document.getElementById('ici-location-province');
+      const citySelect = document.getElementById('ici-location-city');
+
+      provinceSelect.value = '200';
+      provinceSelect.dispatchEvent(new Event('change'));
+      await new Promise(setImmediate);
+      expect(Array.from(citySelect.options).map((o) => o.value)).toEqual(
+        expect.arrayContaining(['300', '301']),
+      );
+
+      vi.mocked(destroySelect).mockClear();
+      vi.mocked(initSelect).mockClear();
+
+      // Re-select a DIFFERENT province — this is the exact scenario the
+      // user reported as broken.
+      provinceSelect.value = '201';
+      provinceSelect.dispatchEvent(new Event('change'));
+      await new Promise(setImmediate);
+
+      const cityOptionValues = Array.from(citySelect.options).map(
+        (o) => o.value,
+      );
+      expect(cityOptionValues).toEqual(expect.arrayContaining(['500']));
+      expect(cityOptionValues).not.toContain('300');
+      expect(cityOptionValues).not.toContain('301');
+
+      const destroyOrder = vi
+        .mocked(destroySelect)
+        .mock.calls.map((args, i) => ({
+          id: args[0],
+          order: vi.mocked(destroySelect).mock.invocationCallOrder[i],
+        }))
+        .filter((c) => c.id === 'ici-location-city');
+      const initOrder = vi
+        .mocked(initSelect)
+        .mock.calls.map((args, i) => ({
+          id: args[0],
+          order: vi.mocked(initSelect).mock.invocationCallOrder[i],
+        }))
+        .filter((c) => c.id === 'ici-location-city');
+
+      expect(destroyOrder.length).toBeGreaterThan(0);
+      expect(initOrder.length).toBeGreaterThan(0);
+      expect(destroyOrder[0].order).toBeLessThan(initOrder[0].order);
     });
   });
 
