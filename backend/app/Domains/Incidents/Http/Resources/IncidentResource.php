@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Resources;
 
+use App\Domains\Locations\Http\Resources\LocationResource;
+use App\Domains\Locations\Repositories\LocationRepository;
 use App\Storage\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -48,7 +50,8 @@ class IncidentResource extends JsonResource
             'category' => $this->whenLoaded('category'),
             'organization' => $this->whenLoaded('organization'),
             'user' => $this->whenLoaded('user'),
-            'location' => $this->whenLoaded('location'),
+            // Use LocationResource to ensure geom is always serialized (null when absent)
+            'location' => $this->whenLoaded('location', fn () => new LocationResource($this->location)),
             'thumbnail_url' => $thumbnail
                 ? $storage->proxyUrl($thumbnail['path'])
                 : null,
@@ -59,6 +62,19 @@ class IncidentResource extends JsonResource
                 'is_thumbnail' => $img['is_thumbnail'] ?? false,
             ], $images),
         ];
+
+        // Add location_path for progressive-loading preselection cascade
+        // Uses ancestors() to get root-to-leaf ordered chain for deterministic select preselection
+        if ($this->location_id !== null) {
+            $locationRepo = app(LocationRepository::class);
+            $ancestors = $locationRepo->ancestors($this->location_id);
+            $data['location_path'] = $ancestors->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'level' => $location->level->value,
+                'geom' => $location->geom !== null ? json_decode($location->geom->toJson()) : null,
+            ])->values()->all();
+        }
 
         if ($this->withDetail) {
             // Status history — read via raw query (same as StatusHistoryController)
