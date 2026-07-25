@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -110,9 +110,10 @@ it('has images relationship', function (): void {
         'message' => 'Comment with image',
     ]);
 
-    CommentImage::create([
-        'comment_id' => $comment->id,
-        'url' => 'comments/1/uuid.webp',
+    Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $comment->id,
+        'storage_path' => 'comments/1/uuid.webp',
         'caption' => null,
         'sort_order' => 0,
     ]);

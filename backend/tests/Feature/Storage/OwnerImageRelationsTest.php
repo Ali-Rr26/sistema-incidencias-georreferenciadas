@@ -61,7 +61,7 @@ it('exposes an ordered images() morphMany relation on Incident', function (): vo
     ]);
 });
 
-it('exposes an ordered polymorphicImages() morphMany relation on Comment without touching the legacy images() relation', function (): void {
+it('exposes an ordered images() morphMany relation on Comment (WU6 cutover)', function (): void {
     Image::create([
         'imageable_type' => 'comment',
         'imageable_id' => $this->comment->id,
@@ -75,17 +75,14 @@ it('exposes an ordered polymorphicImages() morphMany relation on Comment without
         'sort_order' => 0,
     ]);
 
-    $paths = $this->comment->polymorphicImages()->pluck('storage_path')->all();
+    expect($this->comment->images())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphMany::class);
+
+    $paths = $this->comment->images()->pluck('storage_path')->all();
 
     expect($paths)->toBe([
         'comments/'.$this->comment->id.'/a.webp',
         'comments/'.$this->comment->id.'/b.webp',
     ]);
-
-    // Legacy relation is untouched — still resolves via the CommentImage
-    // hasMany relation, not the new polymorphic Image model.
-    expect($this->comment->images())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
-    expect($this->comment->images()->getRelated())->toBeInstanceOf(\App\Domains\Comments\Models\CommentImage::class);
 });
 
 it('exposes an avatar() morphOne relation on User', function (): void {

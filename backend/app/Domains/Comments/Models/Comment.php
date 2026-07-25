@@ -59,24 +59,19 @@ class Comment extends Model
         return $this->hasMany(Comment::class, 'parent_id');
     }
 
-    public function images(): HasMany
-    {
-        return $this->hasMany(CommentImage::class);
-    }
-
     /**
      * Polymorphic `images` table rows for this comment, ordered by
-     * `sort_order` (image-persistence-polymorphic, WU2).
+     * `sort_order` (image-persistence-polymorphic, WU2/WU6 cutover).
      *
-     * Deliberately named differently from `images()` above: that method
-     * is load-bearing today (`CommentObserver`, `CommentImageController`,
-     * `CommentResource`, `SyncCommentToRedisJob` all reference the
-     * `'images'` relation string / `CommentImage` hasMany). WU6 (Comment
-     * cutover) is responsible for retiring `CommentImage` and repointing
-     * `images()` itself to this polymorphic relation — do not merge the
-     * two before then.
+     * Replaces the legacy `CommentImage` hasMany relation that used to
+     * live under this same method name — `CommentObserver`,
+     * `CommentImageController`, `CommentResource`, and
+     * `SyncCommentToRedisJob` all reference the `'images'` relation
+     * string, which now resolves to the shared `images` table via
+     * `App\Storage\Models\Image` instead of the legacy `comment_images`
+     * table.
      */
-    public function polymorphicImages(): MorphMany
+    public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable')->orderBy('sort_order');
     }

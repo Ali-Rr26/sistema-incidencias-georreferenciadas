@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
@@ -13,6 +12,7 @@ use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -43,11 +43,13 @@ beforeEach(function (): void {
         'message' => 'Test comment',
     ]);
 
-    CommentImage::create([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => null,
         'sort_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 });
 
@@ -92,11 +94,13 @@ it('reports legacy absolute-URL comment rows in its output without crashing', fu
         'user_id' => $this->user->id,
         'message' => 'Second comment',
     ]);
-    CommentImage::create([
+    DB::table('comment_images')->insert([
         'comment_id' => $secondComment->id,
         'url' => $legacyUrl,
         'caption' => null,
         'sort_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $exitCode = Artisan::call('images:backfill', ['--source' => 'comments']);
