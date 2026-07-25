@@ -43,6 +43,19 @@ class OrganizationResource extends JsonResource
             'updated_at' => $this->updated_at,
         ];
 
+        // Add location_path for progressive-loading preselection cascade
+        // Uses ancestors() to get root-to-leaf ordered chain for deterministic select preselection
+        if ($this->location_id !== null) {
+            $locationRepo = app(LocationRepository::class);
+            $ancestors = $locationRepo->ancestors($this->location_id);
+            $data['location_path'] = $ancestors->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'level' => $location->level->value,
+                'geom' => $location->geom !== null ? json_decode($location->geom->toJson()) : null,
+            ])->values()->all();
+        }
+
         if ($this->withCatalog) {
             $locations = app(LocationRepository::class)->tree();
             $cats = app(IncidentCategoryRepository::class)->tree();
