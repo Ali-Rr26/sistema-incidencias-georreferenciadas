@@ -291,8 +291,9 @@ describe('location.service — initial load (roots / level=province)', () => {
 
     const result = await locationService.getRoots({ level: 'province' });
 
+    // Path must be /locations (without /api prefix) — HttpService already prepends API_URL=/api
     expect(http.get).toHaveBeenCalledWith(
-      '/api/locations?level=province&per_page=500',
+      '/locations?level=province&per_page=500',
     );
     expect(result).toEqual(PROVINCES);
   });
@@ -305,9 +306,21 @@ describe('location.service — initial load (roots / level=province)', () => {
 
     const result = await locationService.getRoots({ level: 'country' });
 
+    // Path must be /locations (without /api prefix) — HttpService already prepends API_URL=/api
     expect(http.get).toHaveBeenCalledWith(
-      '/api/locations?level=country&per_page=500',
+      '/locations?level=country&per_page=500',
     );
     expect(result).toEqual(countries);
+  });
+
+  it('getChildren uses /locations path without /api duplication', async () => {
+    http.get.mockResolvedValue({ data: CITIES_PICHINCHA });
+
+    await locationService.getChildren({ parentId: 1 });
+
+    // Verify no /api duplication: HttpService prepends /api, so service must use /locations
+    const calledPath = http.get.mock.calls[0][0];
+    expect(calledPath).toMatch(/^\/locations\?/);
+    expect(calledPath).not.toMatch(/\/api\/locations/);
   });
 });

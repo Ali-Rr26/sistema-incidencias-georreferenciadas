@@ -51,7 +51,7 @@ class LocationService {
    * @returns {Promise<object[]>}
    */
   async getRoots({ level }) {
-    return this._fetch({ parentId: null, level }, '/api/locations');
+    return this._fetch({ parentId: null, level }, '/locations');
   }
 
   /**
@@ -62,7 +62,7 @@ class LocationService {
    * @returns {Promise<object[]>}
    */
   async getChildren({ parentId, level }) {
-    return this._fetch({ parentId, level: level ?? null }, '/api/locations');
+    return this._fetch({ parentId, level: level ?? null }, '/locations');
   }
 
   /**
