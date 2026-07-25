@@ -38,6 +38,7 @@ use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Storage\StorageService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -127,6 +128,18 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Polymorphic image storage morph map (image-persistence-polymorphic,
+        // WU2, D1). Registered first — before any model/relation is used —
+        // so `imageable_type` never stores a bare FQCN. `enforceMorphMap`
+        // (not `morphMap`) makes `getMorphClass()` throw
+        // `ClassMorphViolationException` for any model not listed here,
+        // which is the intended guard for App\Storage\Models\Image rows.
+        Relation::enforceMorphMap([
+            'incident' => Incident::class,
+            'comment' => Comment::class,
+            'user' => User::class,
+        ]);
+
         // Rate limiting para el feed público (REQ-RTL-01/02/03)
         RateLimiter::for('feed', function (Request $request): Limit {
             $user = $request->user();
