@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Shared attach/detach abstraction for the polymorphic `images` table,
- * used by every domain that stores images (incidents, comments, users)
- * once each one cuts over (WU5-WU7). Wired into incidents (WU5) and
- * comments (WU6, 'comment' profile); users' avatar cutover (WU7) is
- * pending.
+ * used by every domain that stores images (incidents, comments, users).
+ * Wired into incidents (WU5, default 'gallery' profile), comments (WU6,
+ * 'comment' profile), and users' avatar (WU7, 'avatar' profile via
+ * `replaceSingle()`).
  *
  * D3: the object is uploaded to storage BEFORE the `images` row is
  * inserted. If the insert fails inside the transaction (e.g. the D4
