@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Domains\Comments\Services\ImageProcessingService;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Services\ProfileImageService;
+use App\Storage\ImageProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
     Storage::fake('s3');
-    $this->service = new ProfileImageService(new ImageProcessingService);
+    $this->service = new ProfileImageService(new ImageProcessor);
 });
 
 it('replaceAvatar deletes old file and stores new one', function (): void {

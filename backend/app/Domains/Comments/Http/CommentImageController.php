@@ -8,7 +8,7 @@ use App\Domains\Comments\Http\Requests\StoreCommentImageRequest;
 use App\Domains\Comments\Http\Resources\CommentImageResource;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Comments\Models\CommentImage;
-use App\Domains\Comments\Services\ImageProcessingService;
+use App\Storage\ImageProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 class CommentImageController
 {
     public function __construct(
-        private readonly ImageProcessingService $imageService,
+        private readonly ImageProcessor $imageService,
     ) {}
 
     public function store(StoreCommentImageRequest $request, Comment $comment): JsonResponse
@@ -64,6 +64,6 @@ class CommentImageController
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_DISK', 's3');
+        return config('filesystems.image_disk');
     }
 }

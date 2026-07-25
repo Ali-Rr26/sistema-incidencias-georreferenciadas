@@ -120,6 +120,18 @@ it('rejects image over 10MB', function (): void {
     $response->assertJsonValidationErrors(['images.0']);
 });
 
+it('rejects image just over the D10 5MB limit (validation parity)', function (): void {
+    $file = UploadedFile::fake()->image('just-over.jpg')->size(5200); // 5.2 MB > ImageRules::MAX_SIZE_KB
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images.0']);
+});
+
 it('rejects empty images array', function (): void {
     $response = $this->actingAs($this->user)
         ->postJson("/api/comments/{$this->comment->id}/images", [
@@ -127,6 +139,21 @@ it('rejects empty images array', function (): void {
         ]);
 
     $response->assertStatus(422);
+});
+
+it('rejects more than the D10 max file count (validation parity)', function (): void {
+    $files = array_map(
+        fn (int $i) => UploadedFile::fake()->image("photo{$i}.jpg", 200, 200),
+        range(1, 11),
+    );
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => $files,
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images']);
 });
 
 it('denies image upload to non-owner', function (): void {
@@ -171,4 +198,33 @@ it('denies image delete to non-owner', function (): void {
 
     $response->assertForbidden();
     $this->assertDatabaseHas('comment_images', ['id' => $image->id]);
+});
+
+it('uploads then deletes a comment image on the same configured disk (disk-key regression)', function (): void {
+    // Regression for the disk-key mismatch: upload used to write via
+    // FILESYSTEM_STORAGE_DISK while delete read the unrelated
+    // FILESYSTEM_DISK var, orphaning the object whenever the two env
+    // vars diverged. Both paths must now share one config source, so
+    // pointing that source at a non-default disk must move BOTH the
+    // upload and the delete together.
+    config(['filesystems.image_disk' => 'public']);
+    Storage::fake('public');
+
+    $file = UploadedFile::fake()->image('regression.jpg', 400, 400);
+
+    $uploadResponse = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $uploadResponse->assertStatus(201);
+    $imageId = $uploadResponse->json('data.0.id');
+    $imageUrl = $uploadResponse->json('data.0.url');
+    Storage::disk('public')->assertExists($imageUrl);
+
+    $deleteResponse = $this->actingAs($this->user)
+        ->deleteJson("/api/comments/{$this->comment->id}/images/{$imageId}");
+
+    $deleteResponse->assertStatus(204);
+    Storage::disk('public')->assertMissing($imageUrl);
 });

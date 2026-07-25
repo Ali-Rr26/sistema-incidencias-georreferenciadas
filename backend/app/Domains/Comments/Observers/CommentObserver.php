@@ -34,6 +34,6 @@ class CommentObserver
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_DISK', 's3');
+        return config('filesystems.image_disk');
     }
 }

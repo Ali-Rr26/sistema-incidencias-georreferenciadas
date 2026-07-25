@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Services;
 
-use App\Domains\Comments\Services\ImageProcessingService;
 use App\Domains\Users\Models\User;
+use App\Storage\ImageProcessor;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 class ProfileImageService
 {
     public function __construct(
-        private readonly ImageProcessingService $imageService,
+        private readonly ImageProcessor $imageService,
     ) {}
 
     /**
@@ -69,6 +69,6 @@ class ProfileImageService
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_STORAGE_DISK', 's3');
+        return config('filesystems.image_disk');
     }
 }
