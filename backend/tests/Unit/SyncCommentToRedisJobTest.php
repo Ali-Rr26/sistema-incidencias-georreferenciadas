@@ -5,23 +5,24 @@ declare(strict_types=1);
 use App\Domains\Comments\Jobs\SyncCommentToRedisJob;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->upsert(['id' => 1, 'name' => 'admin_sistema'], ['id'], ['name']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
     $user = User::factory()->create(['id' => 3, 'role_id' => 1]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);
-    DB::table('incidents')->insert([
-        'id' => 1,
+    $incident = Incident::withoutEvents(fn (): Incident => Incident::create([
         'incident_category_id' => $category->id,
         'organization_id' => $organization->id,
         'user_id' => $user->id,
@@ -29,12 +30,10 @@ beforeEach(function (): void {
         'title' => 'Test incident',
         'status' => 'pending',
         'priority' => 'medium',
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+    ]));
     DB::table('comments')->insert([
         'id' => 7,
-        'incident_id' => 1,
+        'incident_id' => $incident->id,
         'user_id' => $user->id,
         'message' => 'Blocked street',
         'created_at' => now(),

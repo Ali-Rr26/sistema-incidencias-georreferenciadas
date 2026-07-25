@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Locations\Models\Location;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\MultiPolygon;
@@ -11,7 +12,7 @@ use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Objects\Polygon;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 function locationRepoPostgisAvailable(): bool
 {

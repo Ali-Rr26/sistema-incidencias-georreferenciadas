@@ -8,11 +8,12 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 /**
  * Unit-style tests for AssignmentPolicy.
@@ -46,7 +47,6 @@ beforeEach(function (): void {
     // the next free slot — wrong for FK targets in our tests. The
     // existing test suite uses this same approach (see
     // tests/Feature/Domains/Incidents/IncidentAssignmentsTest.php:17).
-    DB::table('roles')->truncate();
     DB::table('roles')->insert([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],

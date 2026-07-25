@@ -6,9 +6,10 @@ use App\Domains\Auth\Local\Services\RegisterService;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 /**
  * Unit-level guarantees for the role-assignment logic in

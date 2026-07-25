@@ -9,14 +9,15 @@ use App\Domains\Sessions\Models\Session;
 use App\Domains\Sessions\Repositories\SessionRepository;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::updateOrCreate(['id' => 1], ['name' => 'Admin']);
+    Role::create(['name' => 'Admin']);
 });
 
 function makeJwtRequest(?string $token = null): Request

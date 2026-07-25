@@ -10,6 +10,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
@@ -33,14 +34,12 @@ use Tests\TestCase;
  * failing input — never relies on the absence of validation to assert
  * success.
  */
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->upsert(
-        [['id' => 1, 'name' => UserRole::AdminSistema->value]],
-        ['id'],
-        ['name']
-    );
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => UserRole::AdminSistema->value],
+    ]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);
