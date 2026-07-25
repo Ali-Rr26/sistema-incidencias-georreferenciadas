@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Storage;
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -108,11 +108,16 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
-        CommentImage::query()->chunkById(100, function ($commentImages) use (&$sourceCount, &$createdCount, &$legacyUrlRows): void {
+        // Read via the query builder, not an Eloquent model: `CommentImage`
+        // was deleted in the WU6 cutover (comments now write to the
+        // shared `images` table), but the legacy `comment_images` table
+        // itself is untouched until WU8 drops it, so it must still be
+        // readable here.
+        DB::table('comment_images')->orderBy('id')->chunkById(100, function ($commentImages) use (&$sourceCount, &$createdCount, &$legacyUrlRows): void {
             foreach ($commentImages as $commentImage) {
                 $sourceCount++;
 
-                $comment = $commentImage->comment;
+                $comment = Comment::find($commentImage->comment_id);
 
                 if ($comment === null) {
                     continue;
@@ -124,7 +129,7 @@ class ImageBackfiller
 
                 $this->flagLegacyAbsoluteUrl('comment', $comment->id, $commentImage->url, $legacyUrlRows);
 
-                $comment->polymorphicImages()->create([
+                $comment->images()->create([
                     'storage_path' => $commentImage->url,
                     'caption' => $commentImage->caption,
                     'sort_order' => $commentImage->sort_order,
@@ -163,7 +168,7 @@ class ImageBackfiller
                         continue;
                     }
 
-                    $user->avatar()->create([
+                    $user->avatarImage()->create([
                         'storage_path' => $user->profile_image_path,
                         'is_thumbnail' => true,
                         'sort_order' => 0,
@@ -221,7 +226,7 @@ class ImageBackfiller
      */
     private function verifyComments(): array
     {
-        $sourceCount = CommentImage::query()->count();
+        $sourceCount = DB::table('comment_images')->count();
 
         $targetCount = Image::query()
             ->where('imageable_type', (new Comment)->getMorphClass())

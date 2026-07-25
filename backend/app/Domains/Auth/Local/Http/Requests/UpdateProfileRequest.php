@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Requests;
 
-use App\Domains\Users\Models\User;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,14 +24,11 @@ class UpdateProfileRequest extends FormRequest
             'password' => ['sometimes', 'nullable', 'string', 'min:8'],
         ];
 
-        // Multipart: avatar as file upload
+        // Multipart: avatar as file upload — validated against the same
+        // D10 limits (ImageRules) every other image-upload endpoint uses
+        // (image-persistence-polymorphic WU7 cutover).
         if ($this->hasFile('avatar')) {
-            $rules['avatar'] = [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:'.User::AVATAR_MAX_KB,
-            ];
+            $rules['avatar'] = ['required', ...ImageRules::avatarFileRules()];
         } else {
             // JSON: avatar as legacy { urls: [...] } object
             $rules['avatar'] = ['sometimes', 'array'];
@@ -53,8 +50,8 @@ class UpdateProfileRequest extends FormRequest
         return [
             'avatar.required' => 'Debes subir una imagen de avatar.',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
-            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
-            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
+            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',
+            'avatar.max' => 'La imagen no puede superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }
