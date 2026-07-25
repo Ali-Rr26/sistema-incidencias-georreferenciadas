@@ -1,6 +1,7 @@
 import template from './dashboard.component.html?raw';
 import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
+import { locationService } from '../../../shared/location.service.js';
 
 // ─────────────────────────────────────────────
 // Estado global de filtros
@@ -12,7 +13,9 @@ const filterState = {
   ciudad_id: null,
   provincia_id: null,
   pais_id: null,
-  locationTree: [],
+  countries: [], // loaded via locationService.getRoots({ level: 'country' })
+  provinces: [], // loaded via locationService.getChildren({ parentId }) when country selected
+  cities: [], // loaded via locationService.getChildren({ parentId }) when province selected
   categories: [],
 };
 
@@ -256,23 +259,32 @@ function unwrapCollection(response) {
   return [];
 }
 
-function setupFilterListeners() {
-  // Cargar árbol de ubicaciones y categorías
-  Promise.all([
-    http.get('/locations/tree'),
-    http.get('/incident-categories/tree'),
-  ])
-    .then(([locTree, catTree]) => {
-      // Backend wraps both endpoints as { data: [...] } (ResourceCollection
-      // convention). Defensive: handle three shapes — wrapped, bare array,
-      // or null. Other services in this codebase already use this pattern
-      // (see dashboard fetch at line 494 and every shared/* service).
-      filterState.locationTree = unwrapCollection(locTree);
-      filterState.categories = unwrapCollection(catTree);
+function populateSelectError(selectEl, message) {
+  if (!selectEl) return;
+  selectEl.innerHTML = `<option value="">${message}</option>`;
+  selectEl.disabled = true;
+}
+
+async function setupFilterListeners() {
+  // Load categories (unchanged — still uses tree endpoint)
+  http
+    .get('/incident-categories/tree')
+    .then((resp) => {
+      filterState.categories = unwrapCollection(resp);
     })
     .catch(() => {
-      console.warn('Failed to load filter options');
+      console.warn('Failed to load categories');
     });
+
+  // Load countries first (roots) via location.service
+  try {
+    filterState.countries = await locationService.getRoots({
+      level: 'country',
+    });
+    populateCountrySelect();
+  } catch {
+    console.warn('Failed to load countries');
+  }
 
   // Botón "Aplicar" — ejecuta refreshDashboard
   const btnAplicar = document.getElementById('btn-filter-apply');
@@ -315,80 +327,115 @@ function setupFilterListeners() {
     });
   }
 
-  // Select país (para ubicación)
+  // Select país (para ubicación) — progressive via location.service
   const selectPais = document.getElementById('filter-pais');
   if (selectPais) {
-    // Poblar con raíces (países)
-    filterState.locationTree
-      .filter((l) => !l.parent_id)
-      .forEach((loc) => {
-        const opt = document.createElement('option');
-        opt.value = loc.id;
-        opt.textContent = loc.name;
-        selectPais.appendChild(opt);
-      });
-    selectPais.addEventListener('change', (e) => {
+    selectPais.addEventListener('change', async (e) => {
       filterState.pais_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
       // Limpiar provincia y ciudad
       filterState.provincia_id = null;
       filterState.ciudad_id = null;
+      filterState.provinces = [];
+      filterState.cities = [];
+
       const selectProvia = document.getElementById('filter-provincia');
-      if (selectProvia) {
-        selectProvia.innerHTML =
-          '<option value="">-- Seleccione provincia --</option>';
-        selectProvia.disabled = !filterState.pais_id;
-      }
       const selectCiudad = document.getElementById('filter-ciudad');
+
       if (selectCiudad) {
         selectCiudad.innerHTML =
           '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = true;
       }
-      // Poblar provincia si país seleccionado
-      if (filterState.pais_id) {
-        const pais = filterState.locationTree.find(
-          (l) => l.id === filterState.pais_id,
-        );
-        if (pais && pais.children) {
-          pais.children.forEach((prov) => {
+
+      if (!filterState.pais_id) {
+        // No country selected — disable province select
+        if (selectProvia) {
+          selectProvia.innerHTML =
+            '<option value="">-- Seleccione provincia --</option>';
+          selectProvia.disabled = true;
+        }
+        return;
+      }
+
+      // Country selected — enable province select and load provinces
+      if (selectProvia) {
+        selectProvia.innerHTML = '<option value="">Cargando...</option>';
+        selectProvia.disabled = false;
+      }
+
+      try {
+        filterState.provinces = await locationService.getChildren({
+          parentId: filterState.pais_id,
+        });
+        if (selectProvia) {
+          selectProvia.innerHTML =
+            '<option value="">-- Seleccione provincia --</option>';
+          filterState.provinces.forEach((prov) => {
             const opt = document.createElement('option');
             opt.value = prov.id;
             opt.textContent = prov.name;
             selectProvia.appendChild(opt);
           });
         }
+      } catch {
+        if (selectProvia) {
+          populateSelectError(selectProvia, 'Error al cargar provincias');
+        }
       }
     });
   }
 
-  // Select provincia
+  // Select provincia — progressive via location.service
   const selectProvia = document.getElementById('filter-provincia');
   if (selectProvia) {
-    selectProvia.addEventListener('change', (e) => {
+    // Disable until a country is selected (already handled in country handler)
+    selectProvia.disabled = true;
+    selectProvia.innerHTML =
+      '<option value="">-- Seleccione provincia --</option>';
+
+    selectProvia.addEventListener('change', async (e) => {
       filterState.provincia_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
       filterState.ciudad_id = null;
+
       const selectCiudad = document.getElementById('filter-ciudad');
+
       if (selectCiudad) {
         selectCiudad.innerHTML =
           '<option value="">-- Seleccione ciudad --</option>';
-        selectCiudad.disabled = !filterState.provincia_id;
+        selectCiudad.disabled = true;
       }
-      // Poblar ciudad si provincia seleccionada
-      if (filterState.provincia_id) {
-        const prov = filterState.locationTree
-          .flatMap((p) => p.children || [])
-          .find((c) => c.id === filterState.provincia_id);
-        if (prov && prov.children) {
-          prov.children.forEach((ciudad) => {
+
+      if (!filterState.provincia_id) {
+        return;
+      }
+
+      // Province selected — load cities
+      if (selectCiudad) {
+        selectCiudad.innerHTML = '<option value="">Cargando...</option>';
+        selectCiudad.disabled = false;
+      }
+
+      try {
+        filterState.cities = await locationService.getChildren({
+          parentId: filterState.provincia_id,
+        });
+        if (selectCiudad) {
+          selectCiudad.innerHTML =
+            '<option value="">-- Seleccione ciudad --</option>';
+          filterState.cities.forEach((city) => {
             const opt = document.createElement('option');
-            opt.value = ciudad.id;
-            opt.textContent = ciudad.name;
+            opt.value = city.id;
+            opt.textContent = city.name;
             selectCiudad.appendChild(opt);
           });
+        }
+      } catch {
+        if (selectCiudad) {
+          populateSelectError(selectCiudad, 'Error al cargar ciudades');
         }
       }
     });
@@ -397,12 +444,25 @@ function setupFilterListeners() {
   // Select ciudad
   const selectCiudad = document.getElementById('filter-ciudad');
   if (selectCiudad) {
+    selectCiudad.disabled = true;
     selectCiudad.addEventListener('change', (e) => {
       filterState.ciudad_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
     });
   }
+}
+
+function populateCountrySelect() {
+  const selectPais = document.getElementById('filter-pais');
+  if (!selectPais) return;
+  selectPais.innerHTML = '<option value="">-- Seleccione país --</option>';
+  filterState.countries.forEach((country) => {
+    const opt = document.createElement('option');
+    opt.value = country.id;
+    opt.textContent = country.name;
+    selectPais.appendChild(opt);
+  });
 }
 
 // ─────────────────────────────────────────────
