@@ -60,7 +60,7 @@ class IncidentController extends Controller
      * is intentionally NOT a relation here — only the count is exposed via
      * `withCount('comments')` (kept in the repository).
      */
-    private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location'];
+    private const INDEX_RELATIONS = ['category', 'organization', 'user', 'location', 'images'];
 
     public function index(Request $request): JsonResponse
     {
@@ -125,10 +125,7 @@ class IncidentController extends Controller
         $incident = $this->incidents->create($data);
 
         if ($request->hasFile('images')) {
-            $images = $this->images->upload($request->file('images'), $incident->id, true);
-            if (! empty($images)) {
-                $incident->update(['images' => $images]);
-            }
+            $this->images->upload($request->file('images'), $incident, true);
         }
 
         return (new IncidentResource($incident))
@@ -142,7 +139,7 @@ class IncidentController extends Controller
      * the detail view embeds assignments directly — the list endpoint does
      * not need them.
      */
-    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user'];
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'images'];
 
     public function show(Request $request, Incident $incident): JsonResponse
     {
@@ -158,10 +155,8 @@ class IncidentController extends Controller
         unset($data['images']);
 
         if ($request->hasFile('images')) {
-            $hasExisting = ! empty($incident->images);
-            $images = $this->images->upload($request->file('images'), $incident->id, ! $hasExisting);
-            $existing = $incident->images ?? [];
-            $data['images'] = array_merge($existing, $images);
+            $hasExisting = $incident->images()->exists();
+            $this->images->upload($request->file('images'), $incident, ! $hasExisting);
         }
 
         $incident = $this->incidents->update($incident->id, $data);

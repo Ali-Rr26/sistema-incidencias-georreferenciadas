@@ -134,13 +134,17 @@ class Incident extends Model
 
     /**
      * Polymorphic `images` table rows for this incident, ordered by
-     * `sort_order` (image-persistence-polymorphic, WU2).
+     * `sort_order` (image-persistence-polymorphic, WU2/WU5).
      *
-     * NOT yet wired into any controller/resource — the legacy `images`
-     * JSON column (see `$fillable`/`casts()` above) remains the live
-     * source of truth for reads/writes until the WU5 cutover. Accessing
-     * `$incident->images` (no parentheses) still returns the JSON array;
-     * only `$incident->images()` (relation call) resolves this table.
+     * This relation is the live source of truth for reads/writes since the
+     * WU5 cutover (IncidentController/IncidentImageService/IncidentResource).
+     * The legacy `images` JSON column (see `$fillable`/`casts()` above) is
+     * no longer written or read — it stays only until WU8 drops it.
+     * Accessing `$incident->images` (no parentheses) still returns the
+     * legacy JSON column attribute; only `$incident->images()` (relation
+     * call) resolves this table — this collision is why IncidentResource
+     * cannot use `whenLoaded('images')` and instead checks
+     * `relationLoaded()`/`getRelation()` directly.
      */
     public function images(): MorphMany
     {
