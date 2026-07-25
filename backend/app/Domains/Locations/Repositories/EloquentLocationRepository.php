@@ -48,14 +48,6 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
             ->first();
     }
 
-    public function tree(): Collection
-    {
-        return $this->newQuery()
-            ->whereNull('parent_id')
-            ->with('children.children.children')
-            ->get();
-    }
-
     /**
      * Returns the ordered ancestor chain (root-to-leaf) for the given location.
      *

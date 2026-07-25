@@ -54,7 +54,6 @@ class SecurityHeadersTest extends TestCase
         $endpoints = [
             '/api/incidents',
             '/api/incidents/stats',
-            '/api/locations/tree',
         ];
 
         foreach ($endpoints as $endpoint) {

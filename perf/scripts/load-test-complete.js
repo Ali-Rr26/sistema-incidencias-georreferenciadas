@@ -61,19 +61,6 @@ function findLeafCategoryId(nodes) {
   return null;
 }
 
-function findCityLocationId(nodes) {
-  for (const node of nodes) {
-    if (node.level === 'city') {
-      return node.id;
-    }
-    const found = findCityLocationId(node.children || []);
-    if (found) {
-      return found;
-    }
-  }
-  return null;
-}
-
 export function setup() {
   const token = getAuthToken(BASE_URL);
   if (!token) {
@@ -84,7 +71,7 @@ export function setup() {
     headers: { Authorization: `Bearer ${token}` },
   };
   const catsRes = http.get(`${BASE_URL}/api/incident-categories/tree`, params);
-  const locsRes = http.get(`${BASE_URL}/api/locations/tree`, params);
+  const locsRes = http.get(`${BASE_URL}/api/locations?level=city&per_page=1`, params);
 
   if (catsRes.status !== 200) {
     throw new Error(`Failed to fetch categories: HTTP ${catsRes.status}`);
@@ -94,7 +81,7 @@ export function setup() {
   }
 
   const categoryId = findLeafCategoryId(JSON.parse(catsRes.body).data || []);
-  const locationId = findCityLocationId(JSON.parse(locsRes.body).data || []);
+  const locationId = (JSON.parse(locsRes.body).data || [])[0]?.id ?? null;
 
   if (!categoryId) {
     throw new Error('No organization leaf categories found');

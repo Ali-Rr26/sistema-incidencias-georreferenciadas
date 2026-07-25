@@ -32,15 +32,6 @@ function findLeafCategoryId(nodes) {
   return null;
 }
 
-function findCityLocationId(nodes) {
-  for (const node of nodes) {
-    if (node.level === 'city') return node.id;
-    const found = findCityLocationId(node.children || []);
-    if (found) return found;
-  }
-  return null;
-}
-
 export function setup() {
   const token = login(BASE_URL, 'admin@sistema.com', 'Admin123!');
   const headers = authHeaders(token);
@@ -50,8 +41,8 @@ export function setup() {
   });
   const categoryId = findLeafCategoryId(catRes.json('data') || []);
 
-  const locRes = http.get(`${BASE_URL}/api/locations/tree`, { headers });
-  const locationId = findCityLocationId(locRes.json('data') || []);
+  const locRes = http.get(`${BASE_URL}/api/locations?level=city&per_page=1`, { headers });
+  const locationId = (locRes.json('data') || [])[0]?.id ?? null;
 
   if (!categoryId || !locationId) {
     throw new Error(

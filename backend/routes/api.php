@@ -92,7 +92,6 @@ Route::middleware('jwt')->group(function () {
 
     // Catálogos
     Route::get('map/filters', MapFilterController::class);
-    Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
     Route::get('organizations/form-data', [OrganizationController::class, 'formData']);

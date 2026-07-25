@@ -25,13 +25,6 @@ class LocationController extends Controller
         $this->authorizeResource(Location::class, 'location');
     }
 
-    public function tree(): JsonResponse
-    {
-        $tree = $this->locations->tree();
-
-        return response()->json(['data' => LocationResource::collection($tree)]);
-    }
-
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'level', 'parent_id', 'per_page']);
