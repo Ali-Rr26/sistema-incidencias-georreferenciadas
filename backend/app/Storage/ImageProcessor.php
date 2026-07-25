@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domains\Comments\Services;
+namespace App\Storage;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +11,15 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Format;
 use Intervention\Image\ImageManager;
 
-class ImageProcessingService
+/**
+ * Shared image processing service (webp encode + resize/crop) used by
+ * every domain that stores images (incidents, comments, users).
+ *
+ * Moved from App\Domains\Comments\Services\ImageProcessingService — the
+ * previous location made Users\Services\ProfileImageService import a
+ * Comments-domain class, a cross-domain coupling this move removes.
+ */
+class ImageProcessor
 {
     private const MAX_DIMENSION = 1920;
 
@@ -75,6 +83,6 @@ class ImageProcessingService
 
     private function storageDisk(): string
     {
-        return env('FILESYSTEM_STORAGE_DISK', 's3');
+        return config('filesystems.image_disk');
     }
 }

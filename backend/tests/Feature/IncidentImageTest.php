@@ -127,6 +127,59 @@ it('rejects images over 10MB', function (): void {
     $response->assertJsonValidationErrors(['images.0']);
 });
 
+it('rejects an image just over the D10 5MB limit (validation parity)', function (): void {
+    $file = UploadedFile::fake()->image('just-over.jpg')->size(5200); // 5.2MB > ImageRules::MAX_SIZE_KB
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->post('/api/incidents', [
+            'title' => 'Test',
+            'incident_category_id' => $this->category->id,
+            'location_id' => $this->location->id,
+            'priority' => Incident::PRIORITY_MEDIUM,
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images.0']);
+});
+
+it('accepts a gif image (D10 union of accepted MIME types)', function (): void {
+    $file = UploadedFile::fake()->image('animated.gif', 200, 200);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->post('/api/incidents', [
+            'title' => 'Test with gif',
+            'incident_category_id' => $this->category->id,
+            'location_id' => $this->location->id,
+            'priority' => Incident::PRIORITY_MEDIUM,
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(201);
+});
+
+it('rejects more than the D10 max file count (validation parity)', function (): void {
+    $files = array_map(
+        fn (int $i) => UploadedFile::fake()->image("photo{$i}.jpg", 100, 100),
+        range(1, 11),
+    );
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->post('/api/incidents', [
+            'title' => 'Too many images',
+            'incident_category_id' => $this->category->id,
+            'location_id' => $this->location->id,
+            'priority' => Incident::PRIORITY_MEDIUM,
+            'images' => $files,
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images']);
+});
+
 // ─── Thumbnail behavior ──────────────────────────────────────────────
 
 it('first uploaded image becomes thumbnail', function (): void {

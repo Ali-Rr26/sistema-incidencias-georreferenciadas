@@ -11,10 +11,12 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -128,5 +130,20 @@ class Incident extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(Assignment::class);
+    }
+
+    /**
+     * Polymorphic `images` table rows for this incident, ordered by
+     * `sort_order` (image-persistence-polymorphic, WU2).
+     *
+     * NOT yet wired into any controller/resource — the legacy `images`
+     * JSON column (see `$fillable`/`casts()` above) remains the live
+     * source of truth for reads/writes until the WU5 cutover. Accessing
+     * `$incident->images` (no parentheses) still returns the JSON array;
+     * only `$incident->images()` (relation call) resolves this table.
+     */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Image::class, 'imageable')->orderBy('sort_order');
     }
 }
