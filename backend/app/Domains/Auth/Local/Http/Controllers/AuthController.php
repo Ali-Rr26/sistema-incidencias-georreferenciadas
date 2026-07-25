@@ -135,10 +135,11 @@ class AuthController
             }
         }
 
-        // Handle avatar file upload via ProfileImageService
+        // Handle avatar file upload via ProfileImageService (writes to the
+        // shared `images` table — `profile_image_path` column is dead,
+        // WU8 drops it).
         if ($request->hasFile('avatar')) {
-            $newPath = $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
-            $validated['profile_image_path'] = $newPath;
+            $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
             // Remove legacy avatar array from text update — file upload replaces it
             unset($validated['avatar']);
         }
@@ -149,7 +150,7 @@ class AuthController
         }
 
         return response()->json(
-            new UserResource($user->load(['role', 'organization'])),
+            new UserResource($user->load(['role', 'organization', 'avatarImage'])),
         );
     }
 

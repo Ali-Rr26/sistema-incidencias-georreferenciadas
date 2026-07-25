@@ -58,11 +58,13 @@ it('multipart request with valid avatar passes file validation', function (): vo
     expect($validator->passes())->toBeTrue();
 });
 
-it('avatar file over 800KB is rejected', function (): void {
+it('avatar file over the ImageRules size cap is rejected', function (): void {
     $user = User::factory()->create();
     $request = new UpdateProfileRequest;
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(801); // 801KB
+    // 5200 KB > ImageRules::MAX_SIZE_KB (5120 KB / 5 MB), same pattern used
+    // by the other image-upload endpoints (incidents, comments).
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(5200);
 
     $request->merge(['first_name' => 'Ana']);
     $request->files->set('avatar', $file);
@@ -73,11 +75,11 @@ it('avatar file over 800KB is rejected', function (): void {
     expect($validator->errors()->has('avatar'))->toBeTrue();
 });
 
-it('avatar file at exactly 800KB is accepted', function (): void {
+it('avatar file at exactly the ImageRules size cap is accepted', function (): void {
     $user = User::factory()->create();
     $request = new UpdateProfileRequest;
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(800); // 800KB
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(\App\Storage\ImageRules::MAX_SIZE_KB);
 
     $request->merge(['first_name' => 'Ana']);
     $request->files->set('avatar', $file);
@@ -87,7 +89,24 @@ it('avatar file at exactly 800KB is accepted', function (): void {
     expect($validator->passes())->toBeTrue();
 });
 
-it('avatar file with wrong MIME is rejected', function (): void {
+it('avatar file with a wrong MIME is rejected', function (): void {
+    $user = User::factory()->create();
+    $request = new UpdateProfileRequest;
+
+    // bmp is not in ImageRules::MIMES (jpeg,png,webp,gif) — gif is now
+    // accepted per the WU7 cutover to the shared D10 limits.
+    $file = UploadedFile::fake()->create('avatar.bmp', 100, 'image/bmp');
+
+    $request->merge(['first_name' => 'Ana']);
+    $request->files->set('avatar', $file);
+
+    $validator = validator($request->all(), $request->rules());
+
+    expect($validator->fails())->toBeTrue();
+    expect($validator->errors()->has('avatar'))->toBeTrue();
+});
+
+it('avatar file as gif is now accepted per the shared ImageRules D10 limits', function (): void {
     $user = User::factory()->create();
     $request = new UpdateProfileRequest;
 
@@ -98,8 +117,7 @@ it('avatar file with wrong MIME is rejected', function (): void {
 
     $validator = validator($request->all(), $request->rules());
 
-    expect($validator->fails())->toBeTrue();
-    expect($validator->errors()->has('avatar'))->toBeTrue();
+    expect($validator->passes())->toBeTrue();
 });
 
 it('authorize returns true when user is authenticated', function (): void {

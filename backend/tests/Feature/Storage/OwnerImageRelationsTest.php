@@ -88,7 +88,7 @@ it('exposes an ordered polymorphicImages() morphMany relation on Comment without
     expect($this->comment->images()->getRelated())->toBeInstanceOf(\App\Domains\Comments\Models\CommentImage::class);
 });
 
-it('exposes an avatar() morphOne relation on User', function (): void {
+it('exposes an avatarImage() morphOne relation on User', function (): void {
     Image::create([
         'imageable_type' => 'user',
         'imageable_id' => $this->user->id,
@@ -97,7 +97,7 @@ it('exposes an avatar() morphOne relation on User', function (): void {
         'sort_order' => 0,
     ]);
 
-    $avatar = $this->user->avatar()->first();
+    $avatar = $this->user->avatarImage()->first();
 
     expect($avatar)->not->toBeNull();
     expect($avatar->storage_path)->toBe('users/'.$this->user->id.'/avatar.webp');
