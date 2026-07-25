@@ -8,10 +8,12 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Models\Session;
+use App\Storage\Models\Image;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -77,6 +79,20 @@ class User extends Authenticatable
     public function sessions(): HasMany
     {
         return $this->hasMany(Session::class);
+    }
+
+    /**
+     * Polymorphic `images` table row holding this user's avatar
+     * (image-persistence-polymorphic, WU2). NOT yet wired into
+     * `UserResource`/`ProfileImageService` — the legacy
+     * `profile_image_path` column (see `$fillable` above) remains the
+     * live source of truth until the WU7 cutover, which per design D6
+     * keeps `UserResource.profile_image_path` as the same bare string
+     * key, sourced from this relation instead of the column.
+     */
+    public function avatar(): MorphOne
+    {
+        return $this->morphOne(Image::class, 'imageable');
     }
 
     public function isAdmin(): bool
