@@ -268,32 +268,3 @@ it('uploads then deletes a comment image on the same configured disk (disk-key r
     $deleteResponse->assertStatus(204);
     Storage::disk('public')->assertMissing($imageUrl);
 });
-
-it('uploads then deletes a comment image on the same configured disk (disk-key regression)', function (): void {
-    // Regression for the disk-key mismatch: upload used to write via
-    // FILESYSTEM_STORAGE_DISK while delete read the unrelated
-    // FILESYSTEM_DISK var, orphaning the object whenever the two env
-    // vars diverged. Both paths must now share one config source, so
-    // pointing that source at a non-default disk must move BOTH the
-    // upload and the delete together.
-    config(['filesystems.image_disk' => 'public']);
-    Storage::fake('public');
-
-    $file = UploadedFile::fake()->image('regression.jpg', 400, 400);
-
-    $uploadResponse = $this->actingAs($this->user)
-        ->postJson("/api/comments/{$this->comment->id}/images", [
-            'images' => [$file],
-        ]);
-
-    $uploadResponse->assertStatus(201);
-    $imageId = $uploadResponse->json('data.0.id');
-    $imageUrl = $uploadResponse->json('data.0.url');
-    Storage::disk('public')->assertExists($imageUrl);
-
-    $deleteResponse = $this->actingAs($this->user)
-        ->deleteJson("/api/comments/{$this->comment->id}/images/{$imageId}");
-
-    $deleteResponse->assertStatus(204);
-    Storage::disk('public')->assertMissing($imageUrl);
-});

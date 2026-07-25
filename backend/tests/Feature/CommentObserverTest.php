@@ -103,18 +103,3 @@ it('deletes S3 images from the configured image disk when comment is deleted (di
 
     Storage::disk('public')->assertMissing('comments/1/regression.webp');
 });
-
-it('deletes S3 images from the configured image disk when comment is deleted (disk-key regression)', function (): void {
-    // Regression for the disk-key mismatch: the observer used to read
-    // the unrelated FILESYSTEM_DISK var instead of the disk images are
-    // actually stored on, orphaning objects whenever the two diverged.
-    config(['filesystems.image_disk' => 'public']);
-    Storage::fake('public');
-
-    Storage::disk('public')->put('comments/1/regression.webp', 'content1');
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/regression.webp']);
-
-    $this->comment->delete();
-
-    Storage::disk('public')->assertMissing('comments/1/regression.webp');
-});
