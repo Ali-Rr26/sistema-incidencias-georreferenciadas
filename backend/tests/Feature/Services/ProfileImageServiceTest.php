@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Services\ProfileImageService;
-use App\Storage\ImageProcessor;
+use App\Storage\ImageStorageService;
+use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -15,58 +16,61 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
     Storage::fake('s3');
-    $this->service = new ProfileImageService(new ImageProcessor);
+    $this->service = app(ProfileImageService::class);
 });
 
-it('replaceAvatar deletes old file and stores new one', function (): void {
-    $user = User::factory()->create([
-        'profile_image_path' => 'users/1/old-uuid.webp',
-    ]);
-    Storage::disk('s3')->put('users/1/old-uuid.webp', 'old content');
+it('replaceAvatar creates exactly one images row with is_thumbnail=true', function (): void {
+    $user = User::factory()->create();
 
     $filePath = __DIR__.'/../../fixtures/test-image.jpg';
     $file = new UploadedFile($filePath, 'test-image.jpg', 'image/jpeg', null, true);
 
-    $newPath = $this->service->replaceAvatar($user, $file);
+    $image = $this->service->replaceAvatar($user, $file);
 
-    expect($newPath)->toStartWith('users/1/')->toEndWith('.webp');
-    expect($user->fresh()->profile_image_path)->toBe($newPath);
-    Storage::disk('s3')->assertMissing('users/1/old-uuid.webp');
-    Storage::disk('s3')->assertExists($newPath);
+    expect($image)->toBeInstanceOf(Image::class);
+    expect($image->is_thumbnail)->toBeTrue();
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $user->id)->count())->toBe(1);
+    expect($image->storage_path)->toStartWith('users/'.$user->id.'/')->toEndWith('.webp');
+    Storage::disk('s3')->assertExists($image->storage_path);
 });
 
-it('replaceAvatar with null existing path skips delete', function (): void {
-    $user = User::factory()->create([
-        'profile_image_path' => null,
-    ]);
+it('replaceAvatar twice leaves exactly one row and object (old one gone)', function (): void {
+    $user = User::factory()->create();
 
     $filePath = __DIR__.'/../../fixtures/test-image.jpg';
-    $file = new UploadedFile($filePath, 'test-image.jpg', 'image/jpeg', null, true);
+    $firstFile = new UploadedFile($filePath, 'first.jpg', 'image/jpeg', null, true);
+    $secondFile = new UploadedFile($filePath, 'second.jpg', 'image/jpeg', null, true);
 
-    $newPath = $this->service->replaceAvatar($user, $file);
+    $first = $this->service->replaceAvatar($user, $firstFile);
+    $second = $this->service->replaceAvatar($user, $secondFile);
 
-    expect($newPath)->toStartWith('users/1/')->toEndWith('.webp');
-    Storage::disk('s3')->assertExists($newPath);
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $user->id)->count())->toBe(1);
+    expect(Image::find($first->id))->toBeNull();
+    expect(Image::find($second->id))->not->toBeNull();
+    expect($second->is_thumbnail)->toBeTrue();
+    Storage::disk('s3')->assertMissing($first->storage_path);
+    Storage::disk('s3')->assertExists($second->storage_path);
 });
 
-it('removeAvatar deletes file and clears path', function (): void {
-    $user = User::factory()->create([
-        'profile_image_path' => 'users/1/to-delete.webp',
-    ]);
-    Storage::disk('s3')->put('users/1/to-delete.webp', 'content to delete');
+it('removeAvatar deletes both the images row and the storage object', function (): void {
+    $user = User::factory()->create();
+    $image = app(ImageStorageService::class)->attach(
+        $user,
+        new UploadedFile(__DIR__.'/../../fixtures/test-image.jpg', 'existing.jpg', 'image/jpeg', null, true),
+        profile: 'avatar',
+        isThumbnail: true,
+    );
 
     $this->service->removeAvatar($user);
 
-    expect($user->fresh()->profile_image_path)->toBeNull();
-    Storage::disk('s3')->assertMissing('users/1/to-delete.webp');
+    expect(Image::find($image->id))->toBeNull();
+    Storage::disk('s3')->assertMissing($image->storage_path);
 });
 
-it('removeAvatar with null path is no-op', function (): void {
-    $user = User::factory()->create([
-        'profile_image_path' => null,
-    ]);
+it('removeAvatar with no existing avatar is a no-op', function (): void {
+    $user = User::factory()->create();
 
     $this->service->removeAvatar($user);
 
-    expect($user->fresh()->profile_image_path)->toBeNull();
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $user->id)->count())->toBe(0);
 });

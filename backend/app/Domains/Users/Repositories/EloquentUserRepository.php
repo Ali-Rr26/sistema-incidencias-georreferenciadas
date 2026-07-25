@@ -40,7 +40,7 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
 
     protected function newQuery(): Builder
     {
-        return parent::newQuery()->with(['role', 'organization']);
+        return parent::newQuery()->with(['role', 'organization', 'avatarImage']);
     }
 
     protected function applyFilters(Builder $query, array $filters): void

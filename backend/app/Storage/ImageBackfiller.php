@@ -163,7 +163,7 @@ class ImageBackfiller
                         continue;
                     }
 
-                    $user->avatar()->create([
+                    $user->avatarImage()->create([
                         'storage_path' => $user->profile_image_path,
                         'is_thumbnail' => true,
                         'sort_order' => 0,
