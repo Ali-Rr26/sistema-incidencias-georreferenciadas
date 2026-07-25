@@ -2,6 +2,7 @@ import template from './organizaciones.form.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { mostrarToast } from '../../../../utils/ui.js';
+import { locationService } from '../../../../shared/location.service.js';
 import {
   initSelect,
   getSelect,
@@ -48,35 +49,10 @@ export default {
       }
     }
 
-    // ─── Localización en cascada ──────────────────────────────────────────
+    // ─── Localización en cascada — progressive via locationService ──────────
 
-    let locationTree = null;
-
-    function setLocationTree(tree) {
-      locationTree = tree;
-    }
-
-    function findNodeById(nodes, id) {
-      for (const node of nodes) {
-        if (node.id === id) return node;
-        if (node.children?.length) {
-          const found = findNodeById(node.children, id);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
-
-    function findAncestors(tree, targetId, path = []) {
-      for (const node of tree) {
-        if (node.id === targetId) return [...path, node];
-        if (node.children?.length) {
-          const found = findAncestors(node.children, targetId, [...path, node]);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
+    // Active selection generation for race-safety (stale responses discarded)
+    let selectionGeneration = 0;
 
     function poblarSelectNativo(selId, items, textoDefault) {
       const sel = document.getElementById(selId);
@@ -124,17 +100,17 @@ export default {
     const provinciaSel = 'org-location-provincia';
     const ciudadSel = 'org-location-ciudad';
 
-    function onPaisChange() {
+    async function onPaisChange() {
       const val = document.getElementById(paisSel).value;
       clearSelect(provinciaSel);
       clearSelect(ciudadSel);
       if (val) {
-        const pais = findNodeById(locationTree, parseInt(val));
-        poblarSelectNativo(
-          provinciaSel,
-          pais?.children ?? [],
-          '-- Seleccione --',
-        );
+        selectionGeneration++;
+        const gen = selectionGeneration;
+        const provinces = await locationService.getChildren({ parentId: parseInt(val) });
+        // Discard stale response
+        if (gen !== selectionGeneration) return;
+        poblarSelectNativo(provinciaSel, provinces, '-- Seleccione --');
         setSelectEnabled(provinciaSel, true);
         initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
         poblarSelectNativo(ciudadSel, [], '-- Opcional --');
@@ -146,20 +122,16 @@ export default {
       actualizarLocationId();
     }
 
-    function onProvinciaChange() {
+    async function onProvinciaChange() {
       const val = document.getElementById(provinciaSel).value;
       clearSelect(ciudadSel);
       if (val) {
-        const pais = findNodeById(
-          locationTree,
-          parseInt(document.getElementById(paisSel).value),
-        );
-        const provincia = pais?.children?.find((c) => c.id === parseInt(val));
-        poblarSelectNativo(
-          ciudadSel,
-          provincia?.children ?? [],
-          '-- Opcional --',
-        );
+        selectionGeneration++;
+        const gen = selectionGeneration;
+        const cities = await locationService.getChildren({ parentId: parseInt(val) });
+        // Discard stale response
+        if (gen !== selectionGeneration) return;
+        poblarSelectNativo(ciudadSel, cities, '-- Opcional --');
         setSelectEnabled(ciudadSel, true);
         initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
       } else {
@@ -180,50 +152,65 @@ export default {
         ciudad || provincia || pais;
     }
 
-    async function initCascadingLocation(tree, valorSeleccionado = null) {
-      setLocationTree(tree);
-      if (!locationTree?.length) return;
+    /**
+     * Initialize cascading location selects with progressive loading.
+     * Uses location_path (ordered root-to-leaf array) from detail response
+     * for preselection in edit mode, fetching only the needed levels.
+     *
+     * @param {object[]|null} locationPath — location_path from detail response, or null for create
+     * @param {number|null} selectedId — the location_id of the organization (deepest level)
+     */
+    async function initCascadingLocation(locationPath, selectedId = null) {
+      // Load countries as roots
+      selectionGeneration++;
+      const gen = selectionGeneration;
+      const countries = await locationService.getRoots({ level: 'country' });
+      if (gen !== selectionGeneration) return;
 
-      // Poblar países
-      poblarSelectNativo(paisSel, locationTree, '-- Seleccione --');
+      poblarSelectNativo(paisSel, countries, '-- Seleccione --');
       initSelect(paisSel, { placeholder: 'Buscar país...' });
 
-      // Si hay valor seleccionado (edición), resolver ancestros
-      if (valorSeleccionado) {
-        const ancestors = findAncestors(
-          locationTree,
-          parseInt(valorSeleccionado),
-        );
-        if (ancestors) {
-          const nivelPais = ancestors.find((a) => a.level === 'country');
-          const nivelProvincia = ancestors.find((a) => a.level === 'province');
-          const nivelCiudad = ancestors.find((a) => a.level === 'city');
-
-          if (nivelPais) {
-            getSelect(paisSel)?.setValue(String(nivelPais.id), true);
-            // El change event no se dispara con setValue silencioso,
-            // así que llamamos onPaisChange manualmente
-            onPaisChange();
-          }
-          if (nivelProvincia) {
-            getSelect(provinciaSel)?.setValue(String(nivelProvincia.id), true);
-            onProvinciaChange();
-          }
-          if (nivelCiudad) {
-            getSelect(ciudadSel)?.setValue(String(nivelCiudad.id), true);
-          }
-          document.getElementById('org-location').value = valorSeleccionado;
-        }
-      }
-
-      // Eventos (se agregan después de la inicialización)
+      // Attach listeners first
       document.getElementById(paisSel).addEventListener('change', onPaisChange);
-      document
-        .getElementById(provinciaSel)
-        .addEventListener('change', onProvinciaChange);
-      document
-        .getElementById(ciudadSel)
-        .addEventListener('change', onCiudadChange);
+      document.getElementById(provinciaSel).addEventListener('change', onProvinciaChange);
+      document.getElementById(ciudadSel).addEventListener('change', onCiudadChange);
+
+      // Edit mode: preselect from location_path
+      if (locationPath && locationPath.length > 0) {
+        const nivelPais = locationPath.find((a) => a.level === 'country');
+        const nivelProvincia = locationPath.find((a) => a.level === 'province');
+        const nivelCiudad = locationPath.find((a) => a.level === 'city');
+
+        if (nivelPais) {
+          getSelect(paisSel)?.setValue(String(nivelPais.id), true);
+          // Fetch and populate provinces
+          selectionGeneration++;
+          const genProv = selectionGeneration;
+          const provinces = await locationService.getChildren({ parentId: nivelPais.id });
+          if (genProv !== selectionGeneration) return;
+          poblarSelectNativo(provinciaSel, provinces, '-- Seleccione --');
+          setSelectEnabled(provinciaSel, true);
+          initSelect(provinciaSel, { placeholder: 'Buscar provincia...' });
+        }
+
+        if (nivelProvincia) {
+          getSelect(provinciaSel)?.setValue(String(nivelProvincia.id), true);
+          // Fetch and populate cities
+          selectionGeneration++;
+          const genCity = selectionGeneration;
+          const cities = await locationService.getChildren({ parentId: nivelProvincia.id });
+          if (genCity !== selectionGeneration) return;
+          poblarSelectNativo(ciudadSel, cities, '-- Opcional --');
+          setSelectEnabled(ciudadSel, true);
+          initSelect(ciudadSel, { placeholder: 'Buscar ciudad...' });
+        }
+
+        if (nivelCiudad) {
+          getSelect(ciudadSel)?.setValue(String(nivelCiudad.id), true);
+        }
+
+        document.getElementById('org-location').value = selectedId;
+      }
     }
 
     // ─── Carga inicial ────────────────────────────────────────────────────
@@ -232,17 +219,23 @@ export default {
 
     if (esEdicion) {
       try {
-        const resp = await http.get('/organizations/' + editId);
-        const org = resp.data ?? resp;
+        // Load detail and form-data in parallel for performance
+        const [orgResp, catalogResp] = await Promise.all([
+          http.get('/organizations/' + editId),
+          http.get('/organizations/form-data'),
+        ]);
+        const org = orgResp.data ?? orgResp;
+        const catalog = catalogResp.data ?? catalogResp;
+
         document.getElementById('org-id').value = org.id;
         document.getElementById('org-nombre').value = org.name;
 
         const categoriaId = org.incident_category?.id ?? null;
 
         await Promise.all([
-          cargarPadres(org.organizations ?? [], editId),
-          initCascadingLocation(org.locations_tree ?? [], org.location_id),
-          cargarCategorias(org.categories ?? [], categoriaId),
+          cargarPadres(catalog.organizations ?? [], editId),
+          initCascadingLocation(org.location_path ?? null, org.location_id),
+          cargarCategorias(catalog.categories ?? [], categoriaId),
         ]);
         document.getElementById('org-padre').value = org.parent_id ?? '';
       } catch {
@@ -262,7 +255,7 @@ export default {
       }
       await Promise.all([
         cargarPadres(formCatalogs.organizations),
-        initCascadingLocation(formCatalogs.locations_tree),
+        initCascadingLocation(null),
         cargarCategorias(formCatalogs.categories),
       ]);
     }

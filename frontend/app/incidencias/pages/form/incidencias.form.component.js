@@ -13,6 +13,7 @@ import uploaderStyle from '../../../shared/image-uploader.css?raw';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
+import { locationService } from '../../../shared/location.service.js';
 import { mountImageUploader } from '../../../shared/image-uploader.js';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { point as turfPoint } from '@turf/helpers';
@@ -56,7 +57,6 @@ export default {
     let geomValue = null; // GeoJSON Point
     let imagenesSeleccionadas = [];
     let categoryTree = [];
-    let locationsTree = [];
 
     // ── Helpers ──
 
@@ -157,131 +157,14 @@ export default {
         });
     });
 
-    // ── Boundary overlay state (feature: map-location-boundary) ──
-    //
-    // El endpoint `GET /api/locations/{id}` ya incluye `geom` en su respuesta
-    // (ver `LocationResource::resolve()`), y el árbol `locationsTree` que se
-    // carga arriba ya trae cada nodo con su `geom`. No hace falta un endpoint
-    // nuevo: leemos directo del árbol en memoria. Estos helpers resuelven el
-    // boundary para la location seleccionada.
-    let pendingBoundary = null; // GeoJSON (MultiPolygon / Polygon) a dibujar
-    let pendingBoundaryLabel = null; // "cantón Santa Elena" (para el mensaje)
-    let pendingBoundarySublabel = null; // "Parroquia X dentro de cantón Y"
-    let boundaryLayer = null; // referencia Leaflet del layer actual
-
-    function findLocationInTree(id, nodes) {
-      if (!id || !nodes) return null;
-      const target = String(id);
-      // Acepta tanto el array raíz (`locationsTree`) como un nodo individual.
-      const list = Array.isArray(nodes) ? nodes : [nodes];
-      for (const node of list) {
-        if (!node || node.id == null) continue;
-        if (String(node.id) === target) return node;
-        if (Array.isArray(node.children)) {
-          const hit = findLocationInTree(id, node.children);
-          if (hit) return hit;
-        }
-      }
-      return null;
-    }
-
-    function resolveBoundaryFromSelection(location) {
-      if (!location) return null;
-      if (location.geom) {
-        return {
-          geom: location.geom,
-          level: location.level,
-          name: location.name,
-          source: 'self',
-        };
-      }
-      // Parish sin geom: subimos al cantón padre que sí tiene boundary.
-      if (location.parent_id) {
-        const parent = findLocationInTree(location.parent_id, locationsTree);
-        if (parent && parent.geom) {
-          return {
-            geom: parent.geom,
-            level: parent.level,
-            name: parent.name,
-            source: 'parent',
-            parishName: location.name,
-          };
-        }
-      }
-      return null;
-    }
-
-    function applyBoundaryFromSelection(location) {
-      pendingBoundary = null;
-      pendingBoundaryLabel = null;
-      pendingBoundarySublabel = null;
-      const r = resolveBoundaryFromSelection(location);
-      if (!r) {
-        renderBoundaryUI();
-        return;
-      }
-      pendingBoundary = r.geom;
-      // "cantón" para city, "provincia" para province — singular para el mensaje.
-      const levelTxt =
-        r.level === 'city'
-          ? 'cantón'
-          : r.level === 'province'
-            ? 'provincia'
-            : r.level;
-      pendingBoundaryLabel = `${levelTxt} ${r.name}`;
-      pendingBoundarySublabel =
-        r.source === 'parent' && r.parishName
-          ? `Parroquia ${r.parishName} dentro de ${levelTxt} ${r.name}`
-          : null;
-      // Si el map ya está montado, dibujamos ahora; si no, `pendingBoundary`
-      // queda seteada para que el primer render del map (más abajo) lo agarre.
-      if (map) drawBoundaryLayer();
-      renderBoundaryUI();
-    }
-
-    function drawBoundaryLayer() {
-      if (!map) return;
-      if (boundaryLayer) {
-        boundaryLayer.remove();
-        boundaryLayer = null;
-      }
-      if (!pendingBoundary) return;
-      boundaryLayer = L.geoJSON(pendingBoundary, {
-        style: {
-          color: '#3b82f6',
-          weight: 2,
-          fillColor: '#3b82f6',
-          fillOpacity: 0.15,
-        },
-      }).addTo(map);
-      try {
-        map.fitBounds(boundaryLayer.getBounds(), {
-          padding: [20, 20],
-          maxZoom: 14,
-        });
-      } catch {
-        /* getBounds puede fallar si la geometría está vacía; ignorar */
-      }
-    }
-
-    function renderBoundaryUI() {
-      const sublabelEl = document.getElementById(P + 'boundary-sublabel');
-      const disclaimerEl = document.getElementById(P + 'boundary-disclaimer');
-      if (sublabelEl) {
-        if (pendingBoundarySublabel) {
-          sublabelEl.textContent = pendingBoundarySublabel;
-          sublabelEl.classList.remove('d-none');
-        } else {
-          sublabelEl.classList.add('d-none');
-        }
-      }
-      if (disclaimerEl) {
-        disclaimerEl.classList.toggle('d-none', !pendingBoundary);
-      }
-      // El warning se refresca separadamente porque depende del pin,
-      // no solo de la selección.
-      refreshPinVsBoundary();
-    }
+    // ── Boundary overlay state ──
+    // Boundary from location selection is disabled in progressive mode;
+    // pin-vs-boundary validation degrades gracefully (always 'default' state).
+    // The pending* vars are kept so refreshPinVsBoundary() stays valid.
+    let pendingBoundary = null;
+    let pendingBoundaryLabel = null;
+    let pendingBoundarySublabel = null;
+    let boundaryLayer = null;
 
     function setPinVariant(variant) {
       // 'default' | 'ok' | 'warn'
@@ -474,13 +357,13 @@ export default {
       subcatSelect.disabled = false;
     }
 
-    // ── Load categories and locations in parallel ──
-    try {
-      const [catResp, locResp] = await Promise.all([
-        http.get('/incident-categories/tree'),
-        http.get('/locations/tree'),
-      ]);
+    // ── Load categories and locations (progressive via locationService) ─────
+    // Province-level roots are loaded upfront; city/neighborhood are fetched
+    // on demand via getChildren. This replaces the old /locations/tree call.
+    let locationSelection = null; // { provinceId, cityId, neighborhoodId } for boundary
 
+    try {
+      const catResp = await http.get('/incident-categories/tree');
       categoryTree = catResp.data ?? catResp ?? [];
       categoryTree.forEach((cat) => {
         const opt = document.createElement('option');
@@ -489,10 +372,10 @@ export default {
         catSelect.appendChild(opt);
       });
 
-      locationsTree = locResp.data ?? [];
+      const provinces = await locationService.getRoots({ level: 'province' });
+      poblarProvincias(provinces);
     } catch {
-      categoryTree = [];
-      locationsTree = [];
+      // categoryTree stays as-is (empty from initial declaration)
     }
 
     catSelect.addEventListener('change', function () {
@@ -501,33 +384,60 @@ export default {
     });
 
     // ── Location cascade: Provincia → Cantón → Parroquia ──
-    // Mirrors the category/subcategory cascade above. `locationsTree` is
-    // rooted at the single country node (Ecuador) — its direct children
-    // are provinces, so the country level itself is never shown (there's
-    // nothing to choose, it's the only option). Parroquia stays optional,
-    // same as subcategory: the submitted location_id is the deepest level
-    // actually chosen (neighborhood if picked, else city, else null).
+    // Mirrors the category/subcategory cascade above. Province roots are loaded
+    // via locationService.getRoots; city and parish are fetched progressively via
+    // locationService.getChildren. Parroquia stays optional: the submitted
+    // location_id is the deepest level actually chosen (neighborhood if picked,
+    // else city, else null).
     const provinceSelect = document.getElementById('ici-location-province');
     const citySelect = document.getElementById('ici-location-city');
     const neighborhoodSelect = document.getElementById(
       'ici-location-neighborhood',
     );
-    const provinces = locationsTree[0]?.children ?? [];
 
-    function populateCities(provinceId) {
+    // Stale-request guard — incremented before each async call; stale
+    // responses are discarded when generation mismatches.
+    let selectionGeneration = 0;
+
+    function poblarProvincias(provinces) {
+      // The "-- Sin ubicación fija --" placeholder is already the first
+      // <option> in the static markup. Append the real province options.
+      provinces.forEach((province) => {
+        const opt = document.createElement('option');
+        opt.value = province.id;
+        opt.textContent = province.name;
+        provinceSelect.appendChild(opt);
+      });
+    }
+
+    async function poblarCiudades(provinceId) {
       citySelect.innerHTML = '';
       neighborhoodSelect.innerHTML = '';
-      const province = provinces.find(
-        (p) => String(p.id) === String(provinceId),
-      );
-      const cities = province?.children ?? [];
 
-      if (!province || cities.length === 0) {
+      if (!provinceId) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = province
-          ? '-- Sin cantones --'
-          : '-- Seleccione una provincia primero --';
+        opt.textContent = '-- Seleccione una provincia primero --';
+        citySelect.appendChild(opt);
+        citySelect.disabled = true;
+        const nOpt = document.createElement('option');
+        nOpt.value = '';
+        nOpt.textContent = '-- Seleccione un cantón primero --';
+        neighborhoodSelect.appendChild(nOpt);
+        neighborhoodSelect.disabled = true;
+        locationSelection = null;
+        return;
+      }
+
+      selectionGeneration++;
+      const gen = selectionGeneration;
+      const cities = await locationService.getChildren({ parentId: parseInt(provinceId) });
+      if (gen !== selectionGeneration) return; // stale
+
+      if (cities.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Sin cantones --';
         citySelect.appendChild(opt);
         citySelect.disabled = true;
       } else {
@@ -544,102 +454,70 @@ export default {
         citySelect.disabled = false;
       }
 
-      const emptyOpt = document.createElement('option');
-      emptyOpt.value = '';
-      emptyOpt.textContent = '-- Seleccione un cantón primero --';
-      neighborhoodSelect.appendChild(emptyOpt);
+      const nOpt = document.createElement('option');
+      nOpt.value = '';
+      nOpt.textContent = '-- Seleccione un cantón primero --';
+      neighborhoodSelect.appendChild(nOpt);
       neighborhoodSelect.disabled = true;
+
+      locationSelection = { provinceId: parseInt(provinceId), cityId: null, neighborhoodId: null };
     }
 
-    function populateNeighborhoods(cityId) {
+    async function poblarParroquias(cityId) {
       neighborhoodSelect.innerHTML = '';
-      const province = provinces.find(
-        (p) => String(p.id) === String(provinceSelect.value),
-      );
-      const city = province?.children?.find(
-        (c) => String(c.id) === String(cityId),
-      );
-      const neighborhoods = city?.children ?? [];
 
-      if (!city || neighborhoods.length === 0) {
+      if (!cityId) {
         const opt = document.createElement('option');
         opt.value = '';
-        opt.textContent = city
-          ? '-- Sin parroquias --'
-          : '-- Seleccione un cantón primero --';
+        opt.textContent = '-- Seleccione un cantón primero --';
         neighborhoodSelect.appendChild(opt);
         neighborhoodSelect.disabled = true;
+        if (locationSelection) locationSelection.cityId = null;
         return;
       }
 
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = '-- Seleccione parroquia (opcional) --';
-      neighborhoodSelect.appendChild(placeholder);
-      neighborhoods.forEach((n) => {
-        const opt = document.createElement('option');
-        opt.value = n.id;
-        opt.textContent = n.name;
-        neighborhoodSelect.appendChild(opt);
-      });
-      neighborhoodSelect.disabled = false;
-    }
+      selectionGeneration++;
+      const gen = selectionGeneration;
+      const neighborhoods = await locationService.getChildren({ parentId: parseInt(cityId) });
+      if (gen !== selectionGeneration) return; // stale
 
-    // The "-- Sin ubicación fija --" placeholder is already the first
-    // <option> in the static markup (matches the category select's
-    // convention — the parent select's own placeholder lives in the
-    // HTML, not re-created here) so it reads fine even with zero
-    // provinces; just append the real options after it.
-    provinces.forEach((province) => {
-      const opt = document.createElement('option');
-      opt.value = province.id;
-      opt.textContent = province.name;
-      provinceSelect.appendChild(opt);
-    });
+      if (neighborhoods.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Sin parroquias --';
+        neighborhoodSelect.appendChild(opt);
+        neighborhoodSelect.disabled = true;
+      } else {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = '-- Seleccione parroquia (opcional) --';
+        neighborhoodSelect.appendChild(placeholder);
+        neighborhoods.forEach((n) => {
+          const opt = document.createElement('option');
+          opt.value = n.id;
+          opt.textContent = n.name;
+          neighborhoodSelect.appendChild(opt);
+        });
+        neighborhoodSelect.disabled = false;
+      }
+
+      if (locationSelection) {
+        locationSelection.cityId = parseInt(cityId);
+        locationSelection.neighborhoodId = null;
+      }
+    }
 
     provinceSelect.addEventListener('change', function () {
-      populateCities(this.value);
-      // Feature: map-location-boundary — actualiza el boundary overlay.
-      const loc = findLocationInTree(this.value, locationsTree);
-      applyBoundaryFromSelection(loc);
+      poblarCiudades(this.value);
     });
     citySelect.addEventListener('change', function () {
-      populateNeighborhoods(this.value);
-      const loc = findLocationInTree(this.value, locationsTree);
-      applyBoundaryFromSelection(loc);
+      poblarParroquias(this.value);
     });
     neighborhoodSelect.addEventListener('change', function () {
-      // Para parroquia: si tiene geom propio, úsalo; si no, el
-      // `resolveBoundaryFromSelection` resuelve al cantón padre.
-      const loc = findLocationInTree(this.value, locationsTree);
-      applyBoundaryFromSelection(loc);
-    });
-
-    /**
-     * Walk the location tree to find which province/city/neighborhood a
-     * given location_id belongs to, so edit mode can preselect all three
-     * cascading selects at once (mirrors findCategoryNode above, one
-     * level deeper since locations nest country → province → city →
-     * neighborhood instead of category → subcategory).
-     */
-    function findLocationAncestry(id) {
-      for (const province of provinces) {
-        if (String(province.id) === String(id)) {
-          return { province };
-        }
-        for (const city of province.children ?? []) {
-          if (String(city.id) === String(id)) {
-            return { province, city };
-          }
-          for (const neighborhood of city.children ?? []) {
-            if (String(neighborhood.id) === String(id)) {
-              return { province, city, neighborhood };
-            }
-          }
-        }
+      if (locationSelection) {
+        locationSelection.neighborhoodId = this.value ? parseInt(this.value) : null;
       }
-      return null;
-    }
+    });
 
     // ── Image Uploader ──
     let imageUploaderController = null;
@@ -877,16 +755,45 @@ export default {
         }
 
         const locationId = inc.location_id ?? null;
-        if (locationId) {
-          const ancestry = findLocationAncestry(locationId);
-          if (ancestry) {
-            provinceSelect.value = String(ancestry.province.id);
-            populateCities(ancestry.province.id);
-            if (ancestry.city) {
-              citySelect.value = String(ancestry.city.id);
-              populateNeighborhoods(ancestry.city.id);
-              if (ancestry.neighborhood) {
-                neighborhoodSelect.value = String(ancestry.neighborhood.id);
+        if (locationId && inc.location_path && inc.location_path.length > 0) {
+          // Progressive preselection via location_path (ordered root-to-leaf array).
+          // Build the cascade from the path without re-fetching already-loaded data.
+          const nivelProvincia = inc.location_path.find((a) => a.level === 'province');
+          const nivelCiudad = inc.location_path.find((a) => a.level === 'city');
+          const nivelParroquia = inc.location_path.find((a) => a.level === 'neighborhood');
+
+          if (nivelProvincia) {
+            provinceSelect.value = String(nivelProvincia.id);
+
+            if (nivelCiudad) {
+              // Fetch and populate cities, then set city + fetch neighborhoods
+              selectionGeneration++;
+              const genCities = selectionGeneration;
+              const cities = await locationService.getChildren({ parentId: nivelProvincia.id });
+              if (genCities !== selectionGeneration) return;
+
+              poblarCiudades(String(nivelProvincia.id));
+              // Override to preselected city after populate
+              const cityOpt = Array.from(citySelect.options).find(
+                (o) => String(o.value) === String(nivelCiudad.id),
+              );
+              if (cityOpt) {
+                citySelect.value = String(nivelCiudad.id);
+              }
+
+              if (nivelParroquia) {
+                selectionGeneration++;
+                const genParroquias = selectionGeneration;
+                const parishes = await locationService.getChildren({ parentId: nivelCiudad.id });
+                if (genParroquias !== selectionGeneration) return;
+
+                poblarParroquias(String(nivelCiudad.id));
+                const parishOpt = Array.from(neighborhoodSelect.options).find(
+                  (o) => String(o.value) === String(nivelParroquia.id),
+                );
+                if (parishOpt) {
+                  neighborhoodSelect.value = String(nivelParroquia.id);
+                }
               }
             }
           }
