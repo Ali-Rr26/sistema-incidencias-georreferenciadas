@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
@@ -11,6 +10,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -70,8 +70,8 @@ it('deletes S3 images when comment is deleted', function (): void {
     Storage::disk('s3')->put('comments/1/img1.webp', 'content1');
     Storage::disk('s3')->put('comments/1/img2.webp', 'content2');
 
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img1.webp']);
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img2.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img1.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img2.webp']);
 
     $this->comment->delete();
 
@@ -81,12 +81,12 @@ it('deletes S3 images when comment is deleted', function (): void {
 
 it('soft-deletes comment even if S3 delete fails gracefully', function (): void {
     Storage::disk('s3')->put('comments/1/img1.webp', 'content1');
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img1.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img1.webp']);
 
     $this->comment->delete();
 
     $this->assertSoftDeleted('comments', ['id' => $this->comment->id]);
-    $this->assertDatabaseCount('comment_images', 0);
+    expect(Image::where('imageable_type', 'comment')->where('imageable_id', $this->comment->id)->count())->toBe(0);
 });
 
 it('deletes S3 images from the configured image disk when comment is deleted (disk-key regression)', function (): void {
@@ -97,7 +97,7 @@ it('deletes S3 images from the configured image disk when comment is deleted (di
     Storage::fake('public');
 
     Storage::disk('public')->put('comments/1/regression.webp', 'content1');
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/regression.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/regression.webp']);
 
     $this->comment->delete();
 

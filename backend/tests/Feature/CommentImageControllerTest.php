@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
@@ -11,6 +10,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -78,7 +78,12 @@ it('uploads an image and returns 201 with image data', function (): void {
     $response->assertStatus(201);
     $response->assertJsonStructure(['data' => ['*' => ['id', 'comment_id', 'url', 'caption', 'sort_order', 'created_at']]]);
     $response->assertJsonCount(1, 'data');
-    $this->assertDatabaseHas('comment_images', ['comment_id' => $this->comment->id]);
+    $this->assertDatabaseHas('images', [
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+    ]);
+    $this->assertDatabaseMissing('comment_images', ['comment_id' => $this->comment->id]);
+    expect($response->json('data.0.comment_id'))->toBe($this->comment->id);
     Storage::disk('s3')->assertExists($response->json('data.0.url'));
 });
 
@@ -93,7 +98,20 @@ it('uploads multiple images in one request', function (): void {
 
     $response->assertStatus(201);
     $response->assertJsonCount(2, 'data');
-    $this->assertDatabaseCount('comment_images', 2);
+    $this->assertDatabaseCount('images', 2);
+});
+
+it('keeps the webp resize+encode processing when routed through the shared ImageStorageService', function (): void {
+    $file = UploadedFile::fake()->image('test.jpg', 800, 600);
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(201);
+    expect($response->json('data.0.url'))->toEndWith('.webp');
+    expect($response->json('data.0.url'))->toStartWith('comments/'.$this->comment->id.'/');
 });
 
 it('rejects non-image files', function (): void {
@@ -169,35 +187,57 @@ it('denies image upload to non-owner', function (): void {
 });
 
 it('deletes an image and returns 204', function (): void {
-    $image = CommentImage::create([
-        'comment_id' => $this->comment->id,
-        'url' => 'comments/1/test.webp',
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+        'storage_path' => 'comments/1/test.webp',
         'caption' => null,
         'sort_order' => 0,
     ]);
-    Storage::disk('s3')->put($image->url, 'fake image content');
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
 
     $response = $this->actingAs($this->user)
         ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
 
     $response->assertStatus(204);
-    $this->assertDatabaseMissing('comment_images', ['id' => $image->id]);
-    Storage::disk('s3')->assertMissing($image->url);
+    $this->assertDatabaseMissing('images', ['id' => $image->id]);
+    Storage::disk('s3')->assertMissing($image->storage_path);
 });
 
 it('denies image delete to non-owner', function (): void {
-    $image = CommentImage::create([
-        'comment_id' => $this->comment->id,
-        'url' => 'comments/1/test.webp',
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+        'storage_path' => 'comments/1/test.webp',
     ]);
-    Storage::disk('s3')->put($image->url, 'fake image content');
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
     $stranger = User::factory()->create(['role_id' => 5]);
 
     $response = $this->actingAs($stranger)
         ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
 
     $response->assertForbidden();
-    $this->assertDatabaseHas('comment_images', ['id' => $image->id]);
+    $this->assertDatabaseHas('images', ['id' => $image->id]);
+});
+
+it('returns 404 when deleting an image that belongs to a different comment', function (): void {
+    $otherComment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Other comment',
+    ]);
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $otherComment->id,
+        'storage_path' => 'comments/2/test.webp',
+    ]);
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
+
+    $response = $this->actingAs($this->user)
+        ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
+
+    $response->assertStatus(404);
+    $this->assertDatabaseHas('images', ['id' => $image->id]);
 });
 
 it('uploads then deletes a comment image on the same configured disk (disk-key regression)', function (): void {

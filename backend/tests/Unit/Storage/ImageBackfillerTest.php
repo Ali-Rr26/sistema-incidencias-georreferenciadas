@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
@@ -13,6 +12,7 @@ use App\Domains\Users\Models\User;
 use App\Storage\ImageBackfiller;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -95,11 +95,13 @@ it('is idempotent for incidents: running backfillIncidents twice creates no dupl
 });
 
 it('backfills a normal bare-key comment_images row, preserving caption and sort_order', function (): void {
-    CommentImage::create([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => 'a nice photo',
         'sort_order' => 3,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $stats = $this->backfiller->backfillComments();
@@ -119,11 +121,13 @@ it('backfills a normal bare-key comment_images row, preserving caption and sort_
 it('copies a legacy absolute-URL comment_images row verbatim into storage_path and reports it, never guessing a bare key', function (): void {
     $legacyUrl = 'https://old-cdn.example.com/legacy/comment-photo.jpg';
 
-    CommentImage::create([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => $legacyUrl,
         'caption' => null,
         'sort_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $stats = $this->backfiller->backfillComments();
@@ -140,11 +144,13 @@ it('copies a legacy absolute-URL comment_images row verbatim into storage_path a
 });
 
 it('is idempotent for comments: running backfillComments twice creates no duplicate rows', function (): void {
-    CommentImage::create([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => null,
         'sort_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     $first = $this->backfiller->backfillComments();

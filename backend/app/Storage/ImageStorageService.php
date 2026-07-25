@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Log;
 /**
  * Shared attach/detach abstraction for the polymorphic `images` table,
  * used by every domain that stores images (incidents, comments, users)
- * once each one cuts over (WU5-WU7). Not yet wired into any controller.
+ * once each one cuts over (WU5-WU7). Wired into incidents (WU5) and
+ * comments (WU6, 'comment' profile); users' avatar cutover (WU7) is
+ * pending.
  *
  * D3: the object is uploaded to storage BEFORE the `images` row is
  * inserted. If the insert fails inside the transaction (e.g. the D4
@@ -62,7 +64,7 @@ final class ImageStorageService
     /**
      * @param  array<int, UploadedFile>  $files
      */
-    public function attachMany(Model $owner, array $files, bool $firstIsThumbnail): Collection
+    public function attachMany(Model $owner, array $files, bool $firstIsThumbnail, string $profile = 'gallery'): Collection
     {
         $images = new Collection;
 
@@ -70,6 +72,7 @@ final class ImageStorageService
             $images->push($this->attach(
                 owner: $owner,
                 file: $file,
+                profile: $profile,
                 sortOrder: $index,
                 isThumbnail: $firstIsThumbnail && $index === 0,
             ));
@@ -147,6 +150,11 @@ final class ImageStorageService
     {
         return match ($profile) {
             'avatar' => $this->imageProcessor->processUserImage($file, (int) $owner->getKey()),
+            // Comments keep their pre-cutover webp resize+encode step
+            // (unlike incidents' 'gallery' profile, which uploads the raw
+            // file untouched — that was incidents' behavior before this
+            // service existed too, so it is preserved as the default).
+            'comment' => $this->imageProcessor->processUploadedImage($file, (int) $owner->getKey()),
             default => $this->storage->uploadImage($file, (int) $owner->getKey()),
         };
     }

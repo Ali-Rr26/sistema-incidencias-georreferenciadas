@@ -56,9 +56,12 @@ final class SyncCommentToRedisJob implements ShouldQueue
             'message' => $comment->message,
             'parent_id' => $comment->parent_id !== null ? (string) $comment->parent_id : '',
             'depth' => $comment->depth,
+            // `images()` now resolves via the shared polymorphic `images`
+            // table (image-persistence-polymorphic, WU6) — the storage
+            // key column is `storage_path`, not the legacy `url` column.
             'images' => json_encode($comment->images->map(fn ($img) => [
                 'id' => (string) $img->id,
-                'url' => $img->url,
+                'url' => $img->storage_path,
                 'caption' => $img->caption ?? '',
             ])->values()),
             'created_at' => $comment->created_at?->toIso8601String(),

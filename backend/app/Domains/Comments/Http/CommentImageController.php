@@ -7,63 +7,51 @@ namespace App\Domains\Comments\Http;
 use App\Domains\Comments\Http\Requests\StoreCommentImageRequest;
 use App\Domains\Comments\Http\Resources\CommentImageResource;
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
-use App\Storage\ImageProcessor;
+use App\Storage\ImageStorageService;
+use App\Storage\Models\Image;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class CommentImageController
 {
     public function __construct(
-        private readonly ImageProcessor $imageService,
+        private readonly ImageStorageService $images,
     ) {}
 
     public function store(StoreCommentImageRequest $request, Comment $comment): JsonResponse
     {
         Gate::authorize('update', $comment);
 
-        $images = collect($request->file('images'))->map(function ($file) use ($comment) {
-            $path = $this->imageService->processUploadedImage($file, $comment->id);
-
-            return CommentImage::create([
-                'comment_id' => $comment->id,
-                'url' => $path,
-                'caption' => null,
-                'sort_order' => 0,
-            ]);
-        });
+        $images = $this->images->attachMany(
+            owner: $comment,
+            files: $request->file('images'),
+            firstIsThumbnail: false,
+            profile: 'comment',
+        );
 
         return CommentImageResource::collection($images)
             ->response()
             ->setStatusCode(201);
     }
 
-    public function destroy(Comment $comment, CommentImage $image): JsonResponse
+    public function destroy(Comment $comment, Image $image): JsonResponse
     {
         Gate::authorize('update', $comment);
 
-        if ($image->comment_id !== $comment->id) {
+        if ($image->imageable_type !== $comment->getMorphClass() || $image->imageable_id !== $comment->id) {
             abort(404, 'Imagen no encontrada.');
         }
 
         try {
-            Storage::disk($this->storageDisk())->delete($image->url);
+            $this->images->detach($image);
         } catch (\Throwable $e) {
             Log::warning('Failed to delete image file from S3', [
-                'path' => $image->url,
+                'path' => $image->storage_path,
                 'error' => $e->getMessage(),
             ]);
         }
 
-        $image->delete();
-
         return response()->json(null, 204);
-    }
-
-    private function storageDisk(): string
-    {
-        return config('filesystems.image_disk');
     }
 }
