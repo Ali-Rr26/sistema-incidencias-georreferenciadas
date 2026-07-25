@@ -12,6 +12,7 @@ use App\Domains\Users\Models\User;
 use App\Storage\ImageBackfiller;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -19,6 +20,15 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
     Role::create(['name' => 'admin_sistema']);
+
+    // RefreshDatabase migrates straight to head, where WU8's
+    // drop_legacy_image_storage migration has already removed the legacy
+    // schema this class reads from. ImageBackfiller/BackfillImages remain
+    // functionally required for the pre-drop recovery path (guard aborts
+    // -> operator backfills -> retries migrate), so this test resurrects
+    // the empty legacy schema the same way the WU8 guard test does, by
+    // rolling back just that one migration before seeding legacy rows.
+    Artisan::call('migrate:rollback', ['--step' => 1]);
 
     $this->user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);
@@ -162,7 +172,10 @@ it('is idempotent for comments: running backfillComments twice creates no duplic
 });
 
 it('creates exactly one avatar row with is_thumbnail=true per user', function (): void {
-    $this->user->update(['profile_image_path' => 'users/'.$this->user->id.'/avatar.webp']);
+    // forceFill(): profile_image_path is dead and no longer $fillable
+    // (WU8 removed it from User::$fillable) — this bypasses mass
+    // assignment protection deliberately, to seed legacy data directly.
+    $this->user->forceFill(['profile_image_path' => 'users/'.$this->user->id.'/avatar.webp'])->save();
 
     $stats = $this->backfiller->backfillUsers();
 
@@ -177,7 +190,7 @@ it('creates exactly one avatar row with is_thumbnail=true per user', function ()
 });
 
 it('is idempotent for users: running backfillUsers twice creates no duplicate rows', function (): void {
-    $this->user->update(['profile_image_path' => 'users/'.$this->user->id.'/avatar.webp']);
+    $this->user->forceFill(['profile_image_path' => 'users/'.$this->user->id.'/avatar.webp'])->save();
 
     $first = $this->backfiller->backfillUsers();
     $second = $this->backfiller->backfillUsers();

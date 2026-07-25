@@ -82,7 +82,11 @@ it('uploads an image and returns 201 with image data', function (): void {
         'imageable_type' => 'comment',
         'imageable_id' => $this->comment->id,
     ]);
-    $this->assertDatabaseMissing('comment_images', ['comment_id' => $this->comment->id]);
+    // The legacy `comment_images` table is dropped entirely as of WU8
+    // (image-persistence-polymorphic) — its absence is now a schema-level
+    // fact asserted in tests/Feature/Contract/ImagePersistenceContractTest.php,
+    // not something a per-row assertDatabaseMissing can check anymore (the
+    // table itself no longer exists to query).
     expect($response->json('data.0.comment_id'))->toBe($this->comment->id);
     Storage::disk('s3')->assertExists($response->json('data.0.url'));
 });

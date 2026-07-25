@@ -19,7 +19,18 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     Role::create(['name' => 'admin_sistema']);
 
-    $this->user = User::factory()->create(['profile_image_path' => 'users/1/avatar.webp']);
+    // RefreshDatabase migrates straight to head, where WU8's
+    // drop_legacy_image_storage migration has already removed the legacy
+    // schema this command reads from. Resurrect it (empty) the same way
+    // the WU8 guard test does, by rolling back just that one migration
+    // before seeding legacy rows.
+    Artisan::call('migrate:rollback', ['--step' => 1]);
+
+    $this->user = User::factory()->create();
+    // forceFill(): profile_image_path is dead and no longer $fillable
+    // (WU8 removed it from User::$fillable) — bypass mass assignment
+    // protection deliberately to seed legacy data directly.
+    $this->user->forceFill(['profile_image_path' => 'users/1/avatar.webp'])->save();
     $category = IncidentCategory::create(['name' => 'Test Cat']);
     $location = Location::create(['name' => 'Test Loc', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
