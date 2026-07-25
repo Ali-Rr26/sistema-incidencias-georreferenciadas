@@ -9,17 +9,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────
-   1. FORM LABELS — FLUID SCALING WITH CLAMP()
-   ───────────────────────────────────────────────────────────────────────── */
-
-.gr-form-label,
-label {
-  font-size: clamp(12px, 2vw, 14px);
-  line-height: 1.4;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   2. FORM CONTROLS — iOS 16px MINIMUM
+   1. FORM CONTROLS — iOS 16px MINIMUM
    ───────────────────────────────────────────────────────────────────────── */
 
 input,
@@ -42,12 +32,23 @@ select,
   }
 }
 
+/* Regression: Bootstrap renders form-check-input[type="radio"] as 1em square,
+   but the mobile-first input rule sets min-height: clamp(40px, 10vw, 44px),
+   which stretches the 16px radio into a 40-44px ellipse. Reset explicitly. */
+.form-check-input[type="radio"] {
+  min-height: 0;
+  min-width: 0;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
-   3. BUTTONS & LINKS — 44x44px WCAG TAP TARGET
+   2. BUTTONS & LINKS — 44x44px WCAG TAP TARGET
    ───────────────────────────────────────────────────────────────────────── */
 
 button,
-a[role="button"],
+a[role='button'],
 .btn,
 .gr-btn-primary,
 .gr-btn-google {
@@ -67,7 +68,7 @@ a[role="button"],
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   4. PAGE LAYOUT & SPACING — FLUID PADDING
+   3. PAGE LAYOUT & SPACING — FLUID PADDING
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-page,
@@ -82,7 +83,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   5. FORMS — GRID & FLEX RESPONSIVE
+   4. FORMS — GRID & FLEX RESPONSIVE
    ───────────────────────────────────────────────────────────────────────── */
 
 .form-fields,
@@ -113,7 +114,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   6. FILTERS — STACK ON MOBILE
+   5. FILTERS — STACK ON MOBILE
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-filters,
@@ -146,7 +147,7 @@ section {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   7. TABLES — SCROLLABLE ON MOBILE
+   6. TABLES — SCROLLABLE ON MOBILE
    ───────────────────────────────────────────────────────────────────────── */
 
 .gr-table,
@@ -170,7 +171,7 @@ table {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   8. MAPS & GEOSPATIAL ELEMENTS
+   7. MAPS & GEOSPATIAL ELEMENTS
    ───────────────────────────────────────────────────────────────────────── */
 
 .ici-map,
@@ -190,7 +191,7 @@ table {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   9. CARDS & GRID LAYOUTS
+   8. CARDS & GRID LAYOUTS
    ───────────────────────────────────────────────────────────────────────── */
 
 .card-grid,
@@ -281,6 +282,14 @@ video {
    ───────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 360px) {
+  body {
+    font-size: 14px;
+  }
+
+  .gr-page__title {
+    font-size: 16px;
+  }
+
   .btn,
   .gr-btn-primary,
   .gr-btn-google {
@@ -582,7 +591,9 @@ a:hover {
   .rp-filter-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
+    transition:
+      max-height 0.3s ease,
+      opacity 0.3s ease;
     opacity: 0;
   }
 
@@ -622,24 +633,12 @@ a:hover {
 
 /* Prevent checkbox stretching in table cells */
 td .form-check-input,
-.form-check-input[type="checkbox"] {
+.form-check-input[type='checkbox'] {
   width: 18px !important;
   height: 18px !important;
   min-width: 18px !important;
   min-height: 18px !important;
   flex-shrink: 0 !important;
-}
-
-/* Restore Bootstrap's 1em square shape for radios (assignment role selectors)
-   — the global `input` rule above sets `min-height: clamp(40px, 10vw, 44px)`,
-   which would otherwise stretch a 1em radio into a 40–44px vertical ellipse.
-   Higher selector specificity than the global rule, so no `!important` needed. */
-.form-check-input[type="radio"] {
-  width: 1em;
-  height: 1em;
-  min-width: 0;
-  min-height: 0;
-  flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -659,5 +658,141 @@ td .form-check-input,
 
   a {
     text-decoration: underline;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   19. TABLAS RESPONSIVAS
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Base: tabla scrolleable en móvil */
+.gr-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth iOS */
+  border-radius: clamp(8px, 2vw, 14px);
+}
+
+.gr-table {
+  font-size: clamp(12px, 2.5vw, 13px);
+  min-width: 100%;
+}
+
+.gr-table thead th {
+  font-size: clamp(10px, 2vw, 11px);
+  padding: clamp(10px, 1.5vw, 16px) clamp(6px, 1vw, 12px);
+  white-space: nowrap; /* Evita wrapping en header */
+}
+
+.gr-table tbody td {
+  padding: clamp(8px, 1.5vw, 13px) clamp(6px, 1vw, 12px);
+}
+
+/* En móvil: esconder columnas no-críticas (5+) */
+@media (max-width: 576px) {
+  /* Mostrar solo primeras 4 columnas */
+  .gr-table th:nth-child(n + 5),
+  .gr-table td:nth-child(n + 5) {
+    display: none;
+  }
+
+  /* Reducir tamaño fuente más */
+  .gr-table {
+    font-size: 11px;
+  }
+
+  .gr-table thead th {
+    font-size: 9px;
+    padding: 8px 4px;
+  }
+
+  .gr-table tbody td {
+    padding: 6px 4px;
+  }
+
+  /* Agregar hint: "scroll para más" */
+  .gr-table-wrap::after {
+    content: '← Desliza para ver más →';
+    display: block;
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+    padding: 6px 0;
+  }
+}
+
+/* En desktop: ancho normal */
+@media (min-width: 992px) {
+  .gr-table th:nth-child(n + 5),
+  .gr-table td:nth-child(n + 5) {
+    display: table-cell; /* Mostrar todas */
+  }
+}
+
+/* Striped rows visible en móvil */
+.gr-table tbody tr:nth-child(even) {
+  background: #fafbfd;
+}
+
+.gr-table tbody tr:hover {
+  background: #f5f7ff;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   20. MODALES, CARDS, OFFCANVAS
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.modal-content {
+  border-radius: clamp(8px, 2vw, 16px);
+  max-width: 90vw; /* No más de 90% ancho viewport */
+}
+
+.modal-header,
+.modal-body,
+.modal-footer {
+  padding: clamp(12px, 3vw, 20px);
+}
+
+@media (max-width: 480px) {
+  .modal-dialog {
+    margin: 10px;
+  }
+
+  .modal-content {
+    border-radius: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-body {
+    padding: 12px;
+    font-size: 14px;
+  }
+}
+
+/* Cards generales */
+.card {
+  border-radius: clamp(8px, 2vw, 14px);
+  padding: clamp(12px, 3vw, 20px);
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+
+.card-header {
+  padding: clamp(10px, 2vw, 16px);
+}
+
+.card-body {
+  padding: clamp(10px, 2vw, 16px);
+}
+
+/* Offcanvas (sidebar mobile) */
+.offcanvas {
+  border-radius: clamp(8px, 2vw, 16px);
+  width: 85vw; /* 85% ancho en móvil */
+  max-width: 350px;
+}
+
+@media (min-width: 768px) {
+  .offcanvas {
+    width: 400px; /* Más ancho en tablet */
   }
 }

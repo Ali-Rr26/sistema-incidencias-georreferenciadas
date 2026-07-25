@@ -26,7 +26,7 @@ class PermissionSeeder extends Seeder
         // Assignments
         ['resource' => 'assignments',         'action' => 'view',   'name' => 'Ver Asignaciones',            'description' => 'Ver asignaciones de operadores a incidencias'],
         ['resource' => 'assignments',         'action' => 'create', 'name' => 'Crear Asignaciones',          'description' => 'Asignar operadores a incidencias'],
-        ['resource' => 'assignments',         'action' => 'update', 'name' => 'Actualizar Asignaciones',     'description' => 'Modificar asignaciones de operadores'],
+        ['resource' => 'assignments',         'action' => 'update', 'name' => 'Actualizar Asignaciones',     'description' => 'Modificar o reasignar operadores a incidencias'],
         ['resource' => 'assignments',         'action' => 'delete', 'name' => 'Eliminar Asignaciones',       'description' => 'Quitar operadores asignados a incidencias'],
         // Notifications
         ['resource' => 'notifications',       'action' => 'view',   'name' => 'Ver Notificaciones',          'description' => 'Ver notificaciones propias'],

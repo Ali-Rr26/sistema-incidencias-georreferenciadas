@@ -53,8 +53,7 @@ it('logs in and returns access tokens plus the user payload', function (): void 
                 'phone' => '0999999999',
             ],
         ])
-        ->assertCookie('refresh_token')
-        ->assertCookie('mercureAuthorization');
+        ->assertCookie('refresh_token');
 });
 
 it('validates login payload before touching the auth service', function (): void {
@@ -91,8 +90,7 @@ it('refreshes the access token from the refresh cookie', function (): void {
             'token_type' => 'Bearer',
             'expires_in' => 900,
         ])
-        ->assertCookie('refresh_token')
-        ->assertCookie('mercureAuthorization');
+        ->assertCookie('refresh_token');
 });
 
 it('logs out and revokes the current session when provided', function (): void {
@@ -110,8 +108,7 @@ it('logs out and revokes the current session when provided', function (): void {
         ->assertJson([
             'message' => 'Sesión cerrada exitosamente.',
         ])
-        ->assertCookieExpired('refresh_token')
-        ->assertCookieExpired('mercureAuthorization');
+        ->assertCookieExpired('refresh_token');
 });
 
 // ─── updateProfile: avatar validator (REQ-7 / H7 / SCEN-7.1..7.4) ────

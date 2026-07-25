@@ -8,7 +8,6 @@ use App\Domains\Auth\Firebase\Exceptions\InvalidFirebaseTokenException;
 use App\Domains\Auth\Firebase\Exceptions\RejectedUnverifiedException;
 use App\Domains\Auth\Firebase\Http\Requests\GoogleLoginRequest;
 use App\Domains\Auth\Firebase\Services\GoogleAuthService;
-use App\Domains\Auth\Mercure\Services\MercureCookieService;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
@@ -29,7 +28,6 @@ class GoogleAuthController
 
     public function __construct(
         private readonly GoogleAuthService $googleAuthService,
-        private readonly MercureCookieService $mercureCookies,
     ) {}
 
     public function login(GoogleLoginRequest $request): JsonResponse
@@ -76,8 +74,7 @@ class GoogleAuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($user),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureCookies->build($user));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     // Cookie builders

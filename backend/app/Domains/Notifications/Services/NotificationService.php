@@ -8,8 +8,7 @@ use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Http\Resources\NotificationResource;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Users\Models\User;
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Update;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * Crea notificaciones para usuarios objetivo.
@@ -17,17 +16,27 @@ use Symfony\Component\Mercure\Update;
  * El servicio encapsula la regla "no duplicar notificaciones idénticas
  * recientes" (no le spameamos al operador con N copies del mismo claim)
  * y centraliza el armado del payload `data`.
+ *
+ * El evento de notificación se entrega en vivo vía Redis Pub/Sub al
+ * canal `user:{id}:notifications`. La tabla `notifications` es la
+ * fuente durable: si Redis cae o el cliente estaba desconectado, el
+ * snapshot inicial del endpoint SSE (`/api/notifications/stream`)
+ * recupera los eventos perdidos a partir del `Last-Event-ID` enviado
+ * por el browser. Ver `openspec/changes/eliminar-mercure-sse-nativo`
+ * para el contrato completo.
  */
 class NotificationService
 {
-    public function __construct(
-        private readonly HubInterface $hub,
-    ) {}
+    // Constructor deliberadamente vacío: la clase no guarda estado
+    // mutable y depende solo de facades estáticas. Cualquier dependencia
+    // futura (logger, métricas) debe inyectarse por constructor para
+    // mantener testeabilidad.
 
     /**
-     * Topic used both to publish a user's notifications and, on the
-     * subscriber side, as the entry in their `mercure.subscribe` JWT claim.
-     * Must match app-shell.component.js's subscription URL exactly.
+     * Topic used both to publish a user's notifications (Redis Pub/Sub)
+     * and, on the subscriber side, as the entry the SSE endpoint reads
+     * back to filter events for the authenticated user. Must match
+     * `GET /api/notifications/stream` subscriber logic exactly.
      */
     public static function topicFor(int $userId): string
     {
@@ -75,20 +84,21 @@ class NotificationService
     }
 
     /**
-     * Publishes the notification to the user's private Mercure topic so an
-     * open bell dropdown updates live. Publish failures (hub unreachable,
-     * etc.) must never break notification creation — the bell falls back to
-     * showing the notification next time /notifications is polled/opened.
+     * Publishes the notification to the user's private Redis Pub/Sub
+     * channel so an open SSE stream on `/api/notifications/stream`
+     * delivers it live. Publish failures (Redis unreachable, auth
+     * misconfig, payload too large) must never break notification
+     * creation: the `notifications` table row is the source of truth,
+     * and the SSE snapshot covers delivery gaps via `Last-Event-ID`.
      */
     private function publish(int $userId, Notification $notification): void
     {
         try {
             $payload = (new NotificationResource($notification))->resolve();
-            $this->hub->publish(new Update(
+            Redis::publish(
                 self::topicFor($userId),
                 json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                true,
-            ));
+            );
         } catch (\Throwable $e) {
             report($e);
         }

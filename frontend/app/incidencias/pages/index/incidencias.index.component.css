@@ -7,8 +7,6 @@
   margin-bottom: 18px;
   flex-wrap: wrap;
   overflow: visible;
-  position: relative;
-  z-index: 1;
 }
 
 .gr-filters__search {

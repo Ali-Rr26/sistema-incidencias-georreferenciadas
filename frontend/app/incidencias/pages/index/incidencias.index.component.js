@@ -248,8 +248,8 @@ export default {
       .addEventListener('click', () => cargarIncidencias(paginaActual));
 
     // ─── Tom Select en filtros ─────────────────────────────────────────
-    initSelect('filtro-prioridad', { placeholder: 'Buscar prioridad...' });
-    initSelect('filtro-estado', { placeholder: 'Buscar estado...' });
+    initSelect('filtro-prioridad', { placeholder: 'Prioridad...' });
+    initSelect('filtro-estado', { placeholder: 'Estado...' });
 
     // "Nueva incidencia" is the sole entry point to /incidencias/crear now
     // (menu_id 4 was removed from MenuSeeder) — its permission gate moved

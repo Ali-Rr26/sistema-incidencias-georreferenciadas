@@ -31,3 +31,8 @@ plantilla_Frontend/FreeDash-lite-master/
 
 # -- foglamp local scan --
 .foglamp/
+
+# Local skill copies (use global ~/.claude/skills instead)
+.claude/skills/impeccable/
+/.claude
+.github/hooks/impeccable.json
