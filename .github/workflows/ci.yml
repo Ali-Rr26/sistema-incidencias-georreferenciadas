@@ -87,9 +87,6 @@ jobs:
           coverage: none
           cache: composer
 
-      - name: Wait for PostgreSQL to be ready
-        run: sleep 10
-
       - name: Install backend dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
