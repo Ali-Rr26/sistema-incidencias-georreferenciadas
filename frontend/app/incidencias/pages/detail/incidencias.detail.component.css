@@ -21,9 +21,10 @@
    Replaces the previous multi-line `style="height: 250px;
    border-radius: 8px; border: 1px solid #dee2e6;"`. */
 .incid-detail__map-coords {
-  height: 250px;
+  height: 320px;
   border-radius: 8px;
   border: 1px solid #dee2e6;
+  margin-bottom: 0.5rem;
 }
 
 /* Upload progress bar — slimmer height than the default Bootstrap
