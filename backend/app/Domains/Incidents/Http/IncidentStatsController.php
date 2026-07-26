@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,8 @@ use Illuminate\Validation\Rule;
  */
 class IncidentStatsController extends Controller
 {
+    private const CACHE_TTL_SECONDS = 60;
+
     public function __invoke(Request $request): JsonResponse
     {
         // Solo roles con dashboard.view pueden acceder a estadísticas.
@@ -60,6 +63,54 @@ class IncidentStatsController extends Controller
             'pais_id' => 'nullable|integer|exists:locations,id',
         ]);
 
+        $cacheKey = $this->buildStatsCacheKey($request->user(), $validated);
+
+        $stats = Cache::tags(['incident-stats'])->remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($validated) {
+            return $this->computeStats($validated);
+        });
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Build a cache key that accounts for org scope and filter parameters.
+     */
+    private function buildStatsCacheKey(?User $user, array $validated): string
+    {
+        $orgScope = $this->getOrgScopeKey($user);
+        $filterHash = md5(json_encode($validated));
+
+        return "incident-stats:{$orgScope}:{$filterHash}";
+    }
+
+    /**
+     * Get the org scope key for the current user.
+     */
+    private function getOrgScopeKey(?User $user): string
+    {
+        if ($user === null) {
+            return 'anonymous';
+        }
+
+        if ($user->isSystemAdmin()) {
+            return 'system';
+        }
+
+        if ($user->isOrganizationAdmin() || $user->isOperator()) {
+            return 'org:'.$user->organization_id;
+        }
+
+        return 'user:'.$user->id;
+    }
+
+    /**
+     * Compute all stats — wrapped by Cache::remember in __invoke.
+     *
+     * @param  array{inicio?: string, fin?: string, tipo_id?: int, ciudad_id?: int, provincia_id?: int, pais_id?: int}  $validated
+     * @return array{total: int, by_status: array, by_priority: array, recent_count: int, locations_count: int, average_resolution_time: array|null}
+     */
+    private function computeStats(array $validated): array
+    {
         $driver = DB::connection()->getDriverName();
         if ($driver === 'pgsql') {
             $averageSeconds = $this->applyOrgScope(
@@ -104,7 +155,7 @@ class IncidentStatsController extends Controller
             ];
         }
 
-        return response()->json([
+        return [
             'total' => $this->applyOrgScope(Incident::query())
                 ->when($validated['inicio'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
                 ->when($validated['fin'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
@@ -135,7 +186,7 @@ class IncidentStatsController extends Controller
                 ->distinct()
                 ->count('location_id'),
             'average_resolution_time' => $averageResolutionTime,
-        ]);
+        ];
     }
 
     /**

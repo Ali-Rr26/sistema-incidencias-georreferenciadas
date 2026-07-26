@@ -317,6 +317,7 @@ export default {
       errorId: 'fd-comment-error',
       previewId: 'fd-comment-previews',
       fileInputId: 'fd-comment-images',
+      attachButtonId: 'fd-comment-attach-btn',
       replyBadgeId: 'fd-reply-badge',
       replyParentIdId: 'fd-reply-parent-id',
       lightboxId: 'fd-lightbox',
@@ -688,22 +689,36 @@ export default {
                 maxlength="5000"
                 placeholder="Escribe un comentario público..."
               ></textarea>
-              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
               <input
                 type="file"
                 id="fd-comment-images"
                 multiple
-                accept="image/*"
-                class="form-control form-control-sm mb-2"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                class="d-none"
               />
+              <div class="mb-2">
+                <button
+                  type="button"
+                  id="fd-comment-attach-btn"
+                  class="btn btn-outline-secondary btn-sm"
+                  title="Adjuntar o tomar foto"
+                  aria-label="Adjuntar o tomar foto"
+                >
+                  <i class="fas fa-camera"></i>
+                </button>
+              </div>
               <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
-              <button
-                type="submit"
-                id="fd-comment-submit"
-                class="btn btn-primary btn-sm"
-              >
-                Publicar
-              </button>
+              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
+              <div class="d-flex justify-content-end">
+                <button
+                  type="submit"
+                  id="fd-comment-submit"
+                  class="btn btn-primary btn-sm"
+                >
+                  Publicar
+                </button>
+              </div>
             </form>
             <div id="fd-comments-loading" class="d-flex justify-content-center py-2">
               <div class="spinner-border spinner-border-sm text-primary"></div>
