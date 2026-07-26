@@ -11,6 +11,7 @@ use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
+use App\Domains\Incidents\Http\IncidentWeeklyStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
 use App\Domains\Incidents\Http\MapFilterController;
 use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
@@ -53,6 +54,7 @@ Route::middleware('jwt')->group(function () {
 
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);
+    Route::get('incidents/weekly-stats', IncidentWeeklyStatsController::class);
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     Route::get('incidents/exportar', ExportIncidenciasController::class);
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
