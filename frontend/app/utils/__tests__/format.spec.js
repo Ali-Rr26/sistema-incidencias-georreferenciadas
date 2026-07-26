@@ -116,14 +116,24 @@ describe('getCommentImageUrl', () => {
 
   it('normalizes relative storage paths to /storage/...', () => {
     const { getCommentImageUrl } = require('../format.js');
-    expect(getCommentImageUrl('comments/123.jpg')).toBe('/storage/comments/123.jpg');
-    expect(getCommentImageUrl('storage/comments/123.jpg')).toBe('/storage/comments/123.jpg');
-    expect(getCommentImageUrl('/storage/comments/123.jpg')).toBe('/storage/comments/123.jpg');
+    expect(getCommentImageUrl('comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
+    expect(getCommentImageUrl('storage/comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
+    expect(getCommentImageUrl('/storage/comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
   });
 
   it('preserves absolute URLs verbatim', () => {
     const { getCommentImageUrl } = require('../format.js');
-    expect(getCommentImageUrl('http://example.com/img.jpg')).toBe('http://example.com/img.jpg');
-    expect(getCommentImageUrl('https://example.com/img.jpg')).toBe('https://example.com/img.jpg');
+    expect(getCommentImageUrl('http://example.com/img.jpg')).toBe(
+      'http://example.com/img.jpg',
+    );
+    expect(getCommentImageUrl('https://example.com/img.jpg')).toBe(
+      'https://example.com/img.jpg',
+    );
   });
 });

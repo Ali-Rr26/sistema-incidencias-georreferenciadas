@@ -62,7 +62,7 @@ export function openInlineReplyForm({
   form.innerHTML = `
     <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}... (Enter para enviar, Shift+Enter para nueva línea)" required></textarea>
     <input type="file" class="fd-inline-reply-file d-none" multiple accept="image/jpeg,image/png,image/webp" capture="environment" />
-    <div class="mt-2">
+    <div class="d-flex justify-content-between align-items-center mt-2">
       <button type="button" class="btn btn-outline-secondary btn-sm fd-inline-reply-attach" title="Adjuntar o tomar foto" aria-label="Adjuntar o tomar foto">
         <i class="fas fa-camera"></i>
       </button>

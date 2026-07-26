@@ -35,7 +35,9 @@ export default async function setupCommentsForm({
   const listEl = document.getElementById(listId);
   const emptyEl = document.getElementById(emptyId);
   const fileInput = document.getElementById(fileInputId);
-  const attachBtn = attachButtonId ? document.getElementById(attachButtonId) : null;
+  const attachBtn = attachButtonId
+    ? document.getElementById(attachButtonId)
+    : null;
   const previewEl = document.getElementById(previewId);
   const replyBadgeEl = document.getElementById(replyBadgeId);
   const replyParentIdEl = document.getElementById(replyParentIdId);
