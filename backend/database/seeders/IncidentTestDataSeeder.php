@@ -9,7 +9,6 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class IncidentTestDataSeeder extends Seeder
@@ -91,7 +90,7 @@ class IncidentTestDataSeeder extends Seeder
             $status = $statuses[array_rand($statuses)];
 
             $incident = Incident::create([
-                'title' => $titles[array_rand($titles)] . ' #' . ($i + 1),
+                'title' => $titles[array_rand($titles)].' #'.($i + 1),
                 'description' => $descriptions[array_rand($descriptions)],
                 'priority' => $priorities[
                     // Distribución: 30% alta, 50% media, 20% baja
