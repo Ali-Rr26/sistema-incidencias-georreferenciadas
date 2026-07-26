@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Assignment extends Model
 {
     use SoftDeletes;
+
     protected $table = 'assignments';
 
     protected $fillable = [

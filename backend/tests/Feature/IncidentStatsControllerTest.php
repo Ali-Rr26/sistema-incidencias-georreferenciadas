@@ -243,76 +243,6 @@ it('includes trends in stats response', function () {
     expect($response->json('trends.resolution_rate_pct'))->toBeInt();
 });
 
-it('combines provincia_id + date range filter', function () {
-    $this->withoutMiddleware(JwtAuthenticate::class);
-
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
-    $admin = User::factory()->create(['role_id' => 1]);
-
-    $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
-    $province = Location::create(['name' => 'Pichincha', 'level' => 'province', 'parent_id' => $country->id]);
-    $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $province->id]);
-    $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $province->id]);
-
-    $org = Organization::create(['name' => 'Test Org', 'location_id' => $city1->id]);
-    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
-
-    $oldDate = now()->subDays(10)->startOfDay();
-    $recentDate = now()->startOfDay();
-
-    // Old incident in Quito
-    $oldInc = Incident::create([
-        'title' => 'Old Quito Incident',
-        'incident_category_id' => $category->id,
-        'user_id' => $admin->id,
-        'location_id' => $city1->id,
-        'organization_id' => $org->id,
-        'status' => IncidentStatus::Pending,
-        'priority' => 'high',
-    ]);
-    $oldInc->created_at = $oldDate;
-    $oldInc->save(['timestamps' => false]);
-
-    // Recent incident in Quito
-    $recent1 = Incident::create([
-        'title' => 'Recent Quito Incident',
-        'incident_category_id' => $category->id,
-        'user_id' => $admin->id,
-        'location_id' => $city1->id,
-        'organization_id' => $org->id,
-        'status' => IncidentStatus::Pending,
-        'priority' => 'medium',
-    ]);
-    $recent1->created_at = $recentDate;
-    $recent1->save(['timestamps' => false]);
-
-    // Recent incident in Latacunga
-    $recent2 = Incident::create([
-        'title' => 'Recent Latacunga Incident',
-        'incident_category_id' => $category->id,
-        'user_id' => $admin->id,
-        'location_id' => $city2->id,
-        'organization_id' => $org->id,
-        'status' => IncidentStatus::Pending,
-        'priority' => 'low',
-    ]);
-    $recent2->created_at = $recentDate;
-    $recent2->save(['timestamps' => false]);
-
-    // Filter: Pichincha province + recent dates only (2 incidents)
-    $rangeStart = $recentDate->format('Y-m-d');
-    $rangeEnd = now()->format('Y-m-d');
-
-    $response = $this->actingAs($admin)->getJson(
-        "/api/incidents/stats?provincia_id={$province->id}&inicio={$rangeStart}&fin={$rangeEnd}"
-    );
-
-    $response->assertOk()
-        ->assertJsonPath('total', 2);
-});
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATE RANGE VALIDATION TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -728,16 +658,10 @@ it('combines tipo_id + provincia_id filters', function () {
 it('org-scoped operator sees only their organization incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    $this->seed(\Database\Seeders\PermissionSeeder::class);
-    $this->seed(\Database\Seeders\RoleSeeder::class);
-    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
-
-    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
-        \Illuminate\Support\Facades\Gate::define(
-            "{$p->resource}.{$p->action}",
-            fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
-        );
-    }
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+        ['id' => 4, 'name' => 'operador_organizacion', 'created_at' => now(), 'updated_at' => now()],
+    ]);
 
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
     $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
@@ -745,7 +669,7 @@ it('org-scoped operator sees only their organization incidents', function () {
     $org1 = Organization::create(['name' => 'Org1', 'location_id' => $location1->id]);
     $org2 = Organization::create(['name' => 'Org2', 'location_id' => $location2->id]);
 
-    $operator1 = User::factory()->create(['role_id' => 3, 'organization_id' => $org1->id]);
+    $operator1 = User::factory()->create(['role_id' => 4, 'organization_id' => $org1->id]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $cat1 = IncidentCategory::create(['name' => 'General', 'organization_id' => $org1->id]);
@@ -880,7 +804,7 @@ it('applies both date range and location cascade together', function () {
     $recentDate = now()->startOfDay();
 
     // Old incident in Quito
-    $oldInc = Incident::create([
+    Incident::create([
         'title' => 'Old Quito Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -888,12 +812,11 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'high',
+        'created_at' => $oldDate,
     ]);
-    $oldInc->created_at = $oldDate;
-    $oldInc->save(['timestamps' => false]);
 
     // Recent incident in Quito
-    $recent1 = Incident::create([
+    Incident::create([
         'title' => 'Recent Quito Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -901,12 +824,11 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'medium',
+        'created_at' => $recentDate,
     ]);
-    $recent1->created_at = $recentDate;
-    $recent1->save(['timestamps' => false]);
 
     // Recent incident in Latacunga
-    $recent2 = Incident::create([
+    Incident::create([
         'title' => 'Recent Latacunga Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -914,9 +836,8 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'low',
+        'created_at' => $recentDate,
     ]);
-    $recent2->created_at = $recentDate;
-    $recent2->save(['timestamps' => false]);
 
     // Filter: Pichincha province + recent dates only (2 incidents)
     $rangeStart = $recentDate->format('Y-m-d');
@@ -929,4 +850,3 @@ it('applies both date range and location cascade together', function () {
     $response->assertOk()
         ->assertJsonPath('total', 2);
 });
-
