@@ -186,3 +186,179 @@ it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function
     $newPath = $response->json('data.profile_image_path');
     expect($newPath)->toBeString()->toStartWith('users/');
 });
+
+// ============================================================================
+// CRUD + Authorization + formData — requires full permission seeding
+// ============================================================================
+
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Support\Facades\Gate;
+
+describe('CRUD — admin_sistema bypass', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('index — lists paginated users', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        User::factory()->count(3)->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson('/api/users');
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => ['*' => ['id', 'first_name', 'last_name', 'email']],
+        ]);
+        expect(count($response->json('data')))->toBe(4);
+    });
+
+    it('show — returns a single user with role and organization', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        $target = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson("/api/users/{$target->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $target->id);
+        $response->assertJsonStructure([
+            'data' => ['id', 'first_name', 'last_name', 'email', 'role', 'roles', 'organizations'],
+        ]);
+    });
+
+    it('destroy — soft-deletes a user', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        $target = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->deleteJson("/api/users/{$target->id}");
+
+        $response->assertStatus(204);
+        $this->assertSoftDeleted('users', ['id' => $target->id]);
+    });
+
+});
+
+describe('formData', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('returns roles and organizations catalogs', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson('/api/users/form-data');
+
+        $response->assertOk();
+        $response->assertJsonStructure(['roles', 'organizations']);
+        expect(count($response->json('roles')))->toBe(5);
+    });
+
+    it('filters system roles for non-system-admin', function (): void {
+        $location = Location::create(['name' => 'Loc', 'level' => 'city']);
+        $org = Organization::create(['name' => 'Mi Org', 'location_id' => $location->id]);
+        $adminOrg = User::factory()->create(['role_id' => 3, 'organization_id' => $org->id]);
+
+        $response = $this->actingAs($adminOrg)->getJson('/api/users/form-data');
+
+        $response->assertOk();
+        $roleNames = array_map(fn ($r) => $r['name'], $response->json('roles'));
+        expect($roleNames)->not->toContain('admin_sistema')
+            ->and($roleNames)->not->toContain('operador_sistema');
+        expect(count($response->json('organizations')))->toBe(1);
+        expect($response->json('organizations.0.id'))->toBe($org->id);
+    });
+
+    it('denies access without users.view permission', function (): void {
+        $role = Role::create(['name' => 'sin_permisos']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/users/form-data');
+
+        $response->assertForbidden();
+    });
+
+});
+
+describe('authorization — denied without correct permission', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('denies index without users.view', function (): void {
+        $role = Role::create(['name' => 'sin_permisos_idx']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/users');
+
+        $response->assertForbidden();
+    });
+
+    it('denies show for other user without users.view', function (): void {
+        $usuario = User::factory()->create(['role_id' => 5]);
+        $other = User::factory()->create(['role_id' => 5]);
+
+        $response = $this->actingAs($usuario)->getJson("/api/users/{$other->id}");
+
+        $response->assertForbidden();
+    });
+
+    it('allows user to view their own profile without users.view', function (): void {
+        $usuario = User::factory()->create(['role_id' => 5]);
+
+        $response = $this->actingAs($usuario)->getJson("/api/users/{$usuario->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $usuario->id);
+    });
+
+    it('denies destroy without users.delete', function (): void {
+        $role = Role::create(['name' => 'sin_permisos_del']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+        // A real, existing target user — route-model binding must resolve
+        // it before the policy denies, otherwise a stale hardcoded id
+        // (e.g. `1`) 404s instead of exercising the 403 this test is for.
+        // Postgres SERIAL sequences are not rolled back between tests
+        // (see RoleSeederTest), so `1` is not guaranteed to still exist.
+        $target = User::factory()->create();
+
+        $response = $this->actingAs($user)->deleteJson("/api/users/{$target->id}");
+
+        $response->assertForbidden();
+    });
+
+});

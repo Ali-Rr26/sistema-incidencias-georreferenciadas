@@ -8,6 +8,7 @@ use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -70,7 +71,7 @@ class UpdateUserRequest extends FormRequest
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
-            'phone' => 'nullable|string|max:50',
+            'phone' => PhoneRules::rules(),
             // Avatar handling: the user form sends multipart when a new avatar
             // is selected, OR a `_delete_avatar=true` flag when removing the
             // existing one. Both are processed by UserController::update.
@@ -84,6 +85,7 @@ class UpdateUserRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'phone.regex' => PhoneRules::MESSAGE,
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
