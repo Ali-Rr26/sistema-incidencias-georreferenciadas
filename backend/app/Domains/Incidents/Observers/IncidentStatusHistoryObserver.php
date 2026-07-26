@@ -25,7 +25,7 @@ class IncidentStatusHistoryObserver
     public function updating(Incident $incident): void
     {
         // Check if status field is actually being modified
-        if (!$incident->isDirty('status')) {
+        if (! $incident->isDirty('status')) {
             return;
         }
 
