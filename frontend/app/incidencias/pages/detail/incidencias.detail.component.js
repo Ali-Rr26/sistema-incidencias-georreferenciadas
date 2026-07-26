@@ -390,7 +390,7 @@ async function setupComments(incidentId, initialComments) {
     replyParentIdId: 'detalle-reply-parent-id',
     lightboxId: 'incid-detail__lightbox',
     lightboxCloseId: 'incid-detail__lightbox-close',
-    thumbnailSelector: '.incid-detail__thumbnail[data-src]',
+    thumbnailSelector: '.incid-detail__thumbnail-wrapper[data-src]',
     canDelete: true,
     getUserName: (user) =>
       [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
