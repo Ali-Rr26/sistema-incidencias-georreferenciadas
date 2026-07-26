@@ -6,6 +6,8 @@ namespace App\Domains\Auth\Local\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+class ForgotPasswordRequest extends FormRequest
+{
     protected function prepareForValidation(): void
     {
         if ($this->has('email')) {
