@@ -19,7 +19,8 @@ class LocationResource extends JsonResource
             'parent_id' => $this->parent_id,
             'parent' => new self($this->whenLoaded('parent')),
             'children' => self::collection($this->whenLoaded('children')),
-            'geom' => $this->when($this->geom !== null, fn () => json_decode($this->geom->toJson())),
+            // Always include geom for progressive-loading contract: null when not set
+            'geom' => $this->geom !== null ? json_decode($this->geom->toJson()) : null,
         ];
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Resources;
 
+use App\Domains\Locations\Http\Resources\LocationResource;
+use App\Domains\Locations\Repositories\LocationRepository;
 use App\Storage\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,8 +29,27 @@ class IncidentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $storage = app(StorageService::class);
-        $images = $this->images ?? [];
-        $thumbnail = ! empty($images) ? $images[0] : null;
+
+        // NOTE (image-persistence-polymorphic, WU2/WU5): `images` used to be
+        // both a legacy JSON column on Incident AND the real MorphMany
+        // relation name — the dead cast entry shadowed the relation on
+        // property access, so `whenLoaded('images')` (and `$this->images`)
+        // could not be trusted. That collision is fixed post-WU8:
+        // `Incident::$fillable`/`casts()` no longer declare `images`, so
+        // `$this->resource->images` (property) would now resolve
+        // identically to the two branches below. This explicit
+        // `relationLoaded()`/`getRelation()` check is kept anyway — it is
+        // still correct and equally clear, and there is no functional
+        // reason to change it now that the underlying bug is gone.
+        $images = $this->resource->relationLoaded('images')
+            ? $this->resource->getRelation('images')
+            : $this->resource->images()->get();
+
+        // Genuine bug fix (image-persistence-polymorphic, WU5): the
+        // thumbnail is now selected via the real `is_thumbnail` flag
+        // enforced by the DB (one true per owner, WU2's D4 partial unique
+        // index), not by array/sort_order position ($images[0]).
+        $thumbnail = $images->firstWhere('is_thumbnail', true) ?? $images->first();
 
         $data = [
             'id' => $this->id,
@@ -48,17 +69,31 @@ class IncidentResource extends JsonResource
             'category' => $this->whenLoaded('category'),
             'organization' => $this->whenLoaded('organization'),
             'user' => $this->whenLoaded('user'),
-            'location' => $this->whenLoaded('location'),
+            // Use LocationResource to ensure geom is always serialized (null when absent)
+            'location' => $this->whenLoaded('location', fn () => new LocationResource($this->location)),
             'thumbnail_url' => $thumbnail
-                ? $storage->proxyUrl($thumbnail['path'])
+                ? $storage->proxyUrl($thumbnail->storage_path)
                 : null,
-            'images' => array_map(fn (array $img) => [
-                'id' => $this->id.'-'.md5($img['path']),
-                'url' => $storage->proxyUrl($img['path']),
-                'original_name' => $img['original_name'],
-                'is_thumbnail' => $img['is_thumbnail'] ?? false,
-            ], $images),
+            'images' => $images->map(fn ($img) => [
+                'id' => $img->id,
+                'url' => $storage->proxyUrl($img->storage_path),
+                'original_name' => $img->original_name,
+                'is_thumbnail' => $img->is_thumbnail,
+            ])->values()->all(),
         ];
+
+        // Add location_path for progressive-loading preselection cascade
+        // Uses ancestors() to get root-to-leaf ordered chain for deterministic select preselection
+        if ($this->location_id !== null) {
+            $locationRepo = app(LocationRepository::class);
+            $ancestors = $locationRepo->ancestors($this->location_id);
+            $data['location_path'] = $ancestors->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'level' => $location->level->value,
+                'geom' => $location->geom !== null ? json_decode($location->geom->toJson()) : null,
+            ])->values()->all();
+        }
 
         if ($this->withDetail) {
             // Status history — read via raw query (same as StatusHistoryController)

@@ -4,87 +4,78 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Listeners;
 
-use App\Console\Commands\FeedRebuildCommand;
+use App\Domains\Incidents\Jobs\SyncIncidentToRedisJob;
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 
-/**
- * Proyector que mantiene sincronizado el read model Redis con Postgres.
- *
- * @cqrs-role projection-listener
- *
- * Pertenece a la frontera write→read: escucha los eventos Eloquent
- * `created` / `updated` / `deleted` / `forceDeleted` que dispara el modelo
- * Incident y reescribe los hashes en Redis (feed:v2:items + feed:v2:index).
- *
- * El shape del payload en Redis lo define {@see IncidentFeedSerializer} y es
- * la fuente única de verdad: este listener y {@see FeedRebuildCommand}
- * lo consumen vía inyección. Si agregás un campo, tocás el serializer — y los
- * dos sitios que escriben a Redis lo reflejan automáticamente. No hay shape
- * duplicado en este archivo.
- *
- * No es event sourcing: si Redis se pierde, los datos se reconstruyen
- * desde Postgres con un job de re-proyección, no desde un log de eventos.
- *
- * @see docs/Convenciones/architecture-cqrs-lite.md
- */
 class RedisIncidentSync
 {
-    public function __construct(
-        private readonly IncidentFeedSerializer $serializer,
-    ) {}
-
-    private const V2_INDEX_KEY = 'feed:v2:index';
-
-    private const V2_ITEMS_KEY = 'feed:v2:items';
-
     public function created(Incident $incident): void
     {
-        $this->syncIncident($incident);
+        $this->invalidateStatsCache($incident);
+        $this->queueReconciliation($incident);
     }
 
     public function updated(Incident $incident): void
     {
-        $this->syncIncident($incident);
+        $this->invalidateStatsCache($incident);
+        $this->queueReconciliation($incident);
     }
 
     public function deleted(Incident $incident): void
     {
-        $this->removeIncident($incident);
+        $this->invalidateStatsCache($incident);
+        $this->queueReconciliation($incident);
     }
 
     public function forceDeleted(Incident $incident): void
     {
-        $this->removeIncident($incident);
+        $this->invalidateStatsCache($incident);
+        $this->queueReconciliation($incident);
     }
 
-    private function syncIncident(Incident $incident): void
+    /**
+     * Flush the incident-stats cache tag when an incident changes.
+     * Tag-based invalidation is fast and avoids stale dashboard data.
+     */
+    private function invalidateStatsCache(Incident $incident): void
     {
         try {
-            $data = $this->serializer->serialize($incident);
-
-            Redis::hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
-            Redis::zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
+            Cache::tags(['incident-stats'])->flush();
         } catch (\Throwable $e) {
-            Log::warning('Failed to sync incident to Redis', [
-                'incident_id' => $incident->id,
+            // Cache driver may not support tags (e.g., array driver in tests);
+            // log and continue — stats will expire naturally via TTL.
+            Log::debug('Failed to invalidate incident-stats cache', [
+                'incident_id' => $incident->getKey(),
                 'error' => $e->getMessage(),
             ]);
         }
     }
 
-    private function removeIncident(Incident $incident): void
+    private function queueReconciliation(Incident $incident): void
     {
+        $incidentId = (int) $incident->getKey();
+
         try {
-            Redis::hdel(self::V2_ITEMS_KEY, (string) $incident->id);
-            Redis::zrem(self::V2_INDEX_KEY, (string) $incident->id);
+            DB::afterCommit(function () use ($incidentId): void {
+                try {
+                    SyncIncidentToRedisJob::dispatch($incidentId);
+                } catch (\Throwable $e) {
+                    $this->logDispatchFailure($incidentId, $e);
+                }
+            });
         } catch (\Throwable $e) {
-            Log::warning('Failed to remove incident from Redis', [
-                'incident_id' => $incident->id,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logDispatchFailure($incidentId, $e);
         }
+    }
+
+    private function logDispatchFailure(int $incidentId, \Throwable $e): void
+    {
+        Log::warning('Failed to queue incident Redis reconciliation', [
+            'incident_id' => $incidentId,
+            'error' => $e->getMessage(),
+        ]);
     }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { mountImageUploader } from './image-uploader.js';
+import { mountImageUploader, ACCEPTED_IMAGE_TYPES } from './image-uploader.js';
 
 describe('mountImageUploader', () => {
   let container;
@@ -108,6 +108,17 @@ describe('mountImageUploader', () => {
     expect(controller.getFiles().length).toBe(1);
     expect(controller.getFiles()[0].name).toBe('foto2.jpg');
     expect(URL.revokeObjectURL).toHaveBeenCalled();
+  });
+
+  it('accepts gif in ACCEPTED_IMAGE_TYPES and the file input accept attribute (D10 validation parity)', () => {
+    expect(ACCEPTED_IMAGE_TYPES).toContain('image/gif');
+
+    mountImageUploader({ container });
+    const inputDesktop = container.querySelector('.iu-file-input-desktop');
+    const inputGallery = container.querySelector('#iu-file-input-gallery');
+
+    expect(inputDesktop.getAttribute('accept')).toContain('image/gif');
+    expect(inputGallery.getAttribute('accept')).toContain('image/gif');
   });
 
   it('clears all files on controller.clear()', () => {

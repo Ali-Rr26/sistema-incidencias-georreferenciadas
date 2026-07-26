@@ -13,8 +13,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Mockery\MockInterface;
-use Symfony\Component\Mercure\HubInterface;
+use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
@@ -129,13 +128,19 @@ it('does not notify when the operator already claimed the same incident as respo
 // ──────────────────────────────────────────────────────────────────────
 it('notifies only the new operator on reassignment (S-4)', function (): void {
     // Asignación original al primer operador
-    Assignment::create([
+    $original = Assignment::create([
         'incident_id' => $this->incident->id,
         'user_id' => $this->operator->id,
         'assignment_role' => AssignmentRole::Responsable->value,
     ]);
 
-    // Reasignación a un segundo operador (otra fila, mismo incidente)
+    // Reasignación real: el operador original se desasigna (soft delete)
+    // antes de crear la fila del segundo — el partial unique index
+    // `assignments_one_responsable_per_incident` (WHERE deleted_at IS
+    // NULL) solo permite un responsable ACTIVO por incidencia, igual que
+    // AssignmentService::assign()/unassign() en el flujo real.
+    $original->delete();
+
     Assignment::create([
         'incident_id' => $this->incident->id,
         'user_id' => $this->secondOperator->id,
@@ -171,11 +176,9 @@ it('does not create an additional notification when an assignment is updated (S-
 // ──────────────────────────────────────────────────────────────────────
 // S-7: Falla de Mercure no rompe la creación de la notification
 // ──────────────────────────────────────────────────────────────────────
-it('still creates the notification if Mercure publish fails (S-7)', function (): void {
-    $this->mock(HubInterface::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('publish')
-            ->andThrow(new RuntimeException('hub unreachable'));
-    });
+it('still creates the notification if Redis publish fails (S-7)', function (): void {
+    Redis::shouldReceive('publish')
+        ->andThrow(new RuntimeException('redis pub/sub unreachable'));
 
     Assignment::create([
         'incident_id' => $this->incident->id,

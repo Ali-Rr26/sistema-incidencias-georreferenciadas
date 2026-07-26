@@ -7,6 +7,8 @@ namespace App\Domains\Users\Http\Requests;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Storage\ImageRules;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -69,11 +71,13 @@ class UpdateUserRequest extends FormRequest
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
-            'phone' => 'nullable|string|max:50',
+            'phone' => PhoneRules::rules(),
             // Avatar handling: the user form sends multipart when a new avatar
             // is selected, OR a `_delete_avatar=true` flag when removing the
             // existing one. Both are processed by UserController::update.
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:'.User::AVATAR_MAX_KB,
+            // Validated against the same D10 limits (ImageRules) every other
+            // image-upload endpoint uses (image-persistence-polymorphic WU7).
+            'avatar' => ['nullable', ...ImageRules::avatarFileRules()],
             '_delete_avatar' => 'nullable|boolean',
         ];
     }
@@ -81,12 +85,13 @@ class UpdateUserRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'phone.regex' => PhoneRules::MESSAGE,
             'email.unique' => 'Este correo electrónico ya está registrado.',
             'role_id.exists' => 'El rol seleccionado no existe',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
-            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG o WebP.',
-            'avatar.max' => 'La imagen no puede superar los '.User::AVATAR_MAX_KB.' KB.',
+            'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',
+            'avatar.max' => 'La imagen no puede superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }

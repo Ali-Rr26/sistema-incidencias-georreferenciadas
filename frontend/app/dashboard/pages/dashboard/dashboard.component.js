@@ -1,6 +1,12 @@
 import template from './dashboard.component.html?raw';
 import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
+import { locationService } from '../../../shared/location.service.js';
+import {
+  badgeEstado,
+  badgePrioridad,
+  STATUS_COLOR,
+} from '../../../utils/format.js';
 
 // ─────────────────────────────────────────────
 // Estado global de filtros
@@ -12,7 +18,9 @@ const filterState = {
   ciudad_id: null,
   provincia_id: null,
   pais_id: null,
-  locationTree: [],
+  countries: [], // loaded via locationService.getRoots({ level: 'country' })
+  provinces: [], // loaded via locationService.getChildren({ parentId }) when country selected
+  cities: [], // loaded via locationService.getChildren({ parentId }) when province selected
   categories: [],
 };
 
@@ -62,63 +70,83 @@ function animateCounter(el, target, duration = 900) {
 }
 
 // ─────────────────────────────────────────────
-// Donut chart — incidencias por estado (C3.js)
+// Top 5 Categories chart — barras apiladas (resueltas + por resolver)
 // ─────────────────────────────────────────────
-function initDonut(pendientes, en_proceso, resueltas, total) {
-  if (!window.c3 || !document.getElementById('chart-estados')) return;
+function initCategoriesChart(categories) {
+  if (!window.c3 || !document.getElementById('chart-categorias')) return;
 
-  // Si no hay datos, mostrar el donut vacío con un placeholder
-  const cols =
-    total > 0
-      ? [
-          ['Pendientes', pendientes],
-          ['En proceso', en_proceso],
-          ['Resueltas', resueltas],
-        ]
-      : [['Sin datos', 1]];
+  if (!categories || categories.length === 0) {
+    c3.generate({
+      bindto: '#chart-categorias',
+      data: { columns: [['Sin datos', 1]], type: 'bar' },
+      legend: { hide: true },
+      color: { pattern: ['#e9ecef'] },
+    });
+    return;
+  }
 
-  const colors =
-    total > 0
-      ? { pattern: ['#ffaf01', '#5f76e8', '#22ca80'] }
-      : { pattern: ['#e9ecef'] };
+  // Preparar dos series: Resueltas (oscuro) y Por resolver (claro)
+  const resolved = ['Resueltas', ...categories.map((cat) => cat.resolved)];
+  const pending = ['Por resolver', ...categories.map((cat) => cat.pending)];
 
   c3.generate({
-    bindto: '#chart-estados',
-    data: { columns: cols, type: 'donut' },
-    donut: {
-      label: { show: false },
-      title: String(total),
-      width: 22,
+    bindto: '#chart-categorias',
+    data: {
+      columns: [resolved, pending],
+      type: 'bar',
+      groups: [['Resueltas', 'Por resolver']],
     },
-    legend: { hide: true },
-    color: colors,
+    axis: {
+      rotated: true,
+      x: {
+        type: 'category',
+        categories: categories.map((cat) => cat.name),
+      },
+      y: {
+        label: 'Cantidad de incidencias',
+      },
+    },
+    bar: {
+      width: {
+        ratio: 0.5,
+      },
+    },
+    padding: {
+      top: 10,
+      right: 40,
+      bottom: 10,
+      left: 150,
+    },
+    tooltip: {
+      format: {
+        title: (d) => categories[d]?.name || 'Categoría',
+        value: (value, _ratio, id, index) => {
+          const cat = categories[index];
+          if (!cat) return value + ' incidencias';
+          return id === 'Resueltas'
+            ? `Resueltas: ${value} de ${cat.total}`
+            : `Por resolver: ${value} de ${cat.total}`;
+        },
+      },
+    },
+    color: {
+      pattern: ['#8a5cf0', '#d4c5f9'],
+    },
+    legend: { position: 'bottom' },
   });
 }
 
 // ─────────────────────────────────────────────
 // Activity feed — incidencias recientes
 // ─────────────────────────────────────────────
-const PRIORIDAD_BTN = {
-  high: 'btn-danger',
-  medium: 'btn-warning',
-  low: 'btn-info',
-};
-const PRIORIDAD_ICON = {
-  high: 'alert-triangle',
-  medium: 'alert-circle',
-  low: 'info',
-};
-
 function buildActivityFeed(items) {
   const feed = document.getElementById('activity-feed');
   if (!feed || !items || items.length === 0) return;
 
   document.getElementById('activity-empty')?.remove();
 
-  items.slice(0, 5).forEach((inc, idx) => {
-    const isLast = idx === Math.min(items.length, 5) - 1;
-    const btnClass = PRIORIDAD_BTN[inc.priority] || 'btn-primary';
-    const iconName = PRIORIDAD_ICON[inc.priority] || 'map-pin';
+  items.slice(0, 5).forEach((inc) => {
+    const dotColor = STATUS_COLOR[inc.status] || 'secondary';
     const fecha = inc.created_at
       ? new Date(inc.created_at).toLocaleDateString('es-EC', {
           day: '2-digit',
@@ -126,25 +154,26 @@ function buildActivityFeed(items) {
           year: 'numeric',
         })
       : '';
-    const categoria = inc.category?.name || '';
+    const categoria = inc.category?.name || 'Sin título';
 
     const item = document.createElement('div');
-    item.className = `d-flex align-items-start${isLast ? '' : ' border-left-line pb-3'}`;
+    item.className = 'gr-activity__item';
+    item.style.cursor = 'pointer';
     item.innerHTML = `
-      <div>
-        <a href="#/incidencias" class="btn ${btnClass} btn-circle mb-2 btn-item">
-          <i data-feather="${iconName}"></i>
-        </a>
+      <span class="gr-activity__dot bg-${dotColor}"></span>
+      <div class="gr-activity__body">
+        <div class="gr-activity__title">${categoria}</div>
+        <div class="gr-activity__meta">${badgeEstado(inc.status)} ${badgePrioridad(inc.priority)}</div>
       </div>
-      <div class="ms-3 mt-2">
-        <h5 class="text-dark font-weight-medium mb-1">${categoria || 'Sin título'}</h5>
-        <p class="font-12 mb-1 text-muted">${inc.status?.replace('_', ' ') || ''} — ${inc.priority}</p>
-        <span class="font-12 text-muted">${fecha}</span>
-      </div>`;
+      <span class="gr-activity__date">${fecha}</span>`;
+
+    // Doble click para ver detalles
+    item.addEventListener('dblclick', () => {
+      window.location.hash = `#/incidencias/${inc.id}`;
+    });
+
     feed.appendChild(item);
   });
-
-  if (window.feather) feather.replace();
 }
 
 // ─────────────────────────────────────────────
@@ -186,10 +215,77 @@ async function loadStats() {
 }
 
 // ─────────────────────────────────────────────
+// Carga estadísticas semanales con filtros
+// ─────────────────────────────────────────────
+async function loadWeeklyStats() {
+  const params = new URLSearchParams();
+  if (filterState.inicio) params.append('inicio', filterState.inicio);
+  if (filterState.fin) params.append('fin', filterState.fin);
+  if (filterState.tipo_id) params.append('tipo_id', filterState.tipo_id);
+  if (filterState.ciudad_id) params.append('ciudad_id', filterState.ciudad_id);
+  if (filterState.provincia_id)
+    params.append('provincia_id', filterState.provincia_id);
+  if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
+
+  const query = params.toString();
+  try {
+    const weekly = await http.get(
+      query ? `/incidents/weekly-stats?${query}` : '/incidents/weekly-stats',
+    );
+    return weekly ?? { days: [] };
+  } catch (e) {
+    console.error('Error loading weekly stats:', e);
+    return { days: [] };
+  }
+}
+
+// ─────────────────────────────────────────────
+// Gráfico de volumen mensual — línea de tendencia
+// ─────────────────────────────────────────────
+function initVolumeChart(days) {
+  if (!window.c3 || !document.getElementById('chart-volumen')) return;
+
+  const labels = days.map((d) => d.date.slice(8)); // Mostrar solo día (ej: "01", "15", "30")
+  const recibidas = ['Recibidas', ...days.map((d) => d.recibidas)];
+
+  c3.generate({
+    bindto: '#chart-volumen',
+    data: {
+      columns: [recibidas],
+      type: 'line',
+    },
+    axis: {
+      x: {
+        type: 'category',
+        categories: labels,
+      },
+      y: {
+        label: 'Cantidad',
+      },
+    },
+    color: {
+      pattern: ['#8a5cf0'],
+    },
+    point: {
+      show: true,
+      r: 3,
+    },
+    line: {
+      connectNull: true,
+    },
+    legend: {
+      show: false,
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
 // Actualiza el dashboard con nuevos datos
 // ─────────────────────────────────────────────
 async function refreshDashboard() {
-  const stats = await loadStats();
+  // Cargar stats + weekly en paralelo
+  const [stats, weekly] = await Promise.all([loadStats(), loadWeeklyStats()]);
+
   const byStatus = stats.by_status ?? {};
   const total = stats.total ?? 0;
   const pendientes = byStatus.pending ?? 0;
@@ -197,10 +293,13 @@ async function refreshDashboard() {
   const resueltas = byStatus.resolved ?? 0;
   const ubicaciones = stats.locations_count ?? 0;
   const tiempoResolucion = stats.average_resolution_time ?? null;
+  const trends = stats.trends ?? {};
+  const topCategories = stats.top_categories ?? [];
 
   // Re-animar counters
   animateCounter(document.getElementById('stat-incidencias'), total);
   animateCounter(document.getElementById('stat-pendientes'), pendientes);
+  animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
   animateCounter(document.getElementById('stat-resueltas'), resueltas);
   animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
 
@@ -210,27 +309,39 @@ async function refreshDashboard() {
     resolucionEl.textContent = formatResolutionTime(tiempoResolucion);
   }
 
-  // Badges
-  if (total > 0) {
-    const pctPend = Math.round((pendientes / total) * 100);
-    const pctRes = Math.round((resueltas / total) * 100);
-    const badgePend = document.getElementById('badge-pendientes');
-    const badgeRes = document.getElementById('badge-resueltas');
-    if (badgePend && pctPend > 0) badgePend.textContent = pctPend + '%';
-    if (badgeRes && pctRes > 0) badgeRes.textContent = pctRes + '%';
+  // Trends (total, pendientes, resolution rate)
+  const updateTrend = (id, value) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (value === null || value === undefined) {
+      el.textContent = '—';
+    } else {
+      const absValue = Math.abs(value);
+      el.innerHTML = `<i class="fa-solid ${value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i> ${absValue}% vs. mes anterior`;
+    }
+  };
+
+  updateTrend('trend-total', trends.total_pct);
+  updateTrend('trend-pendientes', trends.pendientes_pct);
+
+  // Trend resueltas muestra tasa de resolución (siempre porcentaje actual)
+  const trendResueltasEl = document.getElementById('trend-resueltas');
+  if (trendResueltasEl) {
+    if (
+      trends.resolution_rate_pct !== null &&
+      trends.resolution_rate_pct !== undefined
+    ) {
+      trendResueltasEl.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${trends.resolution_rate_pct}% tasa de resolución`;
+    } else {
+      trendResueltasEl.textContent = '—';
+    }
   }
 
-  // Leyenda
-  const setEl = (id, v) => {
-    const e = document.getElementById(id);
-    if (e) e.textContent = v;
-  };
-  setEl('legend-pendientes', pendientes);
-  setEl('legend-en-proceso', en_proceso);
-  setEl('legend-resueltas', resueltas);
+  // Re-inicializar gráfico de top categorías
+  initCategoriesChart(topCategories);
 
-  // Re-inicializar gráfico
-  initDonut(pendientes, en_proceso, resueltas, total);
+  // Gráfico de volumen mensual
+  initVolumeChart(weekly.days ?? []);
 
   // Cerrar modal de filtros si está abierto
   const modal = bootstrap?.Modal?.getOrCreateInstance?.(
@@ -256,23 +367,32 @@ function unwrapCollection(response) {
   return [];
 }
 
-function setupFilterListeners() {
-  // Cargar árbol de ubicaciones y categorías
-  Promise.all([
-    http.get('/locations/tree'),
-    http.get('/incident-categories/tree'),
-  ])
-    .then(([locTree, catTree]) => {
-      // Backend wraps both endpoints as { data: [...] } (ResourceCollection
-      // convention). Defensive: handle three shapes — wrapped, bare array,
-      // or null. Other services in this codebase already use this pattern
-      // (see dashboard fetch at line 494 and every shared/* service).
-      filterState.locationTree = unwrapCollection(locTree);
-      filterState.categories = unwrapCollection(catTree);
+function populateSelectError(selectEl, message) {
+  if (!selectEl) return;
+  selectEl.innerHTML = `<option value="">${message}</option>`;
+  selectEl.disabled = true;
+}
+
+async function setupFilterListeners() {
+  // Load categories (unchanged — still uses tree endpoint)
+  http
+    .get('/incident-categories/tree')
+    .then((resp) => {
+      filterState.categories = unwrapCollection(resp);
     })
     .catch(() => {
-      console.warn('Failed to load filter options');
+      console.warn('Failed to load categories');
     });
+
+  // Load countries first (roots) via location.service
+  try {
+    filterState.countries = await locationService.getRoots({
+      level: 'country',
+    });
+    populateCountrySelect();
+  } catch {
+    console.warn('Failed to load countries');
+  }
 
   // Botón "Aplicar" — ejecuta refreshDashboard
   const btnAplicar = document.getElementById('btn-filter-apply');
@@ -315,80 +435,115 @@ function setupFilterListeners() {
     });
   }
 
-  // Select país (para ubicación)
+  // Select país (para ubicación) — progressive via location.service
   const selectPais = document.getElementById('filter-pais');
   if (selectPais) {
-    // Poblar con raíces (países)
-    filterState.locationTree
-      .filter((l) => !l.parent_id)
-      .forEach((loc) => {
-        const opt = document.createElement('option');
-        opt.value = loc.id;
-        opt.textContent = loc.name;
-        selectPais.appendChild(opt);
-      });
-    selectPais.addEventListener('change', (e) => {
+    selectPais.addEventListener('change', async (e) => {
       filterState.pais_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
       // Limpiar provincia y ciudad
       filterState.provincia_id = null;
       filterState.ciudad_id = null;
+      filterState.provinces = [];
+      filterState.cities = [];
+
       const selectProvia = document.getElementById('filter-provincia');
-      if (selectProvia) {
-        selectProvia.innerHTML =
-          '<option value="">-- Seleccione provincia --</option>';
-        selectProvia.disabled = !filterState.pais_id;
-      }
       const selectCiudad = document.getElementById('filter-ciudad');
+
       if (selectCiudad) {
         selectCiudad.innerHTML =
           '<option value="">-- Seleccione ciudad --</option>';
         selectCiudad.disabled = true;
       }
-      // Poblar provincia si país seleccionado
-      if (filterState.pais_id) {
-        const pais = filterState.locationTree.find(
-          (l) => l.id === filterState.pais_id,
-        );
-        if (pais && pais.children) {
-          pais.children.forEach((prov) => {
+
+      if (!filterState.pais_id) {
+        // No country selected — disable province select
+        if (selectProvia) {
+          selectProvia.innerHTML =
+            '<option value="">-- Seleccione provincia --</option>';
+          selectProvia.disabled = true;
+        }
+        return;
+      }
+
+      // Country selected — enable province select and load provinces
+      if (selectProvia) {
+        selectProvia.innerHTML = '<option value="">Cargando...</option>';
+        selectProvia.disabled = false;
+      }
+
+      try {
+        filterState.provinces = await locationService.getChildren({
+          parentId: filterState.pais_id,
+        });
+        if (selectProvia) {
+          selectProvia.innerHTML =
+            '<option value="">-- Seleccione provincia --</option>';
+          filterState.provinces.forEach((prov) => {
             const opt = document.createElement('option');
             opt.value = prov.id;
             opt.textContent = prov.name;
             selectProvia.appendChild(opt);
           });
         }
+      } catch {
+        if (selectProvia) {
+          populateSelectError(selectProvia, 'Error al cargar provincias');
+        }
       }
     });
   }
 
-  // Select provincia
+  // Select provincia — progressive via location.service
   const selectProvia = document.getElementById('filter-provincia');
   if (selectProvia) {
-    selectProvia.addEventListener('change', (e) => {
+    // Disable until a country is selected (already handled in country handler)
+    selectProvia.disabled = true;
+    selectProvia.innerHTML =
+      '<option value="">-- Seleccione provincia --</option>';
+
+    selectProvia.addEventListener('change', async (e) => {
       filterState.provincia_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
       filterState.ciudad_id = null;
+
       const selectCiudad = document.getElementById('filter-ciudad');
+
       if (selectCiudad) {
         selectCiudad.innerHTML =
           '<option value="">-- Seleccione ciudad --</option>';
-        selectCiudad.disabled = !filterState.provincia_id;
+        selectCiudad.disabled = true;
       }
-      // Poblar ciudad si provincia seleccionada
-      if (filterState.provincia_id) {
-        const prov = filterState.locationTree
-          .flatMap((p) => p.children || [])
-          .find((c) => c.id === filterState.provincia_id);
-        if (prov && prov.children) {
-          prov.children.forEach((ciudad) => {
+
+      if (!filterState.provincia_id) {
+        return;
+      }
+
+      // Province selected — load cities
+      if (selectCiudad) {
+        selectCiudad.innerHTML = '<option value="">Cargando...</option>';
+        selectCiudad.disabled = false;
+      }
+
+      try {
+        filterState.cities = await locationService.getChildren({
+          parentId: filterState.provincia_id,
+        });
+        if (selectCiudad) {
+          selectCiudad.innerHTML =
+            '<option value="">-- Seleccione ciudad --</option>';
+          filterState.cities.forEach((city) => {
             const opt = document.createElement('option');
-            opt.value = ciudad.id;
-            opt.textContent = ciudad.name;
+            opt.value = city.id;
+            opt.textContent = city.name;
             selectCiudad.appendChild(opt);
           });
+        }
+      } catch {
+        if (selectCiudad) {
+          populateSelectError(selectCiudad, 'Error al cargar ciudades');
         }
       }
     });
@@ -397,12 +552,25 @@ function setupFilterListeners() {
   // Select ciudad
   const selectCiudad = document.getElementById('filter-ciudad');
   if (selectCiudad) {
+    selectCiudad.disabled = true;
     selectCiudad.addEventListener('change', (e) => {
       filterState.ciudad_id = e.target.value
         ? parseInt(e.target.value, 10)
         : null;
     });
   }
+}
+
+function populateCountrySelect() {
+  const selectPais = document.getElementById('filter-pais');
+  if (!selectPais) return;
+  selectPais.innerHTML = '<option value="">-- Seleccione país --</option>';
+  filterState.countries.forEach((country) => {
+    const opt = document.createElement('option');
+    opt.value = country.id;
+    opt.textContent = country.name;
+    selectPais.appendChild(opt);
+  });
 }
 
 // ─────────────────────────────────────────────

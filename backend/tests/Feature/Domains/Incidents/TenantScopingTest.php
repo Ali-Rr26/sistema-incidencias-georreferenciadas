@@ -144,7 +144,7 @@ it('OperadorOrg sees only incidents from their own organization', function (): v
             ->map(fn ($incident) => [
                 'incident_id' => $incident->id,
                 'user_id' => $operator->id,
-                'assignment_role' => 'responsible',
+                'assignment_role' => 'responsable',
                 'created_at' => now(),
                 'updated_at' => now(),
             ])

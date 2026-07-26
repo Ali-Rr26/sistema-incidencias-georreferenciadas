@@ -17,6 +17,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Image Storage Disk
+    |--------------------------------------------------------------------------
+    |
+    | Single source of truth for the disk used by every image
+    | upload/delete path (StorageService, comment images, avatars).
+    | Deliberately separate from "default" above — the two used to be
+    | read directly via divergent env() calls, causing comment-image
+    | deletes to target the wrong disk and orphan objects in S3/RustFS.
+    |
+    */
+
+    'image_disk' => env('FILESYSTEM_STORAGE_DISK', 's3'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

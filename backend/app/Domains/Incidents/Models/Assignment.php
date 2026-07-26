@@ -7,6 +7,7 @@ namespace App\Domains\Incidents\Models;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Eloquent model for the `assignments` pivot table.
@@ -37,6 +38,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Assignment extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'assignments';
 
     protected $fillable = [

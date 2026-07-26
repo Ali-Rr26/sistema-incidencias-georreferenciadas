@@ -8,10 +8,17 @@ declare(strict_types=1);
  * Avatar replace/delete now lives inside PUT /users/{id} (multipart FormData
  * for an avatar upload, or a `_delete_avatar=true` JSON flag for removal)
  * — POST /users/{id}/avatar and DELETE /users/{id}/avatar are gone.
+ *
+ * Avatars are seeded via the shared `images` table (image-persistence-
+ * polymorphic WU7 cutover) rather than the legacy `profile_image_path`
+ * column — that column is now dead (WU8 drops it), and `UserResource`
+ * sources `profile_image_path` from the `avatarImage()` relation instead.
  */
 
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use App\Storage\ImageRules;
+use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -25,11 +32,22 @@ beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
-it('PUT /users/{id} multipart with avatar replaces existing avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/old-uuid.webp',
+function seedAvatar(User $user, string $path): Image
+{
+    Storage::disk('s3')->put($path, 'seeded avatar content');
+
+    return Image::create([
+        'imageable_type' => 'user',
+        'imageable_id' => $user->id,
+        'storage_path' => $path,
+        'is_thumbnail' => true,
+        'sort_order' => 0,
     ]);
-    Storage::disk('s3')->put('users/1/old-uuid.webp', 'old content');
+}
+
+it('PUT /users/{id} multipart with avatar replaces existing avatar', function (): void {
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/old-uuid.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
     $file = UploadedFile::fake()->image('avatar.jpg', 512, 512);
@@ -50,13 +68,12 @@ it('PUT /users/{id} multipart with avatar replaces existing avatar', function ()
     expect($newPath)->not->toBe('users/1/old-uuid.webp');
     Storage::disk('s3')->assertMissing('users/1/old-uuid.webp');
     Storage::disk('s3')->assertExists($newPath);
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $target->id)->count())->toBe(1);
 });
 
 it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/existing.webp',
-    ]);
-    Storage::disk('s3')->put('users/1/existing.webp', 'existing avatar');
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/existing.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -72,15 +89,15 @@ it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function 
 
     $response->assertStatus(200);
     expect($response->json('data.profile_image_path'))->toBeNull();
-    expect($target->fresh()->profile_image_path)->toBeNull();
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $target->id)->count())->toBe(0);
     Storage::disk('s3')->assertMissing('users/1/existing.webp');
 });
 
 it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): void {
     $target = User::factory()->create([
-        'profile_image_path' => 'users/1/keep-me.webp',
         'first_name' => 'Old',
     ]);
+    seedAvatar($target, 'users/1/keep-me.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -101,9 +118,8 @@ it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): 
 });
 
 it('PUT /users/{id} multipart without avatar file preserves the existing avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/also-keep.webp',
-    ]);
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/also-keep.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -121,8 +137,9 @@ it('PUT /users/{id} rejects oversized avatar file', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    // 801 KB — over the 800 KB cap defined by User::AVATAR_MAX_KB.
-    $file = UploadedFile::fake()->image('big.jpg')->size(801);
+    // 5200 KB — over ImageRules::MAX_SIZE_KB (5120 KB / 5 MB), the shared
+    // D10 cap now enforced for avatars too (WU7 cutover).
+    $file = UploadedFile::fake()->image('big.jpg')->size(5200);
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
@@ -137,7 +154,8 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $file = UploadedFile::fake()->create('avatar.gif', 100, 'image/gif');
+    // bmp is not in ImageRules::MIMES (jpeg,png,webp,gif).
+    $file = UploadedFile::fake()->create('avatar.bmp', 100, 'image/bmp');
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
@@ -148,11 +166,11 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
     $response->assertJsonValidationErrors(['avatar']);
 });
 
-it('PUT /users/{id} accepts avatar at exactly 800KB', function (): void {
+it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(800);
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(ImageRules::MAX_SIZE_KB);
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => $target->first_name,
@@ -167,4 +185,180 @@ it('PUT /users/{id} accepts avatar at exactly 800KB', function (): void {
     $response->assertStatus(200);
     $newPath = $response->json('data.profile_image_path');
     expect($newPath)->toBeString()->toStartWith('users/');
+});
+
+// ============================================================================
+// CRUD + Authorization + formData — requires full permission seeding
+// ============================================================================
+
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Support\Facades\Gate;
+
+describe('CRUD — admin_sistema bypass', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('index — lists paginated users', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        User::factory()->count(3)->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson('/api/users');
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => ['*' => ['id', 'first_name', 'last_name', 'email']],
+        ]);
+        expect(count($response->json('data')))->toBe(4);
+    });
+
+    it('show — returns a single user with role and organization', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        $target = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson("/api/users/{$target->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $target->id);
+        $response->assertJsonStructure([
+            'data' => ['id', 'first_name', 'last_name', 'email', 'role', 'roles', 'organizations'],
+        ]);
+    });
+
+    it('destroy — soft-deletes a user', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+        $target = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->deleteJson("/api/users/{$target->id}");
+
+        $response->assertStatus(204);
+        $this->assertSoftDeleted('users', ['id' => $target->id]);
+    });
+
+});
+
+describe('formData', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('returns roles and organizations catalogs', function (): void {
+        $admin = User::factory()->create(['role_id' => 1]);
+
+        $response = $this->actingAs($admin)->getJson('/api/users/form-data');
+
+        $response->assertOk();
+        $response->assertJsonStructure(['roles', 'organizations']);
+        expect(count($response->json('roles')))->toBe(5);
+    });
+
+    it('filters system roles for non-system-admin', function (): void {
+        $location = Location::create(['name' => 'Loc', 'level' => 'city']);
+        $org = Organization::create(['name' => 'Mi Org', 'location_id' => $location->id]);
+        $adminOrg = User::factory()->create(['role_id' => 3, 'organization_id' => $org->id]);
+
+        $response = $this->actingAs($adminOrg)->getJson('/api/users/form-data');
+
+        $response->assertOk();
+        $roleNames = array_map(fn ($r) => $r['name'], $response->json('roles'));
+        expect($roleNames)->not->toContain('admin_sistema')
+            ->and($roleNames)->not->toContain('operador_sistema');
+        expect(count($response->json('organizations')))->toBe(1);
+        expect($response->json('organizations.0.id'))->toBe($org->id);
+    });
+
+    it('denies access without users.view permission', function (): void {
+        $role = Role::create(['name' => 'sin_permisos']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/users/form-data');
+
+        $response->assertForbidden();
+    });
+
+});
+
+describe('authorization — denied without correct permission', function (): void {
+
+    beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+
+        foreach (Permission::all() as $p) {
+            Gate::define(
+                "{$p->resource}.{$p->action}",
+                fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+            );
+        }
+    });
+
+    it('denies index without users.view', function (): void {
+        $role = Role::create(['name' => 'sin_permisos_idx']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->getJson('/api/users');
+
+        $response->assertForbidden();
+    });
+
+    it('denies show for other user without users.view', function (): void {
+        $usuario = User::factory()->create(['role_id' => 5]);
+        $other = User::factory()->create(['role_id' => 5]);
+
+        $response = $this->actingAs($usuario)->getJson("/api/users/{$other->id}");
+
+        $response->assertForbidden();
+    });
+
+    it('allows user to view their own profile without users.view', function (): void {
+        $usuario = User::factory()->create(['role_id' => 5]);
+
+        $response = $this->actingAs($usuario)->getJson("/api/users/{$usuario->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $usuario->id);
+    });
+
+    it('denies destroy without users.delete', function (): void {
+        $role = Role::create(['name' => 'sin_permisos_del']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+        // A real, existing target user — route-model binding must resolve
+        // it before the policy denies, otherwise a stale hardcoded id
+        // (e.g. `1`) 404s instead of exercising the 403 this test is for.
+        // Postgres SERIAL sequences are not rolled back between tests
+        // (see RoleSeederTest), so `1` is not guaranteed to still exist.
+        $target = User::factory()->create();
+
+        $response = $this->actingAs($user)->deleteJson("/api/users/{$target->id}");
+
+        $response->assertForbidden();
+    });
+
 });

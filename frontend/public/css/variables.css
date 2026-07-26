@@ -97,4 +97,16 @@
      Typography
      ============================================= */
   --font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-body: 1rem;
+  --font-size-sm: 0.875rem;
+  --font-size-h1: clamp(1.75rem, 1.25rem + 2.5vw, 3rem);
+  --font-size-h2: clamp(1.5rem, 1.125rem + 1.875vw, 2.25rem);
+  --font-size-h3: clamp(1.25rem, 1rem + 1.25vw, 1.75rem);
+  --font-size-h4: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);
+  --font-size-h5: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --font-size-h6: 1rem;
+  --font-size-page-title: clamp(1.25rem, 1.125rem + 0.625vw, 1.75rem);
+  --line-height-body: 1.5;
+  --line-height-heading: 1.2;
+  --line-height-ui: 1.3;
 }

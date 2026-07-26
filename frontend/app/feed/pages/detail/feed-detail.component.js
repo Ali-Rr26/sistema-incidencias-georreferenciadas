@@ -19,12 +19,8 @@ import {
 import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
-import { auth } from '../../../auth/auth.service.js';
 import initMapView from '../../../shared/init-map-view.js';
-import { commentService } from '../../../shared/comment.service.js';
-import { openLightbox, closeLightbox } from '../../../shared/lightbox.js';
-import { openInlineReplyForm } from '../../../shared/comment-reply.js';
-import { renderCommentThread } from '../../../shared/comment-thread.js';
+import setupCommentsForm from '../../../shared/setup-comments-form.js';
 import {
   sortStatusHistoryDesc,
   statusHistoryEntry,
@@ -309,270 +305,26 @@ export default {
     this._detailMapRemove = remove;
   },
 
-  _renderComments(items, currentUserId) {
-    this._commentById = renderCommentThread({
-      items,
-      listEl: document.getElementById('fd-comments-list'),
-      emptyEl: document.getElementById('fd-comments-empty'),
-      currentUserId,
-      canDelete: false,
-      getUserName: (u) => (u ? getUserDisplayName(u) : 'Usuario'),
-    });
-  },
-
-  /**
-   * Comments are public — both citizens and operators can view and post
-   * them on the same `/incidents/{id}/comments` endpoint (R: "Public
-   * Comments on Detail View").
-   */
   async _setupComments(incidentId) {
-    const loadingEl = document.getElementById('fd-comments-loading');
-    const form = document.getElementById('fd-comment-form');
-    const input = document.getElementById('fd-comment-input');
-    const errorEl = document.getElementById('fd-comment-error');
-    const submitBtn = document.getElementById('fd-comment-submit');
-    const fileInput = document.getElementById('fd-comment-images');
-    const previewEl = document.getElementById('fd-comment-previews');
-    const replyBadgeEl = document.getElementById('fd-reply-badge');
-    const replyParentIdEl = document.getElementById('fd-reply-parent-id');
-
-    if (!form || !input) return;
-
-    let currentUserId = null;
-    const replyState = { parentId: null, parentComment: null };
-    const selectedFiles = [];
-    const previewUrls = [];
-
-    const self = this;
-
-    function renderPreviews() {
-      if (!previewEl) return;
-      previewEl.innerHTML = selectedFiles
-        .map((_, i) => {
-          const url = previewUrls[i];
-          if (!url) return '';
-          return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
-            <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
-            <button type="button" class="incid-detail__preview-remove btn-quitar-preview" data-index="${i}">&times;</button>
-          </div>`;
-        })
-        .join('');
-    }
-
-    function cancelReply() {
-      const prefix = '> @';
-      if (input.value.startsWith(prefix)) {
-        const nlIdx = input.value.indexOf('\n');
-        input.value = nlIdx >= 0 ? input.value.slice(nlIdx + 1) : '';
-      }
-      if (replyBadgeEl) replyBadgeEl.classList.add('d-none');
-      if (replyParentIdEl) replyParentIdEl.value = '';
-      replyState.parentId = null;
-      replyState.parentComment = null;
-    }
-
-    function handleFileSelect(files) {
-      if (!files) return;
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) continue;
-        selectedFiles.push(file);
-        previewUrls.push(URL.createObjectURL(file));
-      }
-      renderPreviews();
-    }
-
-    function removeFile(index) {
-      if (index < 0 || index >= previewUrls.length) return;
-      URL.revokeObjectURL(previewUrls[index]);
-      previewUrls.splice(index, 1);
-      selectedFiles.splice(index, 1);
-      renderPreviews();
-    }
-
-    if (replyBadgeEl) {
-      replyBadgeEl.addEventListener('click', cancelReply);
-      replyBadgeEl.style.cursor = 'pointer';
-      replyBadgeEl.title = 'Clic para cancelar';
-    }
-
-    if (fileInput) {
-      fileInput.addEventListener('change', () => {
-        handleFileSelect(fileInput.files);
-        fileInput.value = '';
-      });
-    }
-
-    const cargarComentarios = async () => {
-      loadingEl?.classList.remove('d-none');
-      try {
-        const { data } = await commentService.list(incidentId, {
-          perPage: 50,
-        });
-        self._renderComments(data, currentUserId);
-      } catch (err) {
-        console.error('Error al cargar comentarios:', err);
-      } finally {
-        loadingEl?.classList.add('d-none');
-      }
-    };
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorEl?.classList.add('d-none');
-
-      const message = input.value.trim();
-      if (!message) {
-        if (errorEl) {
-          errorEl.textContent = 'El comentario no puede estar vacío.';
-          errorEl.classList.remove('d-none');
-        }
-        return;
-      }
-
-      if (submitBtn) submitBtn.disabled = true;
-      try {
-        const parentId = replyParentIdEl?.value
-          ? Number(replyParentIdEl.value)
-          : null;
-        const imageIds = [];
-
-        if (selectedFiles.length > 0) {
-          const created = await commentService.create(incidentId, {
-            message,
-            parentId,
-            imageIds: [],
-          });
-          const commentId = created?.id ?? created?.data?.id;
-          if (!commentId) throw new Error('No se pudo crear el comentario.');
-
-          const results = await Promise.allSettled(
-            selectedFiles.map((file) =>
-              commentService.uploadImages(commentId, [file]),
-            ),
-          );
-          const failed = results.filter(
-            (r) =>
-              r.status === 'rejected' ||
-              (r.status === 'fulfilled' && r.value?.status >= 400),
-          );
-          if (failed.length > 0) {
-            for (const url of previewUrls) URL.revokeObjectURL(url);
-            selectedFiles.length = 0;
-            previewUrls.length = 0;
-            renderPreviews();
-            if (errorEl) {
-              errorEl.textContent =
-                'Error al subir una o más imágenes. El comentario no fue publicado.';
-              errorEl.classList.remove('d-none');
-            }
-            await commentService.delete(commentId);
-            throw new Error('Upload failed');
-          }
-        } else {
-          await commentService.create(incidentId, {
-            message,
-            parentId,
-            imageIds,
-          });
-        }
-
-        input.value = '';
-        for (const url of previewUrls) URL.revokeObjectURL(url);
-        selectedFiles.length = 0;
-        previewUrls.length = 0;
-        renderPreviews();
-        cancelReply();
-        await cargarComentarios();
-      } catch (err) {
-        if (err.message === 'Upload failed') return;
-        if (errorEl) {
-          errorEl.textContent =
-            err.message || 'No se pudo publicar el comentario.';
-          errorEl.classList.remove('d-none');
-        }
-      } finally {
-        if (submitBtn) submitBtn.disabled = false;
-      }
+    return setupCommentsForm({
+      incidentId,
+      loadingId: 'fd-comments-loading',
+      formId: 'fd-comment-form',
+      inputId: 'fd-comment-input',
+      submitId: 'fd-comment-submit',
+      listId: 'fd-comments-list',
+      emptyId: 'fd-comments-empty',
+      errorId: 'fd-comment-error',
+      previewId: 'fd-comment-previews',
+      fileInputId: 'fd-comment-images',
+      attachButtonId: 'fd-comment-attach-btn',
+      replyBadgeId: 'fd-reply-badge',
+      replyParentIdId: 'fd-reply-parent-id',
+      lightboxId: 'fd-lightbox',
+      lightboxCloseId: 'fd-lightbox-close',
+      thumbnailSelector: '.incid-detail__thumbnail-wrapper[data-src]',
+      getUserName: (user) => (user ? getUserDisplayName(user) : 'Usuario'),
     });
-
-    const listEl = document.getElementById('fd-comments-list');
-    if (listEl) {
-      listEl.addEventListener('click', async (e) => {
-        const replyBtn = e.target.closest('.btn-responder-comentario');
-        if (replyBtn) {
-          const commentId = Number(replyBtn.dataset.id);
-          const found = self._commentById?.get(commentId);
-          if (found) {
-            const li = replyBtn.closest('li');
-            openInlineReplyForm({
-              incidentId,
-              comment: found,
-              li,
-              getUserName: getUserDisplayName,
-              onPosted: cargarComentarios,
-            });
-          }
-          return;
-        }
-
-        const previewRemoveBtn = e.target.closest('.btn-quitar-preview');
-        if (previewRemoveBtn) {
-          const index = Number(previewRemoveBtn.dataset.index);
-          removeFile(index);
-          return;
-        }
-
-        const thumb = e.target.closest(
-          '.incid-detail__thumbnail-wrapper[data-src]',
-        );
-        if (thumb) {
-          const src = thumb.dataset.src;
-          const caption = thumb.dataset.caption || '';
-          openLightbox(src, caption);
-          return;
-        }
-
-        const delImgBtn = e.target.closest('.btn-eliminar-imagen');
-        if (delImgBtn) {
-          const commentId = Number(delImgBtn.dataset.commentId);
-          const imageId = Number(delImgBtn.dataset.imageId);
-          if (!confirm('¿Eliminar esta imagen?')) return;
-          delImgBtn.disabled = true;
-          try {
-            await commentService.deleteImage(commentId, imageId);
-            await cargarComentarios();
-          } catch (err) {
-            console.error('Error al eliminar imagen:', err);
-            alert('No se pudo eliminar la imagen.');
-          } finally {
-            delImgBtn.disabled = false;
-          }
-        }
-      });
-    }
-
-    const lightboxEl = document.getElementById('fd-lightbox');
-    if (lightboxEl) {
-      const lightboxClose = document.getElementById('fd-lightbox-close');
-      lightboxClose?.addEventListener('click', closeLightbox);
-      lightboxEl.addEventListener('click', (e) => {
-        if (e.target === lightboxEl) closeLightbox();
-      });
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !lightboxEl.classList.contains('d-none')) {
-          closeLightbox();
-        }
-      });
-    }
-
-    try {
-      const user = await auth.me();
-      currentUserId = user?.id;
-    } catch {
-      currentUserId = null;
-    }
-
-    cargarComentarios();
   },
 
   /**
@@ -937,22 +689,36 @@ export default {
                 maxlength="5000"
                 placeholder="Escribe un comentario público..."
               ></textarea>
-              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
               <input
                 type="file"
                 id="fd-comment-images"
                 multiple
-                accept="image/*"
-                class="form-control form-control-sm mb-2"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                class="d-none"
               />
+              <div class="mb-2">
+                <button
+                  type="button"
+                  id="fd-comment-attach-btn"
+                  class="btn btn-outline-secondary btn-sm"
+                  title="Adjuntar o tomar foto"
+                  aria-label="Adjuntar o tomar foto"
+                >
+                  <i class="fas fa-camera"></i>
+                </button>
+              </div>
               <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
-              <button
-                type="submit"
-                id="fd-comment-submit"
-                class="btn btn-primary btn-sm"
-              >
-                Publicar
-              </button>
+              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
+              <div class="d-flex justify-content-end">
+                <button
+                  type="submit"
+                  id="fd-comment-submit"
+                  class="btn btn-primary btn-sm"
+                >
+                  Publicar
+                </button>
+              </div>
             </form>
             <div id="fd-comments-loading" class="d-flex justify-content-center py-2">
               <div class="spinner-border spinner-border-sm text-primary"></div>

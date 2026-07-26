@@ -98,7 +98,7 @@ it('allows AdminOrganizacion to create users in their own organization with allo
             'organization_id' => $this->orgA->id,
             'first_name' => 'Own',
             'last_name' => 'Org User',
-            'phone' => '123456789',
+            'phone' => '0991234567',
         ]);
 
     $response->assertStatus(201);
@@ -176,7 +176,7 @@ it('allows SystemAdmin to create any user in any organization with any role', fu
             'organization_id' => $this->orgB->id,
             'first_name' => 'Sys',
             'last_name' => 'Created',
-            'phone' => '123456789',
+            'phone' => '0991234567',
         ]);
 
     $response->assertStatus(201);

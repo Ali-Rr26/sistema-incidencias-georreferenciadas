@@ -23,7 +23,26 @@ body {
   /* overflow-x removed per REQ-MR-4 — real overflows fixed at source */
   color: var(--text-default);
   background: var(--bg-page);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: var(--line-height-heading);
+}
+
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
+h4 { font-size: var(--font-size-h4); }
+h5 { font-size: var(--font-size-h5); }
+h6 { font-size: var(--font-size-h6); }
 
 html {
   position: relative;
@@ -482,11 +501,6 @@ fieldset,
   }
 }
 
-body,
-#main-wrapper {
-  font-family: var(--font-family);
-}
-
 .gr-page {
   padding: 24px 28px;
   font-family: var(--font-family);
@@ -502,14 +516,15 @@ body,
 }
 
 .gr-page__title {
-  font-size: 23px;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-ui);
   font-weight: 700;
   color: #23283b;
   margin: 0 0 4px;
 }
 
 .gr-breadcrumb {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   display: flex;
   align-items: center;

@@ -52,4 +52,24 @@ enum IncidentStatus: string
             self::Resolved => 'Resuelto',
         };
     }
+
+    /**
+     * Options array formatted for API responses.
+     *
+     * @return list<array{id: int, nombre: string, valor: string}>
+     */
+    public static function availableStatuses(): array
+    {
+        $id = 1;
+        $statuses = [];
+        foreach (self::cases() as $case) {
+            $statuses[] = [
+                'id' => $id++,
+                'nombre' => $case->label(),
+                'valor' => $case->value,
+            ];
+        }
+
+        return $statuses;
+    }
 }

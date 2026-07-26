@@ -21,6 +21,16 @@ const mockHttp = vi.hoisted(() => ({
 }));
 vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
 
+// Mock location.service for progressive loading tests
+const mockLocationService = vi.hoisted(() => ({
+  getRoots: vi.fn(),
+  getChildren: vi.fn(),
+  invalidateCache: vi.fn(),
+}));
+vi.mock('../../../shared/location.service.js', () => ({
+  locationService: mockLocationService,
+}));
+
 describe('dashboard — average resolution time stat card', () => {
   let component;
 
@@ -158,5 +168,117 @@ describe('dashboard — average resolution time stat card', () => {
     expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
       'Sin datos',
     );
+  });
+});
+
+describe('dashboard — progressive location filter (WU-2 migration)', () => {
+  let component;
+
+  const COUNTRIES = [
+    { id: 1, name: 'Ecuador', code: 'EC', level: 'country', parent_id: null },
+  ];
+
+  const PROVINCES = [
+    {
+      id: 2,
+      name: 'Pichincha',
+      code: 'EC-PI',
+      level: 'province',
+      parent_id: 1,
+    },
+    { id: 3, name: 'Guayas', code: 'EC-GY', level: 'province', parent_id: 1 },
+  ];
+
+  beforeAll(async () => {
+    const mod = await import('./dashboard.component.js');
+    component = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.c3 = {};
+
+    document.body.innerHTML = `
+      <div id="stat-incidencias">0</div>
+      <div id="stat-pendientes">0</div>
+      <div id="stat-resueltas">0</div>
+      <div id="stat-ubicaciones">0</div>
+      <div id="stat-tiempo-resolucion">—</div>
+      <div id="filter-inicio"></div>
+      <div id="filter-fin"></div>
+      <div id="filter-tipo"></div>
+      <div id="filter-pais">
+        <option value="">-- Seleccione país --</option>
+      </div>
+      <div id="filter-provincia">
+        <option value="">-- Seleccione provincia --</option>
+      </div>
+      <div id="filter-ciudad">
+        <option value="">-- Seleccione ciudad --</option>
+      </div>
+      <div id="btn-filter-apply"></div>
+    `;
+
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/stats') {
+        return Promise.resolve({ total: 0, by_status: {} });
+      }
+      if (path === '/incidents?per_page=5') {
+        return Promise.resolve({ data: [] });
+      }
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    mockLocationService.getRoots.mockResolvedValue(COUNTRIES);
+    mockLocationService.getChildren.mockResolvedValue(PROVINCES);
+  });
+
+  afterEach(() => {
+    delete window.c3;
+  });
+
+  it('loads countries via location.service.getRoots(level=country) on init', async () => {
+    await component.onInit();
+
+    expect(mockLocationService.getRoots).toHaveBeenCalledWith({
+      level: 'country',
+    });
+  });
+
+  it('does NOT call /locations/tree anymore (migrated to progressive loading)', async () => {
+    await component.onInit();
+
+    // The old endpoint should NOT be called
+    const treeCalls = mockHttp.get.mock.calls.filter(
+      ([path]) => path === '/locations/tree',
+    );
+    expect(treeCalls).toHaveLength(0);
+  });
+
+  it('disables province select until country is selected', async () => {
+    await component.onInit();
+
+    const provinciaSelect = document.getElementById('filter-provincia');
+    // Province select should be disabled initially (no country selected)
+    expect(provinciaSelect.disabled).toBe(true);
+  });
+
+  it('loads provinces when country is selected via locationService.getChildren', async () => {
+    await component.onInit();
+
+    // Select Ecuador (country)
+    const paisSelect = document.getElementById('filter-pais');
+    paisSelect.value = '1';
+    paisSelect.dispatchEvent(new Event('change'));
+
+    // Wait for the async province load
+    await new Promise(setImmediate);
+
+    expect(mockLocationService.getChildren).toHaveBeenCalledWith({
+      parentId: 1,
+    });
   });
 });

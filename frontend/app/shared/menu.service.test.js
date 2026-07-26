@@ -18,7 +18,7 @@ describe('menuService', () => {
   beforeEach(() => {
     clearAuthState();
     setAccessToken('test-token');
-    menuService.clearCache();
+    menuService.invalidateMyMenu();
     vi.clearAllMocks();
   });
 
@@ -70,11 +70,11 @@ describe('menuService', () => {
     expect(http.get).toHaveBeenCalledTimes(1);
   });
 
-  it('clearCache forces a new fetch on the next call', async () => {
+  it('invalidateMyMenu forces a new fetch on the next call', async () => {
     http.get.mockResolvedValue({ data: [] });
 
     await menuService.getMyMenu();
-    menuService.clearCache();
+    menuService.invalidateMyMenu();
     await menuService.getMyMenu();
 
     expect(http.get).toHaveBeenCalledTimes(2);
@@ -130,47 +130,6 @@ describe('menuService', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it('invalidateMyMenu forces a refetch on the next call (R-23 happy path)', async () => {
-    // Initial fetch returns menu without /usuarios
-    http.get.mockResolvedValueOnce({
-      data: [{ id: 1, name: 'Feed', route: '/feed', icon: null, children: [] }],
-    });
-    const first = await menuService.getMyMenu();
-    expect(first.some((n) => n.route === '/usuarios')).toBe(false);
-    expect(http.get).toHaveBeenCalledTimes(1);
-
-    // Admin grants /usuarios permission → call invalidateMyMenu
-    menuService.invalidateMyMenu();
-
-    // Next fetch reflects new permissions
-    http.get.mockResolvedValueOnce({
-      data: [
-        { id: 1, name: 'Feed', route: '/feed', icon: null, children: [] },
-        {
-          id: 2,
-          name: 'Usuarios',
-          route: '/usuarios',
-          icon: null,
-          children: [],
-        },
-      ],
-    });
-    const second = await menuService.getMyMenu();
-    expect(second.some((n) => n.route === '/usuarios')).toBe(true);
-    expect(http.get).toHaveBeenCalledTimes(2);
-  });
-
-  it('invalidateMyMenu is idempotent (safe to call twice)', async () => {
-    expect(() => {
-      menuService.invalidateMyMenu();
-      menuService.invalidateMyMenu();
-    }).not.toThrow();
-
-    http.get.mockResolvedValueOnce({ data: [] });
-    await menuService.getMyMenu();
-    expect(http.get).toHaveBeenCalledTimes(1);
   });
 
   it('forceRefresh option bypasses cache even when fresh', async () => {

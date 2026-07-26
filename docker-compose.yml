@@ -3,6 +3,7 @@ services:
   # FRONTEND (Static Nginx Server)
   # ==========================================
   frontend:
+    image: sistema-incidencias-frontend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile
@@ -23,6 +24,7 @@ services:
   # BACKEND
   # ==========================================
   backend:
+    image: sistema-incidencias-backend:${IMAGE_TAG:-latest}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -38,15 +40,6 @@ services:
       DB_PORT: "5432"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      # Mercure hub JWT secrets (see config/octane.php) — set these in the
-      # shell/CI environment, not committed here. Empty in dev falls back
-      # to an insecure placeholder (AppServiceProvider/AuthController);
-      # real deployments must set them.
-      LOG_CHANNEL: stderr_json
-      MERCURE_PUBLISHER_JWT_SECRET: ${MERCURE_PUBLISHER_JWT_SECRET:-}
-      MERCURE_PUBLIC_URL: "http://mercure/.well-known/mercure"
-      MERCURE_SUBSCRIBER_JWT_SECRET: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
-      # Firebase Admin SDK — verifies Google sign-in ID tokens server-side
       # (see AppServiceProvider::FirebaseTokenVerifier). credentials_path
       # must be an absolute path INSIDE the container, i.e. under
       # /var/www/backend/storage/... — not a host path.
@@ -74,11 +67,52 @@ services:
     networks:
       - dev-network
 
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      QUEUE_CONNECTION: redis
+      OCTANE_SERVER: ""
+      LOG_CHANNEL: stderr_json
+    volumes:
+      - ./backend/routes:/var/www/backend/routes
+      - ./backend/config:/var/www/backend/config
+      - ./backend/resources:/var/www/backend/resources
+      - ./backend/database:/var/www/backend/database
+    command:
+      - php
+      - artisan
+      - queue:work
+      - redis
+      - "--tries=3"
+      - "--backoff=10"
+      - "--max-time=3600"
+      - "--sleep=3"
+      - "--timeout=60"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dev-network
+
   # ==========================================
   # DATABASE
   # ==========================================
   db:
     image: ${POSTGIS_IMAGE:-postgis/postgis:17-3.5-alpine}
+    command:
+      - postgres
+      - -c
+      - max_connections=250
     environment:
       POSTGRES_DB: ${DB_DATABASE:-incidencias_db}
       POSTGRES_USER: ${DB_USERNAME:-user}
@@ -88,7 +122,15 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-user} -d ${DB_DATABASE:-incidencias_db}"]
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" &&
+          max_connections="$$(psql
+          -U "$${POSTGRES_USER}"
+          -d "$${POSTGRES_DB}"
+          -Atqc 'SHOW max_connections')" &&
+          test "$$max_connections" -ge 250
       interval: 5s
       timeout: 3s
       retries: 10
@@ -273,7 +315,11 @@ services:
     volumes:
       - sonarqube_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube} -p ${SONARQUBE_DB_PORT:-5432}"]
+      test: [
+          "CMD-SHELL",
+          # yamllint disable-line rule:line-length
+          "pg_isready -U ${SONARQUBE_DB_USERNAME:-sonarqube} -d ${SONARQUBE_DB_DATABASE:-sonarqube} -p ${SONARQUBE_DB_PORT:-5432}",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -312,38 +358,6 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
-    networks:
-      - dev-network
-
-  # Mercure hub — real-time push for the notification bell.
-  # Lives in the same compose so `docker compose up -d` brings it online
-  # alongside the backend; the previous setup had a standalone container
-  # that drifted out of sync on every restart.
-  # Backend publishes to http://mercure/.well-known/mercure (config
-  # `MERCURE_PUBLIC_URL`); the frontend nginx proxies
-  # `/.well-known/mercure` to this same service.
-  mercure:
-    image: dunglas/mercure:latest
-    environment:
-      SERVER_NAME: ":80"
-      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_SECRET:-}
-      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_SECRET:-}
-      MERCURE_PUBLISHER_JWT_ALG: HS256
-      MERCURE_SUBSCRIBER_JWT_ALG: HS256
-      ALLOW_ANONYMOUS: "1"
-      CORS_ALLOWED_ORIGINS: "*"
-    ports:
-      - "${MERCURE_PORT:-1337}:80"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -q --spider 'http://127.0.0.1/.well-known/mercure?topic=health' || exit 0",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     networks:
       - dev-network
 

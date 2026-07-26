@@ -17,6 +17,7 @@ use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Domains\Users\Services\ProfileImageService;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ class UserController extends Controller
             $this->invitationService->createAndSendInvitation($user, $inviter);
         });
 
-        $user->load(['role', 'organization']);
+        $user->load(['role', 'organization', 'avatarImage']);
 
         return (new UserResource($user))
             ->response()
@@ -72,7 +73,7 @@ class UserController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        $user->load(['role', 'organization']);
+        $user->load(['role', 'organization', 'avatarImage']);
 
         return (new UserResource($user))->withCatalog()->response();
     }
@@ -82,11 +83,14 @@ class UserController extends Controller
      *
      * Profile image is owned by this endpoint now (previously a separate
      * POST /users/{user}/avatar + DELETE /users/{user}/avatar pair, removed).
-     * The update picks one of three paths based on the multipart payload:
+     * Avatars live in the shared `images` table (image-persistence-polymorphic
+     * WU7) — `profile_image_path` is a dead column, no longer read or
+     * written here (WU8 drops it). The update picks one of three paths
+     * based on the multipart payload:
      *
-     *   - `avatar` file present           -> replaceAvatar() (deletes old, stores new)
-     *   - `_delete_avatar=true`, no file  -> removeAvatar()   (deletes file, clears column)
-     *   - neither present                 -> leave profile_image_path untouched
+     *   - `avatar` file present           -> replaceAvatar() (detaches old, attaches new)
+     *   - `_delete_avatar=true`, no file  -> removeAvatar()   (detaches row + object)
+     *   - neither present                 -> leave the avatar untouched
      */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
@@ -95,19 +99,18 @@ class UserController extends Controller
         // Strip non-fillable helper fields; the controller decides avatar fate.
         unset($data['avatar'], $data['_delete_avatar']);
 
+        if (array_key_exists('phone', $data)) {
+            $data['phone'] = PhoneRules::normalize($data['phone']);
+        }
+
         if ($request->hasFile('avatar')) {
-            $newPath = $this->profileImageService->replaceAvatar(
-                $user,
-                $request->file('avatar'),
-            );
-            $data['profile_image_path'] = $newPath;
+            $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
         } elseif ($request->boolean('_delete_avatar')) {
             $this->profileImageService->removeAvatar($user);
-            $data['profile_image_path'] = null;
         }
 
         $user = $this->users->update($user->id, $data);
-        $user->load(['role', 'organization']);
+        $user->load(['role', 'organization', 'avatarImage']);
 
         return new UserResource($user)->response();
     }

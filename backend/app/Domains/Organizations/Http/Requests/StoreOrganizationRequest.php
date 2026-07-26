@@ -27,11 +27,11 @@ class StoreOrganizationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The name is required.',
-            'location_id.required' => 'The location is required.',
-            'location_id.exists' => 'The selected location does not exist.',
-            'parent_id.exists' => 'The selected parent organization does not exist.',
-            'incident_category_id.exists' => 'The selected category does not exist.',
+            'name.required' => 'El nombre es obligatorio.',
+            'location_id.required' => 'La ubicación es obligatoria.',
+            'location_id.exists' => 'La ubicación seleccionada no existe.',
+            'parent_id.exists' => 'La organización padre seleccionada no existe.',
+            'incident_category_id.exists' => 'La categoría seleccionada no existe.',
         ];
     }
 }

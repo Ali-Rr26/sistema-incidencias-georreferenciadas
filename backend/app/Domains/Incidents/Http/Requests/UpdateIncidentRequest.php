@@ -6,6 +6,8 @@ namespace App\Domains\Incidents\Http\Requests;
 
 use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Shared\Services\InputSanitizer;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -64,16 +66,30 @@ class UpdateIncidentRequest extends FormRequest
             'geom' => 'nullable|json',
 
             // Imágenes opcionales (multipart)
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
+            'images' => [...['nullable'], ...ImageRules::galleryArrayRules()],
+            'images.*' => [...['nullable'], ...ImageRules::galleryFileRules()],
         ];
+    }
+
+    protected function passedValidation(): void
+    {
+        $sanitized = InputSanitizer::sanitizeRequest(
+            $this->validated(),
+            textFields: ['title', 'description'],
+        );
+        $this->replace($sanitized);
     }
 
     public function messages(): array
     {
         return [
-            'status.in' => 'Status must be: pending, in_progress or resolved.',
-            'priority.in' => 'Priority must be: low, medium or high.',
+            'status.in' => 'El estado debe ser: pending, in_progress o resolved.',
+            'priority.in' => 'La prioridad debe ser: low, medium o high.',
+            'resolution_date.date' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'images.max' => 'Puedes adjuntar un máximo de '.ImageRules::MAX_FILES.' imágenes.',
+            'images.*.image' => 'Cada archivo debe ser una imagen.',
+            'images.*.mimes' => 'Solo se permiten imágenes JPEG, PNG, WEBP o GIF.',
+            'images.*.max' => 'Cada imagen no debe superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 

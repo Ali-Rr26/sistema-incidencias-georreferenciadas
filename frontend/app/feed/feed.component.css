@@ -26,11 +26,16 @@
   display: flex;
   align-items: center;
   padding: 0 18px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .composer-placeholder {
   font-size: 14px;
   color: #b3b8c6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* --- Composer gradient button (custom gradient Bootstrap can't do) --- */
@@ -102,11 +107,12 @@
 /* --- Cards always white (override any cached priority backgrounds) --- */
 .feed-card {
   background-color: #ffffff !important;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border-radius: clamp(8px, 2vw, 12px);
+  padding: clamp(12px, 3vw, 16px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition:
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 .feed-card.feed-priority-high,
 .feed-card.feed-priority-medium,
@@ -171,7 +177,7 @@
 
 /* --- Card hover micro-interaction --- */
 .feed-card:hover {
-  box-shadow: 0 8px 20px rgba(94, 59, 219, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }
 .feed-card:focus-visible {
@@ -319,10 +325,38 @@ body.feed-view .app-shell-main {
   background: #b0a6f8;
 }
 
-/* --- Checked checkbox state --- */
+/* --- Checkbox sizing --- */
+.rp-category-filters .form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.rp-checkbox-box {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .rp-checkbox-box:checked {
   background-color: #5e3bdb;
   border-color: #5e3bdb;
+}
+
+.rp-checkbox-label {
+  margin: 0 !important;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
 }
 
 /* --- Focus styles for clickable wrappers promoted to buttons --- */
@@ -331,4 +365,78 @@ body.feed-view .app-shell-main {
 .feed-avatar-btn:focus-visible {
   outline: 2px solid #5e3bdb;
   outline-offset: 2px;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FEED RESPONSIVO
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-container {
+  display: grid;
+  grid-template-columns: 1fr; /* Mobile: 1 col */
+  gap: clamp(12px, 3vw, 16px);
+  padding: clamp(12px, 4vw, 24px);
+}
+
+/* Tablet: 2 columnas */
+@media (min-width: 576px) {
+  .feed-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop: 3 columnas */
+@media (min-width: 992px) {
+  .feed-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Título tarjeta */
+.feed-card__title {
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 600;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+/* Descripción */
+.feed-card__desc {
+  font-size: clamp(12px, 2.5vw, 13px);
+  color: #666;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+/* Status badge */
+.feed-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(10px, 2vw, 11px);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* Meta (fecha, ubicación) */
+.feed-card__meta {
+  font-size: clamp(9px, 2vw, 10px);
+  color: #999;
+  margin-top: 8px;
+}
+
+/* En móvil: esconder avatar grande */
+@media (max-width: 480px) {
+  .feed-card__avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .feed-card__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Max 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }

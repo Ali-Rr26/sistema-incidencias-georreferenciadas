@@ -11,10 +11,12 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 use MatanYadaev\EloquentSpatial\Traits\HasSpatial;
@@ -72,7 +74,6 @@ class Incident extends Model
         'priority',
         'resolution_date',
         'geom',
-        'images',
         'claimed_by',
         'claimed_at',
     ];
@@ -88,8 +89,16 @@ class Incident extends Model
             'resolution_date' => 'datetime',
             'status' => IncidentStatus::class,
             'priority' => IncidentPriority::class,
-            'images' => 'array',
             'claimed_at' => 'datetime',
+            // Normalise FK at the model boundary so consumers (e.g.
+            // `IncidentResource::toArray()` → `LocationRepository::ancestors(int $id)`)
+            // always see `int`, not the raw JSON string from
+            // `$request->validated()`. Matches the precedent set by
+            // `Comment::$casts` (`incident_id`/`user_id`/`parent_id`).
+            'incident_category_id' => 'integer',
+            'location_id' => 'integer',
+            'organization_id' => 'integer',
+            'user_id' => 'integer',
         ];
     }
 

@@ -125,34 +125,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Mercure Hub
-    |--------------------------------------------------------------------------
-    |
-    | Real-time notification push (the bell dropdown) is delivered via a
-    | standalone Mercure hub (docker-compose service `mercure`) rather than
-    | an in-process SSE loop on the PHP server. Trade-off documented in
-    | Issue #102: reimplementing Mercure on top of Swoole's native SSE
-    | would cost ~2-3 weeks (JWT topic ACL, connection map, history
-    | replay, frontend EventSource) for ~5-30 ms of latency improvement.
-    | Mercure handles all of that out of the box and stays in the stack.
-    |
-    | Swoole makes Mercure implementation-agnostic: Laravel talks to the
-    | hub via HTTP through Symfony\Component\Mercure\HubInterface; the
-    | Octane driver is irrelevant to the publish path. Subscribers are the
-    | browser EventSource against config('mercure.hub.url'), independent of
-    | the PHP runtime.
-    |
-    */
-
-    /*
-    |--------------------------------------------------------------------------
     | Swoole-specific options
     |--------------------------------------------------------------------------
     |
-    | Mirroring the Octane defaults. enable_coroutine is required for any
-    | future use of \Swoole\Coroutine\HTTP\Client or Octane::concurrently()
-    | — the project doesn't currently exploit them, but turning the flag on
-    | now keeps the door open without requiring another infra change.
+    | Tuned for SSE-heavy workloads. The native notification bell (see
+    | openspec/changes/eliminar-mercure-sse-nativo) holds one long-lived
+    | connection per logged-in user. With ~2 replicas behind Cloudflare,
+    | each replica should comfortably handle 10k-30k concurrent streams
+    | on modest hardware (2 CPU / 4 GB). The values below are the
+    | product of that envelope.
+    |
+    | `octane.php` is the single source of truth — the entrypoint.sh
+    | deliberately no longer passes `--workers` / `--max-requests` /
+    | `--task-workers` CLI flags, because CLI flags silently override
+    | config. Tuning here ships uniformly to dev, CI, and prod.
     |
     */
 
@@ -161,15 +147,27 @@ return [
             'enable_coroutine' => true,
             'open_http2_protocol' => false,
             'open_websocket_protocol' => false,
-            'task_worker_num' => 2,
+            // `worker_num` and `task_worker_num` are read by Octane at
+            // boot. We resolve them via env when present (deterministic
+            // in CI) and otherwise let Octane compute its own default
+            // (cpu * 2 for worker_num, cpu for task_worker_num). Calling
+            // `swoole_cpu_num()` here crashes environments without the
+            // Swoole extension (like the test runner), so we leave the
+            // resolution to Octane by omitting the keys when env is unset.
+            'worker_num' => env('OCTANE_WORKER_NUM') !== null
+                ? (int) env('OCTANE_WORKER_NUM')
+                : (function_exists('swoole_cpu_num') ? swoole_cpu_num() * 2 : 4),
+            'task_worker_num' => env('OCTANE_TASK_WORKER_NUM') !== null
+                ? (int) env('OCTANE_TASK_WORKER_NUM')
+                : (function_exists('swoole_cpu_num') ? swoole_cpu_num() : 2),
         ],
-        'max_request' => 500,
+        // 10000 keeps SSE connections from churning while bounding the
+        // memory exposure of long-lived worker processes. Higher values
+        // trade stability for capacity; lower values force reconnects.
+        'max_request' => 10000,
         'task_max_request' => 100,
         'watch' => false,
         'memory' => 256,
     ],
-
-    // Mercure config now lives in config/mercure.php. See
-    // docs/Security/secret-rotation.md for rotation guidance.
 
 ];

@@ -21,6 +21,7 @@ use App\Domains\Invitations\Services\InvitationService;
 use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Mail\Services\MailJobDispatcher;
 use App\Domains\Mail\Services\MailSenderInterface;
 use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Notifications\Http\Policies\NotificationPolicy;
@@ -38,6 +39,7 @@ use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Storage\StorageService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -46,10 +48,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Factory as KreaitFirebaseFactory;
-use Symfony\Component\Mercure\Hub;
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Jwt\FactoryTokenProvider;
-use Symfony\Component\Mercure\Jwt\LcobucciFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -77,6 +75,17 @@ class AppServiceProvider extends ServiceProvider
         // con otros observadores ni con el sistema de mail transaccional
         // general (registros, recuperación de contraseña, etc.).
         $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
+        // MailJobDispatcher — singleton que centraliza el despacho de
+        // Jobs de mail. No expone interface porque es una decisión
+        // interna del dominio Mail: los observers y services inyectan
+        // la clase concreta directamente. El container comparte la
+        // misma instancia entre todos los callers; los Jobs en sí se
+        // instancian nuevos en cada dispatch() y se serializan a Redis.
+        // Ver docblock de MailJobDispatcher para la justificación del
+        // singleton (no es el antipatrón "Job singleton", es solo
+        // dispatcher compartido).
+        $this->app->singleton(MailJobDispatcher::class, MailJobDispatcher::class);
 
         // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
         $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
@@ -108,55 +117,30 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Mercure hub singleton. The backend publishes notifications
-        // through HubInterface; the app-shell frontend subscribes via
-        // an EventSource pointing at config('mercure.hub.url') (which
-        // defaults to the loopback in dev or to a docker-compose
-        // sidecar in production).
-        //
-        // The publisher JWT is signed with the LcobucciFactory using
-        // `jwtLifetime: $jwtLifetime` so each publish carries an
-        // `exp` claim. Without that cap, a captured token would stay
-        // valid forever — the cap limits blast radius to one hour.
-        //
-        // `publish: $allowedTopics` scopes the publisher to the
-        // patterns configured under `mercure.publisher.allowed_topics`
-        // (comma-separated globs in env; defaults to `['*']` for dev,
-        // should be narrowed to `user:*:notifications` in production
-        // so a leaked publisher secret can't poison arbitrary topics).
-        $this->app->singleton(HubInterface::class, function () {
-            // LcobucciFactory's Key\InMemory rejects an empty secret at
-            // construction time — fall back to a placeholder so
-            // environments without MERCURE_PUBLISHER_JWT_SECRET set (local
-            // dev without a real hub, CI, tests that never mocked
-            // HubInterface) can still construct the container. Publishing
-            // will fail at request time instead, which
-            // NotificationService::publish() already swallows.
-            $secret = (string) config('mercure.publisher.jwt');
-            $jwtLifetime = (int) config('mercure.publisher.jwt_ttl_seconds', 60 * 60);
-            $jwtFactory = new LcobucciFactory(
-                secret: $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
-                jwtLifetime: $jwtLifetime,
-            );
-
-            // Build a provider scoped to the topics configured for
-            // publishers. ['*'] keeps existing behavior for envs that
-            // haven't opted into the restriction yet.
-            $allowedTopics = (array) config('mercure.publisher.allowed_topics', ['*']);
-            $provider = new FactoryTokenProvider(
-                $jwtFactory,
-                publish: $allowedTopics,
-            );
-
-            return new Hub(
-                rtrim((string) config('mercure.hub.url', env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000/.well-known/mercure')), '/'),
-                $provider,
-            );
-        });
+        // The previous version of this provider bound a Mercure
+        // `HubInterface` singleton here. As of
+        // openspec/changes/eliminar-mercure-sse-nativo, real-time
+        // delivery is performed by NotificationService publishing to
+        // Redis Pub/Sub, and the SSE stream endpoint subscribes to
+        // `user:{id}:notifications` directly. The Mercure binding is
+        // intentionally absent; the mercureAuthorization cookie and
+        // its JWT have also been removed.
     }
 
     public function boot(): void
     {
+        // Polymorphic image storage morph map (image-persistence-polymorphic,
+        // WU2, D1). Registered first — before any model/relation is used —
+        // so `imageable_type` never stores a bare FQCN. `enforceMorphMap`
+        // (not `morphMap`) makes `getMorphClass()` throw
+        // `ClassMorphViolationException` for any model not listed here,
+        // which is the intended guard for App\Storage\Models\Image rows.
+        Relation::enforceMorphMap([
+            'incident' => Incident::class,
+            'comment' => Comment::class,
+            'user' => User::class,
+        ]);
+
         // Rate limiting para el feed público (REQ-RTL-01/02/03)
         RateLimiter::for('feed', function (Request $request): Limit {
             $user = $request->user();

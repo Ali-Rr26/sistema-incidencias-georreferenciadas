@@ -7,14 +7,15 @@ namespace App\Domains\Auth\Local\Http\Controllers;
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
-use App\Domains\Auth\Mercure\Services\MercureCookieService;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Services\ProfileImageService;
+use App\Support\PhoneRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,7 +31,6 @@ class AuthController
 
     public function __construct(
         private readonly AuthService $authService,
-        private readonly MercureCookieService $mercureCookies,
         private readonly ProfileImageService $profileImageService,
     ) {}
 
@@ -47,6 +47,13 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (PendingInvitationException $e) {
+            Log::warning('auth.local.pending_invitation', [
+                'method' => __METHOD__,
+                'email' => $request->validated()['email'],
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNAUTHORIZED);
@@ -60,8 +67,7 @@ class AuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($result['user']),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureCookies->build($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -76,6 +82,12 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (AuthenticationException $e) {
+            Log::warning('auth.local.refresh_failed', [
+                'method' => __METHOD__,
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json(
                 $e->toResponse(),
                 Response::HTTP_UNAUTHORIZED,
@@ -87,8 +99,7 @@ class AuthController
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureCookies->build($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -103,10 +114,9 @@ class AuthController
         }
 
         return response()->json([
-            'message' => 'Sesión cerrada exitosamente.',
+            'message' => __('messages.session_closed'),
         ])
-            ->withCookie($this->expiredCookie())
-            ->withCookie($this->mercureCookies->expire());
+            ->withCookie($this->expiredCookie());
     }
 
     /**
@@ -131,6 +141,10 @@ class AuthController
         $user = $request->user();
         $validated = $request->validated();
 
+        if (array_key_exists('phone', $validated)) {
+            $validated['phone'] = PhoneRules::normalize($validated['phone']);
+        }
+
         // Handle password hashing (never mass-assign raw password)
         if (array_key_exists('password', $validated)) {
             if ($validated['password'] !== null && $validated['password'] !== '') {
@@ -140,10 +154,11 @@ class AuthController
             }
         }
 
-        // Handle avatar file upload via ProfileImageService
+        // Handle avatar file upload via ProfileImageService (writes to the
+        // shared `images` table — `profile_image_path` column is dead,
+        // WU8 drops it).
         if ($request->hasFile('avatar')) {
-            $newPath = $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
-            $validated['profile_image_path'] = $newPath;
+            $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
             // Remove legacy avatar array from text update — file upload replaces it
             unset($validated['avatar']);
         }
@@ -154,7 +169,7 @@ class AuthController
         }
 
         return response()->json(
-            new UserResource($user->load(['role', 'organization'])),
+            new UserResource($user->load(['role', 'organization', 'avatarImage'])),
         );
     }
 

@@ -48,11 +48,27 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
             ->first();
     }
 
-    public function tree(): Collection
+    /**
+     * Returns the ordered ancestor chain (root-to-leaf) for the given location.
+     *
+     * Uses the HasRecursiveRelationships trait's ancestorsAndSelf() but enforces
+     * ascending depth order (root first, self last) for deterministic cascade
+     * preselection in organization and incident detail responses.
+     *
+     * @see Location::ancestorsAndSelf()
+     */
+    public function ancestors(int $id): Collection
     {
-        return $this->newQuery()
-            ->whereNull('parent_id')
-            ->with('children.children.children')
+        $location = $this->findById($id);
+
+        if ($location === null) {
+            return new Collection;
+        }
+
+        // ancestorsAndSelf() returns root first, self last in the collection
+        // when ordered by depth ASC
+        return $location->ancestorsAndSelf()
+            ->orderBy('depth', 'asc')
             ->get();
     }
 

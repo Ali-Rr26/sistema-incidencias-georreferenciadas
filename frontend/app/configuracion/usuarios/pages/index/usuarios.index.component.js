@@ -1,7 +1,14 @@
 import template from './usuarios.index.component.html?raw';
+import './usuarios.index.component.css';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { renderAvatarCell } from '../../../../utils/avatar.js';
+import {
+  initCustomSelects,
+  getSelectValue,
+  setSelectOptions,
+  clearCustomSelects,
+} from '../../../../shared/custom-select.js';
 
 const ROLE_BADGES = {
   admin_sistema: '<span class="badge bg-danger">Admin Sistema</span>',
@@ -44,8 +51,8 @@ export default {
       itemTitle: nombreCompleto,
       buildRow: (u) => `
                 <tr>
-                    ${renderAvatarCell(u)}
                     <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${u.id}" /></td>
+                    ${renderAvatarCell(u)}
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <span class="fw-semibold">${nombreCompleto(u)}</span>
@@ -79,12 +86,12 @@ export default {
                 </div>`,
       filters: () => ({
         search: document.getElementById('filtro-buscar').value.trim(),
-        role_id: document.getElementById('filtro-rol').value,
-        organization_id: document.getElementById('filtro-org').value,
+        role_id: getSelectValue('filtro-rol'),
+        organization_id: getSelectValue('filtro-org'),
       }),
       clearFilters: () => {
-        document.getElementById('filtro-rol').value = '';
-        document.getElementById('filtro-org').value = '';
+        document.getElementById('filtro-buscar').value = '';
+        clearCustomSelects();
       },
       viewPath: (id) => '/usuarios/' + id,
       editPath: (id) => '/usuarios/crear?id=' + id,
@@ -99,33 +106,27 @@ export default {
 
         if (!roles.length) {
           roles = data.roles ?? [];
-          const selRol = document.getElementById('filtro-rol');
-          selRol.innerHTML = '<option value="">Todos los roles</option>';
-          roles.forEach((r) => {
-            const opt = document.createElement('option');
-            opt.value = r.id;
-            opt.textContent = r.name;
-            selRol.appendChild(opt);
-          });
+          const rolesOpts = [
+            { value: '', label: 'Todos los roles' },
+            ...roles.map((r) => ({ value: r.id, label: r.name })),
+          ];
+          setSelectOptions('filtro-rol', rolesOpts);
         }
 
         if (!organizaciones.length) {
           organizaciones = data.organizations ?? [];
-          const selOrg = document.getElementById('filtro-org');
-          selOrg.innerHTML =
-            '<option value="">Todas las organizaciones</option>';
-          organizaciones.forEach((o) => {
-            const opt = document.createElement('option');
-            opt.value = o.id;
-            opt.textContent = o.name;
-            selOrg.appendChild(opt);
-          });
+          const orgsOpts = [
+            { value: '', label: 'Todas las organizaciones' },
+            ...organizaciones.map((o) => ({ value: o.id, label: o.name })),
+          ];
+          setSelectOptions('filtro-org', orgsOpts);
         }
       } catch (err) {
         console.error('Error cargando filtros:', err);
       }
     }
 
+    initCustomSelects();
     cargarFiltros().catch(() => {});
     page.init();
   },

@@ -11,12 +11,14 @@ use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
 use App\Domains\Incidents\Http\IncidentStatsController;
+use App\Domains\Incidents\Http\IncidentWeeklyStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
 use App\Domains\Incidents\Http\MapFilterController;
 use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
+use App\Domains\Notifications\Http\NotificationStreamController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\OperatorLocationController;
@@ -25,7 +27,7 @@ use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
@@ -52,6 +54,7 @@ Route::middleware('jwt')->group(function () {
 
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);
+    Route::get('incidents/weekly-stats', IncidentWeeklyStatsController::class);
     Route::get('incidents/feed', FeedController::class)->middleware('throttle:feed');
     Route::get('incidents/exportar', ExportIncidenciasController::class);
     Route::post('incidents/{incident}/claim', [IncidentWorkflowController::class, 'claim'])->where('incident', '\d+')->middleware('can:claim,incident');
@@ -83,10 +86,14 @@ Route::middleware('jwt')->group(function () {
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    // SSE stream for the notification bell. The `jwt` middleware already
+    // supports a cookie-based access_token fallback because native
+    // EventSource cannot set custom request headers.
+    // @see openspec/changes/eliminar-mercure-sse-nativo (Fase 3)
+    Route::get('notifications/stream', NotificationStreamController::class);
 
     // Catálogos
     Route::get('map/filters', MapFilterController::class);
-    Route::get('locations/tree', [LocationController::class, 'tree']);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
     Route::get('organizations/form-data', [OrganizationController::class, 'formData']);

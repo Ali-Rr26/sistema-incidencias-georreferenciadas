@@ -32,3 +32,14 @@ export function mostrarEstado(cual) {
 export function isDesktop() {
   return window.matchMedia('(min-width: 768px)').matches;
 }
+
+/** Single source of truth for valid phone input regex pattern in JS. */
+export const PHONE_REGEX = /^[0-9+\s()-]+$/;
+
+/** Attach real-time input listener to strip invalid phone characters. */
+export function maskPhoneInput(inputEl) {
+  if (!inputEl) return;
+  inputEl.addEventListener('input', function () {
+    this.value = this.value.replace(/[^\d+-\s()]/g, '');
+  });
+}

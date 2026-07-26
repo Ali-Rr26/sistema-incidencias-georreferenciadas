@@ -7,6 +7,7 @@ namespace App\Domains\Auth\Local\Services;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Support\PhoneRules;
 use Illuminate\Support\Facades\Log;
 
 class RegisterService
@@ -34,7 +35,7 @@ class RegisterService
             'password' => $data['password'],
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => PhoneRules::normalize($data['phone'] ?? null),
         ]);
 
         Log::info('auth.register.success', [

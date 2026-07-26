@@ -3,14 +3,13 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,12 +17,22 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Seed roles and permissions (skip IncidentSeeder — requires PostGIS)
-    Role::create(['name' => 'admin_sistema']);
-    Role::create(['name' => 'operador_sistema']);
-    Role::create(['name' => 'admin_organizacion']);
-    Role::create(['name' => 'operador_organizacion']);
-    Role::create(['name' => 'usuario']);
+    // Seed roles and permissions (skip IncidentSeeder — requires PostGIS).
+    //
+    // Direct DB::insert with a pinned id, not Role::create(): the
+    // role_permission grant below hardcodes role_id=1 for admin_sistema.
+    // `Role::create()` relies on nextval(), which does NOT reliably land
+    // on 1 — PostgreSQL sequences are not rolled back between tests, so
+    // an earlier test in the same parallel worker database can leave the
+    // sequence past 1 by the time this one runs (see RoleSeederTest /
+    // the same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema'],
+        ['id' => 2, 'name' => 'operador_sistema'],
+        ['id' => 3, 'name' => 'admin_organizacion'],
+        ['id' => 4, 'name' => 'operador_organizacion'],
+        ['id' => 5, 'name' => 'usuario'],
+    ]);
 
     Permission::create(['resource' => 'comments', 'action' => 'view',   'name' => 'Ver Comentarios',       'description' => '']);
     Permission::create(['resource' => 'comments', 'action' => 'create', 'name' => 'Agregar Comentarios',   'description' => '']);
@@ -70,8 +79,8 @@ it('deletes S3 images when comment is deleted', function (): void {
     Storage::disk('s3')->put('comments/1/img1.webp', 'content1');
     Storage::disk('s3')->put('comments/1/img2.webp', 'content2');
 
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img1.webp']);
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img2.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img1.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img2.webp']);
 
     $this->comment->delete();
 
@@ -81,10 +90,25 @@ it('deletes S3 images when comment is deleted', function (): void {
 
 it('soft-deletes comment even if S3 delete fails gracefully', function (): void {
     Storage::disk('s3')->put('comments/1/img1.webp', 'content1');
-    CommentImage::create(['comment_id' => $this->comment->id, 'url' => 'comments/1/img1.webp']);
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/img1.webp']);
 
     $this->comment->delete();
 
     $this->assertSoftDeleted('comments', ['id' => $this->comment->id]);
-    $this->assertDatabaseCount('comment_images', 0);
+    expect(Image::where('imageable_type', 'comment')->where('imageable_id', $this->comment->id)->count())->toBe(0);
+});
+
+it('deletes S3 images from the configured image disk when comment is deleted (disk-key regression)', function (): void {
+    // Regression for the disk-key mismatch: the observer used to read
+    // the unrelated FILESYSTEM_DISK var instead of the disk images are
+    // actually stored on, orphaning objects whenever the two diverged.
+    config(['filesystems.image_disk' => 'public']);
+    Storage::fake('public');
+
+    Storage::disk('public')->put('comments/1/regression.webp', 'content1');
+    Image::create(['imageable_type' => 'comment', 'imageable_id' => $this->comment->id, 'storage_path' => 'comments/1/regression.webp']);
+
+    $this->comment->delete();
+
+    Storage::disk('public')->assertMissing('comments/1/regression.webp');
 });

@@ -34,7 +34,13 @@ class UserResource extends JsonResource
             'last_name' => $this->last_name,
             'phone' => $this->phone,
             'avatar' => $this->avatar,
-            'profile_image_path' => $this->profile_image_path,
+            // Sourced from the `avatarImage()` morphOne relation
+            // (image-persistence-polymorphic WU7), not the legacy
+            // `profile_image_path` column — same bare storage-key shape
+            // (D6). Not `whenLoaded()`: this key must always be present,
+            // same as when it was a plain column, regardless of whether
+            // every call site remembers to eager-load the relation.
+            'profile_image_path' => $this->avatarImage?->storage_path,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'role' => $this->whenLoaded('role', fn () => [

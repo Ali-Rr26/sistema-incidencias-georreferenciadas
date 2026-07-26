@@ -159,9 +159,8 @@ export const appShell = {
     // or the user is a guest. The target <ul> is picked from
     // body[data-role] inside renderSidebarMenu itself.
     if (document.body.dataset.role !== 'guest') {
-      menuService.clearCache();
+      menuService.invalidateMyMenu();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       renderSidebarMenu().catch(() => {
         // No-op: empty sidebar is preferable to crashing the shell.
       });
@@ -180,9 +179,8 @@ export const appShell = {
       // was a real bug: logging out of an admin_sistema session and into
       // a less-privileged one within the TTL window let permissionGuard
       // serve the PREVIOUS user's full permission set to the new user.
-      menuService.clearCache();
+      menuService.invalidateMyMenu();
       permissionService.invalidateMyPermissions();
-      notificationService.clearCache();
       await populateHeader();
       disconnectNotificationStream();
       if (document.body.dataset.role !== 'guest') {
@@ -1042,37 +1040,35 @@ function createBellPanel({
 }
 
 /**
- * Establish the SSE connection to the Mercure hub for real-time bell
- * updates. A hand-rolled SSE loop in the backend would never hold the
- * connection open because Octane's runtime model — historically with
- * FrankenPHP/RoadRunner buffering (laravel/octane#903, upstream
- * closed-PRs #1141/#1144) and now with Swoole's stream-friendly
- * SwooleClient — needs the actual SSE to be held by an external long-lived
- * worker. Mercure is that external worker: a dedicated Go hub process
- * holds the connection, PHP just publishes via Symfony Mercure SDK.
+ * Establish the SSE connection to the backend's native stream for
+ * real-time bell updates.
  *
- * The topic (`user:{id}:notifications`) must match
- * `NotificationService::topicFor()` on the backend exactly. Auth is the
- * httpOnly `mercureAuthorization` cookie set at login, containing a JWT
- * scoped to subscribe to only this user's topic — the hub itself enforces
- * that, not this code. `withCredentials: true` is required for the cookie
- * to be sent to the hub's origin.
+ * Replaces the previous Mercure hub integration: the backend now
+ * serves a text/event-stream at `/api/notifications/stream` directly
+ * (Laravel Octane/Swoole holding the connection; Redis Pub/Sub
+ * forwarding live events). Auth travels as the httpOnly
+ * `access_token` cookie set at login, which the JWT middleware
+ * accepts as a fallback because native EventSource cannot set
+ * custom request headers. `withCredentials: true` is required so
+ * the cookie reaches the backend's origin.
+ *
+ * The user scoping happens server-side: the controller derives the
+ * Redis Pub/Sub channel from `$request->user()->id`, so we no
+ * longer need a per-user topic URL on the client.
  */
 function connectNotificationStream(userId) {
   if (typeof window.EventSource !== 'function' || !userId) {
     // SSE unsupported in this browser/environment, or no user to scope
-    // the topic to — skip silently.
+    // to — skip silently.
     return;
   }
 
   try {
-    const topic = `user:${userId}:notifications`;
-    _notifStream = new EventSource(
-      `/.well-known/mercure?topic=${encodeURIComponent(topic)}`,
-      { withCredentials: true },
-    );
+    _notifStream = new EventSource('/api/notifications/stream', {
+      withCredentials: true,
+    });
 
-    _notifStream.onmessage = (event) => {
+    const handleNotification = (event) => {
       if (!event.data) return;
       let notif;
       try {
@@ -1082,6 +1078,9 @@ function connectNotificationStream(userId) {
       }
       _bellPanels.forEach((bell) => bell.prependIfOpen(notif));
     };
+
+    _notifStream.addEventListener('notification', handleNotification);
+    _notifStream.onmessage = handleNotification;
 
     _notifStream.onerror = () => {
       // EventSource.onerror fires for both transient blips (where the
