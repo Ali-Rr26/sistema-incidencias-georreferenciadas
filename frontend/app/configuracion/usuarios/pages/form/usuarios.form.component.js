@@ -3,14 +3,14 @@ import style from './usuarios.form.component.css?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { auth } from '../../../../auth/auth.service.js';
-import { blockNonNumeric } from '../../../../utils/format.js';
+import { EMAIL_RE } from '../../../../utils/format.js';
 import {
   initSelect,
   getSelect,
   destroyAll,
 } from '../../../../shared/select-search.js';
 import { mountAvatarUploader } from '../../../../shared/avatar-uploader.js';
-import { mostrarToast } from '../../../../utils/ui.js';
+import { mostrarToast, maskPhoneInput } from '../../../../utils/ui.js';
 
 /** Module-scope so onDestroy can clean it up after the latest onInit. */
 let _avatar = null;
@@ -66,7 +66,6 @@ export default {
     }
 
     const emailInput = document.getElementById('user-email');
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     function buildEmailFeedback() {
       let el = document.getElementById('user-email-feedback');
       if (!el) {
@@ -125,9 +124,11 @@ export default {
         document.getElementById('user-apellido').value =
           currentUser.last_name ?? '';
         document.getElementById('user-email').value = currentUser.email;
-        document.getElementById('user-telefono').value =
-          currentUser.phone ?? '';
-        document.getElementById('user-telefono')?.addEventListener('keydown', blockNonNumeric);
+        const telefonoEl = document.getElementById('user-telefono');
+        if (telefonoEl) {
+          telefonoEl.value = currentUser.phone ?? '';
+          maskPhoneInput(telefonoEl);
+        }
 
         getSelect('user-rol')?.setValue(
           currentUser.role?.id ? String(currentUser.role.id) : '',

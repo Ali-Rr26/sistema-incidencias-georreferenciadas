@@ -22,6 +22,7 @@ import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
 import { maskPhoneInput } from '../../../utils/ui.js';
+import { EMAIL_RE } from '../../../utils/format.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -88,7 +89,6 @@ export default {
     const errorAlert = document.getElementById('login-error');
     const submitBtn = form.querySelector('button[type="submit"]');
 
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     function showEmailError(inputEl, errorEl) {
       if (!inputEl.value.trim() || !EMAIL_RE.test(inputEl.value.trim())) {

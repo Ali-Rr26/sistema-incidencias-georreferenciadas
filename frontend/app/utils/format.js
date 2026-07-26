@@ -123,3 +123,6 @@ export function blockNonNumeric(e) {
     e.preventDefault();
   }
 }
+
+/** Shared email validation regex. Used across login and user management forms. */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
