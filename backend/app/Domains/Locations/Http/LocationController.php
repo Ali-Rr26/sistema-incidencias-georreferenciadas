@@ -52,7 +52,7 @@ class LocationController extends Controller
         $location = $this->locations->findById($id);
 
         if ($location === null) {
-            return response()->json(['message' => 'Location not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => __('messages.location_not_found')], Response::HTTP_NOT_FOUND);
         }
 
         return (new LocationResource($location))->response();

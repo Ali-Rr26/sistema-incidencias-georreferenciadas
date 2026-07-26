@@ -30,7 +30,7 @@ class UpdateIncidentCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'parent_id.exists' => 'The selected parent category does not exist.',
+            'parent_id.exists' => 'La categoría padre seleccionada no existe.',
         ];
     }
 }

@@ -114,7 +114,7 @@ class AuthController
         }
 
         return response()->json([
-            'message' => 'Sesión cerrada exitosamente.',
+            'message' => __('messages.session_closed'),
         ])
             ->withCookie($this->expiredCookie());
     }

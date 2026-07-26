@@ -27,7 +27,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
         $perPage = min((int) $request->integer('per_page', 20), 50);
@@ -76,7 +76,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
         $count = $this->service->markAllAsRead($user);
@@ -94,7 +94,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
         $count = Notification::query()->forUser($user)->unread()->count();
