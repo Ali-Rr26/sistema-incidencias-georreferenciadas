@@ -2,6 +2,7 @@ import template from './dashboard.component.html?raw';
 import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
 import { locationService } from '../../../shared/location.service.js';
+import { badgeEstado, badgePrioridad, STATUS_COLOR } from '../../../utils/format.js';
 
 // ─────────────────────────────────────────────
 // Estado global de filtros
@@ -65,63 +66,83 @@ function animateCounter(el, target, duration = 900) {
 }
 
 // ─────────────────────────────────────────────
-// Donut chart — incidencias por estado (C3.js)
+// Top 5 Categories chart — barras apiladas (resueltas + por resolver)
 // ─────────────────────────────────────────────
-function initDonut(pendientes, en_proceso, resueltas, total) {
-  if (!window.c3 || !document.getElementById('chart-estados')) return;
+function initCategoriesChart(categories) {
+  if (!window.c3 || !document.getElementById('chart-categorias')) return;
 
-  // Si no hay datos, mostrar el donut vacío con un placeholder
-  const cols =
-    total > 0
-      ? [
-          ['Pendientes', pendientes],
-          ['En proceso', en_proceso],
-          ['Resueltas', resueltas],
-        ]
-      : [['Sin datos', 1]];
+  if (!categories || categories.length === 0) {
+    c3.generate({
+      bindto: '#chart-categorias',
+      data: { columns: [['Sin datos', 1]], type: 'bar' },
+      legend: { hide: true },
+      color: { pattern: ['#e9ecef'] },
+    });
+    return;
+  }
 
-  const colors =
-    total > 0
-      ? { pattern: ['#ffaf01', '#5f76e8', '#22ca80'] }
-      : { pattern: ['#e9ecef'] };
+  // Preparar dos series: Resueltas (oscuro) y Por resolver (claro)
+  const resolved = ['Resueltas', ...categories.map((cat) => cat.resolved)];
+  const pending = ['Por resolver', ...categories.map((cat) => cat.pending)];
 
   c3.generate({
-    bindto: '#chart-estados',
-    data: { columns: cols, type: 'donut' },
-    donut: {
-      label: { show: false },
-      title: String(total),
-      width: 22,
+    bindto: '#chart-categorias',
+    data: {
+      columns: [resolved, pending],
+      type: 'bar',
+      groups: [['Resueltas', 'Por resolver']],
     },
-    legend: { hide: true },
-    color: colors,
+    axis: {
+      rotated: true,
+      x: {
+        type: 'category',
+        categories: categories.map((cat) => cat.name),
+      },
+      y: {
+        label: 'Cantidad de incidencias',
+      },
+    },
+    bar: {
+      width: {
+        ratio: 0.5,
+      },
+    },
+    padding: {
+      top: 10,
+      right: 40,
+      bottom: 10,
+      left: 150,
+    },
+    tooltip: {
+      format: {
+        title: (d) => categories[d]?.name || 'Categoría',
+        value: (value, _ratio, id, index) => {
+          const cat = categories[index];
+          if (!cat) return value + ' incidencias';
+          return id === 'Resueltas'
+            ? `Resueltas: ${value} de ${cat.total}`
+            : `Por resolver: ${value} de ${cat.total}`;
+        },
+      },
+    },
+    color: {
+      pattern: ['#8a5cf0', '#d4c5f9'],
+    },
+    legend: { position: 'bottom' },
   });
 }
 
 // ─────────────────────────────────────────────
 // Activity feed — incidencias recientes
 // ─────────────────────────────────────────────
-const PRIORIDAD_BTN = {
-  high: 'btn-danger',
-  medium: 'btn-warning',
-  low: 'btn-info',
-};
-const PRIORIDAD_ICON = {
-  high: 'alert-triangle',
-  medium: 'alert-circle',
-  low: 'info',
-};
-
 function buildActivityFeed(items) {
   const feed = document.getElementById('activity-feed');
   if (!feed || !items || items.length === 0) return;
 
   document.getElementById('activity-empty')?.remove();
 
-  items.slice(0, 5).forEach((inc, idx) => {
-    const isLast = idx === Math.min(items.length, 5) - 1;
-    const btnClass = PRIORIDAD_BTN[inc.priority] || 'btn-primary';
-    const iconName = PRIORIDAD_ICON[inc.priority] || 'map-pin';
+  items.slice(0, 5).forEach((inc) => {
+    const dotColor = STATUS_COLOR[inc.status] || 'secondary';
     const fecha = inc.created_at
       ? new Date(inc.created_at).toLocaleDateString('es-EC', {
           day: '2-digit',
@@ -129,25 +150,26 @@ function buildActivityFeed(items) {
           year: 'numeric',
         })
       : '';
-    const categoria = inc.category?.name || '';
+    const categoria = inc.category?.name || 'Sin título';
 
     const item = document.createElement('div');
-    item.className = `d-flex align-items-start${isLast ? '' : ' border-left-line pb-3'}`;
+    item.className = 'gr-activity__item';
+    item.style.cursor = 'pointer';
     item.innerHTML = `
-      <div>
-        <a href="#/incidencias" class="btn ${btnClass} btn-circle mb-2 btn-item">
-          <i data-feather="${iconName}"></i>
-        </a>
+      <span class="gr-activity__dot bg-${dotColor}"></span>
+      <div class="gr-activity__body">
+        <div class="gr-activity__title">${categoria}</div>
+        <div class="gr-activity__meta">${badgeEstado(inc.status)} ${badgePrioridad(inc.priority)}</div>
       </div>
-      <div class="ms-3 mt-2">
-        <h5 class="text-dark font-weight-medium mb-1">${categoria || 'Sin título'}</h5>
-        <p class="font-12 mb-1 text-muted">${inc.status?.replace('_', ' ') || ''} — ${inc.priority}</p>
-        <span class="font-12 text-muted">${fecha}</span>
-      </div>`;
+      <span class="gr-activity__date">${fecha}</span>`;
+
+    // Doble click para ver detalles
+    item.addEventListener('dblclick', () => {
+      window.location.hash = `#/incidencias/${inc.id}`;
+    });
+
     feed.appendChild(item);
   });
-
-  if (window.feather) feather.replace();
 }
 
 // ─────────────────────────────────────────────
@@ -189,10 +211,77 @@ async function loadStats() {
 }
 
 // ─────────────────────────────────────────────
+// Carga estadísticas semanales con filtros
+// ─────────────────────────────────────────────
+async function loadWeeklyStats() {
+  const params = new URLSearchParams();
+  if (filterState.inicio) params.append('inicio', filterState.inicio);
+  if (filterState.fin) params.append('fin', filterState.fin);
+  if (filterState.tipo_id) params.append('tipo_id', filterState.tipo_id);
+  if (filterState.ciudad_id) params.append('ciudad_id', filterState.ciudad_id);
+  if (filterState.provincia_id)
+    params.append('provincia_id', filterState.provincia_id);
+  if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
+
+  const query = params.toString();
+  try {
+    const weekly = await http.get(
+      query ? `/incidents/weekly-stats?${query}` : '/incidents/weekly-stats',
+    );
+    return weekly ?? { days: [] };
+  } catch (e) {
+    console.error('Error loading weekly stats:', e);
+    return { days: [] };
+  }
+}
+
+// ─────────────────────────────────────────────
+// Gráfico de volumen mensual — línea de tendencia
+// ─────────────────────────────────────────────
+function initVolumeChart(days) {
+  if (!window.c3 || !document.getElementById('chart-volumen')) return;
+
+  const labels = days.map((d) => d.date.slice(8)); // Mostrar solo día (ej: "01", "15", "30")
+  const recibidas = ['Recibidas', ...days.map((d) => d.recibidas)];
+
+  c3.generate({
+    bindto: '#chart-volumen',
+    data: {
+      columns: [recibidas],
+      type: 'line',
+    },
+    axis: {
+      x: {
+        type: 'category',
+        categories: labels,
+      },
+      y: {
+        label: 'Cantidad',
+      },
+    },
+    color: {
+      pattern: ['#8a5cf0'],
+    },
+    point: {
+      show: true,
+      r: 3,
+    },
+    line: {
+      connectNull: true,
+    },
+    legend: {
+      show: false,
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
 // Actualiza el dashboard con nuevos datos
 // ─────────────────────────────────────────────
 async function refreshDashboard() {
-  const stats = await loadStats();
+  // Cargar stats + weekly en paralelo
+  const [stats, weekly] = await Promise.all([loadStats(), loadWeeklyStats()]);
+
   const byStatus = stats.by_status ?? {};
   const total = stats.total ?? 0;
   const pendientes = byStatus.pending ?? 0;
@@ -200,10 +289,13 @@ async function refreshDashboard() {
   const resueltas = byStatus.resolved ?? 0;
   const ubicaciones = stats.locations_count ?? 0;
   const tiempoResolucion = stats.average_resolution_time ?? null;
+  const trends = stats.trends ?? {};
+  const topCategories = stats.top_categories ?? [];
 
   // Re-animar counters
   animateCounter(document.getElementById('stat-incidencias'), total);
   animateCounter(document.getElementById('stat-pendientes'), pendientes);
+  animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
   animateCounter(document.getElementById('stat-resueltas'), resueltas);
   animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
 
@@ -213,27 +305,36 @@ async function refreshDashboard() {
     resolucionEl.textContent = formatResolutionTime(tiempoResolucion);
   }
 
-  // Badges
-  if (total > 0) {
-    const pctPend = Math.round((pendientes / total) * 100);
-    const pctRes = Math.round((resueltas / total) * 100);
-    const badgePend = document.getElementById('badge-pendientes');
-    const badgeRes = document.getElementById('badge-resueltas');
-    if (badgePend && pctPend > 0) badgePend.textContent = pctPend + '%';
-    if (badgeRes && pctRes > 0) badgeRes.textContent = pctRes + '%';
+  // Trends (total, pendientes, resolution rate)
+  const updateTrend = (id, value) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (value === null || value === undefined) {
+      el.textContent = '—';
+    } else {
+      const absValue = Math.abs(value);
+      el.innerHTML = `<i class="fa-solid ${value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i> ${absValue}% vs. mes anterior`;
+    }
+  };
+
+  updateTrend('trend-total', trends.total_pct);
+  updateTrend('trend-pendientes', trends.pendientes_pct);
+
+  // Trend resueltas muestra tasa de resolución (siempre porcentaje actual)
+  const trendResueltasEl = document.getElementById('trend-resueltas');
+  if (trendResueltasEl) {
+    if (trends.resolution_rate_pct !== null && trends.resolution_rate_pct !== undefined) {
+      trendResueltasEl.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${trends.resolution_rate_pct}% tasa de resolución`;
+    } else {
+      trendResueltasEl.textContent = '—';
+    }
   }
 
-  // Leyenda
-  const setEl = (id, v) => {
-    const e = document.getElementById(id);
-    if (e) e.textContent = v;
-  };
-  setEl('legend-pendientes', pendientes);
-  setEl('legend-en-proceso', en_proceso);
-  setEl('legend-resueltas', resueltas);
+  // Re-inicializar gráfico de top categorías
+  initCategoriesChart(topCategories);
 
-  // Re-inicializar gráfico
-  initDonut(pendientes, en_proceso, resueltas, total);
+  // Gráfico de volumen mensual
+  initVolumeChart(weekly.days ?? []);
 
   // Cerrar modal de filtros si está abierto
   const modal = bootstrap?.Modal?.getOrCreateInstance?.(
