@@ -70,6 +70,21 @@ jobs:
     name: Backend checks
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: incidencias_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5435:5432
+
     defaults:
       run:
         working-directory: backend
@@ -82,7 +97,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, pdo_sqlite, sqlite3, intl, bcmath, curl, swoole
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_pgsql, intl, bcmath, curl, swoole
           tools: composer
           coverage: none
           cache: composer
