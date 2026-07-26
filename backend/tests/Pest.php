@@ -2,6 +2,8 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /*
@@ -62,12 +64,12 @@ function something()
  * `migrations` table itself keeps the anchor correct regardless of how
  * many migrations get added later.
  *
- * @throws \RuntimeException when the anchor migration is not found —
- *                            e.g. it was renamed.
+ * @throws RuntimeException when the anchor migration is not found —
+ *                          e.g. it was renamed.
  */
 function rollbackThroughMigration(string $migration): void
 {
-    $anchorId = \Illuminate\Support\Facades\DB::table('migrations')
+    $anchorId = DB::table('migrations')
         ->where('migration', $migration)
         ->value('id');
 
@@ -75,9 +77,9 @@ function rollbackThroughMigration(string $migration): void
         throw new RuntimeException("Rollback anchor migration [{$migration}] not found — was it renamed?");
     }
 
-    $steps = \Illuminate\Support\Facades\DB::table('migrations')
+    $steps = DB::table('migrations')
         ->where('id', '>=', $anchorId)
         ->count();
 
-    \Illuminate\Support\Facades\Artisan::call('migrate:rollback', ['--step' => $steps]);
+    Artisan::call('migrate:rollback', ['--step' => $steps]);
 }

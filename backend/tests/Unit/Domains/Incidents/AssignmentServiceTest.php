@@ -184,11 +184,9 @@ it('excludes soft-deleted assignments from active queries', function (): void {
 it('allows re-assigning a user who was previously unassigned', function (): void {
     // Assign → unassign → assign again — el partial unique index
     // (WHERE deleted_at IS NULL) no debe bloquear la re-asignación.
-    // Solo corre en Postgres porque SQLite no soporta partial unique
-    // indexes con ALTER TABLE.
-    if (DB::connection()->getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('Partial unique index solo está en Postgres');
-    }
+    // `composer test` corre exclusivamente contra Postgres
+    // (backend-tests-postgres-migration, issue #197), así que este
+    // escenario siempre se ejecuta de verdad.
 
     $this->service->assign($this->incident, $this->alice->id, 'responsable');
 
