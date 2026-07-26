@@ -8,6 +8,7 @@ import {
 } from '../../utils/avatar.constants.js';
 import { mountAvatarUploader } from '../../shared/avatar-uploader.js';
 import { mostrarToast } from '../../utils/ui.js';
+import { blockNonNumeric } from '../../utils/format.js';
 
 /** Module-scope so onDestroy can clean it up after the latest onInit. */
 let _avatar = null;
@@ -50,6 +51,7 @@ export default {
     document.getElementById('perfil-nombre').value = u.first_name ?? '';
     document.getElementById('perfil-apellido').value = u.last_name ?? '';
     document.getElementById('perfil-telefono').value = u.phone ?? '';
+    document.getElementById('perfil-telefono')?.addEventListener('keydown', blockNonNumeric);
     const emailEl = document.getElementById('perfil-email');
     if (emailEl) {
       emailEl.value = u.email ?? '';

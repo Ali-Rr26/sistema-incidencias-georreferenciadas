@@ -3,6 +3,7 @@ import style from './usuarios.form.component.css?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { auth } from '../../../../auth/auth.service.js';
+import { blockNonNumeric } from '../../../../utils/format.js';
 import {
   initSelect,
   getSelect,
@@ -64,6 +65,33 @@ export default {
       });
     }
 
+    const emailInput = document.getElementById('user-email');
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function buildEmailFeedback() {
+      let el = document.getElementById('user-email-feedback');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'user-email-feedback';
+        el.className = 'invalid-feedback d-block';
+        el.style.display = 'none';
+        emailInput.parentNode.appendChild(el);
+      }
+      return el;
+    }
+    const emailFeedback = buildEmailFeedback();
+    emailInput.addEventListener('blur', () => {
+      if (emailInput.value.trim() && !EMAIL_RE.test(emailInput.value.trim())) {
+        emailFeedback.textContent = 'Ingresá un correo válido.';
+        emailFeedback.style.display = 'block';
+      }
+    });
+    emailInput.addEventListener('input', () => {
+      if (!emailInput.value.trim() || EMAIL_RE.test(emailInput.value.trim())) {
+        emailFeedback.style.display = 'none';
+        emailFeedback.textContent = '';
+      }
+    });
+
     // ─── Cancel link ─────────────────────────────────────────────────
 
     const btnCancelar = document.getElementById('btn-cancelar');
@@ -99,6 +127,7 @@ export default {
         document.getElementById('user-email').value = currentUser.email;
         document.getElementById('user-telefono').value =
           currentUser.phone ?? '';
+        document.getElementById('user-telefono')?.addEventListener('keydown', blockNonNumeric);
 
         getSelect('user-rol')?.setValue(
           currentUser.role?.id ? String(currentUser.role.id) : '',

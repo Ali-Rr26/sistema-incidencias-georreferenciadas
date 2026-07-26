@@ -21,6 +21,7 @@ import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
+import { blockNonNumeric } from '../../../utils/format.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -87,10 +88,32 @@ export default {
     const errorAlert = document.getElementById('login-error');
     const submitBtn = form.querySelector('button[type="submit"]');
 
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function showEmailError(inputEl, errorEl) {
+      if (!inputEl.value.trim() || !EMAIL_RE.test(inputEl.value.trim())) {
+        if (errorEl) {
+          errorEl.textContent = 'Ingresá un correo válido.';
+          errorEl.classList.remove('d-none');
+        }
+      }
+    }
+
+    function clearEmailError(errorEl) {
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.classList.add('d-none');
+      }
+    }
+
     // ─── R11: mode toggle + register form wiring ──────────────────────
     const container = document.querySelector('.gr-login');
     const registerForm = document.getElementById(REGISTER_FORM_ID);
     const registerBanner = document.getElementById('register-banner');
+
+    document.querySelectorAll('#register-form input[type="tel"]').forEach((el) => {
+      el.addEventListener('keydown', blockNonNumeric);
+    });
 
     /** Switch between 'login' and 'register' modes. */
     const setMode = (newMode) => {
@@ -136,7 +159,44 @@ export default {
       registerBanner.classList.remove('d-none');
     }
 
+    const loginEmailError = document.querySelector(
+      '#login-form [data-error-for="email"]',
+    );
+    emailInput.addEventListener('blur', () => {
+      if (emailInput.value.trim() && !EMAIL_RE.test(emailInput.value.trim())) {
+        showEmailError(emailInput, loginEmailError);
+      }
+    });
+    emailInput.addEventListener('input', () => {
+      if (!emailInput.value.trim() || EMAIL_RE.test(emailInput.value.trim())) {
+        clearEmailError(loginEmailError);
+      }
+    });
+
     if (registerForm) {
+      const registerEmailInput =
+        registerForm.querySelector('#register-email');
+      const registerEmailError = document.querySelector(
+        '#register-form [data-error-for="email"]',
+      );
+
+      registerEmailInput.addEventListener('blur', () => {
+        if (
+          registerEmailInput.value.trim() &&
+          !EMAIL_RE.test(registerEmailInput.value.trim())
+        ) {
+          showEmailError(registerEmailInput, registerEmailError);
+        }
+      });
+      registerEmailInput.addEventListener('input', () => {
+        if (
+          !registerEmailInput.value.trim() ||
+          EMAIL_RE.test(registerEmailInput.value.trim())
+        ) {
+          clearEmailError(registerEmailError);
+        }
+      });
+
       registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         this._handleRegisterSubmit(registerForm, registerBanner, setMode);

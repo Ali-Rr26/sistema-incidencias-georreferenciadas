@@ -106,3 +106,20 @@ export function formatearFecha(iso) {
     year: 'numeric',
   });
 }
+
+const NON_NUMERIC_RE = /[^0-9+\- ()]/g;
+const CONTROL_KEYS = new Set([
+  'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+  'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+  'Home', 'End', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
+  'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+]);
+
+export function blockNonNumeric(e) {
+  if (CONTROL_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === ' ' || e.key.length !== 1) return;
+  NON_NUMERIC_RE.lastIndex = 0;
+  if (NON_NUMERIC_RE.test(e.key)) {
+    e.preventDefault();
+  }
+}
