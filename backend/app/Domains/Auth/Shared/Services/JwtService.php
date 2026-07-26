@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Auth\Shared\Services;
 
 use DateTimeImmutable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
@@ -95,18 +96,35 @@ class JwtService
             $token = $config->parser()->parse($tokenString);
 
             if ($token->isExpired(new DateTimeImmutable)) {
+                Log::debug('jwt.token_expired', [
+                    'method' => __METHOD__,
+                    'token_string_prefix' => substr($tokenString, 0, 20) . '...',
+                ]);
+
                 return null;
             }
 
             $signedWith = new SignedWith($config->signer(), $config->signingKey());
 
             if (! $config->validator()->validate($token, $signedWith)) {
+                Log::debug('jwt.token_invalid_signature', [
+                    'method' => __METHOD__,
+                    'token_string_prefix' => substr($tokenString, 0, 20) . '...',
+                ]);
+
                 return null;
             }
 
             $claims = $token->claims();
 
             if (! $claims->has('sub') || ! $claims->has('sid') || ! $claims->has('email')) {
+                Log::debug('jwt.token_missing_claims', [
+                    'method' => __METHOD__,
+                    'has_sub' => $claims->has('sub'),
+                    'has_sid' => $claims->has('sid'),
+                    'has_email' => $claims->has('email'),
+                ]);
+
                 return null;
             }
 
@@ -115,7 +133,13 @@ class JwtService
                 'sid' => $claims->get('sid'),
                 'email' => $claims->get('email'),
             ];
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('jwt.token_validation_error', [
+                'method' => __METHOD__,
+                'exception' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
+
             return null;
         }
     }

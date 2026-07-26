@@ -8,6 +8,7 @@ use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Http\Resources\NotificationResource;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Users\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -66,6 +67,13 @@ class NotificationService
             ->exists();
 
         if ($exists) {
+            Log::debug('notifications.deduplicated', [
+                'method' => __METHOD__,
+                'user_id' => $user->id,
+                'type' => $type->value,
+                'incident_id' => $incidentId,
+            ]);
+
             return null;
         }
 
@@ -100,6 +108,13 @@ class NotificationService
                 json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             );
         } catch (\Throwable $e) {
+            Log::warning('notifications.publish_failed', [
+                'method' => __METHOD__,
+                'user_id' => $userId,
+                'notification_id' => $notification->id,
+                'exception' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
             report($e);
         }
     }
