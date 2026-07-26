@@ -98,7 +98,7 @@ class JwtService
             if ($token->isExpired(new DateTimeImmutable)) {
                 Log::debug('jwt.token_expired', [
                     'method' => __METHOD__,
-                    'token_string_prefix' => substr($tokenString, 0, 20) . '...',
+                    'token_string_prefix' => substr($tokenString, 0, 20).'...',
                 ]);
 
                 return null;
@@ -109,7 +109,7 @@ class JwtService
             if (! $config->validator()->validate($token, $signedWith)) {
                 Log::debug('jwt.token_invalid_signature', [
                     'method' => __METHOD__,
-                    'token_string_prefix' => substr($tokenString, 0, 20) . '...',
+                    'token_string_prefix' => substr($tokenString, 0, 20).'...',
                 ]);
 
                 return null;
