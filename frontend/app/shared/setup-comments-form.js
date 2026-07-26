@@ -152,8 +152,6 @@ export default async function setupCommentsForm({
     });
   }
 
-
-
   fileInput?.addEventListener('change', () => {
     handleFileSelect(fileInput.files);
     fileInput.value = '';
