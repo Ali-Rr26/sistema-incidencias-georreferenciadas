@@ -20,7 +20,7 @@ return new class extends Migration
                     SELECT
                         COALESCE(assignments.user_id, NEW.user_id),
                         NEW.id,
-                        'status_changed',
+                        'status_change',
                         'El estado de la incidencia ha cambiado.',
                         false,
                         NOW()

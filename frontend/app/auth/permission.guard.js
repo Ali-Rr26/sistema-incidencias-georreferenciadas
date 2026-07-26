@@ -48,6 +48,7 @@ const CHILD_ROUTE_PERMISSIONS = {
   // never assigns it to any other role) — replicates the original
   // roleGuard(['admin_sistema']) restriction on this route through the
   // permission system instead of a hardcoded role name.
+  '/roles/crear': 'roles.create',
   '/roles/:id': 'roles.update',
 };
 
