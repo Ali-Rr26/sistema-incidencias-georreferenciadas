@@ -30,13 +30,17 @@ class IncidentResource extends JsonResource
     {
         $storage = app(StorageService::class);
 
-        // NOTE: `images` is both a legacy JSON column on Incident AND the
-        // real MorphMany relation name (image-persistence-polymorphic,
-        // WU2/WU5). Because the column exists in $attributes, property
-        // access (`$this->images`, and therefore `whenLoaded('images')`
-        // too) always resolves to the legacy JSON column, never the
-        // relation. `relationLoaded()`/`getRelation()` bypass that
-        // collision by reading Eloquent's relations array directly.
+        // NOTE (image-persistence-polymorphic, WU2/WU5): `images` used to be
+        // both a legacy JSON column on Incident AND the real MorphMany
+        // relation name — the dead cast entry shadowed the relation on
+        // property access, so `whenLoaded('images')` (and `$this->images`)
+        // could not be trusted. That collision is fixed post-WU8:
+        // `Incident::$fillable`/`casts()` no longer declare `images`, so
+        // `$this->resource->images` (property) would now resolve
+        // identically to the two branches below. This explicit
+        // `relationLoaded()`/`getRelation()` check is kept anyway — it is
+        // still correct and equally clear, and there is no functional
+        // reason to change it now that the underlying bug is gone.
         $images = $this->resource->relationLoaded('images')
             ? $this->resource->getRelation('images')
             : $this->resource->images()->get();

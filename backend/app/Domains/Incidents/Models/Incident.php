@@ -74,7 +74,6 @@ class Incident extends Model
         'priority',
         'resolution_date',
         'geom',
-        'images',
         'claimed_by',
         'claimed_at',
     ];
@@ -90,7 +89,6 @@ class Incident extends Model
             'resolution_date' => 'datetime',
             'status' => IncidentStatus::class,
             'priority' => IncidentPriority::class,
-            'images' => 'array',
             'claimed_at' => 'datetime',
         ];
     }
@@ -138,13 +136,17 @@ class Incident extends Model
      *
      * This relation is the live source of truth for reads/writes since the
      * WU5 cutover (IncidentController/IncidentImageService/IncidentResource).
-     * The legacy `images` JSON column (see `$fillable`/`casts()` above) is
-     * no longer written or read — it stays only until WU8 drops it.
-     * Accessing `$incident->images` (no parentheses) still returns the
-     * legacy JSON column attribute; only `$incident->images()` (relation
-     * call) resolves this table — this collision is why IncidentResource
-     * cannot use `whenLoaded('images')` and instead checks
-     * `relationLoaded()`/`getRelation()` directly.
+     * The legacy `incidents.images` JSON column is gone from `$fillable`/
+     * `casts()` (post-WU8 bug fix): that dead cast entry used to shadow
+     * this relation on property access — `getAttribute()` resolves casts
+     * before relations, so `$incident->images` (no parentheses) returned
+     * the stale legacy attribute (`null`, once the column no longer had a
+     * value) instead of falling through to this method. Now that the cast
+     * is gone, `$incident->images` (property) and `$incident->images()`
+     * (relation call) both correctly resolve this `MorphMany`.
+     * `ImageBackfiller` still needs the raw legacy JSON for
+     * not-yet-migrated environments — it reads `incidents.images` directly
+     * via the query builder instead of through this model.
      */
     public function images(): MorphMany
     {

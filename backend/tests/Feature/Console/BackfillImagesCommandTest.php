@@ -43,9 +43,15 @@ beforeEach(function (): void {
         'title' => 'Test Incident',
         'status' => Incident::STATUS_PENDING,
         'priority' => Incident::PRIORITY_MEDIUM,
-        'images' => [
+    ]);
+
+    // `Incident::$fillable`/`casts()` no longer declare `images` (post-WU8
+    // property-collision fix), so the legacy JSON column must be seeded
+    // directly via the query builder, bypassing Eloquent mass assignment.
+    DB::table('incidents')->where('id', $this->incident->id)->update([
+        'images' => json_encode([
             ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
-        ],
+        ]),
     ]);
 
     $this->comment = Comment::create([

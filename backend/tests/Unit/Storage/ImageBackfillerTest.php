@@ -54,16 +54,33 @@ beforeEach(function (): void {
     $this->backfiller = new ImageBackfiller;
 });
 
+/**
+ * Seeds the legacy `incidents.images` JSON column directly via the query
+ * builder. `Incident::$fillable`/`casts()` no longer declare `images`
+ * (post-WU8 property-collision fix), so `$incident->update(['images' =>
+ * ...])` mass assignment would silently discard the key — this bypasses
+ * Eloquent entirely, exactly mirroring how `ImageBackfiller` itself now
+ * reads this column.
+ *
+ * @param  array<int,array<string,mixed>>  $images
+ */
+if (! function_exists('seedLegacyIncidentImages')) {
+    function seedLegacyIncidentImages(Incident $incident, array $images): void
+    {
+        DB::table('incidents')->where('id', $incident->id)->update([
+            'images' => json_encode($images),
+        ]);
+    }
+}
+
 it('backfills incident images preserving array order and deriving is_thumbnail from index, not the stored flag', function (): void {
     // The JSON flag deliberately disagrees with order (index 0 has
     // is_thumbnail=false in the stored JSON) to prove D5: the backfiller
     // must derive is_thumbnail from array position, matching what
     // IncidentResource actually displays ($images[0]), not the flag.
-    $this->incident->update([
-        'images' => [
-            ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => false],
-            ['path' => 'incidents/1/b.webp', 'original_name' => 'b.jpg', 'mime_type' => 'image/webp', 'size' => 222, 'is_thumbnail' => true],
-        ],
+    seedLegacyIncidentImages($this->incident, [
+        ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => false],
+        ['path' => 'incidents/1/b.webp', 'original_name' => 'b.jpg', 'mime_type' => 'image/webp', 'size' => 222, 'is_thumbnail' => true],
     ]);
 
     $stats = $this->backfiller->backfillIncidents();
@@ -89,10 +106,8 @@ it('backfills incident images preserving array order and deriving is_thumbnail f
 });
 
 it('is idempotent for incidents: running backfillIncidents twice creates no duplicate rows', function (): void {
-    $this->incident->update([
-        'images' => [
-            ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
-        ],
+    seedLegacyIncidentImages($this->incident, [
+        ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
     ]);
 
     $first = $this->backfiller->backfillIncidents();
@@ -210,11 +225,9 @@ it('skips users with no profile_image_path', function (): void {
 });
 
 it('verify() reports un-backfilled legacy rows without writing anything, then reports clean after backfill', function (): void {
-    $this->incident->update([
-        'images' => [
-            ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
-            ['path' => 'incidents/1/b.webp', 'original_name' => 'b.jpg', 'mime_type' => 'image/webp', 'size' => 222, 'is_thumbnail' => false],
-        ],
+    seedLegacyIncidentImages($this->incident, [
+        ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
+        ['path' => 'incidents/1/b.webp', 'original_name' => 'b.jpg', 'mime_type' => 'image/webp', 'size' => 222, 'is_thumbnail' => false],
     ]);
 
     $before = $this->backfiller->verify('incidents');

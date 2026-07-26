@@ -34,6 +34,16 @@ class ImageBackfiller
      * thumbnail today regardless of the flag, so deriving from index is
      * what preserves each incident's currently-visible thumbnail.
      *
+     * Read via the query builder, not the Eloquent `Incident` model: since
+     * the post-WU8 property-collision fix, `Incident::$fillable`/`casts()`
+     * no longer declare `images` (that stale entry shadowed the
+     * `images(): MorphMany` relation on property access). The raw legacy
+     * JSON column therefore has to be read and decoded manually here —
+     * exactly the same pattern `backfillComments()` already uses for the
+     * legacy `comment_images` table — so this method keeps working
+     * correctly in any environment that has not yet run WU8's drop
+     * migration.
+     *
      * @return array{source_count:int, created_count:int, legacy_url_rows:array<int,array{imageable_id:int,storage_path:string}>}
      */
     public function backfillIncidents(): array
@@ -42,11 +52,24 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
-        Incident::query()
+        DB::table('incidents')
+            ->select('id', 'images')
             ->whereNotNull('images')
-            ->chunkById(100, function ($incidents) use (&$sourceCount, &$createdCount, &$legacyUrlRows): void {
-                foreach ($incidents as $incident) {
-                    $images = array_values($incident->images ?? []);
+            ->orderBy('id')
+            ->chunkById(100, function ($rows) use (&$sourceCount, &$createdCount, &$legacyUrlRows): void {
+                $incidents = Incident::query()
+                    ->whereIn('id', $rows->pluck('id'))
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($rows as $row) {
+                    $incident = $incidents->get($row->id);
+
+                    if ($incident === null) {
+                        continue;
+                    }
+
+                    $images = array_values(json_decode($row->images, true) ?? []);
 
                     foreach ($images as $index => $img) {
                         $path = $img['path'] ?? null;
@@ -214,6 +237,10 @@ class ImageBackfiller
     }
 
     /**
+     * Read via the query builder for the same reason `backfillIncidents()`
+     * does (see its docblock): `Incident::$fillable`/`casts()` no longer
+     * declare `images`, so the raw legacy JSON column is decoded manually.
+     *
      * @return array{unbackfilled_count:int, samples:array<int,array{imageable_id:int,storage_path:string}>}
      */
     private function verifyIncidents(): array
@@ -221,11 +248,24 @@ class ImageBackfiller
         $unbackfilledCount = 0;
         $samples = [];
 
-        Incident::query()
+        DB::table('incidents')
+            ->select('id', 'images')
             ->whereNotNull('images')
-            ->chunkById(100, function ($incidents) use (&$unbackfilledCount, &$samples): void {
-                foreach ($incidents as $incident) {
-                    foreach (array_values($incident->images ?? []) as $img) {
+            ->orderBy('id')
+            ->chunkById(100, function ($rows) use (&$unbackfilledCount, &$samples): void {
+                $incidents = Incident::query()
+                    ->whereIn('id', $rows->pluck('id'))
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($rows as $row) {
+                    $incident = $incidents->get($row->id);
+
+                    if ($incident === null) {
+                        continue;
+                    }
+
+                    foreach (array_values(json_decode($row->images, true) ?? []) as $img) {
                         $path = $img['path'] ?? null;
 
                         if ($path === null) {

@@ -23,9 +23,27 @@ use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
+
+/**
+ * Seeds the legacy `incidents.images` JSON column directly via the query
+ * builder. `Incident::$fillable`/`casts()` no longer declare `images`
+ * (post-WU8 property-collision fix), so `$incident->update(['images' =>
+ * ...])` mass assignment would silently discard the key.
+ *
+ * @param  array<int,array<string,mixed>>  $images
+ */
+if (! function_exists('seedLegacyIncidentImages')) {
+    function seedLegacyIncidentImages(Incident $incident, array $images): void
+    {
+        DB::table('incidents')->where('id', $incident->id)->update([
+            'images' => json_encode($images),
+        ]);
+    }
+}
 
 beforeEach(function (): void {
     Role::create(['name' => 'admin_sistema']);
@@ -51,10 +69,8 @@ beforeEach(function (): void {
 });
 
 it('refuses to drop legacy image storage and leaves the schema intact when a source has un-backfilled rows', function (): void {
-    $this->incident->update([
-        'images' => [
-            ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
-        ],
+    seedLegacyIncidentImages($this->incident, [
+        ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
     ]);
 
     // The guard throws from inside the migration's up(); Artisan::call()
@@ -99,10 +115,8 @@ it('refuses to drop when only the users source has un-backfilled rows (guard che
 });
 
 it('proceeds with the drop once images:backfill has made every source clean', function (): void {
-    $this->incident->update([
-        'images' => [
-            ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
-        ],
+    seedLegacyIncidentImages($this->incident, [
+        ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
     ]);
 
     Artisan::call('images:backfill');
