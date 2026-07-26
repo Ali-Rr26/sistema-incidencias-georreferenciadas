@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\StatusHistory\Interfaces;
 
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Statuses\Models\Status;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,11 +65,6 @@ class StatusHistoryController
 
     public function availableStatuses(): JsonResponse
     {
-        $statuses = Status::active()
-            ->orderBy('id')
-            ->get(['id', 'nombre', 'valor'])
-            ->toArray();
-
-        return response()->json($statuses);
+        return response()->json(IncidentStatus::availableStatuses());
     }
 }
