@@ -106,3 +106,34 @@ describe('PRIORITY_LABEL', () => {
     expect(Object.isFrozen(PRIORITY_LABEL)).toBe(true);
   });
 });
+
+describe('getCommentImageUrl', () => {
+  it('returns empty string for empty input', () => {
+    const { getCommentImageUrl } = require('../format.js');
+    expect(getCommentImageUrl('')).toBe('');
+    expect(getCommentImageUrl(null)).toBe('');
+  });
+
+  it('normalizes relative storage paths to /storage/...', () => {
+    const { getCommentImageUrl } = require('../format.js');
+    expect(getCommentImageUrl('comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
+    expect(getCommentImageUrl('storage/comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
+    expect(getCommentImageUrl('/storage/comments/123.jpg')).toBe(
+      '/storage/comments/123.jpg',
+    );
+  });
+
+  it('preserves absolute URLs verbatim', () => {
+    const { getCommentImageUrl } = require('../format.js');
+    expect(getCommentImageUrl('http://example.com/img.jpg')).toBe(
+      'http://example.com/img.jpg',
+    );
+    expect(getCommentImageUrl('https://example.com/img.jpg')).toBe(
+      'https://example.com/img.jpg',
+    );
+  });
+});
