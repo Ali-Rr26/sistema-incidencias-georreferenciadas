@@ -305,9 +305,9 @@ class IncidentStatsController extends Controller
         $rows = $this->applyOrgScope(
             DB::table('incidents')->whereNull('incidents.deleted_at'),
         )
-            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
-            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
-            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '>=', $validated['inicio']))
+            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '<=', $validated['fin']))
+            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incidents.incident_category_id', $validated['tipo_id']))
             ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
             ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
             ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
