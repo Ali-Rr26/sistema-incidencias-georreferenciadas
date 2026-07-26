@@ -13,7 +13,6 @@ class RolePermissionSeeder extends Seeder
     private const ADMIN_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'incidents',           'action' => 'create'],
         ['resource' => 'incidents',           'action' => 'update'],
         ['resource' => 'incidents',           'action' => 'delete'],
         ['resource' => 'incidents',           'action' => 'manage'],
