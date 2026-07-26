@@ -149,15 +149,12 @@ class RoleController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
         }
 
-        if ($user->isAdmin()) {
-            $slugs = Permission::query()
-                ->selectRaw("resource || '.' || action as slug")
-                ->pluck('slug');
-        } else {
-            $slugs = $user->role?->permissions()
-                ->selectRaw("resource || '.' || action as slug")
-                ->pluck('slug') ?? collect();
-        }
+        // SC-127: Validar SIEMPRE contra role_permission, sin excepciones.
+        // Antes: isAdmin() devolvía todos los permisos sin filtrar por role_permission.
+        // Ahora: Cada rol (incluso admin_sistema) solo tiene los permisos en su tabla.
+        $slugs = $user->role?->permissions()
+            ->selectRaw("resource || '.' || action as slug")
+            ->pluck('slug') ?? collect();
 
         return response()->json(['data' => $slugs->values()]);
     }
