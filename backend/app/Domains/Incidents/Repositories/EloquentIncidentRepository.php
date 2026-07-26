@@ -96,12 +96,18 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             }))
             ->when($filters['status'] ?? null, fn (Builder $q, string $v) => $q->where('status', $v))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $v) => $q->where('priority', $v))
-            ->when($filters['location_id'] ?? null, function (Builder $q, string $v) {
-                $location = Location::find((int) $v);
-                if ($location) {
-                    $ids = $location->descendantsAndSelf()->pluck('id');
-                    $q->whereIn('location_id', $ids);
-                }
+            ->when($filters['location_id'] ?? null, function (Builder $q, string $v): void {
+                // Fixes N+1: use a single recursive CTE query instead of
+                // Location::find() + descendantsAndSelf()->pluck('id')
+                $q->whereRaw('location_id IN (
+                    WITH RECURSIVE location_tree AS (
+                        SELECT id FROM locations WHERE id = ?
+                        UNION ALL
+                        SELECT l.id FROM locations l
+                        INNER JOIN location_tree lt ON l.parent_id = lt.id
+                    )
+                    SELECT id FROM location_tree
+                )', [(int) $v]);
             })
             ->when($filters['incident_category_id'] ?? null, fn (Builder $q, string $v) => $q->where('incident_category_id', $v))
             ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v))

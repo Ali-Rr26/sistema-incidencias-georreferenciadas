@@ -65,12 +65,6 @@ class StatusHistoryController
 
     public function availableStatuses(): JsonResponse
     {
-        $statuses = [
-            ['id' => 1, 'nombre' => 'Pendiente', 'valor' => IncidentStatus::Pending->value],
-            ['id' => 2, 'nombre' => 'En proceso', 'valor' => IncidentStatus::InProgress->value],
-            ['id' => 3, 'nombre' => 'Resuelto', 'valor' => IncidentStatus::Resolved->value],
-        ];
-
-        return response()->json(['data' => $statuses]);
+        return response()->json(IncidentStatus::availableStatuses());
     }
 }

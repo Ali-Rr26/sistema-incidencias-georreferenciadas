@@ -73,6 +73,8 @@ function buildDetailDom() {
 
     <form id="detalle-comment-form">
       <textarea id="detalle-comment-input"></textarea>
+      <input type="file" id="detalle-comment-images" />
+      <button type="button" id="detalle-comment-attach-btn"></button>
       <div id="detalle-comment-error" class="d-none"></div>
       <button type="submit" id="detalle-comment-submit">Publicar</button>
     </form>
@@ -296,6 +298,29 @@ describe('incidencias.detail — public comments', () => {
     const errorEl = document.getElementById('detalle-comment-error');
     expect(errorEl.classList.contains('d-none')).toBe(false);
     expect(errorEl.textContent).toBe('El comentario no puede estar vacío.');
+  });
+
+  it('triggers the file input when clicking the camera photo attach button', async () => {
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: incidentFixture });
+      }
+      if (path.startsWith('/incidents/42/comments')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+
+    const attachBtn = document.getElementById('detalle-comment-attach-btn');
+    const fileInput = document.getElementById('detalle-comment-images');
+    expect(attachBtn).not.toBeNull();
+
+    const clickSpy = vi.spyOn(fileInput, 'click');
+    attachBtn.click();
+
+    expect(clickSpy).toHaveBeenCalled();
   });
 });
 
