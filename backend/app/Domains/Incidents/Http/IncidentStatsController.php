@@ -8,6 +8,7 @@ use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
