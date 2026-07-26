@@ -1,9 +1,11 @@
 import template from './forgot-password.component.html?raw';
+import style from '../login/login.component.css?raw';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 
 export default {
   template,
+  style,
 
   async onInit() {
     document.getElementById('forgot-form').addEventListener('submit', async (e) => {
