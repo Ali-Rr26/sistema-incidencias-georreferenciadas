@@ -65,7 +65,11 @@ x-backend-env: &x-backend-env
   AWS_BUCKET: ${AWS_BUCKET:-incidencias}
   AWS_ENDPOINT: ${AWS_ENDPOINT:-http://rustfs:9000}
   AWS_USE_PATH_STYLE_ENDPOINT: ${AWS_USE_PATH_STYLE_ENDPOINT:-true}
+  # Única fuente de verdad para imagenes (StorageService, incidencias,
+  # comentarios, avatares) via config('filesystems.image_disk').
   FILESYSTEM_STORAGE_DISK: ${FILESYSTEM_STORAGE_DISK:-s3}
+  # Disco Laravel general (framework), NO usado por imagenes. Debe
+  # coincidir con FILESYSTEM_STORAGE_DISK arriba para evitar confusion.
   FILESYSTEM_DISK: ${FILESYSTEM_DISK:-s3}
   # Mail Setup
   MAIL_MAILER: ${MAIL_MAILER:-smtp}

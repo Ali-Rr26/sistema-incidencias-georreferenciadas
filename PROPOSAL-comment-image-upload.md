@@ -76,11 +76,12 @@ DELETE /comments/{comment}                -- eliminar comment
 - Mostrar badge de "Respondiendo a @nombre" si hay `parent_id` activo.
 - Botón cancelar reply limpia el estado.
 
-*Image upload:*
-- `<input type="file" multiple accept="image/*">` junto al textarea.
-- Preview: crear `URL.createObjectURL()` por cada archivo, mostrar thumbnail grid (3 columnas, 64x64px, borde radio). Botón `×` por thumbnail para remover antes de enviar.
-- Submit: si hay archivos, hacer POST paralelo a `/comments/{comment}/images` por cada archivo (Promise.all). Esperar todos antes de mostrar el comentario nuevo.
-- Si falla algún upload: rollback visual (quitar preview), mostrar toast de error, NO enviar comment.
+*Image upload & Trigger Icon:*
+- Icono compacto de cámara/imagen (`<i class="fas fa-camera"></i>` / `<i class="fas fa-paperclip"></i>`) integrado directamente junto a la caja de texto/controles del comentario, visible tanto al redactar un comentario nuevo como al hacer click en **Responder**.
+- Al pulsar el icono, abre el selector nativo de archivos (`<input type="file" multiple accept="image/jpeg,image/png,image/webp" capture="environment">`) permitiendo tomar una foto directamente desde dispositivos móviles o seleccionar imágenes locales.
+- Preview: crear `URL.createObjectURL()` por cada archivo, mostrar thumbnail grid (miniaturas cuadradas de 64x64px con borde redondeado). Botón `×` en cada miniatura para remover la imagen antes de publicar.
+- Submit: si hay archivos adjuntos, realizar POST a `/comments/{comment}/images` (usando la API polimórfica compartida de imágenes) al publicar el comentario.
+- Si falla algún upload: rollback visual (quitar preview), mostrar toast de error, evitar dejar estados inconsistentes.
 
 *Display:*
 - En cada `comment-card`: thumbnails 80x80px en grid, debajo del texto. Si hay `parent_id`: mostrar bloque de quote con el texto del comentario padre (max 2 líneas truncadas).

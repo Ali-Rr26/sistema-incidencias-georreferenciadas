@@ -108,7 +108,9 @@ export default {
       if (val) {
         selectionGeneration++;
         const gen = selectionGeneration;
-        const provinces = await locationService.getChildren({ parentId: parseInt(val) });
+        const provinces = await locationService.getChildren({
+          parentId: parseInt(val),
+        });
         // Discard stale response
         if (gen !== selectionGeneration) return;
         // Destroy BEFORE writing fresh <option>s — Tom Select's destroy()
@@ -139,7 +141,9 @@ export default {
       if (val) {
         selectionGeneration++;
         const gen = selectionGeneration;
-        const cities = await locationService.getChildren({ parentId: parseInt(val) });
+        const cities = await locationService.getChildren({
+          parentId: parseInt(val),
+        });
         // Discard stale response
         if (gen !== selectionGeneration) return;
         destroySelect(ciudadSel);
@@ -190,8 +194,12 @@ export default {
 
       // Attach listeners first
       document.getElementById(paisSel).addEventListener('change', onPaisChange);
-      document.getElementById(provinciaSel).addEventListener('change', onProvinciaChange);
-      document.getElementById(ciudadSel).addEventListener('change', onCiudadChange);
+      document
+        .getElementById(provinciaSel)
+        .addEventListener('change', onProvinciaChange);
+      document
+        .getElementById(ciudadSel)
+        .addEventListener('change', onCiudadChange);
 
       // Edit mode: preselect from location_path
       if (locationPath && locationPath.length > 0) {
@@ -204,7 +212,9 @@ export default {
           // Fetch and populate provinces
           selectionGeneration++;
           const genProv = selectionGeneration;
-          const provinces = await locationService.getChildren({ parentId: nivelPais.id });
+          const provinces = await locationService.getChildren({
+            parentId: nivelPais.id,
+          });
           if (genProv !== selectionGeneration) return;
           destroySelect(provinciaSel);
           poblarSelectNativo(provinciaSel, provinces, '-- Seleccione --');
@@ -217,7 +227,9 @@ export default {
           // Fetch and populate cities
           selectionGeneration++;
           const genCity = selectionGeneration;
-          const cities = await locationService.getChildren({ parentId: nivelProvincia.id });
+          const cities = await locationService.getChildren({
+            parentId: nivelProvincia.id,
+          });
           if (genCity !== selectionGeneration) return;
           destroySelect(ciudadSel);
           poblarSelectNativo(ciudadSel, cities, '-- Opcional --');

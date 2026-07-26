@@ -21,9 +21,10 @@
    Replaces the previous multi-line `style="height: 250px;
    border-radius: 8px; border: 1px solid #dee2e6;"`. */
 .incid-detail__map-coords {
-  height: 250px;
+  height: 320px;
   border-radius: 8px;
   border: 1px solid #dee2e6;
+  margin-bottom: 0.5rem;
 }
 
 /* Upload progress bar — slimmer height than the default Bootstrap
@@ -81,17 +82,18 @@
 }
 
 .incid-detail__thumbnail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .incid-detail__thumbnail-wrapper {
   position: relative;
   display: block;
-  border-radius: 10px;
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
   overflow: hidden;
-  aspect-ratio: 1 / 1;
   background: #f0f0f0;
   cursor: pointer;
 }

@@ -8,10 +8,17 @@ declare(strict_types=1);
  * Avatar replace/delete now lives inside PUT /users/{id} (multipart FormData
  * for an avatar upload, or a `_delete_avatar=true` JSON flag for removal)
  * — POST /users/{id}/avatar and DELETE /users/{id}/avatar are gone.
+ *
+ * Avatars are seeded via the shared `images` table (image-persistence-
+ * polymorphic WU7 cutover) rather than the legacy `profile_image_path`
+ * column — that column is now dead (WU8 drops it), and `UserResource`
+ * sources `profile_image_path` from the `avatarImage()` relation instead.
  */
 
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use App\Storage\ImageRules;
+use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -25,11 +32,22 @@ beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
-it('PUT /users/{id} multipart with avatar replaces existing avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/old-uuid.webp',
+function seedAvatar(User $user, string $path): Image
+{
+    Storage::disk('s3')->put($path, 'seeded avatar content');
+
+    return Image::create([
+        'imageable_type' => 'user',
+        'imageable_id' => $user->id,
+        'storage_path' => $path,
+        'is_thumbnail' => true,
+        'sort_order' => 0,
     ]);
-    Storage::disk('s3')->put('users/1/old-uuid.webp', 'old content');
+}
+
+it('PUT /users/{id} multipart with avatar replaces existing avatar', function (): void {
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/old-uuid.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
     $file = UploadedFile::fake()->image('avatar.jpg', 512, 512);
@@ -50,13 +68,12 @@ it('PUT /users/{id} multipart with avatar replaces existing avatar', function ()
     expect($newPath)->not->toBe('users/1/old-uuid.webp');
     Storage::disk('s3')->assertMissing('users/1/old-uuid.webp');
     Storage::disk('s3')->assertExists($newPath);
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $target->id)->count())->toBe(1);
 });
 
 it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/existing.webp',
-    ]);
-    Storage::disk('s3')->put('users/1/existing.webp', 'existing avatar');
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/existing.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -72,15 +89,15 @@ it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function 
 
     $response->assertStatus(200);
     expect($response->json('data.profile_image_path'))->toBeNull();
-    expect($target->fresh()->profile_image_path)->toBeNull();
+    expect(Image::where('imageable_type', 'user')->where('imageable_id', $target->id)->count())->toBe(0);
     Storage::disk('s3')->assertMissing('users/1/existing.webp');
 });
 
 it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): void {
     $target = User::factory()->create([
-        'profile_image_path' => 'users/1/keep-me.webp',
         'first_name' => 'Old',
     ]);
+    seedAvatar($target, 'users/1/keep-me.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -101,9 +118,8 @@ it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): 
 });
 
 it('PUT /users/{id} multipart without avatar file preserves the existing avatar', function (): void {
-    $target = User::factory()->create([
-        'profile_image_path' => 'users/1/also-keep.webp',
-    ]);
+    $target = User::factory()->create();
+    seedAvatar($target, 'users/1/also-keep.webp');
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -121,8 +137,9 @@ it('PUT /users/{id} rejects oversized avatar file', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    // 801 KB — over the 800 KB cap defined by User::AVATAR_MAX_KB.
-    $file = UploadedFile::fake()->image('big.jpg')->size(801);
+    // 5200 KB — over ImageRules::MAX_SIZE_KB (5120 KB / 5 MB), the shared
+    // D10 cap now enforced for avatars too (WU7 cutover).
+    $file = UploadedFile::fake()->image('big.jpg')->size(5200);
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
@@ -137,7 +154,8 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $file = UploadedFile::fake()->create('avatar.gif', 100, 'image/gif');
+    // bmp is not in ImageRules::MIMES (jpeg,png,webp,gif).
+    $file = UploadedFile::fake()->create('avatar.bmp', 100, 'image/bmp');
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'X',
@@ -148,11 +166,11 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
     $response->assertJsonValidationErrors(['avatar']);
 });
 
-it('PUT /users/{id} accepts avatar at exactly 800KB', function (): void {
+it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function (): void {
     $target = User::factory()->create();
     $admin = User::factory()->create(['role_id' => 1]);
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(800);
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(ImageRules::MAX_SIZE_KB);
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => $target->first_name,

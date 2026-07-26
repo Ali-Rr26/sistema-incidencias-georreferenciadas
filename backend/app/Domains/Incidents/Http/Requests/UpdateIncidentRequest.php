@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Http\Requests;
 
 use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -64,8 +65,8 @@ class UpdateIncidentRequest extends FormRequest
             'geom' => 'nullable|json',
 
             // Imágenes opcionales (multipart)
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
+            'images' => [...['nullable'], ...ImageRules::galleryArrayRules()],
+            'images.*' => [...['nullable'], ...ImageRules::galleryFileRules()],
         ];
     }
 
@@ -74,6 +75,10 @@ class UpdateIncidentRequest extends FormRequest
         return [
             'status.in' => 'Status must be: pending, in_progress or resolved.',
             'priority.in' => 'Priority must be: low, medium or high.',
+            'images.max' => 'You can attach a maximum of '.ImageRules::MAX_FILES.' images.',
+            'images.*.image' => 'Each file must be an image.',
+            'images.*.mimes' => 'Only JPEG, PNG, WEBP or GIF images are allowed.',
+            'images.*.max' => 'Each image must not exceed '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }

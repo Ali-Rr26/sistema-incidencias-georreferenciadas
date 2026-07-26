@@ -24,6 +24,18 @@ class Organization extends Model
         'max_active_claims',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            // Normalise FK at the model boundary so consumers (e.g.
+            // `OrganizationResource::toArray()` → `LocationRepository::ancestors(int $id)`)
+            // always see `int`, not the raw JSON string from
+            // `$request->validated()`. Matches the precedent set by
+            // `Comment::$casts` and (after this change) `Incident::$casts`.
+            'location_id' => 'integer',
+        ];
+    }
+
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);

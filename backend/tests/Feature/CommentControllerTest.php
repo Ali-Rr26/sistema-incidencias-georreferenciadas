@@ -11,6 +11,7 @@ use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -557,4 +558,26 @@ it('rejects parent_id from different incident with 422', function (): void {
 
     $response->assertStatus(422);
     $response->assertSee('pertenece a otra incidencia');
+});
+
+it('accepts image_ids that reference real rows in the polymorphic images table (WU8: comment_images is gone)', function (): void {
+    // image_ids validates against the shared `images` table now — the
+    // legacy `comment_images` table this rule used to check
+    // (`exists:comment_images,id`) is dropped in WU8, and its ids don't
+    // overlap with `images` ids, so the old rule would always reject a
+    // real, currently-existing image id after the drop.
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->incident->id,
+        'storage_path' => 'comments/1/existing.webp',
+    ]);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'Attaching a pre-uploaded image',
+            'image_ids' => [$image->id],
+        ]);
+
+    $response->assertStatus(201);
 });

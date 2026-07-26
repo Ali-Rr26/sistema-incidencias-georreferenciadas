@@ -14,6 +14,7 @@ use App\Domains\Users\Services\ProfileImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -45,6 +46,13 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (PendingInvitationException $e) {
+            Log::warning('auth.local.pending_invitation', [
+                'method' => __METHOD__,
+                'email' => $request->validated()['email'],
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNAUTHORIZED);
@@ -73,6 +81,12 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (AuthenticationException $e) {
+            Log::warning('auth.local.refresh_failed', [
+                'method' => __METHOD__,
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json(
                 $e->toResponse(),
                 Response::HTTP_UNAUTHORIZED,
@@ -135,10 +149,11 @@ class AuthController
             }
         }
 
-        // Handle avatar file upload via ProfileImageService
+        // Handle avatar file upload via ProfileImageService (writes to the
+        // shared `images` table — `profile_image_path` column is dead,
+        // WU8 drops it).
         if ($request->hasFile('avatar')) {
-            $newPath = $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
-            $validated['profile_image_path'] = $newPath;
+            $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
             // Remove legacy avatar array from text update — file upload replaces it
             unset($validated['avatar']);
         }
@@ -149,7 +164,7 @@ class AuthController
         }
 
         return response()->json(
-            new UserResource($user->load(['role', 'organization'])),
+            new UserResource($user->load(['role', 'organization', 'avatarImage'])),
         );
     }
 
