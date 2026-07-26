@@ -32,7 +32,10 @@ class Organization extends Model
             // always see `int`, not the raw JSON string from
             // `$request->validated()`. Matches the precedent set by
             // `Comment::$casts` and (after this change) `Incident::$casts`.
+            'incident_category_id' => 'integer',
             'location_id' => 'integer',
+            'max_active_claims' => 'integer',
+            'parent_id' => 'integer',
         ];
     }
 
