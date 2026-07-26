@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Auth\Local\Http\Requests;
 
 use App\Storage\ImageRules;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class UpdateProfileRequest extends FormRequest
         $rules = [
             'first_name' => ['sometimes', 'string', 'max:100'],
             'last_name' => ['sometimes', 'string', 'max:100'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:50', 'regex:/^[0-9\+\-\s\(\)]+$/'],
+            'phone' => PhoneRules::rules(sometimes: true),
             'password' => ['sometimes', 'nullable', 'string', 'min:8'],
         ];
 
@@ -48,7 +49,7 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => 'El teléfono solo debe contener números y caracteres válidos (+, -, paréntesis).',
+            'phone.regex' => PhoneRules::MESSAGE,
             'avatar.required' => 'Debes subir una imagen de avatar.',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
             'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',
