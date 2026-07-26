@@ -14,12 +14,23 @@ class ForgotPasswordController
     public function __invoke(ForgotPasswordRequest $request): JsonResponse
     {
         try {
-            $status = Password::sendResetLink(
-                $request->only('email'),
-            );
+            $email = strtolower(trim((string) $request->input('email')));
+
+            $status = Password::sendResetLink(['email' => $email]);
 
             if ($status === Password::RESET_LINK_SENT) {
                 return response()->json(['message' => __('messages.reset_link_sent')]);
+            }
+
+            Log::warning('ForgotPassword failed', [
+                'email' => $email,
+                'status' => $status,
+            ]);
+
+            if ($status === Password::RESET_THROTTLED) {
+                return response()->json([
+                    'message' => 'Has realizado demasiadas solicitudes. Por favor espera un minuto antes de reintentar.',
+                ], 429);
             }
 
             return response()->json([
