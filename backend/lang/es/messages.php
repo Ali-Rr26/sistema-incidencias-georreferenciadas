@@ -2,7 +2,7 @@
 
 return [
     'session_closed' => 'Sesión cerrada exitosamente.',
-    'account_activated' => 'Cuenta activada.',
+    'account_activated' => 'Cuenta activada',
     'incident_deleted' => 'Incidencia eliminada correctamente.',
     'role_not_found' => 'Rol no encontrado.',
     'role_sync_unauthorized' => 'Solo admin_sistema puede sincronizar permisos de un rol.',
