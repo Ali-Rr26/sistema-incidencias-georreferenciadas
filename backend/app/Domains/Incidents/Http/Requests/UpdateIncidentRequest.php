@@ -83,13 +83,13 @@ class UpdateIncidentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.in' => 'Status must be: pending, in_progress or resolved.',
-            'priority.in' => 'Priority must be: low, medium or high.',
+            'status.in' => 'El estado debe ser: pending, in_progress o resolved.',
+            'priority.in' => 'La prioridad debe ser: low, medium o high.',
             'resolution_date.date' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
-            'images.max' => 'You can attach a maximum of '.ImageRules::MAX_FILES.' images.',
-            'images.*.image' => 'Each file must be an image.',
-            'images.*.mimes' => 'Only JPEG, PNG, WEBP or GIF images are allowed.',
-            'images.*.max' => 'Each image must not exceed '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
+            'images.max' => 'Puedes adjuntar un máximo de '.ImageRules::MAX_FILES.' imágenes.',
+            'images.*.image' => 'Cada archivo debe ser una imagen.',
+            'images.*.mimes' => 'Solo se permiten imágenes JPEG, PNG, WEBP o GIF.',
+            'images.*.max' => 'Cada imagen no debe superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }

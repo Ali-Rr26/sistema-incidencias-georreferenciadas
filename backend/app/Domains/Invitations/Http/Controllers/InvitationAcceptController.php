@@ -35,6 +35,6 @@ class InvitationAcceptController
             termsVersion: $validated['terms_version'],
         );
 
-        return response()->json(['message' => 'Cuenta activada'], JsonResponse::HTTP_OK);
+        return response()->json(['message' => __('messages.account_activated')], JsonResponse::HTTP_OK);
     }
 }
