@@ -12,7 +12,6 @@ use App\Domains\Users\Models\User;
 use App\Storage\ImageBackfiller;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -28,7 +27,7 @@ beforeEach(function (): void {
     // -> operator backfills -> retries migrate), so this test resurrects
     // the empty legacy schema the same way the WU8 guard test does, by
     // rolling back to that migration before seeding legacy rows.
-    Artisan::call('migrate:rollback', ['--step' => 3]);
+    rollbackThroughMigration('2026_07_25_000002_drop_legacy_image_storage');
 
     $this->user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);

@@ -23,7 +23,7 @@ beforeEach(function (): void {
     // drop_legacy_image_storage migration has already removed the legacy
     // schema this command reads from. Resurrect it (empty) the same way
     // the WU8 guard test does, by rolling back to that migration.
-    Artisan::call('migrate:rollback', ['--step' => 3]);
+    rollbackThroughMigration('2026_07_25_000002_drop_legacy_image_storage');
 
     $this->user = User::factory()->create();
     // forceFill(): profile_image_path is dead and no longer $fillable

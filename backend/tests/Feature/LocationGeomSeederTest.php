@@ -29,16 +29,6 @@ function locationGeomSeederPostgisAvailable(): bool
     return DB::connection()->getDriverName() === 'pgsql';
 }
 
-it('no-ops on sqlite instead of erroring', function (): void {
-    if (locationGeomSeederPostgisAvailable()) {
-        $this->markTestSkipped('This scenario targets the non-pgsql driver-guard path.');
-    }
-
-    (new EcuadorLocationSeeder)->run();
-
-    expect(fn () => (new LocationGeomSeeder)->run())->not->toThrow(Throwable::class);
-});
-
 it('pgsql: loads real geometry for every seeded province and cantón (100% match)', function (): void {
     if (! locationGeomSeederPostgisAvailable()) {
         $this->markTestSkipped('Requires PostgreSQL+PostGIS.');

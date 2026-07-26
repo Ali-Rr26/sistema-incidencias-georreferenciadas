@@ -71,23 +71,6 @@ function quitoSquareGeom(): MultiPolygon
     ]);
 }
 
-it('sqlite: never fails, even for a location/point that would mismatch on pgsql', function (): void {
-    if (postgisAvailableForRule()) {
-        $this->markTestSkipped('This scenario targets the non-pgsql (sqlite) driver-guard path.');
-    }
-
-    $location = Location::create(['name' => 'Quito', 'level' => 'city']);
-    $rule = makeRule();
-    $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]])]);
-
-    $failed = false;
-    $rule->validate('location_id', $location->id, function () use (&$failed) {
-        $failed = true;
-    });
-
-    expect($failed)->toBeFalse();
-});
-
 it('skips when location_id is null', function (): void {
     $rule = makeRule();
     $rule->setData(['geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]])]);

@@ -191,8 +191,9 @@ it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function
 // CRUD + Authorization + formData — requires full permission seeding
 // ============================================================================
 
-use App\Domains\Permissions\Models\Permission;
+use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Models\Role;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -278,7 +279,7 @@ describe('formData', function (): void {
     });
 
     it('filters system roles for non-system-admin', function (): void {
-        $location = \App\Domains\Locations\Models\Location::create(['name' => 'Loc', 'level' => 'city']);
+        $location = Location::create(['name' => 'Loc', 'level' => 'city']);
         $org = Organization::create(['name' => 'Mi Org', 'location_id' => $location->id]);
         $adminOrg = User::factory()->create(['role_id' => 3, 'organization_id' => $org->id]);
 
@@ -348,8 +349,14 @@ describe('authorization — denied without correct permission', function (): voi
     it('denies destroy without users.delete', function (): void {
         $role = Role::create(['name' => 'sin_permisos_del']);
         $user = User::factory()->create(['role_id' => $role->id]);
+        // A real, existing target user — route-model binding must resolve
+        // it before the policy denies, otherwise a stale hardcoded id
+        // (e.g. `1`) 404s instead of exercising the 403 this test is for.
+        // Postgres SERIAL sequences are not rolled back between tests
+        // (see RoleSeederTest), so `1` is not guaranteed to still exist.
+        $target = User::factory()->create();
 
-        $response = $this->actingAs($user)->deleteJson('/api/users/1');
+        $response = $this->actingAs($user)->deleteJson("/api/users/{$target->id}");
 
         $response->assertForbidden();
     });
