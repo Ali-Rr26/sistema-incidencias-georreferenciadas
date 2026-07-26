@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            StatusSeeder::class,
             // UserSeeder creates one Admin + one Operador per organization
             // (e.g. operador.gad-municipal-del-canton-quito@organizacion.com),
             // so it must run AFTER OrganizationSeeder. Previously this was

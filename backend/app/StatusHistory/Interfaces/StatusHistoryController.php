@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\StatusHistory\Interfaces;
 
-use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Statuses\Models\Status;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,12 +65,11 @@ class StatusHistoryController
 
     public function availableStatuses(): JsonResponse
     {
-        $statuses = [
-            ['id' => 1, 'nombre' => 'Pendiente', 'valor' => IncidentStatus::Pending->value],
-            ['id' => 2, 'nombre' => 'En proceso', 'valor' => IncidentStatus::InProgress->value],
-            ['id' => 3, 'nombre' => 'Resuelto', 'valor' => IncidentStatus::Resolved->value],
-        ];
+        $statuses = Status::active()
+            ->orderBy('id')
+            ->get(['id', 'nombre', 'valor'])
+            ->toArray();
 
-        return response()->json(['data' => $statuses]);
+        return response()->json($statuses);
     }
 }
