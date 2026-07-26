@@ -23,9 +23,13 @@ class PasswordResetMail extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $frontendUrl = rtrim(config('app.frontend_url', 'http://localhost:3006'), '/');
+        $baseUrl = config('app.frontend_url')
+            ?: env('FRONTEND_URL')
+            ?: env('FRONTEND_BASE_URL')
+            ?: env('APP_URL')
+            ?: 'http://localhost:3006';
 
-        $url = $frontendUrl
+        $url = rtrim((string) $baseUrl, '/')
             . '/#/reset-password?token=' . $this->token
             . '&email=' . urlencode($notifiable->email);
 
