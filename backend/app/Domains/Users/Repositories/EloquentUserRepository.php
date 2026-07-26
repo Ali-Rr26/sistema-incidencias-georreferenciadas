@@ -6,9 +6,9 @@ namespace App\Domains\Users\Repositories;
 
 use App\Domains\Shared\Repositories\EloquentRepository;
 use App\Domains\Users\Models\User;
+use App\Support\PhoneRules;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use App\Support\PhoneRules;
 
 class EloquentUserRepository extends EloquentRepository implements UserRepository
 {
