@@ -4,8 +4,21 @@ import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
 import { permissionService } from './permission.service.js';
 
-  http: { get: vi.fn(), delete: vi.fn() },
-}));
+vi.mock('../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: {
+      get: vi.fn().mockResolvedValue({ data: [] }),
+      post: vi.fn().mockResolvedValue({ data: {} }),
+      put: vi.fn().mockResolvedValue({ data: {} }),
+      patch: vi.fn().mockResolvedValue({ data: {} }),
+      delete: vi.fn().mockResolvedValue(null),
+    },
+  };
+});
 vi.mock('../core/router.js', () => ({
   router: { navigate: vi.fn() },
 }));

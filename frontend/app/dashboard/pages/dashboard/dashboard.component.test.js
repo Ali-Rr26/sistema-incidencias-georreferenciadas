@@ -17,8 +17,22 @@
  */
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
 }));
+
+vi.mock('../../../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: mockHttp,
+  };
+});
 
 // Mock location.service for progressive loading tests
 const mockLocationService = vi.hoisted(() => ({

@@ -12,10 +12,20 @@ import {
   setAccessToken,
 } from '../../../../core/http.service.js';
 
+vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
-  return { ...mod, http: { get: vi.fn(), delete: vi.fn() } };
+  return {
+    ...mod,
     setAccessToken: mod.setAccessToken,
     clearAuthState: mod.clearAuthState,
+    http: {
+      get: vi.fn().mockResolvedValue({ data: [] }),
+      post: vi.fn().mockResolvedValue({ data: {} }),
+      put: vi.fn().mockResolvedValue({ data: {} }),
+      patch: vi.fn().mockResolvedValue({ data: {} }),
+      delete: vi.fn().mockResolvedValue(null),
+    },
+  };
 });
 
 const routerNavigateSpy = vi.fn();

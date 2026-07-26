@@ -26,12 +26,23 @@
  */
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  put: vi.fn(),
-  post: vi.fn(),
-  delete: vi.fn(),
-  request: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
+  request: vi.fn().mockResolvedValue({ data: [] }),
 }));
+
+vi.mock('../../../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: mockHttp,
+  };
+});
 
 const mockRouter = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock('../../../core/router.js', () => ({ router: mockRouter }));

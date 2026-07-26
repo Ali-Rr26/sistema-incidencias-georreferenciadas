@@ -8,9 +8,11 @@
 
 // ─── Module-level mock objects (vi.hoisted pattern from dashboard test) ───────
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  put: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
 }));
 
 const mockLocationService = vi.hoisted(() => ({
@@ -24,6 +26,11 @@ const mockRouter = vi.hoisted(() => ({
   navigate: vi.fn(),
 }));
 
+vi.mock('../../../../core/http.service.js', () => ({
+  http: mockHttp,
+  setAccessToken: vi.fn(),
+  clearAuthState: vi.fn(),
+}));
 vi.mock('../../../../shared/location.service.js', () => ({
   locationService: mockLocationService,
 }));

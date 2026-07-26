@@ -16,9 +16,22 @@
  */
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
 }));
+
+vi.mock('../../../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: mockHttp,
+  };
+});
 
 function buildFeedDetailDom() {
   document.body.innerHTML = `

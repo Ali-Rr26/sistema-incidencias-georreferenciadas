@@ -14,8 +14,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  put: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
 }));
 
 const mockRouter = vi.hoisted(() => ({
@@ -23,13 +26,17 @@ const mockRouter = vi.hoisted(() => ({
   navigate: vi.fn(),
 }));
 
-vi.mock('../../core/router.js', () => ({ router: mockRouter }));
-
 const mockAuth = vi.hoisted(() => ({
   me: vi.fn(),
   _notifyAuthChange: vi.fn(),
 }));
 
+vi.mock('../../core/http.service.js', () => ({
+  http: mockHttp,
+  setAccessToken: vi.fn(),
+  clearAuthState: vi.fn(),
+}));
+vi.mock('../../core/router.js', () => ({ router: mockRouter }));
 vi.mock('../../auth/auth.service.js', () => ({ auth: mockAuth }));
 
 // jsdom does not implement URL.createObjectURL — stub it globally
