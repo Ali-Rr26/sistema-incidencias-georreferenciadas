@@ -351,11 +351,15 @@ class ImageBackfiller
 
     private function alreadyBackfilled(Model $owner, string $storagePath): bool
     {
-        return Image::query()
+        $query = Image::query()
             ->where('imageable_type', $owner->getMorphClass())
-            ->where('imageable_id', $owner->getKey())
-            ->where('storage_path', $storagePath)
-            ->exists();
+            ->where('imageable_id', $owner->getKey());
+
+        if ($owner instanceof User) {
+            return $query->exists();
+        }
+
+        return $query->where('storage_path', $storagePath)->exists();
     }
 
     /**
