@@ -20,7 +20,7 @@ class UpdateProfileRequest extends FormRequest
         $rules = [
             'first_name' => ['sometimes', 'string', 'max:100'],
             'last_name' => ['sometimes', 'string', 'max:100'],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50', 'regex:/^[0-9\+\-\s\(\)]+$/'],
             'password' => ['sometimes', 'nullable', 'string', 'min:8'],
         ];
 
@@ -48,6 +48,7 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'phone.regex' => 'El teléfono solo debe contener números y caracteres válidos (+, -, paréntesis).',
             'avatar.required' => 'Debes subir una imagen de avatar.',
             'avatar.image' => 'El archivo debe ser una imagen válida.',
             'avatar.mimes' => 'Solo se permiten imágenes en formato JPG, PNG, GIF o WebP.',

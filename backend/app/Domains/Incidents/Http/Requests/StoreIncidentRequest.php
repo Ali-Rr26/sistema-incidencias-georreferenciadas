@@ -42,7 +42,6 @@ class StoreIncidentRequest extends FormRequest
             'incident_category_id' => ['required', 'integer', 'exists:incident_categories,id', new CategoryIsLeafRule],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
-            'telefono_contacto' => 'nullable|string|regex:/^(?:\+?58)?4\d{2}-\d{7}$/',
             'geom' => ['nullable', app(GeomShapeRule::class)],
             'organization_id' => 'nullable|integer|exists:organizations,id',
 
@@ -90,8 +89,6 @@ class StoreIncidentRequest extends FormRequest
             'images.*.image' => 'Cada archivo debe ser una imagen.',
             'images.*.mimes' => 'Solo se permiten imágenes JPEG, PNG, WEBP o GIF.',
             'images.*.max' => 'Cada imagen no debe superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
-
-            'telefono_contacto.regex' => 'El formato del teléfono debe ser 04XX-XXXXXXX o +584XX-XXXXXXX',
         ];
     }
 }

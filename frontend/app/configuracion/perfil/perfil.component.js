@@ -49,7 +49,13 @@ export default {
     const u = userData ?? {};
     document.getElementById('perfil-nombre').value = u.first_name ?? '';
     document.getElementById('perfil-apellido').value = u.last_name ?? '';
-    document.getElementById('perfil-telefono').value = u.phone ?? '';
+    const phoneEl = document.getElementById('perfil-telefono');
+    if (phoneEl) {
+      phoneEl.value = u.phone ?? '';
+      phoneEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^\d+-\s()]/g, '');
+      });
+    }
     const emailEl = document.getElementById('perfil-email');
     if (emailEl) {
       emailEl.value = u.email ?? '';
