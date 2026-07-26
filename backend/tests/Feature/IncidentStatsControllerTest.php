@@ -664,7 +664,11 @@ it('org-scoped operator sees only their organization incidents', function () {
     ]);
 
     $permId = DB::table('permissions')->insertGetId([
-        ['name' => 'dashboard.view', 'resource' => 'dashboard', 'action' => 'view', 'created_at' => now(), 'updated_at' => now()],
+        'name' => 'dashboard.view',
+        'resource' => 'dashboard',
+        'action' => 'view',
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     DB::table('role_permissions')->insert([
