@@ -44,20 +44,7 @@ class IncidentStatsController extends Controller
 
         $validated = $request->validate([
             'inicio' => 'nullable|date_format:Y-m-d',
-            'fin' => [
-                'nullable',
-                'date_format:Y-m-d',
-                Rule::when(
-                    $request->filled('inicio') && $request->filled('fin'),
-                    fn ($rule) => $rule->after(function ($fail) use ($request) {
-                        $inicio = Carbon::createFromFormat('Y-m-d', $request->input('inicio'));
-                        $fin = Carbon::createFromFormat('Y-m-d', $request->input('fin'));
-                        if ($fin->isBefore($inicio)) {
-                            $fail('La fecha fin no puede ser anterior a la fecha inicio.');
-                        }
-                    })
-                ),
-            ],
+            'fin' => 'nullable|date_format:Y-m-d|after_or_equal:inicio',
             'tipo_id' => 'nullable|integer|exists:incident_categories,id',
             'ciudad_id' => 'nullable|integer|exists:locations,id',
             'provincia_id' => 'nullable|integer|exists:locations,id',
@@ -318,9 +305,9 @@ class IncidentStatsController extends Controller
         $rows = $this->applyOrgScope(
             DB::table('incidents')->whereNull('incidents.deleted_at'),
         )
-            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
-            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
-            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '>=', $validated['inicio']))
+            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '<=', $validated['fin']))
+            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incidents.incident_category_id', $validated['tipo_id']))
             ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
             ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
             ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))

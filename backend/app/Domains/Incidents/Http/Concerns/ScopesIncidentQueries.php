@@ -21,9 +21,9 @@ trait ScopesIncidentQueries
      * Apply location hierarchy filter to query builder (Query\Builder).
      * Resolves location descendants when filtering by parent (country → provinces → cities).
      */
-    private function applyLocationFilter(QueryBuilder $query, string $filterType, int $locationId): QueryBuilder
+    private function applyLocationFilter(QueryBuilder $query, string $filterType, int|string $locationId): QueryBuilder
     {
-        $location = Location::find($locationId);
+        $location = Location::find((int) $locationId);
         if ($location === null) {
             return $query;
         }
@@ -39,9 +39,9 @@ trait ScopesIncidentQueries
      * Apply location hierarchy filter to Eloquent builder.
      * Mirrors applyLocationFilter for Eloquent queries.
      */
-    private function applyLocationFilterEloquent(Builder $query, string $filterType, int $locationId): Builder
+    private function applyLocationFilterEloquent(Builder $query, string $filterType, int|string $locationId): Builder
     {
-        $location = Location::find($locationId);
+        $location = Location::find((int) $locationId);
         if ($location === null) {
             return $query;
         }
