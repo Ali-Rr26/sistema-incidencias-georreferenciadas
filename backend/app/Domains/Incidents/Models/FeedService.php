@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Models;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -54,6 +55,16 @@ class FeedService
                 ? []
                 : Redis::hgetall(self::V2_ITEMS_KEY);
         } catch (\Throwable $e) {
+            Log::warning('feed.redis_unavailable', [
+                'method' => __METHOD__,
+                'status' => $status,
+                'organization_id' => $organizationId,
+                'location_id' => $locationId,
+                'page' => $page,
+                'per_page' => $perPage,
+                'exception' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
             report($e);
 
             return $this->emptyResponse($page, $perPage);

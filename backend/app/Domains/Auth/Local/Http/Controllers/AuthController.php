@@ -14,6 +14,7 @@ use App\Domains\Users\Services\ProfileImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -45,6 +46,13 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (PendingInvitationException $e) {
+            Log::warning('auth.local.pending_invitation', [
+                'method' => __METHOD__,
+                'email' => $request->validated()['email'],
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNAUTHORIZED);
@@ -73,6 +81,12 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (AuthenticationException $e) {
+            Log::warning('auth.local.refresh_failed', [
+                'method' => __METHOD__,
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json(
                 $e->toResponse(),
                 Response::HTTP_UNAUTHORIZED,
