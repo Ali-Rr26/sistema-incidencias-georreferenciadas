@@ -51,13 +51,23 @@ class AssignmentService
             );
         }
 
-        // Guard 2 — duplicate user. The database has a UNIQUE
-        // (incident_id, user_id) index so this would also raise at the
-        // DB layer; checking it here keeps the error message friendly
-        // and the controller free of transaction juggling.
+        // Guard 2 — duplicate user. The database has a partial UNIQUE
+        // (incident_id, user_id) WHERE deleted_at IS NULL index so this
+        // would also raise at the DB layer; checking it here keeps the
+        // error message friendly and the controller free of transaction
+        // juggling.
+        //
+        // Must exclude soft-deleted rows: `unassign()` soft-deletes
+        // (issue #202), so a raw `DB::table()` query with no `deleted_at`
+        // filter still "sees" a previously unassigned row and wrongly
+        // blocks re-assigning the same user — exactly the case the
+        // partial unique index exists to allow. Surfaced by unskipping
+        // the pgsql-gated "allows re-assigning a user who was previously
+        // unassigned" test (backend-tests-postgres-migration, #197).
         $alreadyAssigned = DB::table('assignments')
             ->where('incident_id', $incident->id)
             ->where('user_id', $userId)
+            ->whereNull('deleted_at')
             ->exists();
 
         if ($alreadyAssigned) {
@@ -71,11 +81,13 @@ class AssignmentService
         // partial unique index `assignments_one_responsable_per_incident`
         // (migration 2026_07_09_000001_...) is the backstop; SQLite in
         // tests skips that index, so this check is what the test suite
-        // observes.
+        // observes. Same soft-delete exclusion as Guard 2 — a previously
+        // unassigned responsable must not block a new one.
         if ($role === AssignmentRole::Responsable->value) {
             $existingResponsable = DB::table('assignments')
                 ->where('incident_id', $incident->id)
                 ->where('assignment_role', AssignmentRole::Responsable->value)
+                ->whereNull('deleted_at')
                 ->exists();
 
             if ($existingResponsable) {

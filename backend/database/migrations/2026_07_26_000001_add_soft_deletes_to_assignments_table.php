@@ -29,9 +29,25 @@ return new class extends Migration
         //   c) el partial unique index se prueba en CI contra Postgres.
 
         if (DB::connection()->getDriverName() === 'pgsql') {
-            DB::statement('DROP INDEX assignments_incident_id_user_id_unique');
+            // `assignments_incident_id_user_id_unique` was created via
+            // `$table->unique(['incident_id', 'user_id'])`, which on
+            // Postgres backs the index with a UNIQUE CONSTRAINT (not a
+            // bare index). `DROP INDEX` alone fails with "cannot drop
+            // index ... because constraint ... requires it" — the
+            // constraint must be dropped instead, which also drops its
+            // backing index in the same statement. This only surfaced
+            // once the test suite actually ran migrate:fresh against
+            // real PostgreSQL (backend-tests-postgres-migration).
+            //
+            // `IF EXISTS`: down() deliberately does NOT restore this
+            // constraint (see below), so a rollback-then-reapply cycle
+            // in the same process (exactly what
+            // `rollbackThroughMigration()`'s test callers do) re-runs
+            // this up() a second time against a database where the
+            // constraint is already gone.
+            DB::statement('ALTER TABLE assignments DROP CONSTRAINT IF EXISTS assignments_incident_id_user_id_unique');
             DB::statement(
-                'CREATE UNIQUE INDEX assignments_incident_user_active_unique '
+                'CREATE UNIQUE INDEX IF NOT EXISTS assignments_incident_user_active_unique '
                 .'ON assignments (incident_id, user_id) WHERE deleted_at IS NULL'
             );
         }

@@ -141,11 +141,17 @@ it('invokes mail sender for reassignment to a different operator', function (): 
             ->once();
     });
 
-    Assignment::create([
+    $original = Assignment::create([
         'incident_id' => $this->incident->id,
         'user_id' => $this->operator->id,
         'assignment_role' => AssignmentRole::Responsable->value,
     ]);
+
+    // Reasignación real: desasignar (soft delete) antes de crear la fila
+    // del segundo — el partial unique index
+    // `assignments_one_responsable_per_incident` (WHERE deleted_at IS
+    // NULL) solo permite un responsable ACTIVO por incidencia.
+    $original->delete();
 
     Assignment::create([
         'incident_id' => $this->incident->id,
