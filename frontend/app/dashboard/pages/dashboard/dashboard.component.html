@@ -157,14 +157,14 @@
       <div class="gr-stat-card__icon">
         <i class="fa-solid fa-layer-group"></i>
       </div>
-      <div class="gr-stat-card__trend">
+      <div class="gr-stat-card__trend" id="trend-total">
         <i class="fa-solid fa-arrow-up"></i> 8% vs. mes anterior
       </div>
     </div>
     <div class="gr-stat-card gr-stat-card--cyan">
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num">—</div>
+          <div class="gr-stat-card__num" id="stat-en-proceso">—</div>
           <div class="gr-stat-card__label">En proceso</div>
         </div>
       </div>
@@ -185,10 +185,9 @@
       <div class="gr-stat-card__icon">
         <i class="fa-solid fa-circle-check"></i>
       </div>
-      <div class="gr-stat-card__trend">
+      <div class="gr-stat-card__trend" id="trend-resueltas">
         <i class="fa-solid fa-arrow-up"></i> 67% tasa de resolución
       </div>
-      <span class="gr-stat-card__badge d-none" id="badge-resueltas"></span>
     </div>
     <div class="gr-stat-card gr-stat-card--red">
       <div class="gr-stat-card__left">
@@ -198,10 +197,9 @@
         </div>
       </div>
       <div class="gr-stat-card__icon"><i class="fa-regular fa-clock"></i></div>
-      <div class="gr-stat-card__trend">
+      <div class="gr-stat-card__trend" id="trend-pendientes">
         <i class="fa-solid fa-arrow-down"></i> 5% vs. mes anterior
       </div>
-      <span class="gr-stat-card__badge d-none" id="badge-pendientes"></span>
     </div>
     <div class="gr-stat-card gr-stat-card--purple">
       <div class="gr-stat-card__left">
@@ -219,27 +217,10 @@
 
   <!-- Charts + activity row -->
   <div class="gr-charts-row">
-    <!-- Donut chart (Por estado) -->
-    <div class="gr-card gr-card--donut">
-      <div class="gr-card__title">Por estado</div>
-      <div id="chart-estados" style="height: 220px; width: 100%"></div>
-      <ul class="gr-legend">
-        <li>
-          <i class="fa-solid fa-circle" style="color: #f0a020"></i
-          ><span class="text-muted">Pendientes</span
-          ><span class="gr-legend__val" id="legend-pendientes">—</span>
-        </li>
-        <li>
-          <i class="fa-solid fa-circle" style="color: #5a6ff0"></i
-          ><span class="text-muted">En proceso</span
-          ><span class="gr-legend__val" id="legend-en-proceso">—</span>
-        </li>
-        <li>
-          <i class="fa-solid fa-circle" style="color: #16a96b"></i
-          ><span class="text-muted">Resueltas</span
-          ><span class="gr-legend__val" id="legend-resueltas">—</span>
-        </li>
-      </ul>
+    <!-- Top 5 Categories chart -->
+    <div class="gr-card gr-card--categories">
+      <div class="gr-card__title">Top 5 Categorías</div>
+      <div id="chart-categorias" style="height: 320px; width: 100%"></div>
     </div>
 
     <!-- Activity feed -->
@@ -254,6 +235,23 @@
           <p class="mb-0">Sin actividad reciente</p>
         </div>
       </div>
+      <a href="#/incidencias" class="gr-activity__link">Ver historial completo</a>
+    </div>
+  </div>
+
+  <!-- Monthly volume chart -->
+  <div class="gr-row-full">
+    <div class="gr-card gr-card--monthly">
+      <div class="gr-card__header">
+        <div class="gr-card__title mb-0">Volumen mensual</div>
+        <ul class="gr-legend gr-legend--inline">
+          <li>
+            <i class="fa-solid fa-circle" style="color: #8a5cf0"></i>
+            <span class="text-muted">Incidencias recibidas</span>
+          </li>
+        </ul>
+      </div>
+      <div id="chart-volumen" style="height: 260px; width: 100%"></div>
     </div>
   </div>
 
