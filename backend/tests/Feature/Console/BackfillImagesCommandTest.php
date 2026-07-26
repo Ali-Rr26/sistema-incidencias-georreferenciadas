@@ -22,9 +22,8 @@ beforeEach(function (): void {
     // RefreshDatabase migrates straight to head, where WU8's
     // drop_legacy_image_storage migration has already removed the legacy
     // schema this command reads from. Resurrect it (empty) the same way
-    // the WU8 guard test does, by rolling back just that one migration
-    // before seeding legacy rows.
-    Artisan::call('migrate:rollback', ['--step' => 1]);
+    // the WU8 guard test does, by rolling back to that migration.
+    Artisan::call('migrate:rollback', ['--step' => 2]);
 
     $this->user = User::factory()->create();
     // forceFill(): profile_image_path is dead and no longer $fillable

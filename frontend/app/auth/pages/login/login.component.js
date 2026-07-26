@@ -21,7 +21,7 @@ import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
-import { blockNonNumeric } from '../../../utils/format.js';
+import { maskPhoneInput } from '../../../utils/ui.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -196,6 +196,12 @@ export default {
           clearEmailError(registerEmailError);
         }
       });
+
+      const regPhoneEl = registerForm.querySelector('#phone');
+      if (regPhoneEl) {
+        maskPhoneInput(regPhoneEl);
+      }
+
 
       registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
