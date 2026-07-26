@@ -52,17 +52,19 @@ class StoreIncidentRequest extends FormRequest
     /**
      * Map Spanish API field names to database column names after validation.
      */
-    public function validated(): array
+    public function validated($key = null, $default = null): mixed
     {
-        $validated = parent::validated();
+        $validated = parent::validated($key, $default);
 
-        if (array_key_exists('titulo', $validated)) {
-            $validated['title'] = $validated['titulo'];
-            unset($validated['titulo']);
-        }
-        if (array_key_exists('descripcion', $validated)) {
-            $validated['description'] = $validated['descripcion'];
-            unset($validated['descripcion']);
+        if (is_array($validated)) {
+            if (array_key_exists('titulo', $validated)) {
+                $validated['title'] = $validated['titulo'];
+                unset($validated['titulo']);
+            }
+            if (array_key_exists('descripcion', $validated)) {
+                $validated['description'] = $validated['descripcion'];
+                unset($validated['descripcion']);
+            }
         }
 
         return $validated;
