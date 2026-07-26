@@ -8,6 +8,7 @@ use App\Domains\Incidents\Http\Rules\CategoryIsLeafRule;
 use App\Domains\Incidents\Http\Rules\GeomShapeRule;
 use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Shared\Services\InputSanitizer;
 use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -67,6 +68,11 @@ class StoreIncidentRequest extends FormRequest
                 $validated['description'] = $validated['descripcion'];
                 unset($validated['descripcion']);
             }
+
+            $validated = InputSanitizer::sanitizeRequest(
+                $validated,
+                textFields: ['title', 'description'],
+            );
         }
 
         return $validated;
