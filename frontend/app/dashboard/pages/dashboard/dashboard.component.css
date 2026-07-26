@@ -121,7 +121,7 @@
 /* Stat cards */
 .gr-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 18px;
   margin-bottom: 20px;
 }
@@ -249,10 +249,86 @@
   display: none;
 }
 
+/* Full width row for weekly stats */
+.gr-row-full {
+  margin-top: 20px;
+}
+
+.gr-card--weekly {
+  /* inherits .gr-card styles, no overrides needed */
+}
+
+/* Card header with title + inline legend */
+.gr-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Inline legend variant (horizontal) */
+.gr-legend--inline {
+  flex-direction: row;
+  gap: 16px;
+  margin: 0;
+}
+
+/* Activity feed item styles */
+.gr-activity__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f2f6;
+}
+
+.gr-activity__item:last-child {
+  border-bottom: none;
+}
+
+.gr-activity__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gr-activity__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gr-activity__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #23283b;
+}
+
+.gr-activity__meta {
+  font-size: 12px;
+  margin-top: 2px;
+  display: flex;
+  gap: 6px;
+}
+
+.gr-activity__date {
+  font-size: 11.5px;
+  color: #9096a6;
+  white-space: nowrap;
+}
+
+.gr-activity__link {
+  display: block;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: #5a6ff0;
+  text-decoration: none;
+}
+
 /* Charts row */
 .gr-charts-row {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
 
