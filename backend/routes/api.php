@@ -33,6 +33,12 @@ Route::post('/register', [RegisterController::class, 'register'])->middleware('t
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
+// Password recovery — public, rate-limited
+Route::post('/forgot-password', [\App\Domains\Auth\Local\Http\Controllers\ForgotPasswordController::class, '__invoke'])
+    ->middleware('throttle:5,1');
+Route::post('/reset-password', [\App\Domains\Auth\Local\Http\Controllers\ResetPasswordController::class, '__invoke'])
+    ->middleware('throttle:5,1');
+
 // Invitation acceptance — public (no auth required), rate-limited
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
