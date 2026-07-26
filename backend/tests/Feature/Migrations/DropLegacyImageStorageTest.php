@@ -65,7 +65,7 @@ beforeEach(function (): void {
 
     // Undo just the drop migration, resurrecting the (empty) legacy schema
     // so this test can seed genuinely un-backfilled legacy data into it.
-    Artisan::call('migrate:rollback', ['--step' => 2]);
+    Artisan::call('migrate:rollback', ['--step' => 3]);
 });
 
 it('refuses to drop legacy image storage and leaves the schema intact when a source has un-backfilled rows', function (): void {
