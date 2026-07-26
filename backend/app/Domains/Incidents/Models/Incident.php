@@ -95,7 +95,10 @@ class Incident extends Model
             // always see `int`, not the raw JSON string from
             // `$request->validated()`. Matches the precedent set by
             // `Comment::$casts` (`incident_id`/`user_id`/`parent_id`).
+            'incident_category_id' => 'integer',
             'location_id' => 'integer',
+            'organization_id' => 'integer',
+            'user_id' => 'integer',
         ];
     }
 

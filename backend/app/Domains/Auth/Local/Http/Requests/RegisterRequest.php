@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Requests;
 
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -22,7 +23,7 @@ class RegisterRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => PhoneRules::rules(),
             'password' => [
                 'required',
                 'string',
@@ -32,6 +33,13 @@ class RegisterRequest extends FormRequest
                 'regex:/\d/',
             ],
             'password_confirmation' => ['required', 'string', 'same:password'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => PhoneRules::MESSAGE,
         ];
     }
 }

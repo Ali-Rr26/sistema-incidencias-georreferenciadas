@@ -39,16 +39,24 @@ it('rejects a second is_thumbnail=true row for the same owner', function (): voi
         'updated_at' => now(),
     ]);
 
+    // PostgreSQL aborts the ENTIRE transaction on any statement error
+    // (unlike SQLite), so the expected constraint violation below must
+    // run inside its own nested transaction/SAVEPOINT — otherwise every
+    // query after it in this test's outer RefreshDatabase transaction
+    // fails with "current transaction is aborted", masking the real
+    // assertion on the next line.
     expect(function (): void {
-        DB::table('images')->insert([
-            'imageable_type' => 'incident',
-            'imageable_id' => 1,
-            'storage_path' => 'incidents/1/b.webp',
-            'is_thumbnail' => true,
-            'sort_order' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::transaction(function (): void {
+            DB::table('images')->insert([
+                'imageable_type' => 'incident',
+                'imageable_id' => 1,
+                'storage_path' => 'incidents/1/b.webp',
+                'is_thumbnail' => true,
+                'sort_order' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
     })->toThrow(QueryException::class);
 
     expect(DB::table('images')->where('imageable_type', 'incident')->where('imageable_id', 1)->count())->toBe(1);

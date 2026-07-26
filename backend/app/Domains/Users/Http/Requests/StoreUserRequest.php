@@ -7,6 +7,7 @@ namespace App\Domains\Users\Http\Requests;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
@@ -53,7 +54,7 @@ class StoreUserRequest extends FormRequest
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'phone' => 'nullable|string|max:50',
+            'phone' => PhoneRules::rules(),
             'avatar' => 'nullable|array',
         ];
     }
@@ -61,6 +62,7 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'phone.regex' => PhoneRules::MESSAGE,
             'email.unique' => 'Este correo electrónico ya está registrado',
             'role_id.exists' => 'El rol selecionnado no existe',
             'password.prohibited' => 'El usuario recibirá un mail para establecer su contraseña.',

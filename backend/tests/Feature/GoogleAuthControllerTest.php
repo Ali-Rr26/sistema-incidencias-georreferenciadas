@@ -9,6 +9,7 @@ use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 uses(RefreshDatabase::class);
@@ -34,11 +35,18 @@ uses(RefreshDatabase::class);
  * token string.
  */
 beforeEach(function (): void {
-    Role::query()->updateOrCreate(['id' => 1, 'name' => UserRole::AdminSistema->value]);
-    Role::query()->updateOrCreate(['id' => 2, 'name' => UserRole::OperadorSistema->value]);
-    Role::query()->updateOrCreate(['id' => 3, 'name' => UserRole::AdminOrganizacion->value]);
-    Role::query()->updateOrCreate(['id' => 4, 'name' => UserRole::OperadorOrganizacion->value]);
-    Role::query()->updateOrCreate(['id' => 5, 'name' => UserRole::Usuario->value]);
+    // Direct DB::insert, not Role::query()->updateOrCreate(): Role's
+    // $fillable = ['name'] excludes `id`, so the Eloquent mass-assignment
+    // path silently drops the explicit id and lets auto-increment assign
+    // whatever the sequence happens to be at (see RoleSeederTest / the
+    // same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => UserRole::AdminSistema->value],
+        ['id' => 2, 'name' => UserRole::OperadorSistema->value],
+        ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
+        ['id' => 4, 'name' => UserRole::OperadorOrganizacion->value],
+        ['id' => 5, 'name' => UserRole::Usuario->value],
+    ]);
 
     // Single fake, pre-loaded with every token this test file uses.
     // Unknown tokens → InvalidFirebaseTokenException → 401 (R10).

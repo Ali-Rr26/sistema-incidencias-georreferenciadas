@@ -128,13 +128,19 @@ it('does not notify when the operator already claimed the same incident as respo
 // ──────────────────────────────────────────────────────────────────────
 it('notifies only the new operator on reassignment (S-4)', function (): void {
     // Asignación original al primer operador
-    Assignment::create([
+    $original = Assignment::create([
         'incident_id' => $this->incident->id,
         'user_id' => $this->operator->id,
         'assignment_role' => AssignmentRole::Responsable->value,
     ]);
 
-    // Reasignación a un segundo operador (otra fila, mismo incidente)
+    // Reasignación real: el operador original se desasigna (soft delete)
+    // antes de crear la fila del segundo — el partial unique index
+    // `assignments_one_responsable_per_incident` (WHERE deleted_at IS
+    // NULL) solo permite un responsable ACTIVO por incidencia, igual que
+    // AssignmentService::assign()/unassign() en el flujo real.
+    $original->delete();
+
     Assignment::create([
         'incident_id' => $this->incident->id,
         'user_id' => $this->secondOperator->id,
