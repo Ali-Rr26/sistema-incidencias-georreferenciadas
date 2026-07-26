@@ -324,23 +324,23 @@ describe('Desktop — permission-driven action rendering', () => {
 });
 
 describe('Action handlers — CustomEvent delegation', () => {
-  it('clicking Ver navigates to /roles/{id}', async () => {
+  it('clicking Ver navigates to /roles/{id}?view=true', async () => {
     await renderIndexWithPermissions(new Set(['roles.update', 'roles.delete']));
 
     const verBtn = document.querySelector('#tabla-body .btn-ver');
     verBtn.click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/1');
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/1?view=true');
   });
 
-  it('clicking Editar navigates to /roles/crear?id={id}', async () => {
+  it('clicking Editar navigates to /roles/{id}', async () => {
     await renderIndexWithPermissions(new Set(['roles.update', 'roles.delete']));
 
     const firstRowActions = document.querySelector('#tabla-body table-actions');
     firstRowActions.querySelector('.dropdown-toggle').click();
     firstRowActions.querySelector('.table-actions-edit').click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/crear?id=1');
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/1');
   });
 
   it('clicking Eliminar opens the Bootstrap Delete Modal', async () => {
@@ -385,7 +385,7 @@ describe('Mobile — actions render in card body', () => {
     expect(verBtns).toHaveLength(2);
   });
 
-  it('mobile Ver click navigates to /roles/{id}', async () => {
+  it('mobile Ver click navigates to /roles/{id}?view=true', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockReturnValue({
@@ -400,6 +400,6 @@ describe('Mobile — actions render in card body', () => {
     const verBtn = document.querySelector('#contenedor-cards .btn-ver');
     verBtn.click();
 
-    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/1');
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/roles/1?view=true');
   });
 });

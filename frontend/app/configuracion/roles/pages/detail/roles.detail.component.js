@@ -272,6 +272,12 @@ export default {
         });
         updateContador();
 
+        if (isViewMode) {
+          document.querySelectorAll('.perm-check').forEach((cb) => {
+            cb.disabled = true;
+          });
+        }
+
         document.getElementById('estado-cargando').classList.add('d-none');
         document.getElementById('contenido').classList.remove('d-none');
       } catch (err) {
