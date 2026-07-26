@@ -2,7 +2,11 @@ import template from './dashboard.component.html?raw';
 import style from './dashboard.component.css?raw';
 import { http } from '../../../core/http.service.js';
 import { locationService } from '../../../shared/location.service.js';
-import { badgeEstado, badgePrioridad, STATUS_COLOR } from '../../../utils/format.js';
+import {
+  badgeEstado,
+  badgePrioridad,
+  STATUS_COLOR,
+} from '../../../utils/format.js';
 
 // ─────────────────────────────────────────────
 // Estado global de filtros
@@ -323,7 +327,10 @@ async function refreshDashboard() {
   // Trend resueltas muestra tasa de resolución (siempre porcentaje actual)
   const trendResueltasEl = document.getElementById('trend-resueltas');
   if (trendResueltasEl) {
-    if (trends.resolution_rate_pct !== null && trends.resolution_rate_pct !== undefined) {
+    if (
+      trends.resolution_rate_pct !== null &&
+      trends.resolution_rate_pct !== undefined
+    ) {
       trendResueltasEl.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${trends.resolution_rate_pct}% tasa de resolución`;
     } else {
       trendResueltasEl.textContent = '—';
