@@ -3,6 +3,7 @@ import './usuarios.index.component.css';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { renderAvatarCell } from '../../../../utils/avatar.js';
+import { permissionService } from '../../../../shared/permission.service.js';
 import {
   initCustomSelects,
   getSelectValue,
@@ -41,6 +42,11 @@ export default {
   template,
 
   async onInit() {
+    const perms = await permissionService.getMyPermissions();
+    if (!perms.has('users.create')) {
+      document.querySelectorAll('a[href*="usuarios/crear"]').forEach(el => el.classList.add('d-none'));
+    }
+
     let roles = [];
     let organizaciones = [];
 
