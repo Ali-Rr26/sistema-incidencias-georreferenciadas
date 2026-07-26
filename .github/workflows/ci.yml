@@ -87,6 +87,14 @@ jobs:
           coverage: none
           cache: composer
 
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5435 -U user && echo "PostgreSQL is ready" && break
+            echo "Waiting for PostgreSQL... ($i/30)"
+            sleep 1
+          done
+
       - name: Install backend dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
