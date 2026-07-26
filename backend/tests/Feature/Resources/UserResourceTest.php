@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Resources;
 
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
@@ -17,8 +16,6 @@ class UserResourceTest extends TestCase
 
     public function test_to_array_includes_timestamps(): void
     {
-        Role::create(['id' => 1, 'name' => 'admin_sistema']);
-
         $user = User::factory()->create();
 
         $resource = new UserResource($user);
@@ -37,8 +34,6 @@ class UserResourceTest extends TestCase
      */
     public function test_profile_image_path_is_null_when_no_avatar_image_exists(): void
     {
-        Role::create(['id' => 1, 'name' => 'admin_sistema']);
-
         $user = User::factory()->create();
 
         $resource = new UserResource($user);
@@ -50,8 +45,6 @@ class UserResourceTest extends TestCase
 
     public function test_profile_image_path_reflects_the_avatar_image_relation(): void
     {
-        Role::create(['id' => 1, 'name' => 'admin_sistema']);
-
         $user = User::factory()->create();
         Image::create([
             'imageable_type' => 'user',

@@ -76,10 +76,6 @@ it('has unique constraint on incident_id and user_id', function (): void {
 });
 
 it('has check constraint on assignment_role', function (): void {
-    if (DB::connection()->getDriverName() === 'sqlite') {
-        $this->markTestSkipped('SQLite does not support ADD CONSTRAINT for CHECK.');
-    }
-
     DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user1->id,

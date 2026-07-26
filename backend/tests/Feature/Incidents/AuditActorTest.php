@@ -37,10 +37,10 @@ beforeEach(function (): void {
 });
 
 it('records the modifier as audit actor, not the reporter', function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('Audit actor test requires PostgreSQL driver.');
-    }
-
+    // Requires the `trg_log_incident_status` trigger, PostgreSQL-only.
+    // `composer test` runs exclusively against Postgres
+    // (backend-tests-postgres-migration, issue #197), so this always
+    // executes for real.
     $this->actingAs($this->actor);
 
     $this->repository->update($this->incident->id, ['status' => Incident::STATUS_IN_PROGRESS]);

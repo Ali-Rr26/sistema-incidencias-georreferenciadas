@@ -8,7 +8,6 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,12 +17,22 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Seed roles and permissions (skip IncidentSeeder — requires PostGIS)
-    Role::create(['name' => 'admin_sistema']);
-    Role::create(['name' => 'operador_sistema']);
-    Role::create(['name' => 'admin_organizacion']);
-    Role::create(['name' => 'operador_organizacion']);
-    Role::create(['name' => 'usuario']);
+    // Seed roles and permissions (skip IncidentSeeder — requires PostGIS).
+    //
+    // Direct DB::insert with a pinned id, not Role::create(): the
+    // role_permission grant below hardcodes role_id=1 for admin_sistema.
+    // `Role::create()` relies on nextval(), which does NOT reliably land
+    // on 1 — PostgreSQL sequences are not rolled back between tests, so
+    // an earlier test in the same parallel worker database can leave the
+    // sequence past 1 by the time this one runs (see RoleSeederTest /
+    // the same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema'],
+        ['id' => 2, 'name' => 'operador_sistema'],
+        ['id' => 3, 'name' => 'admin_organizacion'],
+        ['id' => 4, 'name' => 'operador_organizacion'],
+        ['id' => 5, 'name' => 'usuario'],
+    ]);
 
     Permission::create(['resource' => 'comments', 'action' => 'view',   'name' => 'Ver Comentarios',       'description' => '']);
     Permission::create(['resource' => 'comments', 'action' => 'create', 'name' => 'Agregar Comentarios',   'description' => '']);

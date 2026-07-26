@@ -98,8 +98,15 @@ it('returns 404 when role does not exist', function (): void {
     $admin = User::factory()->create(['role_id' => 1]);
     $this->actingAs($admin);
 
+    // A real, existing permission id — must pass the `exists:permissions`
+    // validation rule before the controller ever reaches the "role not
+    // found" check. Postgres SERIAL sequences are not rolled back
+    // between tests (see RoleSeederTest), so a hardcoded literal like
+    // `1` is not guaranteed to still be a valid permission_id here.
+    $validPermissionId = Permission::query()->value('permission_id');
+
     $response = $this->putJson('/api/roles/999999/permissions', [
-        'permissions' => [1],
+        'permissions' => [$validPermissionId],
     ]);
 
     $response->assertNotFound();

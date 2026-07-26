@@ -11,6 +11,7 @@ use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Services\ProfileImageService;
+use App\Support\PhoneRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -139,6 +140,10 @@ class AuthController
     {
         $user = $request->user();
         $validated = $request->validated();
+
+        if (array_key_exists('phone', $validated)) {
+            $validated['phone'] = PhoneRules::normalize($validated['phone']);
+        }
 
         // Handle password hashing (never mass-assign raw password)
         if (array_key_exists('password', $validated)) {

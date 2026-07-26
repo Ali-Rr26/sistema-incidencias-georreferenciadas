@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domains\Locations\Models\Location;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\MultiPolygon;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -13,11 +12,6 @@ use MatanYadaev\EloquentSpatial\Objects\Polygon;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
-
-function locationRepoPostgisAvailable(): bool
-{
-    return DB::connection()->getDriverName() === 'pgsql';
-}
 
 /** A small square polygon: lng ∈ [-80.8, -80.6], lat ∈ [-1.0, -0.8]. */
 function locationRepoSquare(): MultiPolygon
@@ -52,10 +46,6 @@ function locationRepoSquare(): MultiPolygon
  * first loaded for Santa Elena / La Libertad.
  */
 it('pgsql: findByPoint returns the most specific (deepest) match when the point is inside both a province and its cantón', function (): void {
-    if (! locationRepoPostgisAvailable()) {
-        test()->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     $province = Location::create([
         'name' => 'El Oro',
         'level' => 'province',
@@ -77,10 +67,6 @@ it('pgsql: findByPoint returns the most specific (deepest) match when the point 
 });
 
 it('pgsql: findByPoint still returns the province when no cantón polygon contains the point', function (): void {
-    if (! locationRepoPostgisAvailable()) {
-        test()->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     $province = Location::create([
         'name' => 'El Oro',
         'level' => 'province',
