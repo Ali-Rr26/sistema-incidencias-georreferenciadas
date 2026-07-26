@@ -35,8 +35,8 @@ class StoreIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string|max:5000',
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'nullable|string|max:5000',
             'incident_category_id' => ['required', 'integer', 'exists:incident_categories,id', new CategoryIsLeafRule],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
             'priority' => ['required', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
@@ -49,20 +49,39 @@ class StoreIncidentRequest extends FormRequest
         ];
     }
 
+    /**
+     * Map Spanish API field names to database column names after validation.
+     */
+    public function validated(): array
+    {
+        $validated = parent::validated();
+
+        if (array_key_exists('titulo', $validated)) {
+            $validated['title'] = $validated['titulo'];
+            unset($validated['titulo']);
+        }
+        if (array_key_exists('descripcion', $validated)) {
+            $validated['description'] = $validated['descripcion'];
+            unset($validated['descripcion']);
+        }
+
+        return $validated;
+    }
+
     public function messages(): array
     {
         return [
-            'title.required' => 'The title is required.',
-            'title.max' => 'The title may not be greater than 255 characters.',
-            'incident_category_id.required' => 'The incident category is required.',
-            'incident_category_id.exists' => 'The selected category does not exist.',
-            'location_id.exists' => 'The selected location does not exist.',
-            'priority.required' => 'The priority is required.',
-            'priority.in' => 'Priority must be: low, medium or high.',
-            'images.max' => 'You can attach a maximum of '.ImageRules::MAX_FILES.' images.',
-            'images.*.image' => 'Each file must be an image.',
-            'images.*.mimes' => 'Only JPEG, PNG, WEBP or GIF images are allowed.',
-            'images.*.max' => 'Each image must not exceed '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
+            'titulo.required' => 'El campo título es obligatorio.',
+            'titulo.max' => 'El título no puede superar los 255 caracteres.',
+            'incident_category_id.required' => 'La categoría de incidencia es obligatoria.',
+            'incident_category_id.exists' => 'La categoría seleccionada no existe.',
+            'location_id.exists' => 'La ubicación seleccionada no existe.',
+            'priority.required' => 'La prioridad es obligatoria.',
+            'priority.in' => 'La prioridad debe ser: baja, media o alta.',
+            'images.max' => 'Puedes adjuntar un máximo de '.ImageRules::MAX_FILES.' imágenes.',
+            'images.*.image' => 'Cada archivo debe ser una imagen.',
+            'images.*.mimes' => 'Solo se permiten imágenes JPEG, PNG, WEBP o GIF.',
+            'images.*.max' => 'Cada imagen no debe superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }
