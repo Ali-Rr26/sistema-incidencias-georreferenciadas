@@ -55,7 +55,7 @@ class IncidentCategoryController extends Controller
         $category = $this->categories->findById($id);
 
         if ($category === null) {
-            return response()->json(['message' => 'Incident category not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => __('messages.category_not_found')], Response::HTTP_NOT_FOUND);
         }
 
         return (new IncidentCategoryResource($category))->response();

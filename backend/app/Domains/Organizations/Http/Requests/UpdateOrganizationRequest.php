@@ -32,9 +32,9 @@ class UpdateOrganizationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'location_id.exists' => 'The selected location does not exist.',
-            'parent_id.exists' => 'The selected parent organization does not exist.',
-            'incident_category_id.exists' => 'The selected category does not exist.',
+            'location_id.exists' => 'La ubicación seleccionada no existe.',
+            'parent_id.exists' => 'La organización padre seleccionada no existe.',
+            'incident_category_id.exists' => 'La categoría seleccionada no existe.',
         ];
     }
 }
