@@ -1,4 +1,5 @@
 import template from './incidencias.detail.component.html?raw';
+import style from './incidencias.detail.component.css?raw';
 import {
   STATUS_LABEL,
   PRIORITY_LABEL,
@@ -33,6 +34,7 @@ const DROPDOWN_STATUSES = [
 ];
 
 export default {
+  style,
   template,
 
   async onInit({ params } = {}) {
