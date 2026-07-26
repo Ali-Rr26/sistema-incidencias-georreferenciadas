@@ -12,6 +12,17 @@ function jsonResponse(status, body) {
     ok: status >= 200 && status < 300,
     json: vi.fn().mockResolvedValue(body),
     text: vi.fn().mockResolvedValue(JSON.stringify(body)),
+    blob: vi.fn().mockResolvedValue(new Blob([JSON.stringify(body)])),
+  };
+}
+
+function blobResponse(status, bytes) {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    json: vi.fn().mockResolvedValue({}),
+    text: vi.fn().mockResolvedValue(''),
+    blob: vi.fn().mockResolvedValue(new Blob([bytes])),
   };
 }
 
@@ -72,6 +83,48 @@ describe('http service', () => {
         headers: { Authorization: 'Bearer new-token' },
       }),
     );
+  });
+
+  it('returns a Blob when caller opts into responseType: "blob"', async () => {
+    setAccessToken('good-token');
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]); // %PDF-
+    fetchMock.mockResolvedValueOnce(blobResponse(200, pdfBytes));
+
+    const result = await http.get('/incidents/exportar?format=pdf', {
+      responseType: 'blob',
+    });
+
+    // We don't strictly need a real Blob in jsdom — we just need to
+    // confirm the service returned the value `res.blob()` resolved to.
+    expect(result).toBeDefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/incidents/exportar?format=pdf',
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+        headers: { Authorization: 'Bearer good-token' },
+      }),
+    );
+  });
+
+  it('surfaces non-2xx blob responses as thrown Errors (no silent JSON parse)', async () => {
+    setAccessToken('good-token');
+    fetchMock.mockResolvedValueOnce(blobResponse(403, new Uint8Array()));
+
+    await expect(
+      http.get('/incidents/exportar?format=pdf', { responseType: 'blob' }),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('does NOT trigger refresh on 401 for blob responses (body would be lost)', async () => {
+    setAccessToken('expired-token');
+    fetchMock.mockResolvedValueOnce(blobResponse(401, new Uint8Array()));
+
+    await expect(
+      http.get('/incidents/exportar?format=pdf', { responseType: 'blob' }),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('clears state and dispatches auth:expired when refresh fails', async () => {

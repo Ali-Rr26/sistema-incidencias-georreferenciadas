@@ -131,16 +131,21 @@ describe('login flow — router role bucket race (regression)', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url) => {
-        if (url.endsWith('login.component.html')) {
+        // Router appends ?raw=1 to .css URLs (Vite dev workaround — see
+        // _withRaw in router.js). Parse the URL so the matcher is
+        // independent of any query string.
+        const u = new URL(url, 'http://x');
+        const path = u.pathname;
+        if (path.endsWith('login.component.html')) {
           return htmlResponse(LOGIN_TEMPLATE);
         }
-        if (url.endsWith('login.component.css')) {
+        if (path.endsWith('login.component.css')) {
           return htmlResponse('/* login styles */');
         }
-        if (url === '/templates/feed.html') {
+        if (path === '/templates/feed.html') {
           return htmlResponse(FEED_TEMPLATE);
         }
-        if (url === '/styles/feed.css') {
+        if (path === '/styles/feed.css') {
           return htmlResponse(FEED_CSS);
         }
         throw new Error(`Unexpected fetch: ${url}`);

@@ -13,6 +13,35 @@ El sistema simula un entorno real de gestión municipal o técnica, donde múlti
 
 ---
 
+## 🏗️ Arquitectura del Sistema
+
+![Arquitectura del sistema](docs/architecture/system.svg)
+
+> **Convención visual:** flecha sólida = tráfico real de request · flecha punteada = observabilidad / CI (no transporta tráfico de usuario) · `[(…)]` = datastore · `{{…}}` = hub/puerto · ⚠️ = caveat conocido del estado actual.
+>
+> **Caveats documentados en el diagrama:** (1) TLS termination ocurre en Cloudflare, Nginx escucha HTTP plano en `:80`; (2) Prometheus y Loki **no tienen volúmenes persistentes** — métricas y logs son efímeros; (3) el coverage report PHP Clover que SonarQube espera **no se genera** con la config actual de phpunit; (4) PHPStan está instalado pero **no corre en CI**.
+
+### 📊 Dominios Principales (Domain-Driven Design)
+
+| Dominio | Responsabilidades | Entidades Clave |
+|---------|-------------------|-----------------|
+| **Incidents** | CRUD, Estados, Workflow, Georreferenciación | Incident, IncidentCategory, Status, Location |
+| **Comments** | Comentarios anidados, Imágenes, Historial | Comment, CommentImage, Thread |
+| **Assignments** | Asignación de responsables, Roles | Assignment, AssignmentRole |
+| **Users** | Perfiles, Roles, Permisos | User, Role, Permission |
+| **Notifications** | Alertas, Marcas leído/no leído | Notification, Event |
+| **Auth** | JWT + Firebase, Sesiones | Token, RefreshToken |
+| **Menus** | Menús dinámicos, Control de acceso | Menu (role-filtered) |
+
+### 🔄 Flujos Clave
+
+- **Reporte de incidencia** (Ciudadano) → Validación → Almacenamiento → Notificación a Staff
+- **Cambio de estado** → Trigger DB → Historial → Event → Notificación → Suscriptores
+- **Asignación** → Policy check → Permission validation → Event → Notificación
+- **Comentario** → Policy check → Almacenamiento → Notificación en tiempo real (WebSocket)
+
+---
+
 ## 🎯 Objetivo
 
 Desarrollar una aplicación web que permita:

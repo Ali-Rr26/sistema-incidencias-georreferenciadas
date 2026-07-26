@@ -42,8 +42,8 @@ const CHILD_ROUTE_PERMISSIONS = {
   '/organizaciones/crear': 'organizations.create',
   '/localizaciones/crear': 'locations.create',
   '/categorias/crear': 'incident-categories.create',
-  '/incidencias/crear': 'incidents.manage',
-  '/incidencias/:id': 'incidents.view',
+  '/incidencias/crear': 'incidents.create',
+  '/incidencias/:id': ['incidents.view', 'feed.detail'],
   // roles.update is granted to admin_sistema only (RolePermissionSeeder
   // never assigns it to any other role) — replicates the original
   // roleGuard(['admin_sistema']) restriction on this route through the
@@ -57,7 +57,9 @@ const CHILD_ROUTE_PERMISSIONS = {
  */
 export const permissionGuard = {
   async canActivate(_ctx) {
-    const [requestedPath, queryString] = (window.location.hash.slice(1) || '/').split('?');
+    const [requestedPath, queryString] = (
+      window.location.hash.slice(1) || '/'
+    ).split('?');
 
     let allowed;
     try {
@@ -87,6 +89,11 @@ async function isAllowed(requestedPath, queryString = '') {
     if (matchesPattern(pattern, requestedPath)) {
       const perms = await permissionService.getMyPermissions();
 
+      // Acepta string único o array de permisos (OR lógico).
+      const hasPermission = (slug) => perms.has(slug);
+      const check = (p) =>
+        Array.isArray(p) ? p.some(hasPermission) : hasPermission(p);
+
       // These "crear" routes are reused for editing too (index pages
       // navigate to `X/crear?id=N` — see e.g. organizaciones.index
       // .component.js). A role can have `.update` without `.create`
@@ -94,13 +101,17 @@ async function isAllowed(requestedPath, queryString = '') {
       // so when `id` is present this must also accept the `.update`
       // grant — otherwise a role that's allowed to edit gets bounced
       // to /not-found for lacking a permission editing never needed.
-      if (permission.endsWith('.create') && new URLSearchParams(queryString).has('id')) {
+      if (
+        !Array.isArray(permission) &&
+        permission.endsWith('.create') &&
+        new URLSearchParams(queryString).has('id')
+      ) {
         const updatePermission = permission.replace(/\.create$/, '.update');
 
-        return perms.has(permission) || perms.has(updatePermission);
+        return hasPermission(permission) || hasPermission(updatePermission);
       }
 
-      return perms.has(permission);
+      return check(permission);
     }
   }
 

@@ -42,6 +42,7 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
         'admin_sistema',
         'operador_organizacion',
         'operador_sistema',
+        'publicador',
         'usuario',
       ].sort(),
     );
@@ -54,6 +55,7 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
     );
     expect(ROLE_LABELS.operador_organizacion).toBe('Operador de Organización');
     expect(ROLE_LABELS.operador_sistema).toBe('Operador de Sistema');
+    expect(ROLE_LABELS.publicador).toBe('Publicador');
     expect(ROLE_LABELS.usuario).toBe('Usuario');
   });
 

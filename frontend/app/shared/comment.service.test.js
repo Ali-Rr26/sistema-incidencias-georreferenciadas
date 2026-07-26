@@ -11,9 +11,14 @@ vi.mock('../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
     http: {
-      get: vi.fn(),
-      post: vi.fn(),
+      get: vi.fn().mockResolvedValue({ data: [] }),
+      post: vi.fn().mockResolvedValue({ data: {} }),
+      put: vi.fn().mockResolvedValue({ data: {} }),
+      patch: vi.fn().mockResolvedValue({ data: {} }),
+      delete: vi.fn().mockResolvedValue(null),
     },
   };
 });
@@ -82,10 +87,16 @@ describe('commentService', () => {
 
   it('create posts the message to /incidents/{id}/comments and returns the created comment', async () => {
     http.post.mockResolvedValue({
-      data: { id: 99, message: 'Nuevo comentario', created_at: '2026-07-08T11:00:00Z' },
+      data: {
+        id: 99,
+        message: 'Nuevo comentario',
+        created_at: '2026-07-08T11:00:00Z',
+      },
     });
 
-    const result = await commentService.create(42, 'Nuevo comentario');
+    const result = await commentService.create(42, {
+      message: 'Nuevo comentario',
+    });
 
     expect(http.post).toHaveBeenCalledWith('/incidents/42/comments', {
       message: 'Nuevo comentario',
@@ -97,7 +108,7 @@ describe('commentService', () => {
   it('create falls back to the raw response when it has no .data envelope', async () => {
     http.post.mockResolvedValue({ id: 5, message: 'x' });
 
-    const result = await commentService.create(1, 'x');
+    const result = await commentService.create(1, { message: 'x' });
 
     expect(result).toEqual({ id: 5, message: 'x' });
   });

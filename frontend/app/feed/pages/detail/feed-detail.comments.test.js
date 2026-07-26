@@ -16,10 +16,22 @@
  */
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
+
+vi.mock('../../../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: mockHttp,
+  };
+});
 
 function buildFeedDetailDom() {
   document.body.innerHTML = `
@@ -122,10 +134,14 @@ describe('feed-detail — citizen comments', () => {
     await component.onInit({ params: { id: 7 }, role: 'citizen' });
     await vi.waitUntil(
       () =>
-        !document.getElementById('fd-comments-empty').classList.contains('d-none'),
+        !document
+          .getElementById('fd-comments-empty')
+          .classList.contains('d-none'),
     );
 
-    expect(document.getElementById('fd-comments-list').children).toHaveLength(0);
+    expect(document.getElementById('fd-comments-list').children).toHaveLength(
+      0,
+    );
   });
 
   it('posts a new comment via POST /incidents/{id}/comments and appends it after reload', async () => {
@@ -142,7 +158,11 @@ describe('feed-detail — citizen comments', () => {
         return Promise.resolve({
           data: [
             commentFixture(),
-            commentFixture({ id: 2, message: 'Ya lo reportamos', user: { first_name: 'Ana' } }),
+            commentFixture({
+              id: 2,
+              message: 'Ya lo reportamos',
+              user: { first_name: 'Ana' },
+            }),
           ],
         });
       }
@@ -191,7 +211,9 @@ describe('feed-detail — citizen comments', () => {
     await component.onInit({ params: { id: 7 }, role: 'citizen' });
     await vi.waitUntil(
       () =>
-        !document.getElementById('fd-comments-empty').classList.contains('d-none'),
+        !document
+          .getElementById('fd-comments-empty')
+          .classList.contains('d-none'),
     );
 
     document.getElementById('fd-comment-input').value = '   ';

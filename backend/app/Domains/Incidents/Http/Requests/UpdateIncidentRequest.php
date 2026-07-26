@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http\Requests;
 
+use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Shared\Services\InputSanitizer;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class UpdateIncidentRequest extends FormRequest
@@ -30,16 +34,11 @@ class UpdateIncidentRequest extends FormRequest
             return false;
         }
 
-        // Verify status transitions require the user to be 'responsable'
-        if ($this->has('status') && $this->input('status') !== $incident->status->value) {
-            $isResponsable = $incident->assignedUsers()
-                ->where('user_id', $user->id)
-                ->where('assignment_role', 'responsable')
-                ->exists();
-
-            if (! $isResponsable) {
-                abort(403, 'No estás asignado como responsable de esta incidencia.');
-            }
+        // Status transitions require the user to be 'responsable' — the rule
+        // lives in IncidentPolicy::updateStatus (single owner); Gate::authorize
+        // preserves the deny message as the 403 body.
+        if ($this->has('status')) {
+            Gate::authorize('updateStatus', [$incident, (string) $this->input('status')]);
         }
 
         if ($user->isOperator()) {
@@ -60,23 +59,37 @@ class UpdateIncidentRequest extends FormRequest
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|nullable|string',
             'incident_category_id' => 'sometimes|integer|exists:incident_categories,id',
-            'location_id' => 'sometimes|integer|exists:locations,id',
+            'location_id' => ['sometimes', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
             'status' => ['sometimes', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
             'geom' => 'nullable|json',
 
             // Imágenes opcionales (multipart)
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
+            'images' => [...['nullable'], ...ImageRules::galleryArrayRules()],
+            'images.*' => [...['nullable'], ...ImageRules::galleryFileRules()],
         ];
+    }
+
+    protected function passedValidation(): void
+    {
+        $sanitized = InputSanitizer::sanitizeRequest(
+            $this->validated(),
+            textFields: ['title', 'description'],
+        );
+        $this->replace($sanitized);
     }
 
     public function messages(): array
     {
         return [
-            'status.in' => 'Status must be: pending, in_progress or resolved.',
-            'priority.in' => 'Priority must be: low, medium or high.',
+            'status.in' => 'El estado debe ser: pending, in_progress o resolved.',
+            'priority.in' => 'La prioridad debe ser: low, medium o high.',
+            'resolution_date.date' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'images.max' => 'Puedes adjuntar un máximo de '.ImageRules::MAX_FILES.' imágenes.',
+            'images.*.image' => 'Cada archivo debe ser una imagen.',
+            'images.*.mimes' => 'Solo se permiten imágenes JPEG, PNG, WEBP o GIF.',
+            'images.*.max' => 'Cada imagen no debe superar los '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }

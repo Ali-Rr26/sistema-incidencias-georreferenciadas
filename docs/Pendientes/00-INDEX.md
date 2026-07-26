@@ -62,3 +62,27 @@ Los 7 ítems del backlog original fueron trabajados en una sola sesión. Estado:
 
 - **Vista de mapa georreferenciado** — feature, no bug. Es el único ítem que
   rescato del backlog original que sigue vigente. Todo lo demás está cerrado.
+
+## Auditoría cruzada con backlog del vault (2026-07-16)
+
+El vault `publicaciones- incidencias.md` (bóveda personal del usuario) lista 8
+features como "publicaciones pendientes". Cruzadas con el estado real del repo
+(después del PR #43 y los docs de este `Pendientes/`) el resultado es:
+
+| Item del vault                                | Estado real                                                                                  |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1. Filtrado de Incidencias por Operador       | Distinto al doc 06 (descartado). Requiere spec nueva (sin propuesta todavía).                |
+| 2. Sistema de Notificaciones (SSE)            | ✅ Cubierto por `03-notificaciones.md` (verificado 07/07/2026), con gap ver abajo.           |
+| 3. Subida de Imágenes en Comentarios          | ❌ Pendiente real — sin spec todavía.                                                        |
+| 4. Reestructuración de Menú en Tablas         | ✅ Cubierto por `07-consolidacion-shells.md` + PR #43.                                       |
+| 5. Subida de Imagen de Perfil                 | ❌ Pendiente real — depende de `custom-jwt-auth-sessions` F3+F4.                             |
+| 6. Eliminación del Campo Permisos en Roles    | ✅ Cubierto por `05-permisos.md` + `10-enforcement-permisos-frontend.md` (cambio de diseño). |
+| 7. Consolidación de Filtros en Feed           | ✅ Cubierto por PR #43 + menú dinámico (`01-menu-dinamico.md`).                              |
+| 8. Mejora Visual de Detalles de Incidencia    | ⚠️ Parcial: `08-vista-mapa.md` cubre vista mapa, no feed visual.                             |
+
+**Gap identificado** (origen del change `notificaciones-asignacion-responsable/`):
+el doc `03-notificaciones.md` quedó con un checkbox pendiente. La asignación
+formal (responsable/apoyo vía `Assignment`) no dispara `Notification`. Sólo el
+flujo `claim` / `release` / `confirm` lo hace (vía `IncidentNotificationObserver`).
+El enum `NotificationType::Assignment` ya existe en
+`backend/app/Domains/Notifications/Enums/NotificationType.php` pero no se usa.

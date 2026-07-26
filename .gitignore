@@ -8,7 +8,6 @@
 
 # Personal
 CLAUDE.md
-backend/frankenphp
 /frontend/node_modules
 /frontend/coverage
 /frontend/dist
@@ -18,3 +17,22 @@ sdd/ok-arranquemos-entonces/verify-report.md
 .pi/APPEND_SYSTEM.md
 /.codebase-memory
 backend/storage/auth-92411-firebase-adminsdk-fbsvc-538415f630.json
+
+# Playwright E2E outputs (runtime artifacts)
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# node_modules internal state
+frontend/node_modules/.package-lock.json
+
+# FreeDash template — kept locally for reference, not tracked
+plantilla_Frontend/FreeDash-lite-master/
+
+# -- foglamp local scan --
+.foglamp/
+
+# Local skill copies (use global ~/.claude/skills instead)
+.claude/skills/impeccable/
+/.claude
+.github/hooks/impeccable.json

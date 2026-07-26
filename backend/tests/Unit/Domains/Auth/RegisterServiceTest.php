@@ -7,7 +7,7 @@ use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use RuntimeException;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -19,11 +19,18 @@ uses(TestCase::class, RefreshDatabase::class);
  * future refactors cannot silently weaken it.
  */
 beforeEach(function (): void {
-    Role::query()->updateOrCreate(['id' => 1, 'name' => UserRole::AdminSistema->value]);
-    Role::query()->updateOrCreate(['id' => 2, 'name' => UserRole::OperadorSistema->value]);
-    Role::query()->updateOrCreate(['id' => 3, 'name' => UserRole::AdminOrganizacion->value]);
-    Role::query()->updateOrCreate(['id' => 4, 'name' => UserRole::OperadorOrganizacion->value]);
-    Role::query()->updateOrCreate(['id' => 5, 'name' => UserRole::Usuario->value]);
+    // Direct DB::insert, not Role::query()->updateOrCreate(): Role's
+    // $fillable = ['name'] excludes `id`, so the Eloquent mass-assignment
+    // path silently drops the explicit id and lets auto-increment assign
+    // whatever the sequence happens to be at (see RoleSeederTest / the
+    // same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => UserRole::AdminSistema->value],
+        ['id' => 2, 'name' => UserRole::OperadorSistema->value],
+        ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
+        ['id' => 4, 'name' => UserRole::OperadorOrganizacion->value],
+        ['id' => 5, 'name' => UserRole::Usuario->value],
+    ]);
 });
 
 it('assigns role_id from the citizen role row, not from the payload', function (): void {

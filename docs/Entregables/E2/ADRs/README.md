@@ -13,7 +13,8 @@ Los ADRs son inmutables una vez aceptados. Para cambiar una decisión, escribí 
 | 0003 | [Flujo de incidencias: claim / release / confirm](0003-incident-workflow-claim-release-confirm.md) | Accepted | 2026-07-07 |
 | 0004 | [Multitenant por `organization_id` con scope en policies](0004-multitenant-organization-id.md) | Accepted | 2026-07-07 |
 | 0005 | [Autenticación JWT stateless](0005-stateless-jwt-auth.md) | Accepted | 2026-07-07 |
-| 0006 | [Frankenphp + Laravel Octane](0006-frankenphp-octane.md) | Accepted | 2026-07-07 |
+| 0006 | [Frankenphp + Laravel Octane](0006-frankenphp-octane.md) | Superseded by 0007 | 2026-07-07 |
+| 0007 | [Migrate Octane runtime from FrankenPHP to Swoole](0007-migrate-octane-swoole.md) | Accepted | 2026-07-21 |
 | 0007 | [PostGIS para geolocalización](0007-postgis-geolocation.md) | Accepted | 2026-07-07 |
 
 ## Plantilla de un ADR

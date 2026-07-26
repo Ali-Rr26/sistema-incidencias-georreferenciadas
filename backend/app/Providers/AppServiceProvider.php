@@ -11,11 +11,19 @@ use App\Domains\Comments\Repositories\EloquentCommentRepository;
 use App\Domains\IncidentCategories\Repositories\EloquentIncidentCategoryRepository;
 use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
 use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
+use App\Domains\Incidents\Observers\IncidentResolutionAuditObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Invitations\Services\InvitationService;
+use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Locations\Repositories\EloquentLocationRepository;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Mail\Services\MailJobDispatcher;
+use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Mail\Services\SmtpMailSender;
 use App\Domains\Notifications\Http\Policies\NotificationPolicy;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Observers\IncidentNotificationObserver;
@@ -31,6 +39,7 @@ use App\Domains\Users\Repositories\EloquentUserRepository;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Storage\StorageService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -39,10 +48,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Factory as KreaitFirebaseFactory;
-use Symfony\Component\Mercure\Hub;
-use Symfony\Component\Mercure\HubInterface;
-use Symfony\Component\Mercure\Jwt\FactoryTokenProvider;
-use Symfony\Component\Mercure\Jwt\LcobucciFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -63,6 +68,31 @@ class AppServiceProvider extends ServiceProvider
         // (which would fail without FIREBASE_CREDENTIALS configured).
         // The closure also resolves `services.firebase.leeway_seconds`
         // (default 5s) per the Kreait SDK's clock-skew tolerance.
+        // SMTP mail sender for incident-assignment notifications.
+        // Singleton: solo guarda dependencias inyectadas (Mailer contract)
+        // y la config se resuelve en cada llamada. Esta dedicado
+        // exclusivamente a AssignmentNotificationObserver — NO se comparte
+        // con otros observadores ni con el sistema de mail transaccional
+        // general (registros, recuperación de contraseña, etc.).
+        $this->app->singleton(MailSenderInterface::class, SmtpMailSender::class);
+
+        // MailJobDispatcher — singleton que centraliza el despacho de
+        // Jobs de mail. No expone interface porque es una decisión
+        // interna del dominio Mail: los observers y services inyectan
+        // la clase concreta directamente. El container comparte la
+        // misma instancia entre todos los callers; los Jobs en sí se
+        // instancian nuevos en cada dispatch() y se serializan a Redis.
+        // Ver docblock de MailJobDispatcher para la justificación del
+        // singleton (no es el antipatrón "Job singleton", es solo
+        // dispatcher compartido).
+        $this->app->singleton(MailJobDispatcher::class, MailJobDispatcher::class);
+
+        // InvitationTokenGenerator — stateless concrete, no interface needed for WU-1.
+        $this->app->singleton(InvitationTokenGenerator::class, InvitationTokenGenerator::class);
+
+        // InvitationService — depends on InvitationTokenGenerator + MailSenderInterface.
+        $this->app->singleton(InvitationService::class, InvitationService::class);
+
         $this->app->singleton(FirebaseTokenVerifier::class, function () {
             $credentialsPath = (string) (config('services.firebase.credentials_path')
                 ?: env('FIREBASE_CREDENTIALS', ''));
@@ -87,32 +117,30 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // Mercure hub — see config/octane.php for why this replaced the
-        // manual SSE loop. Same FrankenPHP process serves the hub, so we
-        // publish to it over loopback.
-        $this->app->singleton(HubInterface::class, function () {
-            // LcobucciFactory's Key\InMemory rejects an empty secret at
-            // construction time — fall back to a placeholder so
-            // environments without MERCURE_PUBLISHER_JWT_SECRET set (local
-            // dev without a real hub, CI, tests that never mocked
-            // HubInterface) can still construct the container. Publishing
-            // will fail at request time instead, which
-            // NotificationService::publish() already swallows.
-            $secret = (string) config('octane.mercure.publisher_jwt');
-            $jwtFactory = new LcobucciFactory(
-                $secret !== '' ? $secret : 'insecure-placeholder-configure-MERCURE_PUBLISHER_JWT_SECRET',
-            );
-            $provider = new FactoryTokenProvider($jwtFactory, publish: ['*']);
-
-            return new Hub(
-                rtrim((string) env('MERCURE_PUBLIC_URL', 'http://127.0.0.1:8000'), '/').'/.well-known/mercure',
-                $provider,
-            );
-        });
+        // The previous version of this provider bound a Mercure
+        // `HubInterface` singleton here. As of
+        // openspec/changes/eliminar-mercure-sse-nativo, real-time
+        // delivery is performed by NotificationService publishing to
+        // Redis Pub/Sub, and the SSE stream endpoint subscribes to
+        // `user:{id}:notifications` directly. The Mercure binding is
+        // intentionally absent; the mercureAuthorization cookie and
+        // its JWT have also been removed.
     }
 
     public function boot(): void
     {
+        // Polymorphic image storage morph map (image-persistence-polymorphic,
+        // WU2, D1). Registered first — before any model/relation is used —
+        // so `imageable_type` never stores a bare FQCN. `enforceMorphMap`
+        // (not `morphMap`) makes `getMorphClass()` throw
+        // `ClassMorphViolationException` for any model not listed here,
+        // which is the intended guard for App\Storage\Models\Image rows.
+        Relation::enforceMorphMap([
+            'incident' => Incident::class,
+            'comment' => Comment::class,
+            'user' => User::class,
+        ]);
+
         // Rate limiting para el feed público (REQ-RTL-01/02/03)
         RateLimiter::for('feed', function (Request $request): Limit {
             $user = $request->user();
@@ -147,6 +175,12 @@ class AppServiceProvider extends ServiceProvider
         // the SDK, not from our backend.
         RateLimiter::for('google', function (Request $request): Limit {
             return Limit::perMinute(20)->by($request->ip());
+        });
+
+        // /invitations/{token}/accept — rate limit para evitar fuerza bruta
+        // sobre el token de invitación. 10/min por IP, mismo rango que register.
+        RateLimiter::for('invitations', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
         });
 
         // Admins bypass all gate/policy checks
@@ -187,6 +221,24 @@ class AppServiceProvider extends ServiceProvider
             Incident::observe(IncidentNotificationObserver::class);
         } catch (\Throwable) {
             // Notifications tables not ready yet — skip silently.
+        }
+
+        // Register IncidentResolutionAuditObserver to create audit trail
+        // when an incident is resolved (status → resolved).
+        try {
+            Incident::observe(IncidentResolutionAuditObserver::class);
+        } catch (\Throwable) {
+            // Resolution audits table not ready yet — skip silently.
+        }
+
+        // Register AssignmentNotificationObserver to dispatch user notifications
+        // when an operator is formally assigned to an incident (responsable/apoyo)
+        // via the Assignment model. Companion to IncidentNotificationObserver but
+        // listens to the Assignment lifecycle (not Incident columns).
+        try {
+            Assignment::observe(AssignmentNotificationObserver::class);
+        } catch (\Throwable) {
+            // Assignments table not ready yet — skip silently.
         }
 
         // Register RedisCommentSync as observer for Comment model events

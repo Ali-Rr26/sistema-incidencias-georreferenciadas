@@ -85,16 +85,20 @@ it('prevents AdminOrganizacion from assigning administrative roles on user creat
 })->with([1, 2]);
 
 it('allows AdminOrganizacion to create users in their own organization with allowed roles', function (): void {
+    // Per commit 8f450fd6 (invitation flow), password is `prohibited` on
+    // user creation — the admin-invite flow generates a setup-token email
+    // instead. The system creates the user, returns 201, and the InvitationService
+    // creates UserInvitation row in DB::afterCommit() (S-7 tolerant if the mail
+    // wire fails, which is fine in test env).
     $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($this->adminA)
         ->postJson('/api/users', [
             'email' => 'ownorg@example.com',
-            'password' => 'password123',
             'role_id' => 5, // usuario
             'organization_id' => $this->orgA->id,
             'first_name' => 'Own',
             'last_name' => 'Org User',
-            'phone' => '123456789',
+            'phone' => '0991234567',
         ]);
 
     $response->assertStatus(201);
@@ -162,16 +166,17 @@ it('allows SystemAdmin to create any user in any organization with any role', fu
         'organization_id' => null,
     ]);
 
+    // Same invitation-flow contract as the AdminOrganizacion test above —
+    // password is `prohibited` so the system emails a setup token instead.
     $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($systemAdmin)
         ->postJson('/api/users', [
             'email' => 'syscreated@example.com',
-            'password' => 'password123',
             'role_id' => 2, // operador_sistema
             'organization_id' => $this->orgB->id,
             'first_name' => 'Sys',
             'last_name' => 'Created',
-            'phone' => '123456789',
+            'phone' => '0991234567',
         ]);
 
     $response->assertStatus(201);

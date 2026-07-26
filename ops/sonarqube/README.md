@@ -2,9 +2,30 @@
 
 Self-hosted SonarQube Community Build for static analysis of `backend/` (PHP)
 and `frontend/` (JS). This is **not** part of the Prometheus/Grafana/Loki
-observability stack documented in `ops/OBSERVABILITY.md` — SonarQube has its
-own UI and its own dedicated Postgres database (`sonarqube_db` service),
-kept fully separate from the app's `db` service and from Grafana dashboards.
+observability stack — SonarQube has its own UI and its own dedicated Postgres
+database (`sonarqube_db` service), kept fully separate from the app's `db`
+service and from Grafana dashboards.
+
+## Deployment
+
+Two deployment targets:
+
+| Environment | File | Command |
+|-------------|------|---------|
+| Development | `docker-compose.yml` | `docker compose up -d sonarqube_db sonarqube` |
+| Production (Swarm) | `deploy.yml` | `docker stack deploy -c deploy.yml incidencias-stack` |
+
+Both use the same `sonarqube` + `sonarqube_db` service pair. The Docker Swarm
+stack does **not** mount `sonarqube_logs` as a volume — logs go to the
+container's stdout and are picked up by `promtail` / Loki.
+
+> **Host kernel requirement:** SonarQube's embedded Elasticsearch requires
+> `vm.max_map_count >= 262144`. Set it once on the host:
+> ```bash
+> echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+> ```
+> Without this the `sonarqube` container fails to start (Elasticsearch bootstrap
+> check error).
 
 ## Services (docker-compose)
 
@@ -13,20 +34,7 @@ kept fully separate from the app's `db` service and from Grafana dashboards.
 | sonarqube | `${SONARQUBE_PORT:-9002}` | SonarQube UI + analysis API |
 | sonarqube_db | — (internal only) | Dedicated Postgres for SonarQube's own metadata |
 
-## One-time host setup
-
-SonarQube's embedded Elasticsearch requires:
-
-```bash
-sudo sysctl -w vm.max_map_count=262144
-```
-
-To persist this across reboots, add `vm.max_map_count=262144` to
-`/etc/sysctl.conf` (or a file under `/etc/sysctl.d/`). Without this, the
-`sonarqube` container will fail to start with an Elasticsearch bootstrap
-check error.
-
-## Starting the service
+## Starting the service (dev)
 
 ```bash
 docker compose up -d sonarqube_db sonarqube
@@ -103,21 +111,31 @@ one). If you want CI to reach a self-hosted SonarQube instance, also set the
 `http://localhost:9002` only resolves on the dev machine, not on GitHub's
 runners.
 
-## Pending: exposing SonarQube for CI
+## Exposing SonarQube for CI
 
-GitHub Actions runners cannot reach `localhost:9002` on the dev machine, so
-the `sonar-scan` CI job is wired but inert until this is done:
+GitHub Actions runners cannot reach `localhost:9002` on the dev/production
+machine. The `sonar-scan` CI job is wired but inert until this is done:
 
-1. **Expose SonarQube publicly.** The stack already runs `cloudflared`
-   (see `docker-compose.yml`) tunneling `frontend`/`backend` — extend that
-   tunnel (or add a second one) to route a hostname to the `sonarqube`
-   service on port `9000` internally. Needs a Cloudflare Tunnel ingress rule
-   added for a subdomain (e.g. `sonar.<domain>` → `http://sonarqube:9000`).
+1. **Expose SonarQube publicly via Cloudflare Tunnel.** Both `docker-compose.yml`
+   (dev) and `deploy.yml` (production/Swarm) include the `cloudflared` service
+   and the `sonarqube` service on the same network. To route traffic:
+   - Log into [Cloudflare Zero Trust](https://one.dash.cloudflare.com/).
+   - Go to **Networks → Tunnels** → select your tunnel.
+   - Add a **Public Hostname** ingress rule:
+     ```
+     Subdomain:  sonar
+     Domain:     tu-dominio.com
+     Type:       HTTP
+     URL:        sonarqube:9000
+     ```
+     (The `sonarqube` hostname resolves inside the Docker network — no
+     `localhost` here.)
+   - Save. Cloudflare Tunnel handles HTTPS automatically.
 2. **Set GitHub repo secrets** (Settings → Secrets and variables → Actions):
    - `SONAR_TOKEN` — generate from **My Account → Security → Generate
-     Tokens** in the SonarQube UI (already documented above).
-   - `SONAR_HOST_URL` — the public URL from step 1 (e.g.
-     `https://sonar.<domain>`).
+     Tokens** in the SonarQube UI (see "First login" above).
+   - `SONAR_HOST_URL` — the public URL from step 1, e.g.
+     `https://sonar.tu-dominio.com` (no trailing slash).
 3. Once both secrets exist, the `sonar-scan` job in `.github/workflows/ci.yml`
    starts running on every push/PR automatically — no workflow change needed.
 

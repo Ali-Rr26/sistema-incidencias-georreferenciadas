@@ -38,7 +38,13 @@ class StatusHistoryController
     {
         $incident = Incident::findOrFail($incidentId);
 
-        $this->authorize('view', $incident);
+        // Status history is staff-only (status-history.view). Citizens can view
+        // incident details via feed, but not the administrative status log.
+        // Explicit permission check prevents feed.detail from leaking into
+        // operations reserved for status-history.view gate.
+        if (! $request->user()?->can('status-history.view')) {
+            abort(403);
+        }
 
         $rows = DB::table('status_history')
             ->where('incident_id', $incident->id)
@@ -59,12 +65,6 @@ class StatusHistoryController
 
     public function availableStatuses(): JsonResponse
     {
-        $statuses = [
-            ['id' => 1, 'nombre' => 'Pendiente', 'valor' => IncidentStatus::Pending->value],
-            ['id' => 2, 'nombre' => 'En proceso', 'valor' => IncidentStatus::InProgress->value],
-            ['id' => 3, 'nombre' => 'Resuelto', 'valor' => IncidentStatus::Resolved->value],
-        ];
-
-        return response()->json(['data' => $statuses]);
+        return response()->json(IncidentStatus::availableStatuses());
     }
 }

@@ -168,6 +168,18 @@ HTTP debajo de FrankenPHP) **ni siquiera puede parsear su propia config**
 explícitos (parte del fix del punto 8, pero esta fue la variable puntual
 que de verdad tumbaba todo el servidor, no solo un warning).
 
+> **Resolución del problema general** (no de esta variable específica): el
+> ruido genérico `ERROR unknown error` que motivó este post-mortem se
+> abordó en dos etapas. La primera ([PR #101](https://github.com/Ali-Rr26/sistema-incidencias-georreferenciadas/pull/101))
+> añadió una subclase que capturaba cada línea de stderr/stdout de
+> FrankenPHP via `Log::channel('exceptions')` con el debug completo, así
+> el log era debuggeable. La segunda ([PR #108](https://github.com/Ali-Rr26/sistema-incidencias-georreferenciadas/pull/108))
+> migró el runtime a Swoole, que no comparte el bug — el handler de
+> `StartSwooleCommand` no tiene el fallback `'unknown error'`. Bajo
+> Swoole este crash-loop particular (causado por Caddyfile mal formado)
+> ya no se manifiesta en la misma forma, pero los risks de configuración
+> del paso 8 siguen siendo los mismos independientemente del driver.
+
 ## 10. Portainer
 
 - Instalado como service dentro del stack (`deploy.yml`), pineado a

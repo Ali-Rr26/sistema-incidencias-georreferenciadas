@@ -3,7 +3,7 @@
  *
  * Verifies:
  *   1. A route tagged with a shell mounts inside that shell's outlet, fetches
- *      its template + style with cache: 'no-store', wires updateActive on
+ *      its template + style, wires updateActive on
  *      the shell, and calls onInit / initPage exactly once.
  *   2. A role-mismatch (citizen accessing an admin-tagged route) redirects
  *      to /feed and skips onInit.
@@ -37,6 +37,7 @@ describe('router integration (single-shell)', () => {
     router.currentComponent = null;
     router.currentRoute = null;
     router._shellMounted = false;
+    router.setCurrentUserRole(null);
     layout.initPage.mockClear();
 
     document.body.innerHTML = `
@@ -75,16 +76,20 @@ describe('router integration (single-shell)', () => {
 
     window.location.hash = '#/dashboard';
     fetchMock = vi.fn(async (url) => {
-      if (url === '/templates/dashboard.html') {
+      // The router appends ?raw=1 to CSS URLs (Vite dev workaround — see
+      // _withRaw in router.js). Treat ?raw=1 URLs as the same resource.
+      const u = new URL(url, 'http://x');
+      const path = u.pathname;
+      if (path === '/templates/dashboard.html') {
         return htmlResponse('<section id="dashboard-page">Dashboard</section>');
       }
-      if (url === '/styles/dashboard.css') {
+      if (path === '/styles/dashboard.css') {
         return htmlResponse('#dashboard-page { color: rebeccapurple; }');
       }
-      if (url === '/templates/login.html') {
+      if (path === '/templates/login.html') {
         return htmlResponse('<form id="login-form"></form>');
       }
-      if (url === '/styles/login.css') {
+      if (path === '/styles/login.css') {
         return htmlResponse('/* */');
       }
       throw new Error(`Unexpected fetch: ${url}`);
@@ -125,12 +130,82 @@ describe('router integration (single-shell)', () => {
     expect(
       document.querySelector('.sidebar-link')?.classList.contains('active'),
     ).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith('/templates/dashboard.html', {
-      cache: 'no-store',
-    });
-    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css', {
-      cache: 'no-store',
-    });
+    expect(fetchMock).toHaveBeenCalledWith('/templates/dashboard.html');
+    // The router appends ?raw=1 to .css URLs (see _withRaw in router.js)
+    // so Vite's dev HMR wrapper doesn't corrupt the CSS parser.
+    expect(fetchMock).toHaveBeenCalledWith('/styles/dashboard.css?raw=1');
+  });
+
+  it('mounts bundled template + style strings with zero fetches', async () => {
+    const onInit = vi.fn();
+
+    // Components migrated to Vite ?raw imports expose `template`/`style`
+    // strings instead of `templateUrl`/`styleUrl` — the router must mount
+    // them without touching the network. Same for the shell's `style`.
+    router.shell.style = '#sidebarnav { padding: 0; }';
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Inline</section>',
+        style: '#dashboard-page { color: teal; }',
+        onInit,
+      },
+      [],
+      'admin',
+    );
+
+    await router.resolve();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(document.getElementById('page-outlet').innerHTML).toContain(
+      'Inline',
+    );
+    expect(document.getElementById('shell-style')).not.toBeNull();
+    const styles = [...document.querySelectorAll('style[id^="style-"]')];
+    expect(styles.some((s) => s.textContent.includes('teal'))).toBe(true);
+    expect(onInit).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets an admin bucket into a citizen-tagged route (backend menu grants Inicio/Reportar by permission)', async () => {
+    const onInit = vi.fn();
+
+    router.setCurrentUserRole('admin');
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Feed</section>',
+        onInit,
+      },
+      [],
+      'citizen',
+    );
+
+    await router.resolve();
+
+    expect(onInit).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('page-outlet').innerHTML).toContain('Feed');
+  });
+
+  it('lets any bucket into a both-tagged route (e.g. /configuracion/perfil)', async () => {
+    const onInit = vi.fn();
+
+    router.setCurrentUserRole('admin');
+    router.addRoute(
+      '/dashboard',
+      {
+        template: '<section id="dashboard-page">Perfil</section>',
+        onInit,
+      },
+      [],
+      'both',
+    );
+
+    await router.resolve();
+
+    expect(onInit).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('page-outlet').innerHTML).toContain(
+      'Perfil',
+    );
   });
 
   it('redirects to /feed when a citizen accesses an admin-tagged route', async () => {

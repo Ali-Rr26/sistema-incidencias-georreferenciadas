@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Storage;
 
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -37,7 +38,14 @@ class StorageProxyController
 
         try {
             $stream = $this->storage->getObjectStream($key);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::warning('storage.proxy_stream_failed', [
+                'method' => __METHOD__,
+                'key' => $key,
+                'exception' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
+
             abort(404);
         }
 

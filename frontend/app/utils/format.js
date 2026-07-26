@@ -12,7 +12,9 @@
  * Don't redefine it here — CI will fail.
  */
 
-export { STATUS_LABEL } from './status.constants.js';
+import { STATUS_LABEL } from './status.constants.js';
+
+export { STATUS_LABEL };
 
 /**
  * Escape a string so it is safe to interpolate into an HTML template.
@@ -61,3 +63,85 @@ export const PRIORITY_LABEL = Object.freeze({
   medium: 'Media',
   low: 'Baja',
 });
+
+export function getCommentImageUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/storage/')) return path;
+  if (path.startsWith('storage/')) return '/' + path;
+  return `/storage/${path}`;
+}
+
+/**
+ * Bootstrap color keys per priority/status — used by the badge helpers
+ * below and by any view that needs the raw color (e.g. map markers).
+ */
+export const PRIORITY_COLOR = Object.freeze({
+  high: 'danger',
+  medium: 'warning',
+  low: 'success',
+});
+
+export const STATUS_COLOR = Object.freeze({
+  pending: 'secondary',
+  in_progress: 'primary',
+  resolved: 'success',
+  pending_operator: 'warning',
+});
+
+export function badgePrioridad(p) {
+  const label = PRIORITY_LABEL[p] || '—';
+  return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
+}
+
+export function badgeEstado(e) {
+  return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
+}
+
+export function formatearFecha(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-EC', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+const NON_NUMERIC_RE = /[^0-9+\- ()]/g;
+const CONTROL_KEYS = new Set([
+  'Backspace',
+  'Delete',
+  'Tab',
+  'Escape',
+  'Enter',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'F1',
+  'F2',
+  'F3',
+  'F4',
+  'F5',
+  'F6',
+  'F7',
+  'F8',
+  'F9',
+  'F10',
+  'F11',
+  'F12',
+]);
+
+export function blockNonNumeric(e) {
+  if (CONTROL_KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === ' ' || e.key.length !== 1) return;
+  NON_NUMERIC_RE.lastIndex = 0;
+  if (NON_NUMERIC_RE.test(e.key)) {
+    e.preventDefault();
+  }
+}
+
+/** Shared email validation regex. Used across login and user management forms. */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

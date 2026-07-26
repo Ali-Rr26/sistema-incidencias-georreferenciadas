@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Services;
 
 use App\Domains\Incidents\Enums\AssignmentRole;
+use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Business rules for the `assignments` sub-resource.
+ * Reglas de negocio del sub-recurso `assignments`.
+ *
+ * @cqrs-role command-service
+ *
+ * Pertenece al command side: encapsula invariantes (rol válido, sin
+ * usuarios duplicados, un solo responsable por incidencia) que el
+ * controller NO debe embebir para mantenerlas testeables sin kernel.
  *
  * The HTTP layer (AssignmentController) is a thin shell over these
  * methods; the controller does not embed any of this logic so the rules
@@ -44,13 +51,23 @@ class AssignmentService
             );
         }
 
-        // Guard 2 — duplicate user. The database has a UNIQUE
-        // (incident_id, user_id) index so this would also raise at the
-        // DB layer; checking it here keeps the error message friendly
-        // and the controller free of transaction juggling.
+        // Guard 2 — duplicate user. The database has a partial UNIQUE
+        // (incident_id, user_id) WHERE deleted_at IS NULL index so this
+        // would also raise at the DB layer; checking it here keeps the
+        // error message friendly and the controller free of transaction
+        // juggling.
+        //
+        // Must exclude soft-deleted rows: `unassign()` soft-deletes
+        // (issue #202), so a raw `DB::table()` query with no `deleted_at`
+        // filter still "sees" a previously unassigned row and wrongly
+        // blocks re-assigning the same user — exactly the case the
+        // partial unique index exists to allow. Surfaced by unskipping
+        // the pgsql-gated "allows re-assigning a user who was previously
+        // unassigned" test (backend-tests-postgres-migration, #197).
         $alreadyAssigned = DB::table('assignments')
             ->where('incident_id', $incident->id)
             ->where('user_id', $userId)
+            ->whereNull('deleted_at')
             ->exists();
 
         if ($alreadyAssigned) {
@@ -64,11 +81,13 @@ class AssignmentService
         // partial unique index `assignments_one_responsable_per_incident`
         // (migration 2026_07_09_000001_...) is the backstop; SQLite in
         // tests skips that index, so this check is what the test suite
-        // observes.
+        // observes. Same soft-delete exclusion as Guard 2 — a previously
+        // unassigned responsable must not block a new one.
         if ($role === AssignmentRole::Responsable->value) {
             $existingResponsable = DB::table('assignments')
                 ->where('incident_id', $incident->id)
                 ->where('assignment_role', AssignmentRole::Responsable->value)
+                ->whereNull('deleted_at')
                 ->exists();
 
             if ($existingResponsable) {
@@ -79,9 +98,18 @@ class AssignmentService
             }
         }
 
-        // Attach via the relation so the pivot schema (timestamps,
-        // bookkeeping) matches the rest of the app.
-        $incident->assignedUsers()->attach($userId, ['assignment_role' => $role]);
+        // Create the Assignment row directly so Eloquent dispatches the
+        // `created` event (BelongsToMany::attach() bypasses model events
+        // — it issues a raw INSERT on the pivot table — which is why the
+        // AssignmentNotificationObserver never fired for assignments
+        // made through this service in the past). The DB UNIQUE indexes
+        // already cover duplicate-user and one-responsable-per-incident
+        // guards as a backstop.
+        Assignment::create([
+            'incident_id' => $incident->id,
+            'user_id' => $userId,
+            'assignment_role' => $role,
+        ]);
     }
 
     /**
@@ -97,16 +125,19 @@ class AssignmentService
      */
     public function unassign(Incident $incident, int $assignmentId): void
     {
-        $deleted = DB::table('assignments')
+        $assignment = Assignment::query()
             ->where('incident_id', $incident->id)
             ->where('id', $assignmentId)
-            ->delete();
+            ->first();
 
-        if ($deleted === 0) {
+        if ($assignment === null) {
             throw new \RuntimeException(
                 'Asignación no encontrada.',
                 404
             );
         }
+
+        // Soft delete — preserva el historial de asignación.
+        $assignment->delete();
     }
 }

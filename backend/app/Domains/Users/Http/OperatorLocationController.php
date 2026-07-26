@@ -76,7 +76,7 @@ class OperatorLocationController extends Controller
 
         // Solo admins de sistema, operadores de sistema u operadores de org pueden reportar ubicación
         if (! $user->isSystemAdmin() && ! in_array($user->role?->name, self::PING_ROLES, true)) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('messages.unauthorized')], 403);
         }
 
         $data = $request->validate([
@@ -104,7 +104,7 @@ class OperatorLocationController extends Controller
 
         // Admins de sistema, operadores de sistema, admins de org u operadores de org
         if (! $currentUser->isSystemAdmin() && ! in_array($currentUser->role?->name, self::QUERY_ROLES, true)) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => __('messages.unauthorized')], 403);
         }
 
         $now = time();

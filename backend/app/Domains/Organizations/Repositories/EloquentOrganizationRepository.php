@@ -8,7 +8,6 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Shared\Repositories\EloquentRepository;
 use App\Domains\Users\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -20,22 +19,38 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         parent::__construct(new Organization);
     }
 
-    public function paginate(array $filters = [], int $perPage = 20, ?int $hardCap = null): LengthAwarePaginator
+    protected function paginateRelations(): array
     {
-        $perPage = isset($filters['per_page']) ? (int) $filters['per_page'] : $perPage;
-        unset($filters['per_page']);
-
-        $query = $this->newQuery()
-            ->with('location', 'parent', 'category');
-
-        $this->applyFilters($query, $filters);
-
-        return $query->paginate(min($perPage, $hardCap ?? 100));
+        return ['location', 'parent', 'category'];
     }
 
     public function findById(int $id): ?Organization
     {
         return $this->newQuery()->with('category')->find($id);
+    }
+
+    public function findForLocation(int $locationId): ?Organization
+    {
+        $location = Location::find($locationId);
+        if ($location === null) {
+            return null;
+        }
+
+        $locationIds = $location->ancestorsAndSelf()->pluck('id');
+
+        /** @var Organization|null */
+        return $this->newQuery()->whereIn('location_id', $locationIds)->first();
+    }
+
+    public function catalog(bool $withParent = false): Collection
+    {
+        $columns = $withParent ? ['id', 'name', 'parent_id'] : ['id', 'name'];
+
+        return $this->newQuery()
+            ->orderBy('name')
+            ->get($columns)
+            ->map(fn (Organization $o) => array_intersect_key($o->toArray(), array_flip($columns)))
+            ->values();
     }
 
     public function tree(): Collection

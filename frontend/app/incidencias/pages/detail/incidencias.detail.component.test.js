@@ -26,13 +26,23 @@
  */
 
 const mockHttp = vi.hoisted(() => ({
-  get: vi.fn(),
-  put: vi.fn(),
-  post: vi.fn(),
-  delete: vi.fn(),
-  request: vi.fn(),
+  get: vi.fn().mockResolvedValue({ data: [] }),
+  put: vi.fn().mockResolvedValue({ data: {} }),
+  post: vi.fn().mockResolvedValue({ data: {} }),
+  patch: vi.fn().mockResolvedValue({ data: {} }),
+  delete: vi.fn().mockResolvedValue(null),
+  request: vi.fn().mockResolvedValue({ data: [] }),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
+
+vi.mock('../../../core/http.service.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
+    http: mockHttp,
+  };
+});
 
 const mockRouter = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock('../../../core/router.js', () => ({ router: mockRouter }));
@@ -73,6 +83,8 @@ function buildDetailDom() {
 
     <form id="detalle-comment-form">
       <textarea id="detalle-comment-input"></textarea>
+      <input type="file" id="detalle-comment-images" />
+      <button type="button" id="detalle-comment-attach-btn"></button>
       <div id="detalle-comment-error" class="d-none"></div>
       <button type="submit" id="detalle-comment-submit">Publicar</button>
     </form>
@@ -159,7 +171,8 @@ describe('incidencias.detail — public comments', () => {
 
     await component.onInit({ params: { id: 42 } });
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length > 0,
+      () =>
+        document.getElementById('detalle-comments-list').children.length > 0,
     );
 
     const list = document.getElementById('detalle-comments-list');
@@ -167,7 +180,9 @@ describe('incidencias.detail — public comments', () => {
     expect(list.textContent).toContain('Primer comentario');
     expect(list.textContent).toContain('Ana Lopez');
     expect(
-      document.getElementById('detalle-comments-vacio').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-vacio')
+        .classList.contains('d-none'),
     ).toBe(true);
   });
 
@@ -191,9 +206,13 @@ describe('incidencias.detail — public comments', () => {
     );
 
     expect(
-      document.getElementById('detalle-comments-vacio').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-vacio')
+        .classList.contains('d-none'),
     ).toBe(false);
-    expect(document.getElementById('detalle-comments-list').children).toHaveLength(0);
+    expect(
+      document.getElementById('detalle-comments-list').children,
+    ).toHaveLength(0);
   });
 
   it('posts a new comment via POST /incidents/{id}/comments and appends it after reload', async () => {
@@ -208,7 +227,14 @@ describe('incidencias.detail — public comments', () => {
           return Promise.resolve({ data: [commentFixture()] });
         }
         return Promise.resolve({
-          data: [commentFixture(), commentFixture({ id: 2, message: 'Segundo comentario', user: { first_name: 'Luis' } })],
+          data: [
+            commentFixture(),
+            commentFixture({
+              id: 2,
+              message: 'Segundo comentario',
+              user: { first_name: 'Luis' },
+            }),
+          ],
         });
       }
       return Promise.resolve({ data: [] });
@@ -219,10 +245,12 @@ describe('incidencias.detail — public comments', () => {
 
     await component.onInit({ params: { id: 42 } });
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length > 0,
+      () =>
+        document.getElementById('detalle-comments-list').children.length > 0,
     );
 
-    document.getElementById('detalle-comment-input').value = 'Segundo comentario';
+    document.getElementById('detalle-comment-input').value =
+      'Segundo comentario';
     document
       .getElementById('detalle-comment-form')
       .dispatchEvent(new Event('submit', { cancelable: true }));
@@ -234,11 +262,12 @@ describe('incidencias.detail — public comments', () => {
     });
 
     await vi.waitUntil(
-      () => document.getElementById('detalle-comments-list').children.length === 2,
+      () =>
+        document.getElementById('detalle-comments-list').children.length === 2,
     );
-    expect(document.getElementById('detalle-comments-list').textContent).toContain(
-      'Segundo comentario',
-    );
+    expect(
+      document.getElementById('detalle-comments-list').textContent,
+    ).toContain('Segundo comentario');
     // Input is cleared after a successful post.
     expect(document.getElementById('detalle-comment-input').value).toBe('');
   });
@@ -261,7 +290,9 @@ describe('incidencias.detail — public comments', () => {
     // flips to hidden only once the initial load (and listener wiring)
     // has fully completed, which is a reliable synchronization point.
     await vi.waitUntil(() =>
-      document.getElementById('detalle-comments-loading').classList.contains('d-none'),
+      document
+        .getElementById('detalle-comments-loading')
+        .classList.contains('d-none'),
     );
 
     document.getElementById('detalle-comment-input').value = '   ';
@@ -277,6 +308,29 @@ describe('incidencias.detail — public comments', () => {
     const errorEl = document.getElementById('detalle-comment-error');
     expect(errorEl.classList.contains('d-none')).toBe(false);
     expect(errorEl.textContent).toBe('El comentario no puede estar vacío.');
+  });
+
+  it('triggers the file input when clicking the camera photo attach button', async () => {
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: incidentFixture });
+      }
+      if (path.startsWith('/incidents/42/comments')) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+
+    const attachBtn = document.getElementById('detalle-comment-attach-btn');
+    const fileInput = document.getElementById('detalle-comment-images');
+    expect(attachBtn).not.toBeNull();
+
+    const clickSpy = vi.spyOn(fileInput, 'click');
+    attachBtn.click();
+
+    expect(clickSpy).toHaveBeenCalled();
   });
 });
 
@@ -401,12 +455,7 @@ describe('incidencias.detail — assignments', () => {
         }
         return Promise.resolve({ data: [assignmentFixture()] });
       }
-      if (path === '/roles?per_page=100') {
-        return Promise.resolve({
-          data: [{ id: 4, name: 'operador_organizacion' }],
-        });
-      }
-      if (path.startsWith('/users?')) {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.resolve({
           data: [{ id: 7, first_name: 'Carla', last_name: 'Ruiz' }],
         });
@@ -423,7 +472,7 @@ describe('incidencias.detail — assignments', () => {
     );
 
     expect(mockHttp.get).toHaveBeenCalledWith(
-      expect.stringContaining('/users?organization_id=9&role_id=4'),
+      expect.stringContaining('/incidents/42/available-operators'),
     );
 
     document.getElementById('detalle-asignaciones-select').value = '7';
@@ -459,12 +508,7 @@ describe('incidencias.detail — assignments', () => {
       if (path.startsWith('/incidents/42/assignments')) {
         return Promise.resolve({ data: [assignmentFixture()] });
       }
-      if (path === '/roles?per_page=100') {
-        return Promise.resolve({
-          data: [{ id: 4, name: 'operador_organizacion' }],
-        });
-      }
-      if (path.startsWith('/users?')) {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.resolve({
           data: [{ id: 8, first_name: 'Luis', last_name: 'Mora' }],
         });
@@ -532,9 +576,7 @@ describe('incidencias.detail — assignments', () => {
     btn.dispatchEvent(new Event('click', { bubbles: true }));
 
     await vi.waitUntil(() => mockHttp.delete.mock.calls.length > 0);
-    expect(mockHttp.delete).toHaveBeenCalledWith(
-      '/incidents/42/assignments/1',
-    );
+    expect(mockHttp.delete).toHaveBeenCalledWith('/incidents/42/assignments/1');
 
     await vi.waitUntil(
       () =>
@@ -594,9 +636,9 @@ describe('incidencias.detail — assignments', () => {
     expect(formEl.contains(errorEl)).toBe(false);
     expect(errorEl.classList.contains('d-none')).toBe(false);
     // The delete button re-enables so the user can retry.
-    expect(
-      document.querySelector('.btn-eliminar-asignacion').disabled,
-    ).toBe(false);
+    expect(document.querySelector('.btn-eliminar-asignacion').disabled).toBe(
+      false,
+    );
   });
 
   it('disables the operator select and submit button, and shows an error option, when the /roles fetch fails', async () => {
@@ -610,7 +652,7 @@ describe('incidencias.detail — assignments', () => {
       if (path.startsWith('/incidents/42/assignments')) {
         return Promise.resolve({ data: [] });
       }
-      if (path === '/roles?per_page=100') {
+      if (path.startsWith('/incidents/42/available-operators')) {
         return Promise.reject(new Error('roles fetch failed'));
       }
       return Promise.resolve({ data: [] });
@@ -723,8 +765,8 @@ describe('incidencias.detail — assignments', () => {
     const vacioEl = document.getElementById('detalle-asignaciones-vacio');
     expect(vacioEl.classList.contains('d-none')).toBe(false);
     expect(vacioEl.textContent).toBe('Error al cargar asignaciones.');
-    expect(
-      document.getElementById('detalle-asignaciones-list').innerHTML,
-    ).toBe('');
+    expect(document.getElementById('detalle-asignaciones-list').innerHTML).toBe(
+      '',
+    );
   });
 });

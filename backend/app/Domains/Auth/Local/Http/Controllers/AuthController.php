@@ -4,20 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Controllers;
 
+use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
+use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Shared\Services\AuthService;
-use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Http\Resources\UserResource;
-use App\Domains\Users\Models\User;
+use App\Domains\Users\Services\ProfileImageService;
+use App\Support\PhoneRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Signer\Key\InMemory;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -31,10 +29,9 @@ class AuthController
 
     private const ACCESS_TTL = 900;
 
-    private const MERCURE_COOKIE = 'mercureAuthorization';
-
     public function __construct(
         private readonly AuthService $authService,
+        private readonly ProfileImageService $profileImageService,
     ) {}
 
     /**
@@ -49,6 +46,17 @@ class AuthController
                 ip: $request->ip(),
                 ua: $request->userAgent(),
             );
+        } catch (PendingInvitationException $e) {
+            Log::warning('auth.local.pending_invitation', [
+                'method' => __METHOD__,
+                'email' => $request->validated()['email'],
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], Response::HTTP_UNAUTHORIZED);
         } catch (AuthenticationException $e) {
             throw $e->toValidationException();
         }
@@ -59,8 +67,7 @@ class AuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($result['user']),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureAuthCookie($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -75,6 +82,12 @@ class AuthController
                 ua: $request->userAgent(),
             );
         } catch (AuthenticationException $e) {
+            Log::warning('auth.local.refresh_failed', [
+                'method' => __METHOD__,
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json(
                 $e->toResponse(),
                 Response::HTTP_UNAUTHORIZED,
@@ -86,8 +99,7 @@ class AuthController
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']))
-            ->withCookie($this->mercureAuthCookie($result['user']));
+            ->withCookie($this->refreshCookie($result['refreshToken']));
     }
 
     /**
@@ -102,10 +114,9 @@ class AuthController
         }
 
         return response()->json([
-            'message' => 'Sesión cerrada exitosamente.',
+            'message' => __('messages.session_closed'),
         ])
-            ->withCookie($this->expiredCookie())
-            ->withCookie($this->expiredMercureAuthCookie());
+            ->withCookie($this->expiredCookie());
     }
 
     /**
@@ -120,30 +131,21 @@ class AuthController
 
     /**
      * PUT /api/auth/profile
+     *
+     * Dual-mode:
+     * - JSON (application/json): accepts avatar as { urls: [...] } legacy object.
+     * - Multipart (multipart/form-data): accepts avatar as an uploaded file.
      */
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        if ($user === null) {
-            return response()->json(['message' => 'No autenticado'], Response::HTTP_UNAUTHORIZED);
+        $validated = $request->validated();
+
+        if (array_key_exists('phone', $validated)) {
+            $validated['phone'] = PhoneRules::normalize($validated['phone']);
         }
 
-        $validated = $request->validate([
-            'first_name' => 'sometimes|string|max:100',
-            'last_name' => 'sometimes|string|max:100',
-            'phone' => 'sometimes|nullable|string|max:50',
-            'password' => 'sometimes|nullable|string|min:8',
-            'avatar' => ['sometimes', 'array'],
-            'avatar.urls' => Rule::when(
-                $request->has('avatar.urls'),
-                ['array', 'max:5'],
-            ),
-            'avatar.urls.*' => Rule::when(
-                $request->has('avatar.urls'),
-                ['string', 'url'],
-            ),
-        ]);
-
+        // Handle password hashing (never mass-assign raw password)
         if (array_key_exists('password', $validated)) {
             if ($validated['password'] !== null && $validated['password'] !== '') {
                 $validated['password'] = Hash::make($validated['password']);
@@ -152,10 +154,22 @@ class AuthController
             }
         }
 
-        $user->update($validated);
+        // Handle avatar file upload via ProfileImageService (writes to the
+        // shared `images` table — `profile_image_path` column is dead,
+        // WU8 drops it).
+        if ($request->hasFile('avatar')) {
+            $this->profileImageService->replaceAvatar($user, $request->file('avatar'));
+            // Remove legacy avatar array from text update — file upload replaces it
+            unset($validated['avatar']);
+        }
+
+        // Update text fields
+        if ($validated !== []) {
+            $user->update($validated);
+        }
 
         return response()->json(
-            new UserResource($user->load(['role', 'organization'])),
+            new UserResource($user->load(['role', 'organization', 'avatarImage'])),
         );
     }
 
@@ -187,60 +201,6 @@ class AuthController
             '',
             -60,
             self::COOKIE_PATH,
-            null,
-            app()->isProduction(),
-            true,
-            false,
-            'Strict',
-        );
-    }
-
-    /**
-     * Build the Mercure subscriber authorization cookie for this user.
-     */
-    private function mercureAuthCookie(User $user): Cookie
-    {
-        $secret = (string) config('octane.mercure.subscriber_jwt');
-        if ($secret === '') {
-            Log::warning('MERCURE_SUBSCRIBER_JWT_SECRET is not configured — issuing a placeholder Mercure cookie that the hub will reject.');
-            $secret = 'insecure-placeholder-configure-MERCURE_SUBSCRIBER_JWT_SECRET';
-        }
-
-        $config = Configuration::forSymmetricSigner(
-            new Sha256,
-            InMemory::plainText($secret),
-        );
-        $now = new \DateTimeImmutable;
-
-        $token = $config->builder()
-            ->issuedAt($now)
-            ->expiresAt($now->modify('+'.self::ACCESS_TTL.' seconds'))
-            ->withClaim('mercure', ['subscribe' => [NotificationService::topicFor($user->id)]])
-            ->getToken($config->signer(), $config->signingKey());
-
-        return cookie(
-            self::MERCURE_COOKIE,
-            $token->toString(),
-            (int) (self::ACCESS_TTL / 60),
-            '/',
-            null,
-            app()->isProduction(),
-            true,
-            false,
-            'Strict',
-        );
-    }
-
-    /**
-     * Build Mercure authorization cookie that expires immediately (logout).
-     */
-    private function expiredMercureAuthCookie(): Cookie
-    {
-        return cookie(
-            self::MERCURE_COOKIE,
-            '',
-            -60,
-            '/',
             null,
             app()->isProduction(),
             true,

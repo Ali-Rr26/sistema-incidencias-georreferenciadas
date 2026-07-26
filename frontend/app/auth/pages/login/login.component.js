@@ -16,8 +16,13 @@
  *   - La validación cliente espeja las reglas del backend: ≥8 chars, ≥1
  *     mayúscula, ≥1 minúscula, ≥1 dígito, y `password === password_confirmation`.
  */
+import template from './login.component.html?raw';
+import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
+import { classifyRole } from '../../../app-shell/app-shell.component.js';
+import { maskPhoneInput } from '../../../utils/ui.js';
+import { EMAIL_RE } from '../../../utils/format.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -48,14 +53,13 @@ export function validateRegisterPayload(payload) {
   const password = payload.password || '';
   if (password.length < 8) {
     errors.password = 'La contraseña debe tener al menos 8 caracteres.';
-  } else if (!/[A-Z]/.test(password)) {
+  } else if (
+    !/[A-Z]/.test(password) ||
+    !/[a-z]/.test(password) ||
+    !/[0-9]/.test(password)
+  ) {
     errors.password =
-      'La contraseña debe incluir al menos una letra mayúscula.';
-  } else if (!/[a-z]/.test(password)) {
-    errors.password =
-      'La contraseña debe incluir al menos una letra minúscula.';
-  } else if (!/[0-9]/.test(password)) {
-    errors.password = 'La contraseña debe incluir al menos un dígito.';
+      'La contraseña debe contener: mayúscula (A-Z), minúscula (a-z) y dígito (0-9).';
   }
 
   if (
@@ -69,8 +73,8 @@ export function validateRegisterPayload(payload) {
 }
 
 export default {
-  templateUrl: 'app/auth/pages/login/login.component.html',
-  styleUrl: 'app/auth/pages/login/login.component.css',
+  template,
+  style,
 
   onInit(ctx) {
     // Ocultar preloader (vanilla, nada de jQuery)
@@ -85,10 +89,32 @@ export default {
     const errorAlert = document.getElementById('login-error');
     const submitBtn = form.querySelector('button[type="submit"]');
 
+    function showEmailError(inputEl, errorEl) {
+      if (!inputEl.value.trim() || !EMAIL_RE.test(inputEl.value.trim())) {
+        if (errorEl) {
+          errorEl.textContent = 'Ingresá un correo válido.';
+          errorEl.classList.remove('d-none');
+        }
+      }
+    }
+
+    function clearEmailError(errorEl) {
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.classList.add('d-none');
+      }
+    }
+
     // ─── R11: mode toggle + register form wiring ──────────────────────
     const container = document.querySelector('.gr-login');
     const registerForm = document.getElementById(REGISTER_FORM_ID);
     const registerBanner = document.getElementById('register-banner');
+
+    document
+      .querySelectorAll('#register-form input[type="tel"]')
+      .forEach((el) => {
+        maskPhoneInput(el);
+      });
 
     /** Switch between 'login' and 'register' modes. */
     const setMode = (newMode) => {
@@ -134,7 +160,48 @@ export default {
       registerBanner.classList.remove('d-none');
     }
 
+    const loginEmailError = document.querySelector(
+      '#login-form [data-error-for="email"]',
+    );
+    emailInput.addEventListener('blur', () => {
+      if (emailInput.value.trim() && !EMAIL_RE.test(emailInput.value.trim())) {
+        showEmailError(emailInput, loginEmailError);
+      }
+    });
+    emailInput.addEventListener('input', () => {
+      if (!emailInput.value.trim() || EMAIL_RE.test(emailInput.value.trim())) {
+        clearEmailError(loginEmailError);
+      }
+    });
+
     if (registerForm) {
+      const registerEmailInput = registerForm.querySelector('#register-email');
+      const registerEmailError = document.querySelector(
+        '#register-form [data-error-for="email"]',
+      );
+
+      registerEmailInput.addEventListener('blur', () => {
+        if (
+          registerEmailInput.value.trim() &&
+          !EMAIL_RE.test(registerEmailInput.value.trim())
+        ) {
+          showEmailError(registerEmailInput, registerEmailError);
+        }
+      });
+      registerEmailInput.addEventListener('input', () => {
+        if (
+          !registerEmailInput.value.trim() ||
+          EMAIL_RE.test(registerEmailInput.value.trim())
+        ) {
+          clearEmailError(registerEmailError);
+        }
+      });
+
+      const regPhoneEl = registerForm.querySelector('#phone');
+      if (regPhoneEl) {
+        maskPhoneInput(regPhoneEl);
+      }
+
       registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         this._handleRegisterSubmit(registerForm, registerBanner, setMode);
@@ -178,11 +245,19 @@ export default {
         // role. The login response's `user` field lacks `role` and is for
         // UI display only.
         const user = await auth.me();
-        const role = user?.role?.name;
+        // Classify to a router-side bucket ('citizen' | 'admin' | 'guest')
+        // so the role-bucket short-circuit in router.resolve() can mount
+        // the right shell without a hashchange race.
+        const classifiedRole = classifyRole(user);
+        // CRITICAL: set the bucket BEFORE changing the hash. The router
+        // listens to hashchange and runs resolve() on the next tick;
+        // if we navigate first the role-bucket check sees a stale
+        // 'guest' and redirects the citizen back to /feed with no mount.
+        router.setCurrentUserRole(classifiedRole);
         // citizen-style users land on /feed; everyone else on /dashboard.
         // Using router.navigate() (not window.location.hash) so the router
         // re-resolves and the role-based guards run with the fresh token.
-        if (role === 'usuario') {
+        if (classifiedRole === 'citizen') {
           router.navigate('/feed');
         } else {
           router.navigate('/dashboard');

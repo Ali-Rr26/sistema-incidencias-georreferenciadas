@@ -1,7 +1,17 @@
+import template from './localizaciones.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
+import { locationService } from '../../../../shared/location.service.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
+// eslint-disable-next-line no-unused-vars
+import { permissionService } from '../../../../shared/permission.service.js';
+import { hydrateKebabActions } from '../../../../shared/kebab-actions.js';
+import {
+  isDesktop,
+  mostrarEstado,
+  mostrarToast,
+} from '../../../../utils/ui.js';
 
 const POR_PAGINA = 15;
 const NIVEL_LABELS = {
@@ -12,37 +22,22 @@ const NIVEL_LABELS = {
 };
 
 export default {
-  templateUrl:
-    'app/configuracion/localizaciones/pages/index/localizaciones.index.component.html',
+  template,
 
   async onInit() {
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;
 
-    // Tree state
-    let treeRoots = null;
-    const expandedIds = new Set();
+    // Progressive tree state
+    let treeRoots = null; // Flat array of root nodes (countries)
+    const childrenMap = new Map(); // nodeId -> children array
+    const expandedIds = new Set(); // IDs of expanded nodes
+    const loadingIds = new Set(); // IDs currently loading children
     let modoArbol = true;
 
     const tbody = () => document.getElementById('tabla-body');
     const thead = () => document.getElementById('thead-locs');
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
 
     function nivelBadge(level) {
       const map = {
@@ -54,43 +49,44 @@ export default {
       return `<span class="badge bg-${map[level] ?? 'secondary'}">${NIVEL_LABELS[level] ?? level}</span>`;
     }
 
-    // ─── Tree mode ────────────────────────────────────────────────────────
+    // ─── Progressive Tree mode ───────────────────────────────────────────────
 
-    function getProvinces(rawTree) {
-      const result = [];
-      for (const node of rawTree) {
-        if (node.level === 'country') {
-          result.push(...(node.children || []));
-        } else {
-          result.push(node);
-        }
-      }
-      return result;
-    }
-
+    /**
+     * Build a flat list from treeRoots for rendering.
+     * Each node may have children fetched lazily from childrenMap.
+     * Only renders children if the node is expanded AND has loaded children.
+     */
     function buildFlatList(nodes, depth, result) {
       for (const node of nodes) {
-        result.push({ ...node, _depth: depth });
-        if (expandedIds.has(node.id) && node.children?.length) {
-          buildFlatList(node.children, depth + 1, result);
+        const nodeWithDepth = { ...node, _depth: depth };
+        result.push(nodeWithDepth);
+
+        if (expandedIds.has(node.id)) {
+          const children = childrenMap.get(node.id);
+          if (children && children.length > 0) {
+            buildFlatList(children, depth + 1, result);
+          }
         }
       }
       return result;
     }
 
-    function removeDescendants(nodeId, nodes) {
-      for (const node of nodes) {
-        if (node.id === nodeId) {
-          const purge = (children) => {
-            for (const c of children) {
-              expandedIds.delete(c.id);
-              if (c.children?.length) purge(c.children);
-            }
-          };
-          purge(node.children || []);
-          return;
+    /**
+     * Remove descendants from expandedIds when collapsing a node.
+     * Since children are stored in childrenMap (not nested), we track
+     * which IDs were added by this expansion in expandedIds directly.
+     */
+    function removeDescendants(nodeId) {
+      // Find direct children and remove them from expandedIds
+      const children = childrenMap.get(nodeId);
+      if (children) {
+        for (const child of children) {
+          if (expandedIds.has(child.id)) {
+            // Recursively remove grandchildren
+            removeDescendants(child.id);
+            expandedIds.delete(child.id);
+          }
         }
-        if (node.children?.length) removeDescendants(nodeId, node.children);
       }
     }
 
@@ -101,48 +97,76 @@ export default {
           <th>NOMBRE</th>
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
       const flat = buildFlatList(treeRoots, 0, []);
+      const esDesktop = isDesktop();
+      const slugSet = {
+        update: 'locations.update',
+        delete: 'locations.delete',
+      };
 
-      tbody().innerHTML = flat
-        .map((loc) => {
-          const hasChildren = loc.children?.length > 0;
-          const isExpanded = expandedIds.has(loc.id);
-          const indent = loc._depth * 24;
-          return `
+      if (esDesktop) {
+        tbody().innerHTML = flat
+          .map((loc) => {
+            const isExpanded = expandedIds.has(loc.id);
+            const isLoading = loadingIds.has(loc.id);
+            const hasChildren =
+              isExpanded && childrenMap.has(loc.id)
+                ? childrenMap.get(loc.id).length > 0
+                : null; // null = unknown (not yet loaded)
+            const indent = loc._depth * 24;
+
+            let toggleIcon = '';
+            let toggleClass =
+              'btn btn-link btn-sm p-0 me-1 btn-toggle text-muted';
+
+            if (isLoading) {
+              toggleIcon = '<i class="fa-solid fa-spinner fa-spin"></i>';
+              toggleClass = 'btn btn-link btn-sm p-0 me-1 text-muted';
+            } else if (hasChildren === true) {
+              toggleIcon = `<i class="fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>`;
+            } else if (hasChildren === false) {
+              toggleIcon =
+                '<i class="fa-solid fa-chevron-right text-muted opacity-25"></i>';
+              toggleClass =
+                'btn btn-link btn-sm p-0 me-1 text-muted opacity-25';
+            } else {
+              // hasChildren === null — unknown, show spinner or arrow
+              toggleIcon = '<i class="fa-solid fa-chevron-right"></i>';
+            }
+
+            return `
             <tr>
               <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td style="padding-left:${10 + indent}px">
-                ${
-                  hasChildren
-                    ? `<button class="btn btn-link btn-sm p-0 me-1 btn-toggle text-muted" data-id="${loc.id}">
-                         <i class="fa-solid ${isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i>
-                       </button>`
-                    : `<span style="display:inline-block;width:20px;margin-right:4px"></span>`
-                }
+                <button class="${toggleClass}" data-id="${loc.id}">
+                  ${toggleIcon}
+                </button>
                 ${loc.name}
               </td>
               <td><code style="font-size:12px">${loc.code ?? '—'}</code></td>
               <td>${nivelBadge(loc.level)}</td>
               <td>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}" title="Editar">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}" title="Eliminar">
-                    <i class="fa-solid fa-trash-alt"></i>
-                  </button>
-                </div>
+                <table-actions id="ta-tree-${loc.id}"></table-actions>
               </td>
             </tr>`;
-        })
-        .join('');
+          })
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = flat
-        .map(
-          (loc) => `
+        hydrateKebabActions(tbody(), flat, {
+          slugs: slugSet,
+          showView: false,
+          itemTitle: (loc) => loc.name,
+        });
+
+        document.getElementById('contenedor-cards').innerHTML = '';
+      } else {
+        tbody().innerHTML = '';
+        document.getElementById('contenedor-cards').innerHTML = flat
+          .map(
+            (loc) => `
             <div class="card mb-2 shadow-sm" style="margin-left:${loc._depth * 16}px">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -150,26 +174,19 @@ export default {
                     <h6 class="mb-0">${loc.name} <code style="font-size:11px">${loc.code ?? ''}</code></h6>
                     <div class="mt-1">${nivelBadge(loc.level)}</div>
                   </div>
-                  <div class="d-flex gap-1">
-                    ${
-                      loc.children?.length
-                        ? `<button class="btn btn-sm btn-outline-primary btn-toggle" data-id="${loc.id}">
-                             <i class="fa-solid ${expandedIds.has(loc.id) ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
-                           </button>`
-                        : ''
-                    }
-                    <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}">
-                      <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                  </div>
+                  <table-actions id="ta-mobile-${loc.id}"></table-actions>
                 </div>
               </div>
             </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        hydrateKebabActions(document.getElementById('contenedor-cards'), flat, {
+          slugs: slugSet,
+          showView: false,
+          itemTitle: (loc) => loc.name,
+        });
+      }
 
       document.getElementById('info-resultados').textContent =
         `${flat.length} localización${flat.length !== 1 ? 'es' : ''} visible${flat.length !== 1 ? 's' : ''}`;
@@ -181,8 +198,14 @@ export default {
       mostrarEstado('cargando');
       try {
         if (!treeRoots) {
-          const resp = await http.get('/locations/tree');
-          treeRoots = getProvinces(resp.data ?? resp);
+          // Progressive load: get countries (roots)
+          const countries = await locationService.getRoots({
+            level: 'country',
+          });
+          // Countries are roots — they'll have provinces as children
+          // But for tree display, we want to show countries and their children (provinces)
+          // Since provinces have parent_id pointing to country, we show countries as roots
+          treeRoots = countries;
         }
         if (!treeRoots.length) {
           mostrarEstado('vacio');
@@ -190,7 +213,6 @@ export default {
         }
         renderArbol();
       } catch (err) {
-        // Defense in depth (R-24): distinguish 403 from generic failure.
         if (isForbidden(err)) {
           mostrarToast('No tienes acceso a este recurso.', 'warning');
         }
@@ -206,6 +228,8 @@ export default {
         return;
       }
 
+      const esDesktop = isDesktop();
+
       thead().innerHTML = `
         <tr>
           <th style="width: 40px;" class="text-center"><input type="checkbox" class="form-check-input check-select-all" /></th>
@@ -213,12 +237,13 @@ export default {
           <th style="width:130px">CÓDIGO</th>
           <th style="width:130px">NIVEL</th>
           <th style="width:130px">PADRE</th>
-          <th style="width:70px"></th>
+          <th style="width:70px" class="text-center">Acciones</th>
         </tr>`;
 
-      tbody().innerHTML = datos
-        .map(
-          (loc) => `
+      if (esDesktop) {
+        tbody().innerHTML = datos
+          .map(
+            (loc) => `
             <tr>
               <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${loc.id}" /></td>
               <td class="fw-semibold">${loc.name}</td>
@@ -226,22 +251,24 @@ export default {
               <td>${nivelBadge(loc.level)}</td>
               <td class="text-muted">${loc.parent?.name ?? '—'}</td>
               <td>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}" title="Editar">
-                    <i class="fa-solid fa-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}" title="Eliminar">
-                    <i class="fa-solid fa-trash-alt"></i>
-                  </button>
-                </div>
+                <table-actions id="ta-flat-${loc.id}"></table-actions>
               </td>
             </tr>`,
-        )
-        .join('');
+          )
+          .join('');
 
-      document.getElementById('contenedor-cards').innerHTML = datos
-        .map(
-          (loc) => `
+        hydrateKebabActions(tbody(), datos, {
+          slugs: { update: 'locations.update', delete: 'locations.delete' },
+          showView: false,
+          itemTitle: (loc) => loc.name,
+        });
+
+        document.getElementById('contenedor-cards').innerHTML = '';
+      } else {
+        tbody().innerHTML = '';
+        document.getElementById('contenedor-cards').innerHTML = datos
+          .map(
+            (loc) => `
             <div class="card mb-2 shadow-sm">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -250,19 +277,23 @@ export default {
                     <div class="mt-1">${nivelBadge(loc.level)}</div>
                     ${loc.parent ? `<small class="text-muted">Padre: ${loc.parent.name}</small>` : ''}
                   </div>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary btn-editar" data-id="${loc.id}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${loc.id}" data-nombre="${loc.name}">
-                      <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                  </div>
+                  <table-actions id="ta-mobile-${loc.id}"></table-actions>
                 </div>
               </div>
             </div>`,
-        )
-        .join('');
+          )
+          .join('');
+
+        hydrateKebabActions(
+          document.getElementById('contenedor-cards'),
+          datos,
+          {
+            slugs: { update: 'locations.update', delete: 'locations.delete' },
+            showView: false,
+            itemTitle: (loc) => loc.name,
+          },
+        );
+      }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
       const hasta = Math.min(paginaActual * POR_PAGINA, total);
@@ -293,7 +324,6 @@ export default {
         totalPaginas = Math.ceil(total / POR_PAGINA) || 1;
         renderTablaFlat(datos, total);
       } catch (err) {
-        // Defense in depth (R-24): distinguish 403 from generic failure.
         if (isForbidden(err)) {
           mostrarToast('No tienes acceso a este recurso.', 'warning');
         }
@@ -303,52 +333,91 @@ export default {
 
     // ─── Smart load: tree vs flat ──────────────────────────────────────────
 
-    function cargar() {
+    async function cargar() {
       const search = document.getElementById('filtro-buscar').value.trim();
       const level = document.getElementById('filtro-nivel').value;
       modoArbol = !search && !level;
       if (modoArbol) {
-        cargarArbol();
+        await cargarArbol();
       } else {
         buscar(1);
       }
     }
 
-    // ─── Events ───────────────────────────────────────────────────────────
+    // ─── Events ─────────────────────────────────────────────────────────
 
-    function delegarClicks(contenedor) {
-      contenedor.addEventListener('click', (e) => {
-        const toggle = e.target.closest('.btn-toggle');
-        const editar = e.target.closest('.btn-editar');
-        const eliminar = e.target.closest('.btn-eliminar');
-
-        if (toggle && modoArbol) {
-          const id = parseInt(toggle.dataset.id);
-          if (expandedIds.has(id)) {
-            removeDescendants(id, treeRoots);
-            expandedIds.delete(id);
-          } else {
-            expandedIds.add(id);
-          }
-          renderArbol();
-          return;
-        }
-
-        if (editar) {
-          router.navigate('/localizaciones/crear?id=' + editar.dataset.id);
-        }
-
-        if (eliminar) {
-          idEliminar = eliminar.dataset.id;
-          document.getElementById('modal-eliminar-nombre').textContent =
-            eliminar.dataset.nombre;
-          new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
-        }
-      });
+    // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
+    function manejarAcciones(e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const { id, titulo, action } = target.dataset;
+      e.preventDefault();
+      if (action === 'view') {
+        router.navigate('/localizaciones/' + id);
+        return;
+      }
+      if (action === 'edit') {
+        router.navigate('/localizaciones/crear?id=' + id);
+        return;
+      }
+      if (action === 'delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-nombre').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    delegarClicks(document.getElementById('tabla-body'));
-    delegarClicks(document.getElementById('contenedor-cards'));
+    async function manejarToggle(e) {
+      const toggle = e.target.closest('.btn-toggle');
+      if (!toggle || !modoArbol) return;
+
+      const id = parseInt(toggle.dataset.id);
+
+      if (expandedIds.has(id)) {
+        // Collapse: remove this node and its descendants from expandedIds
+        removeDescendants(id);
+        expandedIds.delete(id);
+        renderArbol();
+      } else {
+        // Expand: check if children are already loaded
+        if (childrenMap.has(id)) {
+          // Children already fetched, just expand
+          expandedIds.add(id);
+          renderArbol();
+        } else {
+          // Need to fetch children
+          loadingIds.add(id);
+          expandedIds.add(id);
+          renderArbol(); // Show loading state
+
+          try {
+            const children = await locationService.getChildren({
+              parentId: id,
+            });
+            childrenMap.set(id, children);
+            loadingIds.delete(id);
+            renderArbol();
+          } catch {
+            // Failed to load children - collapse and show error
+            loadingIds.delete(id);
+            expandedIds.delete(id);
+            childrenMap.delete(id);
+            mostrarToast(
+              'No se pudieron cargar las localidades hijo.',
+              'danger',
+            );
+            renderArbol();
+          }
+        }
+      }
+    }
+
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('click', manejarToggle);
+    tablaBody.addEventListener('click', manejarAcciones);
+    contenedorCards.addEventListener('click', manejarAcciones);
 
     document
       .getElementById('btn-confirmar-eliminar')
@@ -362,7 +431,11 @@ export default {
           bootstrap.Modal.getInstance(
             document.getElementById('modal-eliminar'),
           ).hide();
+          // Reset tree state after deletion
           treeRoots = null;
+          childrenMap.clear();
+          expandedIds.clear();
+          locationService.invalidateCache();
           mostrarToast('Localización eliminada.', 'success');
           cargar();
         } catch {
@@ -387,7 +460,7 @@ export default {
     });
     document.getElementById('btn-reintentar').addEventListener('click', cargar);
 
-    cargar();
+    await cargar();
   },
 
   onDestroy() {},

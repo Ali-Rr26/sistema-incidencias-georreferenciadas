@@ -211,13 +211,8 @@
     box-shadow 0.15s ease;
 }
 
-@media (max-width: 480px) {
-  .gr-input {
-    height: 44px;
-    padding: 0 14px 0 40px;
-    font-size: 14px;
-  }
-}
+/* REQ-MR-2: .gr-input retains 14.5px base — iOS auto-zoom guard.
+   Font-size is kept >=16px via global input floor in app.css. */
 
 .gr-input--pad-right {
   padding-right: 44px;

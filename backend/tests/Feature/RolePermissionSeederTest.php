@@ -77,16 +77,22 @@ it('operador_organizacion has incident view, notification update, and comment cr
     expect(Gate::forUser($user)->allows('incidents.delete'))->toBeFalse();
 });
 
-it('usuario has incident creation and comment creation permissions', function (): void {
+it('usuario has incident creation, comment creation, and comment view permissions', function (): void {
     $user = User::factory()->create([
         'role_id' => 5, // usuario
     ]);
 
     expect(Gate::forUser($user)->allows('incidents.create'))->toBeTrue();
     expect(Gate::forUser($user)->allows('comments.create'))->toBeTrue();
+    // comments.view es necesario para que el ciudadano pueda ver los
+    // comentarios en el detalle de incidencia desde el feed (carga vía
+    // GET /api/incidents/{id}/comments). Sin este permiso, la sección
+    // de comentarios falla con 403 en la vista ciudadana.
+    expect(Gate::forUser($user)->allows('comments.view'))->toBeTrue();
 
     // Does NOT have other permissions
     expect(Gate::forUser($user)->allows('incidents.update'))->toBeFalse();
+    expect(Gate::forUser($user)->allows('incidents.delete'))->toBeFalse();
     expect(Gate::forUser($user)->allows('users.create'))->toBeFalse();
 });
 

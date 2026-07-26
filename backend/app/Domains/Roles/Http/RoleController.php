@@ -51,7 +51,7 @@ class RoleController extends Controller
         $role = $this->roles->findById($id);
         if ($role === null) {
             return response()->json([
-                'message' => 'Rol no encontrado',
+                'message' => __('messages.role_not_found'),
             ], Response::HTTP_NOT_FOUND);
         }
 
@@ -85,7 +85,7 @@ class RoleController extends Controller
 
         if ($user === null || ! $user->isSystemAdmin()) {
             return response()->json([
-                'message' => 'Solo admin_sistema puede sincronizar permisos de un rol.',
+                'message' => __('messages.role_sync_unauthorized'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -146,18 +146,15 @@ class RoleController extends Controller
         $user = $request->user();
 
         if ($user === null) {
-            return response()->json(['message' => 'Unauthenticated.'], Response::HTTP_UNAUTHORIZED);
+            return response()->json(['message' => __('messages.unauthenticated')], Response::HTTP_UNAUTHORIZED);
         }
 
-        if ($user->isAdmin()) {
-            $slugs = Permission::query()
-                ->selectRaw("resource || '.' || action as slug")
-                ->pluck('slug');
-        } else {
-            $slugs = $user->role?->permissions()
-                ->selectRaw("resource || '.' || action as slug")
-                ->pluck('slug') ?? collect();
-        }
+        // SC-127: Validar SIEMPRE contra role_permission, sin excepciones.
+        // Antes: isAdmin() devolvía todos los permisos sin filtrar por role_permission.
+        // Ahora: Cada rol (incluso admin_sistema) solo tiene los permisos en su tabla.
+        $slugs = $user->role?->permissions()
+            ->selectRaw("resource || '.' || action as slug")
+            ->pluck('slug') ?? collect();
 
         return response()->json(['data' => $slugs->values()]);
     }

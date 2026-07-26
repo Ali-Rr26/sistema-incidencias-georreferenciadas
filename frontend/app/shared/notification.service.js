@@ -9,11 +9,10 @@ import { http } from '../core/http.service.js';
  *  - PATCH  /api/notifications/{id}/read     → marcar una como leída
  *  - PATCH  /api/notifications/read-all      → marcar todas como leídas
  *
- * Cachea el `unread_count` en memoria (se invalida con `clearCache()`).
+ * No cachea el unread count — siempre pide fresco al backend.
+ * La latencia típica (~5ms en LAN) es irrelevante para un badge y
+ * elimina la complejidad de invalidar caché manualmente.
  */
-
-let _unreadCache = null;
-let _inflightUnread = null;
 
 export const notificationService = {
   /**
@@ -36,22 +35,11 @@ export const notificationService = {
 
   /**
    * Devuelve solo el conteo de no leídas (badge del header).
+   * Siempre pide fresco al backend — no usa caché.
    */
-  async unreadCount({ force = false } = {}) {
-    if (!force && _unreadCache !== null) return _unreadCache;
-    if (_inflightUnread) return _inflightUnread;
-
-    _inflightUnread = http
-      .get('/notifications/unread-count')
-      .then((resp) => {
-        _unreadCache = resp.unread_count ?? 0;
-        return _unreadCache;
-      })
-      .finally(() => {
-        _inflightUnread = null;
-      });
-
-    return _inflightUnread;
+  async unreadCount() {
+    const resp = await http.get('/notifications/unread-count');
+    return resp.unread_count ?? 0;
   },
 
   /**
@@ -59,8 +47,6 @@ export const notificationService = {
    */
   async markRead(id) {
     const resp = await http.patch(`/notifications/${id}/read`);
-    // Invalidar caché de unread count
-    _unreadCache = null;
     return resp.data ?? resp ?? null;
   },
 
@@ -68,16 +54,6 @@ export const notificationService = {
    * Marca todas las notificaciones del usuario como leídas.
    */
   async markAllRead() {
-    const resp = await http.patch('/notifications/read-all');
-    _unreadCache = 0;
-    return resp;
-  },
-
-  /**
-   * Invalida la caché (logout, rol changed, etc.).
-   */
-  clearCache() {
-    _unreadCache = null;
-    _inflightUnread = null;
+    return await http.patch('/notifications/read-all');
   },
 };

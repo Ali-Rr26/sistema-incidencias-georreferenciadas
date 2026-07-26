@@ -25,18 +25,15 @@ class LocationController extends Controller
         $this->authorizeResource(Location::class, 'location');
     }
 
-    public function tree(): JsonResponse
-    {
-        $tree = $this->locations->tree();
-
-        return response()->json(['data' => LocationResource::collection($tree)]);
-    }
-
     public function index(Request $request): JsonResponse
     {
-        $locations = $this->locations->paginate(
-            $request->only(['search', 'level', 'parent_id', 'per_page']),
-        );
+        $filters = $request->only(['search', 'level', 'parent_id', 'per_page']);
+
+        if (($filters['level'] ?? false) && ! ($filters['search'] ?? false) && ! isset($filters['per_page'])) {
+            $filters['per_page'] = 500;
+        }
+
+        $locations = $this->locations->paginate($filters);
 
         return (new LocationCollection($locations))->response();
     }
@@ -55,7 +52,7 @@ class LocationController extends Controller
         $location = $this->locations->findById($id);
 
         if ($location === null) {
-            return response()->json(['message' => 'Location not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => __('messages.location_not_found')], Response::HTTP_NOT_FOUND);
         }
 
         return (new LocationResource($location))->response();

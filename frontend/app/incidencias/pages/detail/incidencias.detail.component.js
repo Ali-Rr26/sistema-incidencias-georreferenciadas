@@ -1,12 +1,21 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml, timeAgo } from '../../../utils/format.js';
+import template from './incidencias.detail.component.html?raw';
+import style from './incidencias.detail.component.css?raw';
+import {
+  STATUS_LABEL,
+  PRIORITY_LABEL,
+  escapeHtml,
+} from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { auth } from '../../../auth/auth.service.js';
+import setupCommentsForm from '../../../shared/setup-comments-form.js';
 import initMapView from '../../../shared/init-map-view.js';
-import { bindView } from '../../../utils/dom.js';
-import { commentService } from '../../../shared/comment.service.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import {
+  sortStatusHistoryDesc,
+  statusHistoryEntry,
+} from '../../../utils/status-history.js';
 import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
@@ -25,7 +34,8 @@ const DROPDOWN_STATUSES = [
 ];
 
 export default {
-  templateUrl: 'app/incidencias/pages/detail/incidencias.detail.component.html',
+  style,
+  template,
 
   async onInit({ params } = {}) {
     const id = params?.id;
@@ -49,8 +59,8 @@ export default {
     setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
-    setupComments(id);
-    setupAssignments(id, inc, inc.assignments ?? []);
+    setupComments(id, inc.comments);
+    setupAssignments(id, inc, inc.assignments);
   },
 
   onDestroy() {
@@ -90,8 +100,6 @@ async function cargarIncidencia(id) {
 }
 
 function renderizarIncidencia(inc) {
-  const view = bindView(document);
-
   const fechaTexto = inc.created_at
     ? new Date(inc.created_at).toLocaleDateString('es-EC', {
         year: 'numeric',
@@ -106,36 +114,41 @@ function renderizarIncidencia(inc) {
     ? [inc.user.first_name, inc.user.last_name].filter(Boolean).join(' ')
     : '—';
 
-  view.set({
-    // Toggle loading vs content in one shot.
-    'detalle-loading': { d_none: true },
-    'detalle-content': { d_none: false },
+  // Toggle loading vs content in one shot.
+  document.getElementById('detalle-loading').classList.toggle('d-none', true);
+  document.getElementById('detalle-content').classList.toggle('d-none', false);
 
-    // Plain text fields.
-    'detalle-titulo': inc.title ?? 'Sin título',
-    'detalle-breadcrumb': inc.title ?? 'Detalle',
-    'detalle-priority': PRIORITY_LABEL[inc.priority] ?? inc.priority,
-    'detalle-fecha': fechaTexto,
-    'detalle-descripcion': inc.description ?? 'Sin descripción',
-    'detalle-categoria': inc.category?.name ?? '—',
-    'detalle-ubicacion': inc.location?.name ?? '—',
-    'detalle-usuario': usuarioTexto,
-    'detalle-organizacion': inc.organization?.name ?? '—',
+  // Plain text fields.
+  document.getElementById('detalle-titulo').textContent =
+    inc.title ?? 'Sin título';
+  document.getElementById('detalle-breadcrumb').textContent =
+    inc.title ?? 'Detalle';
+  document.getElementById('detalle-priority').textContent =
+    PRIORITY_LABEL[inc.priority] ?? inc.priority;
+  document.getElementById('detalle-fecha').textContent = fechaTexto;
+  document.getElementById('detalle-descripcion').textContent =
+    inc.description ?? 'Sin descripción';
+  document.getElementById('detalle-categoria').textContent =
+    inc.category?.name ?? '—';
+  document.getElementById('detalle-ubicacion').textContent =
+    inc.location?.name ?? '—';
+  document.getElementById('detalle-usuario').textContent = usuarioTexto;
+  document.getElementById('detalle-organizacion').textContent =
+    inc.organization?.name ?? '—';
 
-    // Status badge: text + dynamic className based on the status.
-    'detalle-status': {
-      text: STATUS_LABEL[inc.status] ?? inc.status,
-      className: `ig-status-badge ig-status-${inc.status}`,
-    },
+  // Status badge: text + dynamic className based on the status.
+  const statusEl = document.getElementById('detalle-status');
+  statusEl.textContent = STATUS_LABEL[inc.status] ?? inc.status;
+  statusEl.className = `ig-status-badge ig-status-${inc.status}`;
 
-    // Thumbnail: shown only when the backend provides a URL.
-    'detalle-thumbnail': inc.thumbnail_url
-      ? {
-          html: `<img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />`,
-          d_none: false,
-        }
-      : { d_none: true },
-  });
+  // Thumbnail: shown only when the backend provides a URL.
+  const thumbEl = document.getElementById('detalle-thumbnail');
+  if (inc.thumbnail_url) {
+    thumbEl.innerHTML = `<img src="${inc.thumbnail_url}" alt="Thumbnail" class="img-fluid rounded incid-detail__thumbnail-img" />`;
+    thumbEl.classList.toggle('d-none', false);
+  } else {
+    thumbEl.classList.toggle('d-none', true);
+  }
 
   renderMap(inc);
 }
@@ -198,6 +211,8 @@ function setupUpload(incidentId) {
   const fileInput = document.getElementById('detalle-file-input');
   const btnSubir = document.getElementById('btn-subir-imagen');
   const progress = document.getElementById('detalle-upload-progress');
+
+  if (!fileInput || !btnSubir) return;
 
   btnSubir.addEventListener('click', async () => {
     const file = fileInput.files[0];
@@ -337,17 +352,9 @@ function renderHistorial(items) {
   }
 
   // más reciente primero (DESC)
-  listEl.innerHTML = [...items]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  listEl.innerHTML = sortStatusHistoryDesc(items)
     .map((item) => {
-      const prev =
-        STATUS_LABEL[item.previous_status] ?? item.previous_status ?? '—';
-      const next = STATUS_LABEL[item.new_status] ?? item.new_status ?? '—';
-      const user = item.user
-        ? [item.user.first_name, item.user.last_name]
-            .filter(Boolean)
-            .join(' ')
-        : 'Sistema';
+      const { prev, next, userName } = statusHistoryEntry(item);
       const fecha = new Date(item.created_at).toLocaleString('es-EC', {
         year: 'numeric',
         month: '2-digit',
@@ -358,7 +365,7 @@ function renderHistorial(items) {
       return `
         <div class="border-start border-2 border-primary ps-3 mb-3">
           <div class="small fw-semibold">${prev} → ${next}</div>
-          <div class="text-muted" style="font-size:0.75rem;">${user} · ${fecha}</div>
+          <div class="text-muted" style="font-size:0.75rem;">${userName} · ${fecha}</div>
         </div>`;
     })
     .join('');
@@ -366,159 +373,30 @@ function renderHistorial(items) {
 
 // ── Comentarios públicos ────────────────────────────────────
 
-function buildCommentLi(comment, currentUserId) {
-  const li = document.createElement('li');
-  li.className = 'incid-detail__comment mb-2 pb-2 border-bottom';
-
-  const userName = comment.user
-    ? [comment.user.first_name, comment.user.last_name]
-        .filter(Boolean)
-        .join(' ') || comment.user.email
-    : 'Usuario';
-
-  const isOwner = comment.user_id === currentUserId;
-  const deleteBtn = isOwner
-    ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-comentario" data-id="${escapeHtml(String(comment.id))}" title="Eliminar comentario">
-        <i class="fas fa-trash-alt"></i>
-      </button>`
-    : '';
-
-  li.innerHTML = `
-    <div class="d-flex justify-content-between">
-      <span class="fw-semibold small">${escapeHtml(userName)}</span>
-      <div class="d-flex gap-2 align-items-center">
-        <small class="text-muted">${timeAgo(comment.created_at)}</small>
-        ${deleteBtn}
-      </div>
-    </div>
-    <div class="small">${escapeHtml(comment.message)}</div>`;
-
-  return li;
-}
-
-function renderComments(items, currentUserId) {
-  const listEl = document.getElementById('detalle-comments-list');
-  const vacioEl = document.getElementById('detalle-comments-vacio');
-  if (!listEl) return;
-
-  if (!items || items.length === 0) {
-    listEl.replaceChildren();
-    vacioEl?.classList.remove('d-none');
-    return;
-  }
-
-  vacioEl?.classList.add('d-none');
-  listEl.replaceChildren(...items.map(c => buildCommentLi(c, currentUserId)));
-}
-
-async function setupComments(incidentId) {
-  const loadingEl = document.getElementById('detalle-comments-loading');
-  const form = document.getElementById('detalle-comment-form');
-  const input = document.getElementById('detalle-comment-input');
-  const errorEl = document.getElementById('detalle-comment-error');
-  const submitBtn = document.getElementById('detalle-comment-submit');
-  const counterEl = document.getElementById('detalle-comment-counter');
-  const listEl = document.getElementById('detalle-comments-list');
-
-  if (!form || !input) return;
-
-  let currentUserId;
-  try {
-    const user = await auth.me();
-    currentUserId = user?.id;
-  } catch {
-    currentUserId = null;
-  }
-
-  function updateCounter() {
-    const len = input.value.length;
-    if (counterEl) {
-      counterEl.textContent = `${len}/5000`;
-      if (len >= 4000) {
-        counterEl.classList.add('text-danger');
-      } else {
-        counterEl.classList.remove('text-danger');
-      }
-    }
-  }
-
-  function updateSubmitBtn() {
-    const isEmpty = input.value.trim() === '';
-    if (submitBtn) submitBtn.disabled = isEmpty;
-  }
-
-  input.addEventListener('input', () => {
-    updateCounter();
-    updateSubmitBtn();
+async function setupComments(incidentId, initialComments) {
+  return setupCommentsForm({
+    incidentId,
+    initialComments,
+    loadingId: 'detalle-comments-loading',
+    formId: 'detalle-comment-form',
+    inputId: 'detalle-comment-input',
+    submitId: 'detalle-comment-submit',
+    counterId: 'detalle-comment-counter',
+    listId: 'detalle-comments-list',
+    emptyId: 'detalle-comments-vacio',
+    errorId: 'detalle-comment-error',
+    previewId: 'detalle-comment-previews',
+    fileInputId: 'detalle-comment-images',
+    attachButtonId: 'detalle-comment-attach-btn',
+    replyBadgeId: 'detalle-reply-badge',
+    replyParentIdId: 'detalle-reply-parent-id',
+    lightboxId: 'incid-detail__lightbox',
+    lightboxCloseId: 'incid-detail__lightbox-close',
+    thumbnailSelector: '.incid-detail__thumbnail-wrapper[data-src]',
+    canDelete: true,
+    getUserName: (user) =>
+      [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
   });
-
-  async function cargarComentarios() {
-    loadingEl?.classList.remove('d-none');
-    try {
-      const { data } = await commentService.list(incidentId, { perPage: 50 });
-      renderComments(data, currentUserId);
-    } catch (err) {
-      console.error('Error al cargar comentarios:', err);
-    } finally {
-      loadingEl?.classList.add('d-none');
-    }
-  }
-
-  cargarComentarios();
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errorEl?.classList.add('d-none');
-
-    const message = input.value.trim();
-    if (!message) {
-      if (errorEl) {
-        errorEl.textContent = 'El comentario no puede estar vacío.';
-        errorEl.classList.remove('d-none');
-      }
-      return;
-    }
-
-    if (submitBtn) submitBtn.disabled = true;
-    try {
-      await commentService.create(incidentId, message);
-      input.value = '';
-      updateCounter();
-      updateSubmitBtn();
-      await cargarComentarios();
-    } catch (err) {
-      if (errorEl) {
-        errorEl.textContent =
-          err.message || 'No se pudo publicar el comentario.';
-        errorEl.classList.remove('d-none');
-      }
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-    }
-  });
-
-  if (listEl) {
-    listEl.addEventListener('click', async (e) => {
-      const deleteBtn = e.target.closest('.btn-eliminar-comentario');
-      if (!deleteBtn) return;
-
-      const commentId = deleteBtn.dataset.id;
-      if (!commentId) return;
-
-      if (!confirm('¿Eliminar este comentario?')) return;
-
-      deleteBtn.disabled = true;
-      try {
-        await commentService.delete(commentId);
-        await cargarComentarios();
-      } catch (err) {
-        console.error('Error al eliminar comentario:', err);
-        alert('No se pudo eliminar el comentario.');
-      } finally {
-        deleteBtn.disabled = false;
-      }
-    });
-  }
 }
 
 // ── Asignaciones de operadores (responsable/apoyo) ─────────
@@ -615,7 +493,8 @@ async function cargarOperadores(inc, selectEl, submitBtn) {
     const usuarios = resp.data ?? [];
 
     if (usuarios.length === 0) {
-      selectEl.innerHTML = '<option value="">Sin operadores disponibles</option>';
+      selectEl.innerHTML =
+        '<option value="">Sin operadores disponibles</option>';
       return;
     }
 
@@ -727,7 +606,7 @@ async function setupAssignments(incidentId, inc, initialAssignments = null) {
   }
 
   // Initial render — use embedded data if available, otherwise fetch.
-  if (initialAssignments !== null) {
+  if (initialAssignments != null) {
     loadingEl?.classList.add('d-none');
     renderAssignments(initialAssignments, puedeEliminar);
   } else {
@@ -853,7 +732,7 @@ function setupActionButtons(incidentId, inc) {
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
 
-function setupBuscarResponsables(incidentId) {
+function setupBuscarResponsables(_incidentId) {
   const inputEl = document.getElementById('buscar-responsables-input');
   const loadingEl = document.getElementById('buscar-responsables-loading');
   const resultsEl = document.getElementById('buscar-responsables-results');
@@ -861,7 +740,9 @@ function setupBuscarResponsables(incidentId) {
   const vacioEl = document.getElementById('buscar-responsables-vacio');
   const errorEl = document.getElementById('buscar-responsables-error');
   const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
-  const operatorSelectEl = document.getElementById('detalle-asignaciones-select');
+  const operatorSelectEl = document.getElementById(
+    'detalle-asignaciones-select',
+  );
   const formEl = document.getElementById('detalle-asignaciones-form');
 
   if (!inputEl) return;
@@ -890,8 +771,7 @@ function setupBuscarResponsables(incidentId) {
     listEl.replaceChildren(
       ...users.map((user) => {
         const li = document.createElement('li');
-        li.className =
-          'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
+        li.className = 'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
         li.style.cursor = 'pointer';
 
         const name = responsablesService.formatUserName(user);
@@ -932,7 +812,7 @@ function setupBuscarResponsables(incidentId) {
         });
 
         return li;
-      })
+      }),
     );
   }
 

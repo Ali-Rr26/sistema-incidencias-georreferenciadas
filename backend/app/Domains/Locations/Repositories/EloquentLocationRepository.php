@@ -29,16 +29,46 @@ class EloquentLocationRepository extends EloquentRepository implements LocationR
 
     public function findByPoint(Point $point): ?Location
     {
+        // A point inside a cantón is necessarily also inside that cantón's
+        // parent province (nested polygons), so more than one row can
+        // legitimately match. Callers want the most specific one (e.g.
+        // `LocationGeomConsistentRule` walks *up* from the match via
+        // `ancestorsAndSelf()` — an arbitrary coarser match, like a
+        // province instead of its cantón, would never contain a
+        // deeper-level submitted `location_id` in that chain).
         return $this->newQuery()
             ->whereContains('geom', $point)
+            ->orderByRaw("CASE level
+                WHEN 'neighborhood' THEN 0
+                WHEN 'city' THEN 1
+                WHEN 'province' THEN 2
+                WHEN 'country' THEN 3
+                ELSE 4
+            END")
             ->first();
     }
 
-    public function tree(): Collection
+    /**
+     * Returns the ordered ancestor chain (root-to-leaf) for the given location.
+     *
+     * Uses the HasRecursiveRelationships trait's ancestorsAndSelf() but enforces
+     * ascending depth order (root first, self last) for deterministic cascade
+     * preselection in organization and incident detail responses.
+     *
+     * @see Location::ancestorsAndSelf()
+     */
+    public function ancestors(int $id): Collection
     {
-        return $this->newQuery()
-            ->whereNull('parent_id')
-            ->with('children.children.children')
+        $location = $this->findById($id);
+
+        if ($location === null) {
+            return new Collection;
+        }
+
+        // ancestorsAndSelf() returns root first, self last in the collection
+        // when ordered by depth ASC
+        return $location->ancestorsAndSelf()
+            ->orderBy('depth', 'asc')
             ->get();
     }
 

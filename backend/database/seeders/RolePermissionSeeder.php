@@ -13,7 +13,6 @@ class RolePermissionSeeder extends Seeder
     private const ADMIN_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'incidents',           'action' => 'create'],
         ['resource' => 'incidents',           'action' => 'update'],
         ['resource' => 'incidents',           'action' => 'delete'],
         ['resource' => 'incidents',           'action' => 'manage'],
@@ -24,6 +23,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'status-history',      'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'update'],
         ['resource' => 'assignments',         'action' => 'delete'],
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
@@ -40,7 +40,9 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'incident-categories', 'action' => 'update'],
         ['resource' => 'incident-categories', 'action' => 'delete'],
         ['resource' => 'roles',               'action' => 'view'],
+        ['resource' => 'roles',               'action' => 'create'],
         ['resource' => 'roles',               'action' => 'update'],
+        ['resource' => 'roles',               'action' => 'delete'],
         ['resource' => 'users',               'action' => 'view'],
         ['resource' => 'users',               'action' => 'create'],
         ['resource' => 'users',               'action' => 'update'],
@@ -81,6 +83,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'status-history',      'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'view'],
         ['resource' => 'assignments',         'action' => 'create'],
+        ['resource' => 'assignments',         'action' => 'update'],
         ['resource' => 'assignments',         'action' => 'delete'],
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
@@ -110,6 +113,7 @@ class RolePermissionSeeder extends Seeder
         // able to act on notifications.
         ['resource' => 'notifications',       'action' => 'view'],
         ['resource' => 'notifications',       'action' => 'update'],
+        ['resource' => 'comments',            'action' => 'view'],
         ['resource' => 'comments',            'action' => 'create'],
         ['resource' => 'comments',            'action' => 'update'],
         ['resource' => 'assignments',         'action' => 'view'],
@@ -117,8 +121,10 @@ class RolePermissionSeeder extends Seeder
     ];
 
     private const USUARIO_PERMISSIONS = [
+        ['resource' => 'feed',          'action' => 'detail'],
         ['resource' => 'incidents',     'action' => 'create'],
         ['resource' => 'comments',      'action' => 'create'],
+        ['resource' => 'comments',      'action' => 'view'],
         ['resource' => 'assignments',   'action' => 'view'],
         ['resource' => 'feed',          'action' => 'view'],
         ['resource' => 'profile',       'action' => 'view'],

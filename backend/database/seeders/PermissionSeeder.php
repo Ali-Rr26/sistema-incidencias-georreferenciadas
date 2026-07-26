@@ -26,6 +26,7 @@ class PermissionSeeder extends Seeder
         // Assignments
         ['resource' => 'assignments',         'action' => 'view',   'name' => 'Ver Asignaciones',            'description' => 'Ver asignaciones de operadores a incidencias'],
         ['resource' => 'assignments',         'action' => 'create', 'name' => 'Crear Asignaciones',          'description' => 'Asignar operadores a incidencias'],
+        ['resource' => 'assignments',         'action' => 'update', 'name' => 'Actualizar Asignaciones',     'description' => 'Modificar o reasignar operadores a incidencias'],
         ['resource' => 'assignments',         'action' => 'delete', 'name' => 'Eliminar Asignaciones',       'description' => 'Quitar operadores asignados a incidencias'],
         // Notifications
         ['resource' => 'notifications',       'action' => 'view',   'name' => 'Ver Notificaciones',          'description' => 'Ver notificaciones propias'],
@@ -55,20 +56,12 @@ class PermissionSeeder extends Seeder
         ['resource' => 'roles',               'action' => 'create', 'name' => 'Crear Roles',                 'description' => 'Agregar nuevos roles'],
         ['resource' => 'roles',               'action' => 'update', 'name' => 'Actualizar Roles',            'description' => 'Modificar roles existentes'],
         ['resource' => 'roles',               'action' => 'delete', 'name' => 'Eliminar Roles',              'description' => 'Eliminar roles'],
-        // Permissions
-        ['resource' => 'permissions',         'action' => 'view',   'name' => 'Ver Permisos',                'description' => 'Listar permisos del sistema'],
-        ['resource' => 'permissions',         'action' => 'create', 'name' => 'Crear Permisos',              'description' => 'Agregar nuevos permisos'],
-        ['resource' => 'permissions',         'action' => 'update', 'name' => 'Actualizar Permisos',         'description' => 'Modificar permisos existentes'],
-        ['resource' => 'permissions',         'action' => 'delete', 'name' => 'Eliminar Permisos',           'description' => 'Eliminar permisos'],
-        // Menus
-        ['resource' => 'menus',               'action' => 'view',   'name' => 'Ver Menús',                   'description' => 'Listar menús del sistema'],
-        ['resource' => 'menus',               'action' => 'create', 'name' => 'Crear Menús',                 'description' => 'Agregar nuevos menús'],
-        ['resource' => 'menus',               'action' => 'update', 'name' => 'Actualizar Menús',            'description' => 'Modificar menús existentes'],
-        ['resource' => 'menus',               'action' => 'delete', 'name' => 'Eliminar Menús',              'description' => 'Eliminar menús'],
         // Incidents: back-office create/manage (distinto de incidents.create, que es ciudadano)
         ['resource' => 'incidents',           'action' => 'manage', 'name' => 'Gestionar Incidencias (Back-office)', 'description' => 'Crear/gestionar incidencias desde el back-office'],
         // Feed ciudadano (Inicio + Reportar)
         ['resource' => 'feed',                'action' => 'view',   'name' => 'Ver Feed',                   'description' => 'Acceso al feed ciudadano de incidencias'],
+        // Detalle de incidencia desde el feed ciudadano
+        ['resource' => 'feed',                'action' => 'detail', 'name' => 'Ver Detalle de Incidencia',  'description' => 'Ver detalle de una incidencia desde el feed ciudadano'],
         // Perfil propio (visibilidad universal)
         ['resource' => 'profile',             'action' => 'view',   'name' => 'Ver Perfil',                 'description' => 'Ver perfil propio'],
     ];

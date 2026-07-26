@@ -6,7 +6,6 @@ namespace App\Domains\Organizations\Http\Resources;
 
 use App\Domains\IncidentCategories\Http\Resources\IncidentCategoryResource;
 use App\Domains\IncidentCategories\Repositories\IncidentCategoryRepository;
-use App\Domains\Locations\Http\Resources\LocationResource;
 use App\Domains\Locations\Repositories\LocationRepository;
 use App\Domains\Organizations\Models\Organization;
 use Illuminate\Http\Request;
@@ -15,8 +14,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class OrganizationResource extends JsonResource
 {
     /**
-     * When true, embeds organizations (parent list), locations_tree, and
-     * categories catalogs in the response.
+     * When true, embeds organizations (parent list) and categories catalogs in the response.
+     * Location data is provided via location_path (ordered ancestor chain) on the OrganizationResource
+     * itself, loaded progressively on the frontend via locationService.
      * Enabled only by show() so edit-mode forms need a single GET /organizations/:id.
      */
     public bool $withCatalog = false;
@@ -43,8 +43,20 @@ class OrganizationResource extends JsonResource
             'updated_at' => $this->updated_at,
         ];
 
+        // Add location_path for progressive-loading preselection cascade
+        // Uses ancestors() to get root-to-leaf ordered chain for deterministic select preselection
+        if ($this->location_id !== null) {
+            $locationRepo = app(LocationRepository::class);
+            $ancestors = $locationRepo->ancestors($this->location_id);
+            $data['location_path'] = $ancestors->map(fn ($location) => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'level' => $location->level->value,
+                'geom' => $location->geom !== null ? json_decode($location->geom->toJson()) : null,
+            ])->values()->all();
+        }
+
         if ($this->withCatalog) {
-            $locations = app(LocationRepository::class)->tree();
             $cats = app(IncidentCategoryRepository::class)->tree();
 
             $data['organizations'] = Organization::orderBy('name')
@@ -55,8 +67,6 @@ class OrganizationResource extends JsonResource
                     'parent_id' => $o->parent_id,
                 ])
                 ->values();
-
-            $data['locations_tree'] = LocationResource::collection($locations);
 
             $data['categories'] = $cats->map(fn ($c) => [
                 'id' => $c->id,

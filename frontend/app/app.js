@@ -2,6 +2,7 @@ import { router } from './core/router.js';
 import { appShell } from './app-shell/app-shell.component.js';
 
 import loginComponent from './auth/pages/login/login.component.js';
+import acceptInviteComponent from './invitations/pages/accept-invite/accept-invite.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
 import incidenciasIndexComponent from './incidencias/pages/index/incidencias.index.component.js';
 import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.component.js';
@@ -35,6 +36,7 @@ router.setShell(appShell);
 // Routes WITH a role tag (admin/citizen/both) are mounted into the shell
 // and the role is passed to the component's onInit({ role, params, query }).
 router.addRoute('/login', loginComponent);
+router.addRoute('/accept-invite', acceptInviteComponent);
 
 // ─── Citizen routes (authGuard only) ────────────────────────────────
 router.addRoute('/feed', feedComponent, [authGuard], 'citizen');
@@ -108,30 +110,15 @@ router.addRoute(
   [permissionGuard],
   'admin',
 );
-router.addRoute(
-  '/categorias',
-  categoriasComponent,
-  [permissionGuard],
-  'admin',
-);
+router.addRoute('/categorias', categoriasComponent, [permissionGuard], 'admin');
 router.addRoute(
   '/categorias/crear',
   categoriasFormComponent,
   [permissionGuard],
   'admin',
 );
-router.addRoute(
-  '/roles',
-  rolesIndexComponent,
-  [permissionGuard],
-  'admin',
-);
-router.addRoute(
-  '/roles/:id',
-  rolesDetailComponent,
-  [permissionGuard],
-  'admin',
-);
+router.addRoute('/roles', rolesIndexComponent, [permissionGuard], 'admin');
+router.addRoute('/roles/:id', rolesDetailComponent, [permissionGuard], 'admin');
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
 // ─── Global listeners (cleaned up if app is ever re-booted in tests) ──
@@ -158,8 +145,32 @@ document.addEventListener(
   { signal: appAbort.signal },
 );
 
+document.addEventListener(
+  'auth:expired',
+  () => {
+    // Dispatched by http.service.js after a refresh-token rotation fails
+    // (http 401 on /auth/refresh). The service has already cleared the
+    // access token + session id; we just need to send the user to /login.
+    // Using hash navigation (instead of `window.location.assign`) keeps
+    // the SPA's router in charge of the transition and avoids triggering
+    // a full-page reload.
+    const target = '#/login';
+    if (window.location.hash !== target) {
+      window.location.hash = '/login';
+    }
+  },
+  { signal: appAbort.signal },
+);
+
 // ─── Boot: restore session, then start router. ─────────────────────
 (async () => {
   await auth.tryRestoreSession();
   router.init();
 })();
+
+// ─── Test helpers (used by Playwright E2E tests) ───────────────────
+// NOTE: auth is a module-level singleton. Exposing it on window allows
+// Playwright tests to call auth.login() / auth.me() via page.evaluate()
+// so the SPA's auth state is properly set before assertions run.
+window.__auth = auth;
+window.__router = router;

@@ -27,7 +27,6 @@ import {
 } from '../core/http.service.js';
 import { menuService } from '../shared/menu.service.js';
 import { permissionService } from '../shared/permission.service.js';
-import { notificationService } from '../shared/notification.service.js';
 import { mapaService } from '../mapa/mapa.service.js';
 
 class AuthService {
@@ -127,9 +126,8 @@ class AuthService {
     // out of an admin_sistema session and into a less-privileged one
     // within the TTL window serves the PREVIOUS user's full permission
     // set to the guard.
-    menuService.clearCache();
+    menuService.invalidateMyMenu();
     permissionService.invalidateMyPermissions();
-    notificationService.clearCache();
     // mapaService is user-agnostic by default (keys on bbox/zoom/filters
     // only). Without an explicit invalidate on logout, a stored bbox-page
     // response for one user could be served to the next logged-in user.
@@ -139,6 +137,29 @@ class AuthService {
     mapaService.invalidate();
     clearAuthState();
     this._notifyAuthChange();
+  }
+
+  /**
+   * Accept an invitation and set the user's password.
+   *
+   * POSTs to /invitations/{token}/accept with password + T&C acceptance.
+   * Unlike login(), this endpoint does NOT issue a JWT — the user must
+   * log in with their new credentials after the redirect.
+   *
+   * @param {string} tokenPlain       — plaintext token from the URL
+   * @param {string} password         — new password
+   * @param {string} confirmPassword  — password confirmation (mirrors backend confirmed rule)
+   * @param {boolean} acceptTerms      — must be true
+   * @returns {Promise<{message: string}>}
+   * @throws {InvitationGoneError}     on 410 (expired/consumed)
+   * @throws {InvitationNotFoundError} on 404 (invalid token)
+   * @throws {Error} status=422 with err.errors for field-level errors
+   */
+  async acceptInvitation(tokenPlain, password, confirmPassword, acceptTerms) {
+    // Lazy-import to avoid a circular dependency at module load time.
+    const { acceptInvitation: svcAccept } =
+      await import('../invitations/invitation.service.js');
+    return svcAccept(tokenPlain, password, confirmPassword, acceptTerms, 'v0');
   }
 
   /**

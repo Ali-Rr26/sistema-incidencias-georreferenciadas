@@ -1,4 +1,10 @@
-import { STATUS_LABEL, PRIORITY_LABEL, escapeHtml } from '../../../utils/format.js';
+import template from './incidencias.index.component.html?raw';
+import {
+  badgeEstado,
+  badgePrioridad,
+  escapeHtml,
+  formatearFecha,
+} from '../../../utils/format.js';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
@@ -8,69 +14,18 @@ import {
   clearSelect,
   destroyAll,
 } from '../../../shared/select-search.js';
+import { hydrateKebabActions } from '../../../shared/kebab-actions.js';
+import { isDesktop, mostrarEstado, mostrarToast } from '../../../utils/ui.js';
 
 const POR_PAGINA = 10;
 
 export default {
-  templateUrl: 'app/incidencias/pages/index/incidencias.index.component.html',
+  template,
 
   async onInit() {
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;
-
-    // Helpers — labels come from the shared utils so the dictionary lives
-    // in exactly one place. The badge wrappers themselves stay local because
-    // they also encode the colour scheme.
-    const PRIORITY_COLOR = {
-      high: 'danger',
-      medium: 'warning',
-      low: 'success',
-    };
-    const STATUS_COLOR = {
-      pending: 'secondary',
-      in_progress: 'primary',
-      resolved: 'success',
-      pending_operator: 'warning',
-    };
-
-    function badgePrioridad(p) {
-      const label = PRIORITY_LABEL[p] || '—';
-      return `<span class="badge bg-${PRIORITY_COLOR[p] || 'secondary'}">${label}</span>`;
-    }
-
-    function badgeEstado(e) {
-      return `<span class="badge bg-${STATUS_COLOR[e] || 'secondary'}">${STATUS_LABEL[e] || e || '—'}</span>`;
-    }
-
-    function formatearFecha(iso) {
-      if (!iso) return '—';
-      return new Date(iso).toLocaleDateString('es-EC', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    }
-
-    function mostrarEstado(cual) {
-      ['cargando', 'vacio', 'error', 'tabla'].forEach((s) => {
-        const el = document.getElementById(
-          s === 'tabla' ? 'contenedor-tabla' : 'estado-' + s,
-        );
-        if (el) el.classList.toggle('d-none', s !== cual);
-      });
-    }
-
-    function mostrarToast(mensaje, tipo) {
-      const el = document.getElementById('toast-msg');
-      el.className = `toast align-items-center text-white border-0 bg-${tipo}`;
-      document.getElementById('toast-msg-texto').textContent = mensaje;
-      new bootstrap.Toast(el, { delay: 3000 }).show();
-    }
-
-    function isDesktop() {
-      return window.matchMedia('(min-width: 768px)').matches;
-    }
 
     function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
@@ -102,23 +57,18 @@ export default {
             <td class="small text-muted">${ubicacion}</td>
             <td class="small text-muted">${formatearFecha(inc.created_at)}</td>
             <td class="text-center">
-              <div class="d-flex justify-content-center gap-1">
-                <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                  <i class="fas fa-eye"></i>
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-warning btn-editar"
-                  data-id="${inc.id}" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar"
-                  data-id="${inc.id}" data-titulo="${titulo}" title="Eliminar">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
+              <table-actions id="ta-desktop-${inc.id}"></table-actions>
             </td>
           </tr>`;
           })
           .join('');
+
+        hydrateKebabActions(tbody, datos, {
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+          showView: false,
+          itemTitle: (inc) => inc.title || 'Sin título',
+        });
+
         cards.innerHTML = '';
       } else {
         // Mobile: cards — compact layout sin scroll horizontal
@@ -157,16 +107,21 @@ export default {
                   </div>
                 </div>
 
-                <!-- Botón Ver en mobile solamente -->
+                <!-- kebab actions placeholder (Ver + kebab dropdown) -->
                 <div class="d-flex gap-1 justify-content-end">
-                  <a href="#/incidencias/${inc.id}" class="btn btn-sm btn-primary" title="Ver detalle" style="padding:0.4rem 0.8rem;font-size:0.75rem;">
-                    Ver
-                  </a>
+                  <table-actions id="ta-mobile-${inc.id}"></table-actions>
                 </div>
               </div>
             </div>`;
           })
           .join('');
+
+        // Mount table-actions on each mobile card (async — does not block DOM insertion)
+        hydrateKebabActions(cards, datos, {
+          slugs: { update: 'incidents.update', delete: 'incidents.delete' },
+          showView: false,
+          itemTitle: (inc) => inc.title || 'Sin título',
+        });
       }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
@@ -207,27 +162,32 @@ export default {
       }
     }
 
-    // Click handlers: editar y eliminar
-    function manejarClicks(e) {
-      const editar = e.target.closest('.btn-editar');
-      if (editar) {
-        router.navigate('/incidencias/crear?id=' + editar.dataset.id);
+    // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
+    function manejarAcciones(e) {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const { id, titulo, action } = target.dataset;
+      e.preventDefault();
+      if (action === 'view') {
+        router.navigate('/incidencias/' + id);
         return;
       }
-      const eliminar = e.target.closest('.btn-eliminar');
-      if (!eliminar) return;
-      idEliminar = eliminar.dataset.id;
-      document.getElementById('modal-eliminar-titulo').textContent =
-        eliminar.dataset.titulo;
-      new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      if (action === 'edit') {
+        router.navigate('/incidencias/crear?id=' + id);
+        return;
+      }
+      if (action === 'delete') {
+        idEliminar = id;
+        document.getElementById('modal-eliminar-titulo').textContent = titulo;
+        new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+      }
     }
 
-    document
-      .getElementById('tabla-body')
-      .addEventListener('click', manejarClicks);
-    document
-      .getElementById('contenedor-cards')
-      .addEventListener('click', manejarClicks);
+    const tablaBody = document.getElementById('tabla-body');
+    const contenedorCards = document.getElementById('contenedor-cards');
+
+    tablaBody.addEventListener('click', manejarAcciones);
+    contenedorCards.addEventListener('click', manejarAcciones);
 
     // Double-click handlers: abrir detalle
     function manejarDobleClic(e) {
@@ -288,21 +248,27 @@ export default {
       .addEventListener('click', () => cargarIncidencias(paginaActual));
 
     // ─── Tom Select en filtros ─────────────────────────────────────────
-    initSelect('filtro-prioridad', { placeholder: 'Buscar prioridad...' });
-    initSelect('filtro-estado', { placeholder: 'Buscar estado...' });
+    initSelect('filtro-prioridad', { placeholder: 'Prioridad...' });
+    initSelect('filtro-estado', { placeholder: 'Estado...' });
 
     // "Nueva incidencia" is the sole entry point to /incidencias/crear now
     // (menu_id 4 was removed from MenuSeeder) — its permission gate moved
     // here client-side. Fail closed: no confirmed permission, stays hidden.
+    // SC-127: Validar incidents.create, no incidents.manage.
+    // admin_sistema gestiona/aprueba, no reporta incidencias.
     let permisos;
     try {
       permisos = await permissionService.getMyPermissions();
     } catch {
       permisos = new Set();
     }
-    if (permisos.has('incidents.manage')) {
-      document.getElementById('btn-nueva-incidencia')?.classList.remove('d-none');
-      document.getElementById('btn-registrar-primera')?.classList.remove('d-none');
+    if (permisos.has('incidents.create')) {
+      document
+        .getElementById('btn-nueva-incidencia')
+        ?.classList.remove('d-none');
+      document
+        .getElementById('btn-registrar-primera')
+        ?.classList.remove('d-none');
     }
 
     cargarIncidencias(1);

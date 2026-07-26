@@ -14,6 +14,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Implementación Eloquent del repositorio de Incidencias.
+ *
+ * @cqrs-role command-repository
+ *
+ * Pertenece al command side: toda mutación pasa por DB::transaction(),
+ * lockForUpdate() en operaciones con race (claim/release) y el bind del
+ * actor de auditoría vía set_config('app.current_user_id', ...) para que
+ * el trigger Postgres registre quién hizo el cambio.
+ *
+ * `applyFilters()` es la única superficie que también consume el query side
+ * (FeedController::staffFeed()), pero sólo para casos staff — el feed
+ * ciudadano NUNCA debe llegar a este repositorio.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class EloquentIncidentRepository extends EloquentRepository implements IncidentRepository
 {
     public function __construct()
@@ -48,8 +64,17 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
         /** @var User|null $user */
         $user = Auth::user();
         if ($user !== null && ! $user->isSystemAdmin()) {
-            if ($user->isOrganizationAdmin() || $user->isOperator()) {
+            if ($user->isOrganizationAdmin()) {
                 $query->where('organization_id', $user->organization_id);
+            }
+            if ($user->isOperator()) {
+                $query->where('organization_id', $user->organization_id);
+                // Solo incidencias donde el operador está asignado explícitamente
+                $query->whereIn('id', function ($q) use ($user): void {
+                    $q->select('incident_id')
+                        ->from('assignments')
+                        ->where('user_id', $user->id);
+                });
             }
             if ($user->isRegularUser()) {
                 $query->whereRaw('1 = 0'); // no ven nada en index()
@@ -71,15 +96,22 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             }))
             ->when($filters['status'] ?? null, fn (Builder $q, string $v) => $q->where('status', $v))
             ->when($filters['priority'] ?? null, fn (Builder $q, string $v) => $q->where('priority', $v))
-            ->when($filters['location_id'] ?? null, function (Builder $q, string $v) {
-                $location = Location::find((int) $v);
-                if ($location) {
-                    $ids = $location->descendantsAndSelf()->pluck('id');
-                    $q->whereIn('location_id', $ids);
-                }
+            ->when($filters['location_id'] ?? null, function (Builder $q, string $v): void {
+                // Fixes N+1: use a single recursive CTE query instead of
+                // Location::find() + descendantsAndSelf()->pluck('id')
+                $q->whereRaw('location_id IN (
+                    WITH RECURSIVE location_tree AS (
+                        SELECT id FROM locations WHERE id = ?
+                        UNION ALL
+                        SELECT l.id FROM locations l
+                        INNER JOIN location_tree lt ON l.parent_id = lt.id
+                    )
+                    SELECT id FROM location_tree
+                )', [(int) $v]);
             })
             ->when($filters['incident_category_id'] ?? null, fn (Builder $q, string $v) => $q->where('incident_category_id', $v))
             ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v))
+            ->orderBy('created_at', 'desc')
             ->when($filters['bbox'] ?? null, function (Builder $q, string $v): void {
                 // bbox=minLng,minLat,maxLng,maxLat — PostGIS ST_MakeEnvelope
                 // takes (xmin, ymin, xmax, ymax, srid), so the order maps

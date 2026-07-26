@@ -27,11 +27,15 @@ return [
     | Octane Server
     |--------------------------------------------------------------------------
     |
-    | Supported: "roadrunner", "swoole", "frankenphp"
+    | Swoole is the project standard. StreamedResponse works natively under
+    | Swoole (vendor/laravel/octane/src/Swoole/SwooleClient.php uses
+    | ob_start() + $swooleResponse->write()) without the buffering bug that
+    | affected FrankenPHP and the Generator-refactor-only nature of
+    | RoadRunner. See Issue #102 for the migration decision log.
     |
     */
 
-    'server' => env('OCTANE_SERVER', 'roadrunner'),
+    'server' => env('OCTANE_SERVER', 'swoole'),
 
     /*
     |--------------------------------------------------------------------------
@@ -121,25 +125,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Mercure Hub
+    | Swoole-specific options
     |--------------------------------------------------------------------------
     |
-    | Real-time notification push (the bell dropdown) is delivered via
-    | FrankenPHP's built-in Mercure hub instead of a manual SSE loop —
-    | Octane's FrankenPHP driver has no StreamedResponse support (confirmed
-    | via source: FrankenPhpClient::respond() vs RoadRunnerClient's
-    | resolveStreamResponseCallback()), and a hand-rolled while(true) loop
-    | never holds the connection open (github.com/laravel/octane#903 — the
-    | same buffering issue also reproduces under RoadRunner, so switching
-    | driver isn't a reliable fix either). Mercure sidesteps this entirely:
-    | a dedicated Go process holds subscriber connections, PHP just POSTs.
+    | Tuned for SSE-heavy workloads. The native notification bell (see
+    | openspec/changes/eliminar-mercure-sse-nativo) holds one long-lived
+    | connection per logged-in user. With ~2 replicas behind Cloudflare,
+    | each replica should comfortably handle 10k-30k concurrent streams
+    | on modest hardware (2 CPU / 4 GB). The values below are the
+    | product of that envelope.
+    |
+    | `octane.php` is the single source of truth — the entrypoint.sh
+    | deliberately no longer passes `--workers` / `--max-requests` /
+    | `--task-workers` CLI flags, because CLI flags silently override
+    | config. Tuning here ships uniformly to dev, CI, and prod.
     |
     */
 
-    'mercure' => [
-        'anonymous' => false,
-        'publisher_jwt' => env('MERCURE_PUBLISHER_JWT_SECRET'),
-        'subscriber_jwt' => env('MERCURE_SUBSCRIBER_JWT_SECRET'),
+    'swoole' => [
+        'options' => [
+            'enable_coroutine' => true,
+            'open_http2_protocol' => false,
+            'open_websocket_protocol' => false,
+            // `worker_num` and `task_worker_num` are read by Octane at
+            // boot. We resolve them via env when present (deterministic
+            // in CI) and otherwise let Octane compute its own default
+            // (cpu * 2 for worker_num, cpu for task_worker_num). Calling
+            // `swoole_cpu_num()` here crashes environments without the
+            // Swoole extension (like the test runner), so we leave the
+            // resolution to Octane by omitting the keys when env is unset.
+            'worker_num' => env('OCTANE_WORKER_NUM') !== null
+                ? (int) env('OCTANE_WORKER_NUM')
+                : (function_exists('swoole_cpu_num') ? swoole_cpu_num() * 2 : 4),
+            'task_worker_num' => env('OCTANE_TASK_WORKER_NUM') !== null
+                ? (int) env('OCTANE_TASK_WORKER_NUM')
+                : (function_exists('swoole_cpu_num') ? swoole_cpu_num() : 2),
+        ],
+        // 10000 keeps SSE connections from churning while bounding the
+        // memory exposure of long-lived worker processes. Higher values
+        // trade stability for capacity; lower values force reconnects.
+        'max_request' => 10000,
+        'task_max_request' => 100,
+        'watch' => false,
+        'memory' => 256,
     ],
 
 ];

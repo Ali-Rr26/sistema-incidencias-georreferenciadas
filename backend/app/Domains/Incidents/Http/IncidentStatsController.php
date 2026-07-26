@@ -6,15 +6,17 @@ namespace App\Domains\Incidents\Http;
 
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,37 +29,87 @@ use Illuminate\Support\Facades\DB;
  */
 class IncidentStatsController extends Controller
 {
+    use ScopesIncidentQueries;
+
+    private const int CACHE_TTL_SECONDS = 3600; // 1 hour
+
     public function __invoke(Request $request): JsonResponse
     {
+        // Solo roles con dashboard.view pueden acceder a estadísticas.
+        // Define qué aparece en el menú; si algún día se abre a más roles,
+        // alcanza con asignar dashboard.view en RolePermissionSeeder.
+        if (! $request->user()?->can('dashboard.view')) {
+            abort(403, 'No tienes permiso para ver las estadísticas.');
+        }
+
         $validated = $request->validate([
             'inicio' => 'nullable|date_format:Y-m-d',
-            'fin' => [
-                'nullable',
-                'date_format:Y-m-d',
-                Rule::when(
-                    $request->filled('inicio') && $request->filled('fin'),
-                    fn ($rule) => $rule->after(function ($fail) use ($request) {
-                        $inicio = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('inicio'));
-                        $fin = \Carbon\Carbon::createFromFormat('Y-m-d', $request->input('fin'));
-                        if ($fin->isBefore($inicio)) {
-                            $fail('La fecha fin no puede ser anterior a la fecha inicio.');
-                        }
-                    })
-                ),
-            ],
+            'fin' => 'nullable|date_format:Y-m-d|after_or_equal:inicio',
             'tipo_id' => 'nullable|integer|exists:incident_categories,id',
             'ciudad_id' => 'nullable|integer|exists:locations,id',
             'provincia_id' => 'nullable|integer|exists:locations,id',
             'pais_id' => 'nullable|integer|exists:locations,id',
+        ], [
+            'inicio.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'fin.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
         ]);
 
+        $cacheKey = $this->buildStatsCacheKey($request->user(), $validated);
+
+        $stats = Cache::tags(['incident-stats'])->remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($validated) {
+            return $this->computeStats($validated);
+        });
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Build a cache key that accounts for org scope and filter parameters.
+     */
+    private function buildStatsCacheKey(?User $user, array $validated): string
+    {
+        $orgScope = $this->getOrgScopeKey($user);
+        $filterHash = md5(json_encode($validated));
+
+        return "incident-stats:{$orgScope}:{$filterHash}";
+    }
+
+    /**
+     * Get the org scope key for the current user.
+     */
+    private function getOrgScopeKey(?User $user): string
+    {
+        if ($user === null) {
+            return 'anonymous';
+        }
+
+        if ($user->isSystemAdmin()) {
+            return 'system';
+        }
+
+        if ($user->isOrganizationAdmin() || $user->isOperator()) {
+            return 'org:'.$user->organization_id;
+        }
+
+        return 'user:'.$user->id;
+    }
+
+    /**
+     * Compute all stats — wrapped by Cache::remember in __invoke.
+     *
+     * @param  array{inicio?: string, fin?: string, tipo_id?: int, ciudad_id?: int, provincia_id?: int, pais_id?: int}  $validated
+     * @return array{total: int, by_status: array, by_priority: array, recent_count: int, locations_count: int, average_resolution_time: array|null}
+     */
+    private function computeStats(array $validated): array
+    {
         $driver = DB::connection()->getDriverName();
         if ($driver === 'pgsql') {
             $averageSeconds = $this->applyOrgScope(
                 DB::table('incidents')
                     ->whereNull('deleted_at')
                     ->where('status', IncidentStatus::Resolved->value)
-                    ->whereNotNull('resolution_date'),
+                    ->whereNotNull('resolution_date')
+                    ->whereRaw('resolution_date >= created_at'),
             )
                 ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
                 ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
@@ -71,7 +123,8 @@ class IncidentStatsController extends Controller
                 DB::table('incidents')
                     ->whereNull('deleted_at')
                     ->where('status', IncidentStatus::Resolved->value)
-                    ->whereNotNull('resolution_date'),
+                    ->whereNotNull('resolution_date')
+                    ->whereRaw('resolution_date >= created_at'),
             )
                 ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
                 ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
@@ -95,7 +148,7 @@ class IncidentStatsController extends Controller
             ];
         }
 
-        return response()->json([
+        return [
             'total' => $this->applyOrgScope(Incident::query())
                 ->when($validated['inicio'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
                 ->when($validated['fin'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
@@ -126,7 +179,9 @@ class IncidentStatsController extends Controller
                 ->distinct()
                 ->count('location_id'),
             'average_resolution_time' => $averageResolutionTime,
-        ]);
+            'trends' => $this->calculateTrends($validated),
+            'top_categories' => $this->getTopCategories($validated),
+        ];
     }
 
     /**
@@ -159,66 +214,121 @@ class IncidentStatsController extends Controller
     }
 
     /**
-     * Apply location hierarchy filter to query builder (Query\Builder).
-     * Resolves location descendants when filtering by parent (country → provinces → cities).
+     * Calculate trends vs previous period.
+     * Compares current-period totals and pendientes against the same-length period immediately before.
+     * Resolution rate is derived from current period (resueltas/total*100).
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, float|int|null>
      */
-    private function applyLocationFilter(QueryBuilder $query, string $filterType, int $locationId): QueryBuilder
+    private function calculateTrends(array $validated): array
     {
-        $location = Location::find($locationId);
-        if ($location === null) {
-            return $query;
+        // Determine current period
+        if (! empty($validated['inicio']) && ! empty($validated['fin'])) {
+            $currentStart = Carbon::createFromFormat('Y-m-d', $validated['inicio']);
+            $currentEnd = Carbon::createFromFormat('Y-m-d', $validated['fin']);
+        } else {
+            $currentStart = now()->startOfMonth();
+            $currentEnd = now();
         }
 
-        $descendantIds = $location->descendantsAndSelf()
-            ->pluck('id')
-            ->toArray();
+        $daysInPeriod = $currentStart->diffInDays($currentEnd) + 1;
+        $previousStart = $currentStart->copy()->subDays($daysInPeriod);
+        $previousEnd = $currentStart->copy()->subDay();
 
-        return $query->whereIn('location_id', $descendantIds);
+        // Fetch current period totals
+        $pendingStatus = IncidentStatus::Pending->value;
+        $resolvedStatus = IncidentStatus::Resolved->value;
+
+        $current = $this->applyOrgScope(
+            DB::table('incidents')->whereNull('deleted_at')
+        )
+            ->whereBetween('created_at', [$currentStart, $currentEnd])
+            ->when(! empty($validated['tipo_id']), fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+            ->when(! empty($validated['ciudad_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+            ->when(! empty($validated['provincia_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+            ->when(! empty($validated['pais_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
+            ->selectRaw(
+                "COUNT(*) as total,
+                 SUM(CASE WHEN status = '{$pendingStatus}' THEN 1 ELSE 0 END) as pendientes,
+                 SUM(CASE WHEN status = '{$resolvedStatus}' THEN 1 ELSE 0 END) as resueltas"
+            )
+            ->first();
+
+        $currentTotal = $current->total ?? 0;
+        $currentPendientes = $current->pendientes ?? 0;
+        $currentResueltas = $current->resueltas ?? 0;
+
+        // Fetch previous period totals (same filters)
+        $previous = $this->applyOrgScope(
+            DB::table('incidents')->whereNull('deleted_at')
+        )
+            ->whereBetween('created_at', [$previousStart, $previousEnd])
+            ->when(! empty($validated['tipo_id']), fn (QueryBuilder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+            ->when(! empty($validated['ciudad_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+            ->when(! empty($validated['provincia_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+            ->when(! empty($validated['pais_id']), fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
+            ->selectRaw("COUNT(*) as total, SUM(CASE WHEN status = '{$pendingStatus}' THEN 1 ELSE 0 END) as pendientes")
+            ->first();
+
+        $previousTotal = $previous->total ?? 0;
+        $previousPendientes = $previous->pendientes ?? 0;
+
+        // Calculate percentages
+        $totalPct = null;
+        $pendientesPct = null;
+        if ($previousTotal > 0) {
+            $totalPct = round((($currentTotal - $previousTotal) / $previousTotal) * 100, 2);
+        }
+        if ($previousPendientes > 0) {
+            $pendientesPct = round((($currentPendientes - $previousPendientes) / $previousPendientes) * 100, 2);
+        }
+
+        $resolutionRatePct = $currentTotal > 0 ? (int) round(($currentResueltas / $currentTotal) * 100) : null;
+
+        return [
+            'total_pct' => $totalPct,
+            'pendientes_pct' => $pendientesPct,
+            'resolution_rate_pct' => $resolutionRatePct,
+        ];
     }
 
     /**
-     * Apply location hierarchy filter to Eloquent builder.
-     * Mirrors applyLocationFilter for Eloquent queries.
+     * Get top 5 incident categories by count, split into resolved and pending.
      */
-    private function applyLocationFilterEloquent(Builder $query, string $filterType, int $locationId): Builder
+    private function getTopCategories(array $validated): array
     {
-        $location = Location::find($locationId);
-        if ($location === null) {
-            return $query;
-        }
+        $resolved = IncidentStatus::Resolved->value;
+        $pending = IncidentStatus::Pending->value;
+        $inProgress = IncidentStatus::InProgress->value;
 
-        $descendantIds = $location->descendantsAndSelf()
-            ->pluck('id')
-            ->toArray();
+        $rows = $this->applyOrgScope(
+            DB::table('incidents')->whereNull('incidents.deleted_at'),
+        )
+            ->when($validated['inicio'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '>=', $validated['inicio']))
+            ->when($validated['fin'] ?? null, fn (QueryBuilder $q) => $q->whereDate('incidents.created_at', '<=', $validated['fin']))
+            ->when($validated['tipo_id'] ?? null, fn (QueryBuilder $q) => $q->where('incidents.incident_category_id', $validated['tipo_id']))
+            ->when($validated['ciudad_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'ciudad_id', $validated['ciudad_id']))
+            ->when($validated['provincia_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'provincia_id', $validated['provincia_id']))
+            ->when($validated['pais_id'] ?? null, fn (QueryBuilder $q) => $this->applyLocationFilter($q, 'pais_id', $validated['pais_id']))
+            ->join('incident_categories', 'incidents.incident_category_id', '=', 'incident_categories.id')
+            ->selectRaw(
+                "incident_categories.name as category,
+                 incident_categories.id as category_id,
+                 COUNT(*) as total,
+                 SUM(CASE WHEN status = '{$resolved}' THEN 1 ELSE 0 END) as resolved,
+                 SUM(CASE WHEN status IN ('{$pending}', '{$inProgress}') THEN 1 ELSE 0 END) as pending"
+            )
+            ->groupBy('incident_categories.id', 'incident_categories.name')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
 
-        return $query->whereIn('location_id', $descendantIds);
-    }
-
-    /**
-     * Mirrors the scoping in EloquentIncidentRepository::applyFilters
-     * (REQ-RBAC-03) — this controller runs its own aggregate queries
-     * instead of going through the repository, so the org boundary has
-     * to be re-applied here or org-scoped roles see system-wide totals.
-     *
-     * @template TBuilder of \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder
-     *
-     * @param  TBuilder  $query
-     * @return TBuilder
-     */
-    private function applyOrgScope($query)
-    {
-        /** @var User|null $user */
-        $user = Auth::user();
-
-        if ($user !== null && ! $user->isSystemAdmin()) {
-            if ($user->isOrganizationAdmin() || $user->isOperator()) {
-                $query->where('organization_id', $user->organization_id);
-            }
-            if ($user->isRegularUser()) {
-                $query->whereRaw('1 = 0');
-            }
-        }
-
-        return $query;
+        return $rows->map(fn ($row) => [
+            'name' => $row->category,
+            'total' => (int) $row->total,
+            'resolved' => (int) $row->resolved,
+            'pending' => (int) $row->pending,
+        ])->toArray();
     }
 }

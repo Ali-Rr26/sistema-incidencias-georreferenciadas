@@ -7,6 +7,24 @@ namespace App\Domains\Incidents\Models;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
+/**
+ * Read model del feed ciudadano de Incidencias.
+ *
+ * @cqrs-role query-read-model
+ *
+ * Pertenece al query side y NUNCA debe tocar Postgres. Lee exclusivamente
+ * de Redis (`feed:v2:items` como hash + `feed:v2:index` como sorted set).
+ *
+ * Si Redis está caído, devuelve una respuesta vacía y loggea en vez de
+ * tirar 500 — el mapa del frontend debe seguir renderizando. La fuente
+ * de verdad sigue siendo Postgres; este servicio es una vista optimizada
+ * eventualmente consistente.
+ *
+ * Los filtros que agregues acá son filtros del read model, no reglas de
+ * negocio: para eso, los servicios del command side.
+ *
+ * @see docs/Convenciones/architecture-cqrs-lite.md
+ */
 class FeedService
 {
     private const CANDIDATE_LIMIT = 500;
@@ -25,13 +43,36 @@ class FeedService
         int $page = 1,
         int $perPage = 12,
     ): array {
-        $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+        // The citizen feed is the highest-traffic read in the app and the one
+        // we cache in Redis specifically to insulate it from Postgres. If
+        // Redis is unreachable we MUST NOT 500 the whole map view — degrade
+        // to an empty response so the frontend still renders the shell
+        // (and can show a stale-data banner if it wants). Logged so ops sees
+        // the Redis outage rather than silently swallowing it.
+        try {
+            $candidateIds = Redis::zrevrange(self::V2_INDEX_KEY, 0, self::CANDIDATE_LIMIT - 1);
+            $allItems = $candidateIds === []
+                ? []
+                : Redis::hgetall(self::V2_ITEMS_KEY);
+        } catch (\Throwable $e) {
+            Log::warning('feed.redis_unavailable', [
+                'method' => __METHOD__,
+                'status' => $status,
+                'organization_id' => $organizationId,
+                'location_id' => $locationId,
+                'page' => $page,
+                'per_page' => $perPage,
+                'exception' => $e->getMessage(),
+                'exception_class' => get_class($e),
+            ]);
+            report($e);
+
+            return $this->emptyResponse($page, $perPage);
+        }
 
         if ($candidateIds === []) {
             return $this->emptyResponse($page, $perPage);
         }
-
-        $allItems = Redis::hgetall(self::V2_ITEMS_KEY);
 
         $incidents = [];
         foreach ($candidateIds as $id) {

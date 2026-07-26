@@ -20,6 +20,7 @@ abstract class PaginatedCollection extends ResourceCollection
             'last_page' => $paginated['last_page'],
             'from' => $paginated['from'],
             'to' => $paginated['to'],
+            'next_page_url' => $paginated['next_page_url'] ?? null,
         ] : [
             'current_page' => 1,
             'per_page' => count($this->collection),

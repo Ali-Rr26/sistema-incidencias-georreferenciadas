@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redis;
 
@@ -15,11 +16,15 @@ class FeedRebuildCommand extends Command
 
     private const V2_INDEX_KEY = 'feed:v2:index';
 
-    private const FEED_TTL = 604800; // 7 days
-
     protected $signature = 'feed:rebuild';
 
     protected $description = 'Rebuild Redis feed v2 data from PostgreSQL';
+
+    public function __construct(
+        private readonly IncidentFeedSerializer $serializer,
+    ) {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -37,32 +42,7 @@ class FeedRebuildCommand extends Command
                 $pipe = Redis::pipeline();
 
                 foreach ($incidents as $incident) {
-                    $locationPathIds = $incident->location?->ancestorsAndSelf()
-                        ->orderBy('depth', 'desc')
-                        ->pluck('id')
-                        ->toArray() ?? [];
-
-                    $data = [
-                        'id' => (string) $incident->id,
-                        'incident_category_id' => (string) $incident->incident_category_id,
-                        'organization_id' => (string) $incident->organization_id,
-                        'user_id' => (string) $incident->user_id,
-                        'location_id' => (string) $incident->location_id,
-                        'title' => $incident->title,
-                        'status' => $incident->status,
-                        'priority' => $incident->priority,
-                        'resolution_date' => $incident->resolution_date?->toIso8601String(),
-                        'created_at' => $incident->created_at?->toIso8601String(),
-                        'updated_at' => $incident->updated_at?->toIso8601String(),
-                        'geom' => $incident->geom ? $incident->geom->toJson() : null,
-                        'category_name' => $incident->category?->name ?? '',
-                        'organization_name' => $incident->organization?->name ?? '',
-                        'location_name' => $incident->location?->name ?? '',
-                        'location_path_ids' => json_encode($locationPathIds),
-                        'user_first_name' => $incident->user?->first_name,
-                        'user_last_name' => $incident->user?->last_name,
-                        'user_avatar' => $incident->user?->avatar,
-                    ];
+                    $data = $this->serializer->serialize($incident);
 
                     $pipe->hset(self::V2_ITEMS_KEY, (string) $incident->id, json_encode($data));
                     $pipe->zadd(self::V2_INDEX_KEY, (float) $incident->created_at->timestamp, (string) $incident->id);
@@ -74,8 +54,9 @@ class FeedRebuildCommand extends Command
             });
 
         // Set TTL on v2 keys once after all inserts
-        Redis::expire(self::V2_ITEMS_KEY, self::FEED_TTL);
-        Redis::expire(self::V2_INDEX_KEY, self::FEED_TTL);
+        $feedTtlSeconds = (int) config('cache.feed_ttl_seconds');
+        Redis::expire(self::V2_ITEMS_KEY, $feedTtlSeconds);
+        Redis::expire(self::V2_INDEX_KEY, $feedTtlSeconds);
 
         $this->info("Synced {$incidentCount} incidents to Redis feed v2.");
 
@@ -109,11 +90,17 @@ class FeedRebuildCommand extends Command
                 $pipe->exec();
             });
 
-        // Rebuild comment_count for each incident that has comments
-        $incidentIds = Comment::distinct()->pluck('incident_id');
-        foreach ($incidentIds as $incidentId) {
-            $count = Comment::where('incident_id', $incidentId)->count();
-            Redis::hincrby('incident:'.$incidentId, 'comment_count', $count);
+        // Rebuild comment_count for each incident that has comments.
+        // HSET (absolute), never HINCRBY: the incident:{id} hashes are not
+        // wiped above (only the feed:v2 keys are), so an increment would
+        // stack on top of the value left by the previous rebuild.
+        $counts = Comment::query()
+            ->selectRaw('incident_id, COUNT(*) AS total')
+            ->groupBy('incident_id')
+            ->pluck('total', 'incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'comment_count', (int) $count);
         }
 
         $this->info("Synced {$commentCount} comments to Redis.");

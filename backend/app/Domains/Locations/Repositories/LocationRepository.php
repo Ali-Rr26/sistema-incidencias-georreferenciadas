@@ -17,5 +17,5 @@ interface LocationRepository extends Repository
 
     public function findByPoint(Point $point): ?Location;
 
-    public function tree(): Collection;
+    public function ancestors(int $id): Collection;
 }

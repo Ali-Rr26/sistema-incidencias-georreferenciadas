@@ -3,134 +3,94 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Incidents\Listeners\RedisIncidentSync;
+use App\Domains\Incidents\Jobs\SyncIncidentToRedisJob;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
-it('calls HMSET and ZADD when incident is created', function (): void {
-    $user = User::factory()->make(['id' => 3, 'first_name' => 'John', 'last_name' => 'Doe']);
-    $category = new IncidentCategory(['id' => 1, 'name' => 'Test Category']);
+beforeEach(function (): void {
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema'],
+    ]);
 
-    $location = Mockery::mock(Location::class)->makePartial();
-    $location->id = 10;
-    $location->name = 'Test Location';
-    $location->shouldReceive('ancestorsAndSelf')->andReturnSelf();
-    $location->shouldReceive('orderBy')->with('depth', 'desc')->andReturnSelf();
-    $location->shouldReceive('pluck')->with('id')->andReturn(collect([10, 5, 1]));
+    $user = User::factory()->create(['role_id' => 1]);
+    $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
+    $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);
 
-    $org = new Organization(['id' => 2, 'name' => 'Test Org']);
-
-    $incident = new Incident([
-        'incident_category_id' => 1,
-        'organization_id' => 2,
-        'user_id' => 3,
-        'location_id' => 10,
+    $this->incident = Incident::withoutEvents(fn (): Incident => Incident::create([
+        'incident_category_id' => $category->id,
+        'organization_id' => $organization->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'title' => 'Traffic light outage',
         'status' => 'pending',
         'priority' => 'medium',
-    ]);
-    $incident->id = 42;
-    $incident->exists = true;
-    $incident->created_at = now();
-    $incident->updated_at = now();
-
-    $incident->setRelation('category', $category);
-    $incident->setRelation('organization', $org);
-    $incident->setRelation('location', $location);
-    $incident->setRelation('user', $user);
-
-    Redis::shouldReceive('hset')
-        ->once()
-        ->with('feed:v2:items', '42', Mockery::any());
-
-    Redis::shouldReceive('zadd')
-        ->once()
-        ->with('feed:v2:index', Mockery::any(), '42');
-
-    $sync = new RedisIncidentSync;
-    $sync->created($incident);
+    ]));
 });
 
-it('calls DEL and ZREM when incident is deleted', function (): void {
-    $incident = new Incident;
-    $incident->id = 99;
-    $incident->exists = true;
+it('reconciles the current incident state into Redis idempotently', function (): void {
+    Redis::shouldReceive('hset')
+        ->twice()
+        ->withArgs(fn (string $key, string $id, string $payload): bool => $key === 'feed:v2:items'
+            && $id === (string) $this->incident->id
+            && json_decode($payload, true)['title'] === 'Traffic light outage');
+
+    Redis::shouldReceive('zadd')
+        ->twice()
+        ->with('feed:v2:index', Mockery::any(), (string) $this->incident->id);
+
+    $job = new SyncIncidentToRedisJob($this->incident->id);
+    $serializer = new IncidentFeedSerializer;
+
+    $job->handle($serializer);
+    $job->handle($serializer);
+});
+
+it('removes a soft-deleted incident from Redis', function (): void {
+    Incident::withoutEvents(fn () => $this->incident->delete());
 
     Redis::shouldReceive('hdel')
         ->once()
-        ->with('feed:v2:items', '99');
+        ->with('feed:v2:items', (string) $this->incident->id);
 
     Redis::shouldReceive('zrem')
         ->once()
-        ->with('feed:v2:index', '99');
+        ->with('feed:v2:index', (string) $this->incident->id);
 
-    $sync = new RedisIncidentSync;
-    $sync->deleted($incident);
+    (new SyncIncidentToRedisJob($this->incident->id))->handle(new IncidentFeedSerializer);
 });
 
-it('calls HMSET and ZADD when incident is updated', function (): void {
-    $user = User::factory()->make(['id' => 3, 'first_name' => 'Jane', 'last_name' => 'Smith']);
-    $category = new IncidentCategory(['id' => 1, 'name' => 'Test Category']);
-
-    $location = Mockery::mock(Location::class)->makePartial();
-    $location->id = 10;
-    $location->name = 'Test Location';
-    $location->shouldReceive('ancestorsAndSelf')->andReturnSelf();
-    $location->shouldReceive('orderBy')->with('depth', 'desc')->andReturnSelf();
-    $location->shouldReceive('pluck')->with('id')->andReturn(collect([10]));
-
-    $org = new Organization(['id' => 2, 'name' => 'Test Org']);
-
-    $incident = new Incident([
-        'incident_category_id' => 1,
-        'organization_id' => 2,
-        'user_id' => 3,
-        'location_id' => 10,
-        'status' => 'in_progress',
-        'priority' => 'high',
-    ]);
-    $incident->id = 7;
-    $incident->exists = true;
-    $incident->created_at = now();
-    $incident->updated_at = now();
-
-    $incident->setRelation('category', $category);
-    $incident->setRelation('organization', $org);
-    $incident->setRelation('location', $location);
-    $incident->setRelation('user', $user);
-
-    Redis::shouldReceive('hset')
-        ->once()
-        ->with('feed:v2:items', '7', Mockery::any());
-
-    Redis::shouldReceive('zadd')
-        ->once()
-        ->with('feed:v2:index', Mockery::any(), '7');
-
-    $sync = new RedisIncidentSync;
-    $sync->updated($incident);
-});
-
-it('does not throw when Redis is unreachable', function (): void {
-    $incident = new Incident;
-    $incident->id = 1;
-    $incident->exists = true;
+it('removes a force-deleted incident without model deserialization', function (): void {
+    $incidentId = $this->incident->id;
+    Incident::withoutEvents(fn () => $this->incident->forceDelete());
 
     Redis::shouldReceive('hdel')
         ->once()
+        ->with('feed:v2:items', (string) $incidentId);
+
+    Redis::shouldReceive('zrem')
+        ->once()
+        ->with('feed:v2:index', (string) $incidentId);
+
+    (new SyncIncidentToRedisJob($incidentId))->handle(new IncidentFeedSerializer);
+});
+
+it('lets Redis failures escape so the queue can retry the projection', function (): void {
+    Redis::shouldReceive('hset')
+        ->once()
         ->andThrow(new RuntimeException('Connection refused'));
 
-    $sync = new RedisIncidentSync;
+    Redis::shouldReceive('zadd')->never();
 
-    try {
-        $sync->deleted($incident);
-    } catch (Throwable) {
-    }
-
-    expect(true)->toBeTrue();
+    expect(fn () => (new SyncIncidentToRedisJob($this->incident->id))->handle(new IncidentFeedSerializer))
+        ->toThrow(RuntimeException::class, 'Connection refused');
 });

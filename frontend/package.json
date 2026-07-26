@@ -10,19 +10,30 @@
     "lint:fix": "eslint \"app/**/*.js\" --fix",
     "format": "prettier --check \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
     "format:fix": "prettier --write \"app/**/*.{js,css,html}\" \"*.{json,js,cjs}\" \"index.html\"",
-    "test": "vitest run --config vitest.config.js",
-    "test:unit": "vitest run --config vitest.unit.config.js",
-    "test:coverage": "vitest run --config vitest.unit.config.js --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.js",
-    "test:snapshot": "vitest run --config vitest.snapshot.config.js",
-    "test:watch": "vitest"
+    "test": "vitest run",
+    "test:unit": "vitest run --coverage --exclude='**/*.integration.test.js' --exclude='**/*.snapshot.test.js'",
+    "test:coverage": "vitest run --coverage --exclude='**/*.integration.test.js' --exclude='**/*.snapshot.test.js'",
+    "test:integration": "vitest run .integration.test.",
+    "test:snapshot": "vitest run .snapshot.test.",
+    "test:watch": "vitest",
+    "test:e2e:mobile": "playwright test --config=playwright.config.mobile.js",
+    "test:e2e": "cypress run --headless",
+    "test:e2e:dev": "cypress open"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@vitest/coverage-v8": "^2.1.8",
+    "cypress": "^15.19.0",
     "eslint": "^8.57.0",
     "jsdom": "^25.0.1",
+    "playwright": "^1.61.1",
     "prettier": "^3.9.3",
     "vite": "^6.4.3",
     "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.3.5",
+    "@turf/helpers": "^7.3.5",
+    "leaflet": "^1.9.4"
   }
 }

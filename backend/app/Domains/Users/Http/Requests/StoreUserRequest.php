@@ -7,6 +7,7 @@ namespace App\Domains\Users\Http\Requests;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
@@ -22,7 +23,7 @@ class StoreUserRequest extends FormRequest
             return false;
         }
 
-        if ($user->isOrganizationAdmin()) {
+        if (! $user->isSystemAdmin()) {
             $roleId = $this->input('role_id');
             $orgId = $this->input('organization_id');
 
@@ -47,12 +48,13 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'email' => 'required|email|unique:users,email',
-            'password' => 'nullable|string|min:8',
+            'password' => 'prohibited',
+            'password_confirmation' => 'prohibited',
             'role_id' => 'required|integer|exists:roles,id',
             'organization_id' => 'nullable|integer|exists:organizations,id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'phone' => 'nullable|string|max:50',
+            'phone' => PhoneRules::rules(),
             'avatar' => 'nullable|array',
         ];
     }
@@ -60,9 +62,11 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'phone.regex' => PhoneRules::MESSAGE,
             'email.unique' => 'Este correo electrónico ya está registrado',
             'role_id.exists' => 'El rol selecionnado no existe',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres',
+            'password.prohibited' => 'El usuario recibirá un mail para establecer su contraseña.',
+            'password_confirmation.prohibited' => 'El usuario recibirá un mail para establecer su contraseña.',
         ];
     }
 }
