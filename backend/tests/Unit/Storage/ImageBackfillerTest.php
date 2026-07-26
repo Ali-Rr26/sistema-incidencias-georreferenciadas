@@ -27,8 +27,8 @@ beforeEach(function (): void {
     // functionally required for the pre-drop recovery path (guard aborts
     // -> operator backfills -> retries migrate), so this test resurrects
     // the empty legacy schema the same way the WU8 guard test does, by
-    // rolling back just that one migration before seeding legacy rows.
-    Artisan::call('migrate:rollback', ['--step' => 1]);
+    // rolling back to that migration before seeding legacy rows.
+    Artisan::call('migrate:rollback', ['--step' => 2]);
 
     $this->user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);
