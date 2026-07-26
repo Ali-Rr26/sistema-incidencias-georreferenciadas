@@ -663,6 +663,14 @@ it('org-scoped operator sees only their organization incidents', function () {
         ['id' => 3, 'name' => 'admin_organizacion', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
+    $permId = DB::table('permissions')->insertGetId([
+        ['name' => 'dashboard.view', 'resource' => 'dashboard', 'action' => 'view', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    DB::table('role_permissions')->insert([
+        ['role_id' => 3, 'permission_id' => $permId],
+    ]);
+
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
     $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
 
