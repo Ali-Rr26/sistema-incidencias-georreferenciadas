@@ -5,9 +5,16 @@
  * @module shared/image-uploader
  */
 
+// D10 validation parity: keep these in sync with backend/app/Storage/ImageRules.php
+// (MAX_FILES, MAX_SIZE_KB / 1024, MIMES).
 export const DEFAULT_MAX_FILES = 10;
 export const DEFAULT_MAX_SIZE_MB = 5;
-export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const ACCEPTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
 
 /**
  * Mount a multi-image uploader widget inside a target container.
@@ -54,7 +61,7 @@ export function mountImageUploader(options = {}) {
           <span>o hacé clic para explorar tus archivos</span>
         </div>
         <div class="image-uploader__dropzone-hint">
-          JPEG, PNG o WebP (hasta ${maxSizeMB} MB por foto)
+          JPEG, PNG, WebP o GIF (hasta ${maxSizeMB} MB por foto)
         </div>
       </div>
 

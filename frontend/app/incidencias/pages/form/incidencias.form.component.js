@@ -200,8 +200,7 @@ export default {
       }
       if (locationSelection.provinceId) {
         return (
-          provinces.find((p) => p.id === locationSelection.provinceId) ??
-          null
+          provinces.find((p) => p.id === locationSelection.provinceId) ?? null
         );
       }
       return null;
@@ -505,9 +504,15 @@ export default {
       // calls destroySelect() internally — the same trap, one step later).
       destroySelect('ici-subcategory');
       if (!parent) {
-        poblarSelectNativo('ici-subcategory', [], '-- Seleccione subcategoría --');
+        poblarSelectNativo(
+          'ici-subcategory',
+          [],
+          '-- Seleccione subcategoría --',
+        );
         setSelectEnabled('ici-subcategory', false);
-        initSelect('ici-subcategory', { placeholder: 'Buscar subcategoría...' });
+        initSelect('ici-subcategory', {
+          placeholder: 'Buscar subcategoría...',
+        });
         return;
       }
 
@@ -515,7 +520,9 @@ export default {
       if (children.length === 0) {
         poblarSelectNativo('ici-subcategory', [], '-- Sin subcategorías --');
         setSelectEnabled('ici-subcategory', false);
-        initSelect('ici-subcategory', { placeholder: 'Buscar subcategoría...' });
+        initSelect('ici-subcategory', {
+          placeholder: 'Buscar subcategoría...',
+        });
         return;
       }
 
@@ -536,18 +543,30 @@ export default {
     try {
       const catResp = await http.get('/incident-categories/tree');
       categoryTree = catResp.data ?? catResp ?? [];
-      poblarSelectNativo('ici-category', categoryTree, '-- Seleccione categoría --');
+      poblarSelectNativo(
+        'ici-category',
+        categoryTree,
+        '-- Seleccione categoría --',
+      );
       initSelect('ici-category', { placeholder: 'Buscar categoría...' });
 
       provinces = await locationService.getRoots({ level: 'province' });
-      poblarSelectNativo('ici-location-province', provinces, '-- Sin ubicación fija --');
-      initSelect('ici-location-province', { placeholder: 'Buscar provincia...' });
+      poblarSelectNativo(
+        'ici-location-province',
+        provinces,
+        '-- Sin ubicación fija --',
+      );
+      initSelect('ici-location-province', {
+        placeholder: 'Buscar provincia...',
+      });
 
       // Dependent fields start disabled/empty but are still wrapped as
       // tom-select boxes from first paint, matching the enabled look.
       initSelect('ici-subcategory', { placeholder: 'Buscar subcategoría...' });
       initSelect('ici-location-city', { placeholder: 'Buscar cantón...' });
-      initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
+      initSelect('ici-location-neighborhood', {
+        placeholder: 'Buscar parroquia...',
+      });
     } catch {
       // categoryTree stays as-is (empty from initial declaration)
     }
@@ -584,7 +603,9 @@ export default {
         setSelectEnabled('ici-location-city', false);
         setSelectEnabled('ici-location-neighborhood', false);
         initSelect('ici-location-city', { placeholder: 'Buscar cantón...' });
-        initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
+        initSelect('ici-location-neighborhood', {
+          placeholder: 'Buscar parroquia...',
+        });
         locationSelection = null;
         lastCities = [];
         lastNeighborhoods = [];
@@ -594,7 +615,9 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const cities = await locationService.getChildren({ parentId: parseInt(provinceId) });
+      const cities = await locationService.getChildren({
+        parentId: parseInt(provinceId),
+      });
       if (gen !== selectionGeneration) return; // stale
       lastCities = cities;
       lastNeighborhoods = [];
@@ -606,17 +629,31 @@ export default {
         poblarSelectNativo('ici-location-city', [], '-- Sin cantones --');
         setSelectEnabled('ici-location-city', false);
       } else {
-        poblarSelectNativo('ici-location-city', cities, '-- Seleccione cantón --');
+        poblarSelectNativo(
+          'ici-location-city',
+          cities,
+          '-- Seleccione cantón --',
+        );
         setSelectEnabled('ici-location-city', true);
       }
       initSelect('ici-location-city', { placeholder: 'Buscar cantón...' });
 
       destroySelect('ici-location-neighborhood');
-      poblarSelectNativo('ici-location-neighborhood', [], '-- Seleccione parroquia --');
+      poblarSelectNativo(
+        'ici-location-neighborhood',
+        [],
+        '-- Seleccione parroquia --',
+      );
       setSelectEnabled('ici-location-neighborhood', false);
-      initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
+      initSelect('ici-location-neighborhood', {
+        placeholder: 'Buscar parroquia...',
+      });
 
-      locationSelection = { provinceId: parseInt(provinceId), cityId: null, neighborhoodId: null };
+      locationSelection = {
+        provinceId: parseInt(provinceId),
+        cityId: null,
+        neighborhoodId: null,
+      };
       updateBoundaryFromCurrentSelection();
     }
 
@@ -627,7 +664,9 @@ export default {
       if (!cityId) {
         destroySelect('ici-location-neighborhood');
         setSelectEnabled('ici-location-neighborhood', false);
-        initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
+        initSelect('ici-location-neighborhood', {
+          placeholder: 'Buscar parroquia...',
+        });
         if (locationSelection) locationSelection.cityId = null;
         lastNeighborhoods = [];
         updateBoundaryFromCurrentSelection();
@@ -636,13 +675,19 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const neighborhoods = await locationService.getChildren({ parentId: parseInt(cityId) });
+      const neighborhoods = await locationService.getChildren({
+        parentId: parseInt(cityId),
+      });
       if (gen !== selectionGeneration) return; // stale
       lastNeighborhoods = neighborhoods;
 
       destroySelect('ici-location-neighborhood');
       if (neighborhoods.length === 0) {
-        poblarSelectNativo('ici-location-neighborhood', [], '-- Sin parroquias --');
+        poblarSelectNativo(
+          'ici-location-neighborhood',
+          [],
+          '-- Sin parroquias --',
+        );
         setSelectEnabled('ici-location-neighborhood', false);
       } else {
         poblarSelectNativo(
@@ -652,7 +697,9 @@ export default {
         );
         setSelectEnabled('ici-location-neighborhood', true);
       }
-      initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
+      initSelect('ici-location-neighborhood', {
+        placeholder: 'Buscar parroquia...',
+      });
 
       if (locationSelection) {
         locationSelection.cityId = parseInt(cityId);
@@ -902,9 +949,15 @@ export default {
               getSelect('ici-category')?.setValue(String(match.node.id), true);
               populateSubcategories(match.node.id);
             } else {
-              getSelect('ici-category')?.setValue(String(match.parent.id), true);
+              getSelect('ici-category')?.setValue(
+                String(match.parent.id),
+                true,
+              );
               populateSubcategories(match.parent.id);
-              getSelect('ici-subcategory')?.setValue(String(match.node.id), true);
+              getSelect('ici-subcategory')?.setValue(
+                String(match.node.id),
+                true,
+              );
             }
           }
         }
@@ -913,32 +966,56 @@ export default {
         if (locationId && inc.location_path && inc.location_path.length > 0) {
           // Progressive preselection via location_path (ordered root-to-leaf array).
           // Build the cascade from the path without re-fetching already-loaded data.
-          const nivelProvincia = inc.location_path.find((a) => a.level === 'province');
+          const nivelProvincia = inc.location_path.find(
+            (a) => a.level === 'province',
+          );
           const nivelCiudad = inc.location_path.find((a) => a.level === 'city');
-          const nivelParroquia = inc.location_path.find((a) => a.level === 'neighborhood');
+          const nivelParroquia = inc.location_path.find(
+            (a) => a.level === 'neighborhood',
+          );
 
           if (nivelProvincia) {
-            getSelect('ici-location-province')?.setValue(String(nivelProvincia.id), true);
-            locationSelection = { provinceId: nivelProvincia.id, cityId: null, neighborhoodId: null };
+            getSelect('ici-location-province')?.setValue(
+              String(nivelProvincia.id),
+              true,
+            );
+            locationSelection = {
+              provinceId: nivelProvincia.id,
+              cityId: null,
+              neighborhoodId: null,
+            };
 
             if (nivelCiudad) {
               selectionGeneration++;
               const genCities = selectionGeneration;
-              const cities = await locationService.getChildren({ parentId: nivelProvincia.id });
+              const cities = await locationService.getChildren({
+                parentId: nivelProvincia.id,
+              });
               if (genCities !== selectionGeneration) return;
               lastCities = cities;
 
               destroySelect('ici-location-city');
-              poblarSelectNativo('ici-location-city', cities, '-- Seleccione cantón --');
+              poblarSelectNativo(
+                'ici-location-city',
+                cities,
+                '-- Seleccione cantón --',
+              );
               setSelectEnabled('ici-location-city', true);
-              initSelect('ici-location-city', { placeholder: 'Buscar cantón...' });
-              getSelect('ici-location-city')?.setValue(String(nivelCiudad.id), true);
+              initSelect('ici-location-city', {
+                placeholder: 'Buscar cantón...',
+              });
+              getSelect('ici-location-city')?.setValue(
+                String(nivelCiudad.id),
+                true,
+              );
               locationSelection.cityId = nivelCiudad.id;
 
               if (nivelParroquia) {
                 selectionGeneration++;
                 const genParroquias = selectionGeneration;
-                const parishes = await locationService.getChildren({ parentId: nivelCiudad.id });
+                const parishes = await locationService.getChildren({
+                  parentId: nivelCiudad.id,
+                });
                 if (genParroquias !== selectionGeneration) return;
                 lastNeighborhoods = parishes;
 
@@ -949,8 +1026,13 @@ export default {
                   '-- Seleccione parroquia (opcional) --',
                 );
                 setSelectEnabled('ici-location-neighborhood', true);
-                initSelect('ici-location-neighborhood', { placeholder: 'Buscar parroquia...' });
-                getSelect('ici-location-neighborhood')?.setValue(String(nivelParroquia.id), true);
+                initSelect('ici-location-neighborhood', {
+                  placeholder: 'Buscar parroquia...',
+                });
+                getSelect('ici-location-neighborhood')?.setValue(
+                  String(nivelParroquia.id),
+                  true,
+                );
                 locationSelection.neighborhoodId = nivelParroquia.id;
               }
             }

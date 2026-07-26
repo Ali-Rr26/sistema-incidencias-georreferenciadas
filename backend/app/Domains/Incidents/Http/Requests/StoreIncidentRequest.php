@@ -8,6 +8,7 @@ use App\Domains\Incidents\Http\Rules\CategoryIsLeafRule;
 use App\Domains\Incidents\Http\Rules\GeomShapeRule;
 use App\Domains\Incidents\Http\Rules\LocationGeomConsistentRule;
 use App\Domains\Incidents\Models\Incident;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -43,8 +44,8 @@ class StoreIncidentRequest extends FormRequest
             'organization_id' => 'nullable|integer|exists:organizations,id',
 
             // Imágenes opcionales (multipart)
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|mimes:jpeg,png,webp|max:10240',
+            'images' => [...['nullable'], ...ImageRules::galleryArrayRules()],
+            'images.*' => [...['nullable'], ...ImageRules::galleryFileRules()],
         ];
     }
 
@@ -58,9 +59,10 @@ class StoreIncidentRequest extends FormRequest
             'location_id.exists' => 'The selected location does not exist.',
             'priority.required' => 'The priority is required.',
             'priority.in' => 'Priority must be: low, medium or high.',
+            'images.max' => 'You can attach a maximum of '.ImageRules::MAX_FILES.' images.',
             'images.*.image' => 'Each file must be an image.',
-            'images.*.mimes' => 'Only JPEG, PNG or WEBP images are allowed.',
-            'images.*.max' => 'Each image must not exceed 10 MB.',
+            'images.*.mimes' => 'Only JPEG, PNG, WEBP or GIF images are allowed.',
+            'images.*.max' => 'Each image must not exceed '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
         ];
     }
 }

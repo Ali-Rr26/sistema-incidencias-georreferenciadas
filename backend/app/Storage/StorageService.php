@@ -28,7 +28,7 @@ class StorageService
      */
     private function disk(): string
     {
-        return env('FILESYSTEM_STORAGE_DISK', 's3');
+        return config('filesystems.image_disk');
     }
 
     /**

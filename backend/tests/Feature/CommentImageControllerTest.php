@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Models\Comment;
-use App\Domains\Comments\Models\CommentImage;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
@@ -11,6 +10,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use App\Storage\Models\Image;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -78,7 +78,16 @@ it('uploads an image and returns 201 with image data', function (): void {
     $response->assertStatus(201);
     $response->assertJsonStructure(['data' => ['*' => ['id', 'comment_id', 'url', 'caption', 'sort_order', 'created_at']]]);
     $response->assertJsonCount(1, 'data');
-    $this->assertDatabaseHas('comment_images', ['comment_id' => $this->comment->id]);
+    $this->assertDatabaseHas('images', [
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+    ]);
+    // The legacy `comment_images` table is dropped entirely as of WU8
+    // (image-persistence-polymorphic) — its absence is now a schema-level
+    // fact asserted in tests/Feature/Contract/ImagePersistenceContractTest.php,
+    // not something a per-row assertDatabaseMissing can check anymore (the
+    // table itself no longer exists to query).
+    expect($response->json('data.0.comment_id'))->toBe($this->comment->id);
     Storage::disk('s3')->assertExists($response->json('data.0.url'));
 });
 
@@ -93,7 +102,20 @@ it('uploads multiple images in one request', function (): void {
 
     $response->assertStatus(201);
     $response->assertJsonCount(2, 'data');
-    $this->assertDatabaseCount('comment_images', 2);
+    $this->assertDatabaseCount('images', 2);
+});
+
+it('keeps the webp resize+encode processing when routed through the shared ImageStorageService', function (): void {
+    $file = UploadedFile::fake()->image('test.jpg', 800, 600);
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(201);
+    expect($response->json('data.0.url'))->toEndWith('.webp');
+    expect($response->json('data.0.url'))->toStartWith('comments/'.$this->comment->id.'/');
 });
 
 it('rejects non-image files', function (): void {
@@ -120,6 +142,18 @@ it('rejects image over 10MB', function (): void {
     $response->assertJsonValidationErrors(['images.0']);
 });
 
+it('rejects image just over the D10 5MB limit (validation parity)', function (): void {
+    $file = UploadedFile::fake()->image('just-over.jpg')->size(5200); // 5.2 MB > ImageRules::MAX_SIZE_KB
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images.0']);
+});
+
 it('rejects empty images array', function (): void {
     $response = $this->actingAs($this->user)
         ->postJson("/api/comments/{$this->comment->id}/images", [
@@ -127,6 +161,21 @@ it('rejects empty images array', function (): void {
         ]);
 
     $response->assertStatus(422);
+});
+
+it('rejects more than the D10 max file count (validation parity)', function (): void {
+    $files = array_map(
+        fn (int $i) => UploadedFile::fake()->image("photo{$i}.jpg", 200, 200),
+        range(1, 11),
+    );
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => $files,
+        ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['images']);
 });
 
 it('denies image upload to non-owner', function (): void {
@@ -142,33 +191,84 @@ it('denies image upload to non-owner', function (): void {
 });
 
 it('deletes an image and returns 204', function (): void {
-    $image = CommentImage::create([
-        'comment_id' => $this->comment->id,
-        'url' => 'comments/1/test.webp',
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+        'storage_path' => 'comments/1/test.webp',
         'caption' => null,
         'sort_order' => 0,
     ]);
-    Storage::disk('s3')->put($image->url, 'fake image content');
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
 
     $response = $this->actingAs($this->user)
         ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
 
     $response->assertStatus(204);
-    $this->assertDatabaseMissing('comment_images', ['id' => $image->id]);
-    Storage::disk('s3')->assertMissing($image->url);
+    $this->assertDatabaseMissing('images', ['id' => $image->id]);
+    Storage::disk('s3')->assertMissing($image->storage_path);
 });
 
 it('denies image delete to non-owner', function (): void {
-    $image = CommentImage::create([
-        'comment_id' => $this->comment->id,
-        'url' => 'comments/1/test.webp',
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $this->comment->id,
+        'storage_path' => 'comments/1/test.webp',
     ]);
-    Storage::disk('s3')->put($image->url, 'fake image content');
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
     $stranger = User::factory()->create(['role_id' => 5]);
 
     $response = $this->actingAs($stranger)
         ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
 
     $response->assertForbidden();
-    $this->assertDatabaseHas('comment_images', ['id' => $image->id]);
+    $this->assertDatabaseHas('images', ['id' => $image->id]);
+});
+
+it('returns 404 when deleting an image that belongs to a different comment', function (): void {
+    $otherComment = Comment::create([
+        'incident_id' => $this->incident->id,
+        'user_id' => $this->user->id,
+        'message' => 'Other comment',
+    ]);
+    $image = Image::create([
+        'imageable_type' => 'comment',
+        'imageable_id' => $otherComment->id,
+        'storage_path' => 'comments/2/test.webp',
+    ]);
+    Storage::disk('s3')->put($image->storage_path, 'fake image content');
+
+    $response = $this->actingAs($this->user)
+        ->deleteJson("/api/comments/{$this->comment->id}/images/{$image->id}");
+
+    $response->assertStatus(404);
+    $this->assertDatabaseHas('images', ['id' => $image->id]);
+});
+
+it('uploads then deletes a comment image on the same configured disk (disk-key regression)', function (): void {
+    // Regression for the disk-key mismatch: upload used to write via
+    // FILESYSTEM_STORAGE_DISK while delete read the unrelated
+    // FILESYSTEM_DISK var, orphaning the object whenever the two env
+    // vars diverged. Both paths must now share one config source, so
+    // pointing that source at a non-default disk must move BOTH the
+    // upload and the delete together.
+    config(['filesystems.image_disk' => 'public']);
+    Storage::fake('public');
+
+    $file = UploadedFile::fake()->image('regression.jpg', 400, 400);
+
+    $uploadResponse = $this->actingAs($this->user)
+        ->postJson("/api/comments/{$this->comment->id}/images", [
+            'images' => [$file],
+        ]);
+
+    $uploadResponse->assertStatus(201);
+    $imageId = $uploadResponse->json('data.0.id');
+    $imageUrl = $uploadResponse->json('data.0.url');
+    Storage::disk('public')->assertExists($imageUrl);
+
+    $deleteResponse = $this->actingAs($this->user)
+        ->deleteJson("/api/comments/{$this->comment->id}/images/{$imageId}");
+
+    $deleteResponse->assertStatus(204);
+    Storage::disk('public')->assertMissing($imageUrl);
 });
