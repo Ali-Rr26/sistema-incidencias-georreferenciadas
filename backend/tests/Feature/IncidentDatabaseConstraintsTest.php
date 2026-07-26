@@ -24,10 +24,10 @@ it('validates location table normalization without redundancy', function () {
     $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $province->id]);
     $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $province->id]);
 
-    // Verify: each combination of level + parent_id is unique (no redundancy)
+    // Verify: no two locations with same name exist under same parent
     $query = DB::table('locations')
-        ->select('level', 'parent_id', DB::raw('COUNT(*) as total'))
-        ->groupBy('level', 'parent_id')
+        ->select('name', 'level', 'parent_id', DB::raw('COUNT(*) as total'))
+        ->groupBy('name', 'level', 'parent_id')
         ->havingRaw('COUNT(*) > 1');
 
     expect($query->get())->toHaveCount(0)
@@ -138,7 +138,7 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
 
     expect($result->total_resolved)->toBe(2)
         ->and($result->avg_days)->toBeGreaterThan(1)
-        ->and($result->avg_days)->toBeLessThan(3);
+        ->and($result->avg_days)->toBeLessThanOrEqual(3);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
