@@ -10,11 +10,15 @@ namespace App\Support;
  */
 final class PhoneRules
 {
-    /** Regex matching numbers and standard phone formatting characters (+, -, spaces, parentheses). */
-    public const REGEX = '/^[0-9\+\-\s\(\)]+$/';
+    /**
+     * Ecuador phone regex:
+     * - Starting with +593: +5939XXXXXXXX (mobile) or +5932XXXXXXX / +593[2-7]XXXXXXX (landline). Total 12 digits excluding '+'.
+     * - Starting with 0: 09XXXXXXXX (mobile, 10 digits) or 0[2-7]XXXXXXX (landline, 9 digits).
+     */
+    public const REGEX = '/^(?:\+593[2-9]\d{7,8}|0[2-9]\d{7,8})$/';
 
     /** Custom error message in Spanish. */
-    public const MESSAGE = 'El teléfono solo debe contener números y caracteres válidos (+, -, paréntesis).';
+    public const MESSAGE = 'El teléfono debe ser un número válido de Ecuador (ej. 0991234567 o +593991234567).';
 
     /**
      * Common Laravel validation rules array for phone fields.
@@ -29,9 +33,30 @@ final class PhoneRules
         }
         $rules[] = 'nullable';
         $rules[] = 'string';
-        $rules[] = 'max:50';
         $rules[] = 'regex:'.self::REGEX;
 
         return $rules;
+    }
+
+    /**
+     * Normalizes an Ecuadorian phone number to international format +593XXXXXXXXX before storing.
+     */
+    public static function normalize(?string $phone): ?string
+    {
+        if ($phone === null || trim($phone) === '') {
+            return null;
+        }
+
+        $cleaned = preg_replace('/[^\d+]/', '', trim($phone));
+
+        if (str_starts_with($cleaned, '0')) {
+            return '+593'.substr($cleaned, 1);
+        }
+
+        if (str_starts_with($cleaned, '593')) {
+            return '+'.$cleaned;
+        }
+
+        return $cleaned;
     }
 }

@@ -8,6 +8,7 @@ use App\Domains\Shared\Repositories\EloquentRepository;
 use App\Domains\Users\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use App\Support\PhoneRules;
 
 class EloquentUserRepository extends EloquentRepository implements UserRepository
 {
@@ -29,6 +30,10 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
         // StoreUserRequest already prohibits it, but the repository is the last
         // line of defense.
         unset($data['password'], $data['password_confirmation']);
+
+        if (array_key_exists('phone', $data)) {
+            $data['phone'] = PhoneRules::normalize($data['phone']);
+        }
 
         return $this->newQuery()->create($data);
     }
