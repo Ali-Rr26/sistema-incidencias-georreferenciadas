@@ -12,10 +12,11 @@ export default {
     const email = query?.get('email');
 
     if (!token || !email) {
-      document.getElementById('estado-error').classList.remove('d-none');
-      document.getElementById('error-texto').textContent =
-        'Enlace inválido. Solicita un nuevo restablecimiento de contraseña.';
-      document.getElementById('reset-form').querySelector('button[type="submit"]').disabled = true;
+      document.getElementById('estado-error')?.classList.remove('d-none');
+      const errTxt = document.getElementById('error-texto');
+      if (errTxt) errTxt.textContent = 'Enlace inválido. Solicita un nuevo restablecimiento de contraseña.';
+      const submitBtn = document.getElementById('reset-form')?.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
       return;
     }
 
@@ -35,27 +36,34 @@ export default {
       });
     });
 
-    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+    const resetForm = document.getElementById('reset-form');
+    if (!resetForm) return;
+
+    resetForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!e.target.checkValidity()) {
         e.target.classList.add('was-validated');
         return;
       }
 
-      const password = document.getElementById('password').value;
-      const passwordConfirmation = document.getElementById('password-confirm').value;
+      const passwordInput = document.getElementById('password');
+      const passwordConfirmInput = document.getElementById('password-confirm');
+      const password = passwordInput?.value ?? '';
+      const passwordConfirmation = passwordConfirmInput?.value ?? '';
 
       if (password !== passwordConfirmation) {
-        document.getElementById('error-texto').textContent = 'Las contraseñas no coinciden.';
-        document.getElementById('estado-error').classList.remove('d-none');
+        const errTxt = document.getElementById('error-texto');
+        if (errTxt) errTxt.textContent = 'Las contraseñas no coinciden.';
+        document.getElementById('estado-error')?.classList.remove('d-none');
         return;
       }
 
-      document.getElementById('btn-texto').classList.add('d-none');
-      document.getElementById('btn-loading').classList.remove('d-none');
-      document.getElementById('btn-restablecer').disabled = true;
-      document.getElementById('estado-error').classList.add('d-none');
-      document.getElementById('estado-exito').classList.add('d-none');
+      document.getElementById('btn-texto')?.classList.add('d-none');
+      document.getElementById('btn-loading')?.classList.remove('d-none');
+      const btnRestablecer = document.getElementById('btn-restablecer');
+      if (btnRestablecer) btnRestablecer.disabled = true;
+      document.getElementById('estado-error')?.classList.add('d-none');
+      document.getElementById('estado-exito')?.classList.add('d-none');
 
       try {
         await http.post('/reset-password', {
@@ -64,20 +72,21 @@ export default {
           password,
           password_confirmation: passwordConfirmation,
         });
-        document.getElementById('estado-exito').classList.remove('d-none');
-        document.getElementById('reset-form').querySelector('button[type="submit"]').disabled = true;
+        document.getElementById('estado-exito')?.classList.remove('d-none');
+        if (btnRestablecer) btnRestablecer.disabled = true;
         // Redirect to login after a delay
         setTimeout(() => router.navigate('/login'), 3000);
       } catch (err) {
         const msg = err.status === 429
           ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
           : (err.response?.message ?? 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
-        document.getElementById('error-texto').textContent = msg;
-        document.getElementById('estado-error').classList.remove('d-none');
+        const errTxt = document.getElementById('error-texto');
+        if (errTxt) errTxt.textContent = msg;
+        document.getElementById('estado-error')?.classList.remove('d-none');
       } finally {
-        document.getElementById('btn-texto').classList.remove('d-none');
-        document.getElementById('btn-loading').classList.add('d-none');
-        document.getElementById('btn-restablecer').disabled = false;
+        document.getElementById('btn-texto')?.classList.remove('d-none');
+        document.getElementById('btn-loading')?.classList.add('d-none');
+        if (btnRestablecer) btnRestablecer.disabled = false;
       }
     });
   },
