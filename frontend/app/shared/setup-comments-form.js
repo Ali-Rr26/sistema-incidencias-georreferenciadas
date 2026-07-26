@@ -305,6 +305,13 @@ export default async function setupCommentsForm({
     }
   });
 
+  listEl?.addEventListener('dblclick', (event) => {
+    const thumb = event.target.closest(thumbnailSelector);
+    if (thumb) {
+      openLightbox(thumb.dataset.src, thumb.dataset.caption || '');
+    }
+  });
+
   const lightboxEl = document.getElementById(lightboxId);
   if (lightboxEl) {
     document
