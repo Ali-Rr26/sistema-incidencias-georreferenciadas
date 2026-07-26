@@ -199,3 +199,46 @@ it('excludes soft-deleted incidents from total, by_status, and average_resolutio
         ->assertJsonPath('by_status.resolved', 0)
         ->assertJsonPath('average_resolution_time', null);
 });
+
+it('includes trends in stats response', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'HQ', 'level' => 'city']);
+    $org = Organization::create([
+        'name' => 'Test Org',
+        'location_id' => $location->id,
+    ]);
+    $category = IncidentCategory::create([
+        'name' => 'General',
+        'organization_id' => $org->id,
+    ]);
+
+    $now = now()->startOfDay();
+    Incident::create([
+        'title' => 'Resolved Incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+        'created_at' => $now,
+        'resolution_date' => $now->copy()->addHour(),
+    ]);
+
+    $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
+
+    $response->assertOk()
+        ->assertJsonStructure([
+            'trends' => ['total_pct', 'pendientes_pct', 'resolution_rate_pct'],
+        ]);
+
+    // Trends: total_pct and pendientes_pct are null when previous period has no data
+    // resolution_rate_pct should be an int (100% since all incidents are resolved)
+    expect($response->json('trends.resolution_rate_pct'))->toBeInt();
+});
