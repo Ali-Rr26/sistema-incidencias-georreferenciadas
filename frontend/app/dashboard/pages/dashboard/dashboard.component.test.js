@@ -19,7 +19,6 @@
 const mockHttp = vi.hoisted(() => ({
   get: vi.fn(),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
 
 // Mock location.service for progressive loading tests
 const mockLocationService = vi.hoisted(() => ({

@@ -9,9 +9,10 @@ import {
   setAccessToken,
 } from '../../../../core/http.service.js';
 
-vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return { ...mod, http: { get: vi.fn(), delete: vi.fn() } };
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
 });
 
 const routerNavigateSpy = vi.fn();

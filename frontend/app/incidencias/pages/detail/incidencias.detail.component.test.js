@@ -32,7 +32,6 @@ const mockHttp = vi.hoisted(() => ({
   delete: vi.fn(),
   request: vi.fn(),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
 
 const mockRouter = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock('../../../core/router.js', () => ({ router: mockRouter }));

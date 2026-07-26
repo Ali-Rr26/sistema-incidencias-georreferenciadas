@@ -24,7 +24,6 @@ const mockRouter = vi.hoisted(() => ({
   navigate: vi.fn(),
 }));
 
-vi.mock('../../../../core/http.service.js', () => ({ http: mockHttp }));
 vi.mock('../../../../shared/location.service.js', () => ({
   locationService: mockLocationService,
 }));

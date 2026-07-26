@@ -19,7 +19,6 @@ const mockHttp = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
 
 function buildFeedDetailDom() {
   document.body.innerHTML = `

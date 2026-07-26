@@ -4,7 +4,6 @@ import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
 import { permissionService } from './permission.service.js';
 
-vi.mock('../core/http.service.js', () => ({
   http: { get: vi.fn(), delete: vi.fn() },
 }));
 vi.mock('../core/router.js', () => ({

@@ -16,10 +16,11 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
     http: {
       post: vi.fn(),
     },

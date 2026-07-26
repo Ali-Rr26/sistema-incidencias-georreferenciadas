@@ -19,10 +19,11 @@ import {
 // ---------------------------------------------------------------------------
 
 // Mock http.service
-vi.mock('../../../../core/http.service.js', async (importOriginal) => {
   const mod = await importOriginal();
   return {
     ...mod,
+    setAccessToken: mod.setAccessToken,
+    clearAuthState: mod.clearAuthState,
     http: {
       get: vi.fn(),
       delete: vi.fn(),

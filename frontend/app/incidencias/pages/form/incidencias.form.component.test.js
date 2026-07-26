@@ -25,7 +25,6 @@ const mockHttp = vi.hoisted(() => ({
   post: vi.fn(),
   put: vi.fn(),
 }));
-vi.mock('../../../core/http.service.js', () => ({ http: mockHttp }));
 
 const mockRouter = vi.hoisted(() => ({
   queryParams: new URLSearchParams(),

@@ -18,8 +18,6 @@ const mockHttp = vi.hoisted(() => ({
   put: vi.fn(),
 }));
 
-vi.mock('../../core/http.service.js', () => ({ http: mockHttp }));
-
 const mockRouter = vi.hoisted(() => ({
   queryParams: new URLSearchParams(),
   navigate: vi.fn(),
