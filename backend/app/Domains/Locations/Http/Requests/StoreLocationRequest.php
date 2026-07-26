@@ -28,12 +28,12 @@ class StoreLocationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The name is required.',
-            'code.required' => 'The code is required.',
-            'code.unique' => 'This code is already in use.',
-            'level.in' => 'Level must be: country, province, city or neighborhood.',
-            'parent_id.exists' => 'The selected parent location does not exist.',
-            'geom.json' => 'The geometry must be valid JSON.',
+            'name.required' => 'El nombre es obligatorio.',
+            'code.required' => 'El código es obligatorio.',
+            'code.unique' => 'Este código ya está en uso.',
+            'level.in' => 'El nivel debe ser: country, province, city o neighborhood.',
+            'parent_id.exists' => 'La ubicación padre seleccionada no existe.',
+            'geom.json' => 'La geometría debe ser un JSON válido.',
         ];
     }
 
@@ -44,13 +44,13 @@ class StoreLocationRequest extends FormRequest
             $parentId = $this->input('parent_id');
 
             if ($level === 'country' && ! empty($parentId)) {
-                $validator->errors()->add('parent_id', 'A country cannot have a parent location.');
+                $validator->errors()->add('parent_id', 'Un país no puede tener una ubicación padre.');
 
                 return;
             }
 
             if ($level !== 'country' && empty($parentId)) {
-                $validator->errors()->add('parent_id', "A parent location is required for level {$level}.");
+                $validator->errors()->add('parent_id', "Se requiere una ubicación padre para el nivel {$level}.");
 
                 return;
             }
@@ -66,7 +66,7 @@ class StoreLocationRequest extends FormRequest
 
                     $expected = $expectedParentLevels[$level] ?? null;
                     if ($expected !== null && $parent->level !== $expected) {
-                        $validator->errors()->add('parent_id', "Parent location for {$level} must be of level {$expected}.");
+                        $validator->errors()->add('parent_id', "La ubicación padre para {$level} debe ser de nivel {$expected}.");
                     }
                 }
             }

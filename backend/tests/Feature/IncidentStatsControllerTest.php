@@ -660,7 +660,7 @@ it('org-scoped operator sees only their organization incidents', function () {
 
     DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-        ['id' => 4, 'name' => 'operador_organizacion', 'created_at' => now(), 'updated_at' => now()],
+        ['id' => 3, 'name' => 'admin_organizacion', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
@@ -669,7 +669,7 @@ it('org-scoped operator sees only their organization incidents', function () {
     $org1 = Organization::create(['name' => 'Org1', 'location_id' => $location1->id]);
     $org2 = Organization::create(['name' => 'Org2', 'location_id' => $location2->id]);
 
-    $operator1 = User::factory()->create(['role_id' => 4, 'organization_id' => $org1->id]);
+    $operator1 = User::factory()->create(['role_id' => 3, 'organization_id' => $org1->id]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $cat1 = IncidentCategory::create(['name' => 'General', 'organization_id' => $org1->id]);
@@ -793,9 +793,10 @@ it('applies both date range and location cascade together', function () {
     $admin = User::factory()->create(['role_id' => 1]);
 
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
-    $province = Location::create(['name' => 'Pichincha', 'level' => 'province', 'parent_id' => $country->id]);
-    $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $province->id]);
-    $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $province->id]);
+    $provincePichincha = Location::create(['name' => 'Pichincha', 'level' => 'province', 'parent_id' => $country->id]);
+    $provinceCotopaxi = Location::create(['name' => 'Cotopaxi', 'level' => 'province', 'parent_id' => $country->id]);
+    $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $provincePichincha->id]);
+    $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $provinceCotopaxi->id]);
 
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $city1->id]);
     $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
@@ -844,7 +845,7 @@ it('applies both date range and location cascade together', function () {
     $rangeEnd = now()->format('Y-m-d');
 
     $response = $this->actingAs($admin)->getJson(
-        "/api/incidents/stats?provincia_id={$province->id}&inicio={$rangeStart}&fin={$rangeEnd}"
+        "/api/incidents/stats?provincia_id={$provincePichincha->id}&inicio={$rangeStart}&fin={$rangeEnd}"
     );
 
     $response->assertOk()

@@ -4,11 +4,11 @@
 
 ---
 
-**Versión del Documento:** 2.0
-**Fecha:** 07 de julio de 2026
-**Estado:** Sincronizado con la implementación actual
+**Versión del Documento:** 2.1
+**Fecha:** 26 de julio de 2026
+**Estado:** Sincronizado con la implementación actual (Opción B — alineado a 3 estados, sin Publicador)
 **Nivel de Confianza:** Validado contra código fuente
-**Versión anterior:** v1.0 (08/06/2026) preservada íntegra en [`SRS-v1.0.md`](./SRS-v1.0.md)
+**Versión anterior:** v2.0 (07/07/2026), v1.0 (08/06/2026) preservada íntegra en [`SRS-v1.0.md`](./SRS-v1.0.md)
 
 ---
 
@@ -18,6 +18,7 @@
 |---------|-------|-------------|-------|
 | 1.0 | 08/06/2026 | Creación inicial del documento SRS | Equipo de Proyecto |
 | 2.0 | 07/07/2026 | Sincronización con la implementación actual. v1.0 preservada en archivo separado `SRS-v1.0.md` como referencia histórica. Ver resumen ejecutivo de cambios al inicio. | Equipo de Proyecto |
+| 2.1 | 26/07/2026 | Opción B: eliminadas referencias a rol Publicador, endpoint confirmar y tabla incident_verifications. Flujo actualizado a 3 estados. | Equipo de Proyecto |
 
 ---
 
@@ -39,12 +40,12 @@
 
 ### Modelo de datos — cambios principales
 
-- **Estados**: v1.0 describía 4 estados nominales (`Pendiente`, `En Proceso`, `Resuelto`, `Cerrado`). El modelo actual usa 4 valores en la columna `incidents.status` con constraint CHECK en PostgreSQL: **`pending`**, **`pending_operator`**, **`in_progress`**, **`resolved`**. El "Cerrado" del SRS se reemplazó por la acción `confirmar` que registra una fila en `incident_verifications` sin modificar `status`.
+- **Estados**: v1.0 describía 4 estados nominales (`Pendiente`, `En Proceso`, `Resuelto`, `Cerrado`). El modelo actual usa 4 valores en la columna `incidents.status` con constraint CHECK en PostgreSQL: **`pending`**, **`pending_operator`**, **`in_progress`**, **`resolved`**.
 - **Prioridad**: v1.0 usaba `alta|media|baja`. El código usa un enum PHP `IncidentPriority` con valores **`low`**, **`medium`**, **`high`** (en inglés en BD; la UI los localiza).
 - **Clasificación**: v1.0 planteaba **Tipo → Subtipo** jerárquico. El modelo actual colapsa a una única entidad `incident_categories` con autorrelación `parent_id` (categoría y subcategoría opcional).
 - **Ubicación**: la jerarquía País → Provincia → Ciudad se conserva, **más** la columna `geom` (Point, PostGIS) en `incidents` y `locations` para queries geoespaciales.
 - **Asignación de responsables**: v1.0 proponía tabla pivote `IncidenciaResponsable` con roles `responsable|apoyo`. Esa tabla fue **dropeada** (migración `2026_07_05_000001_drop_assignments_table.php`) y reemplazada por la acción `claim` con `claimed_by` + `claimed_at` y un `max_active_claims` por organización.
-- **Verificación**: v2.0 agrega `incident_verifications` (separado del flujo de status).
+- **Verificación**: ~~v2.0 agregaba `incident_verifications`~~ (tabla descartada — migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`; el flujo de 3 estados no la requiere).
 - **Multitenant**: v1.0 no contemplaba. v2.0 introduce `users.organization_id`, `incidents.organization_id` y `organizations.parent_id` (jerárquica). El scoping se aplica en `IncidentPolicy` y se refuerza con middleware.
 - **Auditoría inmutable**: la tabla `status_history` se llena mediante un **trigger de base de datos** (migración `2026_06_15_000010_create_incident_triggers.php`), no desde código de aplicación. Esto garantiza inmutabilidad incluso si el código es comprometido.
 
@@ -57,13 +58,13 @@
   - ~~`Publicador`~~ (rol eliminado — migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`; el flujo de 3 estados Pendiente→En proceso→Resuelto no lo necesitaba)
   - ~~Visitante (sin auth)~~ — retirado: ya no existe acceso anónimo, toda ruta exige JWT. El registro (`POST /register`) sigue siendo público, pero asigna el rol `usuario` (autenticado, sin permisos elevados) en vez de dejar navegar sin sesión.
 
-Las acciones `claim`, `release` y `confirmar` tienen gates `can:claim`, `can:release`, `can:confirm` en `IncidentPolicy`.
+Las acciones `claim` y `release` tienen gates `can:claim` y `can:release` en `IncidentPolicy`.
 
 ### Endpoints nuevos
 
 - `POST /api/incidents/{id}/claim` (OperadorOrg de la org dueña)
 - `POST /api/incidents/{id}/release` (OperadorOrg que hizo el claim)
-- `POST /api/incidents/{id}/confirmar` (Publicador de org cuya categoría coincide)
+- ~~`POST /api/incidents/{id}/confirmar`~~ (endpoint descartado junto con el rol Publicador)
 - `POST /api/operator/location` y `GET /api/operator/locations` (tracking de operadores)
 - `GET /api/menus/my` (menú dinámico por rol)
 - `GET /api/incidents/feed` (autenticado, throttled — ver nota sobre retiro del rol Visitante)
@@ -71,7 +72,7 @@ Las acciones `claim`, `release` y `confirmar` tienen gates `can:claim`, `can:rel
 ### Numeración de requisitos
 
 - `RF-FUNC-001` a `RF-FUNC-028` se renumeran parcialmente para reflejar el flujo real.
-- Se agregan `RF-FUNC-029` a `RF-FUNC-035` para cubrir: claim, release, confirm, tracking de operador, menú dinámico, scoping multitenant y soft delete de `incident_verifications`.
+- Se agregan `RF-FUNC-029` a `RF-FUNC-035` para cubrir: claim, release, tracking de operador, menú dinámico, scoping multitenant.
 
 ---
 
@@ -122,7 +123,7 @@ El sistema consistirá en una aplicación web completa que permitirá:
 
 - El registro, gestión y seguimiento completo de **incidencias georreferenciadas** (con coordenadas PostGIS y dirección normalizada País → Provincia → Ciudad).
 - La **toma de responsabilidad** sobre una incidencia mediante la acción `claim` (reemplaza la asignación rígida de v1.0).
-- La **confirmación de resolución** por un actor con rol `Publicador`, separada del flujo de status.
+- La **resolución** de incidencias con el flujo `pending` → `in_progress` → `resolved`.
 - El seguimiento mediante **comentarios anidados** (shallow) y **notificaciones** por evento.
 - La **clasificación jerárquica** por categoría y subcategoría.
 - La **visualización de métricas y dashboards** con filtros avanzados.
@@ -156,7 +157,7 @@ El sistema NO incluirá (fuera de alcance):
 | **Octane** | Capa de Laravel que mantiene la app en memoria entre requests (alto rendimiento). |
 | **OperadorOrg** | Abreviatura de `OperadorOrganizacion`; usuario de una organización que puede hacer `claim`/`release`. |
 | **PostGIS** | Extensión de PostgreSQL para datos geoespaciales (puntos, polígonos, queries de distancia, etc.). |
-| **Publicador** | Rol que confirma la resolución de una incidencia cuya categoría coincide con la de su organización. |
+| **Publicador** | ~~Rol eliminado (migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`). La confirmación de resolución no existe como paso separado; el flujo `pending` → `in_progress` → `resolved` es terminal.~~ |
 | **REST** | Representational State Transfer |
 | **Scope** | Restricción multitenant: un usuario solo ve/edita datos de su propia organización (excepto `SystemAdmin`). |
 | **SRS** | Software Requirements Specification |
@@ -204,7 +205,7 @@ El despliegue usa Docker Compose con servicios: `backend` (Frankenphp), `fronten
 1. **Gestión de Incidencias**: CRUD completo con upload de imágenes (multipart) y coordenadas geográficas.
 2. **Máquina de Estados**: Transiciones controladas con auditoría inmutable vía trigger de DB.
 3. **Toma y Liberación de Responsabilidad**: `claim`/`release` por OperadorOrg con control de concurrencia (`max_active_claims`).
-4. **Confirmación de Resolución**: `confirmar` por Publicador; registra verificación sin cambiar `status`.
+4. **Resolución**: Las incidencias siguen el flujo `pending` → `in_progress` → `resolved`. No existe paso de verificación externo.
 5. **Sistema de Comentarios**: Anidados shallow por incidencia, con soft delete.
 6. **Ubicación Georreferenciada**: Coordenadas PostGIS + dirección normalizada jerárquica.
 7. **Clasificación Jerárquica**: Categoría con subcategoría opcional (autorreferencia `parent_id`).
@@ -212,7 +213,7 @@ El despliegue usa Docker Compose con servicios: `backend` (Frankenphp), `fronten
 9. **Menú Dinámico por Rol**: El frontend pide `GET /menus/my` y renderiza solo lo permitido.
 10. **Tracking de Operadores**: Endpoint de heartbeat geográfico.
 11. **Dashboard y Métricas**: Conteos por estado, por tipo, por org; tiempo promedio de resolución.
-12. **Scoping Multitenant**: Aislamiento automático por organización para OperadorOrg y Publicador; bypass para SystemAdmin.
+12. **Scoping Multitenant**: Aislamiento automático por organización para OperadorOrg; bypass para SystemAdmin.
 13. **Sincronización en Tiempo Real**: Redis pub/sub vía `RedisIncidentSync` listener (preparado para WebSockets futuros).
 
 ### 2.3 Clases de Usuario y Características
@@ -236,14 +237,9 @@ El despliegue usa Docker Compose con servicios: `backend` (Frankenphp), `fronten
 | **Frecuencia de uso** | Alta |
 | **Nivel de expertise** | Básico a intermedio |
 
-#### 2.3.3 Publicador
+#### 2.3.3 ~~Publicador~~ — rol eliminado
 
-| Atributo | Detalle |
-|---|---|
-| **Rol** | Usuario verificador; confirma resoluciones de la categoría de su org |
-| **Permisos** | Ver todas las incidencias de su org; `confirmar` solo si la `incident_category_id` de la incidencia coincide con la `incident_category_id` de su organización |
-| **Frecuencia de uso** | Media |
-| **Nivel de expertise** | Intermedio |
+Rol retirado en la migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`. El flujo de 3 estados (`pending` → `in_progress` → `resolved`) no lo requiere. No existe endpoint `confirmar` ni tabla `incident_verifications`.
 
 #### 2.3.4 ~~Visitante (sin autenticación)~~ — rol retirado
 
@@ -349,7 +345,7 @@ igual que el resto de rutas (excepto `/login`, `/register`, `/auth/refresh`,
 |---|---|
 | **ID** | RF-UI-002 |
 | **Prioridad** | Alta |
-| **Descripción** | Métricas filtradas por scope (SystemAdmin ve todo; OperadorOrg/Publicador ven solo su org). |
+| **Descripción** | Métricas filtradas por scope (SystemAdmin ve todo; OperadorOrg ve solo su org). |
 
 - Tarjetas: total, pendientes, en proceso, resueltas.
 - Gráficos: distribución por estado, por categoría.
@@ -382,7 +378,6 @@ igual que el resto de rutas (excepto `/login`, `/register`, `/auth/refresh`,
 - Sección de comentarios con formulario.
 - Acciones según rol:
   - OperadorOrg: `claim` (si no asignado y misma org), `release` (si él lo claimó), editar.
-  - Publicador: `confirmar` (si categoría coincide con la de su org).
   - SystemAdmin: todo.
 
 ##### RF-UI-005: Menú Dinámico por Rol
@@ -442,7 +437,7 @@ No aplica. Sistema completamente web.
 | DELETE | `/api/incidents/{id}` | JWT | Soft delete (gate `delete`) |
 | POST | `/api/incidents/{id}/claim` | JWT | `can:claim` — OperadorOrg de la org dueña |
 | POST | `/api/incidents/{id}/release` | JWT | `can:release` — OperadorOrg que hizo el claim |
-| POST | `/api/incidents/{id}/confirmar` | JWT | `can:confirm` — Publicador de org con categoría coincidente |
+| ~~POST~~ | ~~`/api/incidents/{id}/confirmar`~~ | ~~JWT~~ | ~~`can:confirm` — Publicador~~ (endpoint descartado) |
 | GET | `/api/incidents/{id}/status-history` | JWT | Historial inmutable |
 
 ##### RF-SW-003: Comentarios
@@ -553,7 +548,7 @@ Rutas anidadas con `shallow` (prefijo solo en la colección).
 - Paginación (20 por defecto).
 - Filtros: `status`, `priority`, `incident_category_id`, `location_id`, rango de fechas, búsqueda por título/descripción.
 - Orden: `created_at` desc por defecto.
-- **Scope automático**: OperadorOrg/Publicador solo ven de su organización. SystemAdmin ve todas.
+- **Scope automático**: OperadorOrg solo ve de su organización. SystemAdmin ve todas.
 
 ##### RF-FUNC-003: Ver Detalle de Incidencia
 
@@ -572,7 +567,7 @@ Incluye: datos generales, ubicación (jerárquica + `geom`), categoría + subcat
 | **Prioridad** | Alta |
 
 - Campos editables: título, descripción, prioridad, ubicación, `geom`, categoría, subcategoría, imágenes.
-- No se edita `status` directamente (eso va por `claim`/`release`/`confirmar`).
+- No se edita `status` directamente (eso va por `claim`/`release`/cambio de estado interno).
 - `updated_at` se actualiza automáticamente.
 
 ##### RF-FUNC-005: Eliminar Incidencia (soft delete)
@@ -664,10 +659,7 @@ Las transiciones son controladas por las acciones específicas (`claim` → `in_
 
 **Reglas:**
 
-1. Solo `Publicador` cuya `user.organization.incident_category_id == incident.incident_category_id`.
-2. El incidente debe estar en `resolved`.
-3. **No modifica `status`**: inserta fila en `incident_verifications` con `verifier_user_id`, `incident_id`, `notes`, `created_at`.
-4. Genera notificación al OperadorOrg que hizo el claim.
+~~RF-FUNC-011 fue descartado junto con el rol Publicador y la tabla `incident_verifications`.~~
 
 #### Comentarios
 
@@ -854,16 +846,11 @@ Filtros combinables: `status`, `priority`, `incident_category_id` (cascada con s
 | **ID** | RF-FUNC-031 |
 | **Prioridad** | Alta |
 
-Toda query sobre `incidents`, `users`, `organizations` desde OperadorOrg o Publicador filtra automáticamente por `user.organization_id`. SystemAdmin no filtra. Implementado en `IncidentPolicy` + middleware + Eloquent global scopes donde aplique.
+Toda query sobre `incidents`, `users`, `organizations` desde OperadorOrg filtra automáticamente por `user.organization_id`. SystemAdmin no filtra. Implementado en `IncidentPolicy` + middleware + Eloquent global scopes donde aplique.
 
-##### RF-FUNC-032: Verificaciones de Resolución (Incident Verifications)
+##### ~~RF-FUNC-032: Verificaciones de Resolución (Incident Verifications)~~ — descartado
 
-| Atributo | Detalle |
-|---|---|
-| **ID** | RF-FUNC-032 |
-| **Prioridad** | Alta |
-
-Tabla `incident_verifications` con `incident_id`, `verifier_user_id`, `notes`, `created_at`, `deleted_at` (soft delete). Una incidencia puede tener múltiples verificaciones (historial). Visible en `GET /api/incidents/{id}`.
+~~RF-FUNC-032 fue descartado junto con el rol Publicador. La tabla `incident_verifications` no existe en el esquema actual.~~
 
 ##### RF-FUNC-033: Control de `max_active_claims`
 
@@ -986,7 +973,7 @@ Trigger PostgreSQL sobre `incidents` inserta en `status_history` ante cada cambi
 | name | VARCHAR | No | |
 | location_id | BIGINT (FK) | Sí | Ubicación principal de la org |
 | parent_id | BIGINT (FK) | Sí | Organización padre (jerarquía) |
-| incident_category_id | BIGINT (FK) | Sí | Categoría que esta org atiende (usada por `Publicador` para `confirm`) |
+| incident_category_id | BIGINT (FK) | Sí | Categoría que esta org atiende (usada para filtros y asignación) |
 | max_active_claims | INT | No | Máximo de claims simultáneos por OperadorOrg de esta org |
 | timestamps | TIMESTAMP | No | |
 | deleted_at | TIMESTAMP | Sí | Soft delete |
@@ -1055,16 +1042,9 @@ Trigger PostgreSQL sobre `incidents` inserta en `status_history` ante cada cambi
 | changed_by_user_id | BIGINT (FK) | No | Extraído del JWT por el trigger |
 | created_at | TIMESTAMP | No | |
 
-#### 4.1.8 IncidentVerification
+#### ~~4.1.8 IncidentVerification~~ — tabla descartada
 
-| Campo | Tipo | Nullable | Descripción |
-|---|---|---|---|
-| id | BIGINT (PK) | No | |
-| incident_id | BIGINT (FK) | No | |
-| verifier_user_id | BIGINT (FK) | No | Publicador |
-| notes | TEXT | Sí | |
-| timestamps | TIMESTAMP | No | |
-| deleted_at | TIMESTAMP | Sí | Soft delete |
+~~La tabla `incident_verifications` fue eliminada en la migración `2026_07_08_000002_remove_publicador_role_and_verifications.php`.~~
 
 #### 4.1.9 Notification
 
@@ -1081,7 +1061,7 @@ Trigger PostgreSQL sobre `incidents` inserta en `status_history` ante cada cambi
 
 #### 4.1.10 Role + Permission + Menu (RBAC)
 
-- `roles`: `id`, `name` (e.g. `SystemAdmin`, `OperadorOrganizacion`, `Publicador`), `timestamps`.
+- `roles`: `id`, `name` (e.g. `SystemAdmin`, `OperadorOrganizacion`), `timestamps`.
 - `permissions`: `id`, `name`, `timestamps`.
 - `role_permissions`: pivot.
 - `menus`: `id`, `name`, `route` (nullable), `parent_id`, `role_id` o `permission_id`, `timestamps`.

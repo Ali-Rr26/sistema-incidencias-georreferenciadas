@@ -169,7 +169,7 @@ class IncidentController extends Controller
     {
         $this->incidents->delete($incident->id);
 
-        return response()->json(['message' => 'Incidencia eliminada correctamente.'], Response::HTTP_OK);
+        return response()->json(['message' => __('messages.incident_deleted')], Response::HTTP_OK);
     }
 
     public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): JsonResponse
