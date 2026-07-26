@@ -56,6 +56,10 @@ class ExportIncidenciasController extends Controller
             'pais_id' => ['nullable', 'integer', 'exists:locations,id'],
             'provincia_id' => ['nullable', 'integer', 'exists:locations,id'],
             'ciudad_id' => ['nullable', 'integer', 'exists:locations,id'],
+        ], [
+            'inicio.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'fin.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'fin.after_or_equal' => 'La fecha fin no puede ser anterior a la fecha inicio.',
         ]);
 
         $format = (string) $validated['format'];
