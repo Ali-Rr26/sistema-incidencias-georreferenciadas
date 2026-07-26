@@ -8,12 +8,14 @@ use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -28,6 +30,8 @@ use Illuminate\Validation\Rule;
 class IncidentStatsController extends Controller
 {
     use ScopesIncidentQueries;
+
+    private const int CACHE_TTL_SECONDS = 3600; // 1 hour
 
     public function __invoke(Request $request): JsonResponse
     {
