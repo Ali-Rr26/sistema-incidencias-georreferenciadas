@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http;
 
-use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use Carbon\Carbon;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 /**
  * Volume incident statistics — received incidents per day.
@@ -91,11 +89,8 @@ class IncidentWeeklyStatsController extends Controller
      * Fetch daily counts for a given date column.
      *
      * @param  string  $dateColumn  Column to group by (created_at or resolution_date)
-     * @param  Carbon  $startDate
-     * @param  Carbon  $endDate
-     * @param  array  $validated
      * @param  string|null  $statusFilter  Optional: filter by specific status (e.g., IncidentStatus::Resolved->value)
-     * @return array<string, int>  [YYYY-MM-DD => count]
+     * @return array<string, int> [YYYY-MM-DD => count]
      */
     private function fetchDailyCounts(string $dateColumn, Carbon $startDate, Carbon $endDate, array $validated, ?string $statusFilter = null): array
     {
