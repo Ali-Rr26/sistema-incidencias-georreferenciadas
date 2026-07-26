@@ -742,7 +742,7 @@ it('org-scoped operator sees only their organization incidents', function () {
     $org1 = Organization::create(['name' => 'Org1', 'location_id' => $location1->id]);
     $org2 = Organization::create(['name' => 'Org2', 'location_id' => $location2->id]);
 
-    $operator1 = User::factory()->create(['role_id' => 4, 'organization_id' => $org1->id]);
+    $operator1 = User::factory()->create(['role_id' => 3, 'organization_id' => $org1->id]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $cat1 = IncidentCategory::create(['name' => 'General', 'organization_id' => $org1->id]);
