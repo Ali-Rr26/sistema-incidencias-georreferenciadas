@@ -176,7 +176,9 @@ it('deletes an existing assignment and returns 204', function (): void {
         ->deleteJson("/api/incidents/{$this->incident->id}/assignments/{$assignmentId}");
 
     $response->assertStatus(204);
-    $this->assertDatabaseMissing('assignments', ['id' => $assignmentId]);
+    // unassign() soft-deletes (#202) — the row still physically exists
+    // with deleted_at set, it does not disappear from the table.
+    $this->assertSoftDeleted('assignments', ['id' => $assignmentId]);
 });
 
 it('returns 404 when deleting a non-existent assignment', function (): void {
