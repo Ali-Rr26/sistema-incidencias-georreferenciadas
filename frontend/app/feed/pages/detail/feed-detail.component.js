@@ -689,7 +689,6 @@ export default {
                 maxlength="5000"
                 placeholder="Escribe un comentario público..."
               ></textarea>
-              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
               <input
                 type="file"
                 id="fd-comment-images"
@@ -698,8 +697,7 @@ export default {
                 capture="environment"
                 class="d-none"
               />
-              <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
-              <div class="d-flex justify-content-between align-items-center">
+              <div class="mb-2">
                 <button
                   type="button"
                   id="fd-comment-attach-btn"
@@ -707,8 +705,12 @@ export default {
                   title="Adjuntar o tomar foto"
                   aria-label="Adjuntar o tomar foto"
                 >
-                  <i class="fas fa-camera me-1"></i><span class="small">Foto</span>
+                  <i class="fas fa-camera"></i>
                 </button>
+              </div>
+              <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
+              <div id="fd-comment-error" class="text-danger small mb-2 d-none"></div>
+              <div class="d-flex justify-content-end">
                 <button
                   type="submit"
                   id="fd-comment-submit"

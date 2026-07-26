@@ -138,6 +138,29 @@
                 maxlength="5000"
                 placeholder="Escriba un comentario público..."
               ></textarea>
+              <input
+                type="file"
+                id="detalle-comment-images"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                class="d-none"
+              />
+              <div class="mt-2">
+                <button
+                  type="button"
+                  id="detalle-comment-attach-btn"
+                  class="btn btn-outline-secondary btn-sm"
+                  title="Adjuntar o tomar foto"
+                  aria-label="Adjuntar o tomar foto"
+                >
+                  <i class="fas fa-camera"></i>
+                </button>
+              </div>
+              <div
+                id="detalle-comment-previews"
+                class="d-flex flex-wrap gap-2 my-2"
+              ></div>
               <div
                 class="d-flex justify-content-between align-items-center mt-2"
               >
@@ -154,28 +177,7 @@
                   ></div>
                 </div>
               </div>
-              <input
-                type="file"
-                id="detalle-comment-images"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
-                capture="environment"
-                class="d-none"
-              />
-              <div
-                id="detalle-comment-previews"
-                class="d-flex flex-wrap gap-2 mb-2 mt-2"
-              ></div>
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <button
-                  type="button"
-                  id="detalle-comment-attach-btn"
-                  class="btn btn-outline-secondary btn-sm"
-                  title="Adjuntar o tomar foto"
-                  aria-label="Adjuntar o tomar foto"
-                >
-                  <i class="fas fa-camera me-1"></i><span class="small">Foto</span>
-                </button>
+              <div class="d-flex justify-content-end mt-2">
                 <button
                   type="submit"
                   id="detalle-comment-submit"

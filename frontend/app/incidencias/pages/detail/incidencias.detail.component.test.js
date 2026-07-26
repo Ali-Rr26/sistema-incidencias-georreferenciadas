@@ -73,6 +73,8 @@ function buildDetailDom() {
 
     <form id="detalle-comment-form">
       <textarea id="detalle-comment-input"></textarea>
+      <input type="file" id="detalle-comment-images" />
+      <button type="button" id="detalle-comment-attach-btn"></button>
       <div id="detalle-comment-error" class="d-none"></div>
       <button type="submit" id="detalle-comment-submit">Publicar</button>
     </form>
