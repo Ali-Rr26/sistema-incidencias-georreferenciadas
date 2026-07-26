@@ -12,13 +12,14 @@ final class PhoneRules
 {
     /**
      * Ecuador phone regex:
-     * - Starting with +593: +5939XXXXXXXX (mobile) or +5932XXXXXXX / +593[2-7]XXXXXXX (landline). Total 12 digits excluding '+'.
-     * - Starting with 0: 09XXXXXXXX (mobile, 10 digits) or 0[2-7]XXXXXXX (landline, 9 digits).
+     * - Starting with +593: +5939XXXXXXXX (mobile) or +5932XXXXXXX / +593[2-7]XXXXXXX (landline).
+     * - Local starting with 0: 09XXXXXXXX (mobile, 10 digits) or 0[2-7]XXXXXXX (landline, 9-10 digits).
+     * - General numeric phone strings: 7 to 15 digits optionally starting with '+'.
      */
-    public const REGEX = '/^(?:\+593[2-9]\d{7,8}|0[2-9]\d{7,8})$/';
+    public const REGEX = '/^(?:\+593[2-9]\d{7,8}|0[2-9]\d{7,8}|\+?\d{7,15})$/';
 
     /** Custom error message in Spanish. */
-    public const MESSAGE = 'El teléfono debe ser un número válido de Ecuador (ej. 0991234567 o +593991234567).';
+    public const MESSAGE = 'El teléfono debe ser un número válido (ej. 0991234567 o +593991234567).';
 
     /**
      * Common Laravel validation rules array for phone fields.
