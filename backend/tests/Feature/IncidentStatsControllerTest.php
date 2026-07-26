@@ -725,10 +725,16 @@ it('combines tipo_id + provincia_id filters', function () {
 it('org-scoped operator sees only their organization incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-        ['id' => 4, 'name' => 'operador_organizacion', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    $this->seed(\Database\Seeders\PermissionSeeder::class);
+    $this->seed(\Database\Seeders\RoleSeeder::class);
+    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+
+    foreach (\App\Domains\Permissions\Models\Permission::all() as $p) {
+        \Illuminate\Support\Facades\Gate::define(
+            "{$p->resource}.{$p->action}",
+            fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+        );
+    }
 
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
     $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
@@ -871,7 +877,7 @@ it('applies both date range and location cascade together', function () {
     $recentDate = now()->startOfDay();
 
     // Old incident in Quito
-    Incident::create([
+    $oldInc = Incident::create([
         'title' => 'Old Quito Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -879,8 +885,9 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'high',
-        'created_at' => $oldDate,
     ]);
+    $oldInc->created_at = $oldDate;
+    $oldInc->save(['timestamps' => false]);
 
     // Recent incident in Quito
     Incident::create([
