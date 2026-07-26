@@ -212,6 +212,8 @@ function setupUpload(incidentId) {
   const btnSubir = document.getElementById('btn-subir-imagen');
   const progress = document.getElementById('detalle-upload-progress');
 
+  if (!fileInput || !btnSubir) return;
+
   btnSubir.addEventListener('click', async () => {
     const file = fileInput.files[0];
     if (!file) return;
