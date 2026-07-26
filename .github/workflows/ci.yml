@@ -105,12 +105,6 @@ jobs:
       - name: Install backend dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Run database migrations
-        run: php artisan migrate --force
-
-      - name: Seed database with roles and permissions
-        run: php artisan db:seed --class=RolePermissionSeeder
-
       - name: Run backend lint
         run: composer run lint
 
