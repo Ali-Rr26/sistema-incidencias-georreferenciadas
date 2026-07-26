@@ -25,7 +25,7 @@ class StoreIncidentCategoryRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The name is required.',
+            'name.required' => 'El nombre es obligatorio.',
         ];
     }
 }

@@ -111,6 +111,7 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
             })
             ->when($filters['incident_category_id'] ?? null, fn (Builder $q, string $v) => $q->where('incident_category_id', $v))
             ->when($filters['user_id'] ?? null, fn (Builder $q, string $v) => $q->where('user_id', $v))
+            ->orderBy('created_at', 'desc')
             ->when($filters['bbox'] ?? null, function (Builder $q, string $v): void {
                 // bbox=minLng,minLat,maxLng,maxLat — PostGIS ST_MakeEnvelope
                 // takes (xmin, ymin, xmax, ymax, srid), so the order maps

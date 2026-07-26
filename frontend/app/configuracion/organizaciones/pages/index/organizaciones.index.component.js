@@ -1,11 +1,16 @@
 import template from './organizaciones.index.component.html?raw';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { formatearFecha } from '../../../../utils/format.js';
+import { permissionService } from '../../../../shared/permission.service.js';
 
 export default {
   template,
 
   async onInit() {
+    const perms = await permissionService.getMyPermissions();
+    if (!perms.has('organizations.create')) {
+      document.querySelectorAll('a[href*="organizaciones/crear"]').forEach(el => el.classList.add('d-none'));
+    }
     const page = createCrudIndexPage({
       endpoint: '/organizations',
       slugs: {

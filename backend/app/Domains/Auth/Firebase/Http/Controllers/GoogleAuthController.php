@@ -61,7 +61,7 @@ class GoogleAuthController
             ]);
 
             return response()->json([
-                'message' => 'Error interno al procesar la autenticación con Google.',
+                'message' => __('messages.google_auth_error'),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 

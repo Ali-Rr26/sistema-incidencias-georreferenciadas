@@ -65,7 +65,7 @@ class NotificationStreamController
         $user = $request->user();
         if ($user === null) {
             // Defensive: the JWT middleware should have already rejected.
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
         $userId = (int) $user->id;

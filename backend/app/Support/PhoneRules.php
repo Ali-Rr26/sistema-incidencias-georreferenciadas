@@ -49,14 +49,10 @@ final class PhoneRules
 
         $cleaned = preg_replace('/[^\d+]/', '', trim($phone));
 
-        if (str_starts_with($cleaned, '0')) {
-            return '+593'.substr($cleaned, 1);
-        }
-
-        if (str_starts_with($cleaned, '593')) {
-            return '+'.$cleaned;
-        }
-
-        return $cleaned;
+        return match (true) {
+            str_starts_with($cleaned, '0') => '+593'.substr($cleaned, 1),
+            str_starts_with($cleaned, '593') => '+'.$cleaned,
+            default => $cleaned,
+        };
     }
 }
