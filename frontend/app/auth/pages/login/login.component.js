@@ -89,7 +89,6 @@ export default {
     const errorAlert = document.getElementById('login-error');
     const submitBtn = form.querySelector('button[type="submit"]');
 
-
     function showEmailError(inputEl, errorEl) {
       if (!inputEl.value.trim() || !EMAIL_RE.test(inputEl.value.trim())) {
         if (errorEl) {
@@ -111,9 +110,11 @@ export default {
     const registerForm = document.getElementById(REGISTER_FORM_ID);
     const registerBanner = document.getElementById('register-banner');
 
-    document.querySelectorAll('#register-form input[type="tel"]').forEach((el) => {
-      maskPhoneInput(el);
-    });
+    document
+      .querySelectorAll('#register-form input[type="tel"]')
+      .forEach((el) => {
+        maskPhoneInput(el);
+      });
 
     /** Switch between 'login' and 'register' modes. */
     const setMode = (newMode) => {
@@ -174,8 +175,7 @@ export default {
     });
 
     if (registerForm) {
-      const registerEmailInput =
-        registerForm.querySelector('#register-email');
+      const registerEmailInput = registerForm.querySelector('#register-email');
       const registerEmailError = document.querySelector(
         '#register-form [data-error-for="email"]',
       );
@@ -201,7 +201,6 @@ export default {
       if (regPhoneEl) {
         maskPhoneInput(regPhoneEl);
       }
-
 
       registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();

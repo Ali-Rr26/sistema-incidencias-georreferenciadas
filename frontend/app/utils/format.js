@@ -109,10 +109,29 @@ export function formatearFecha(iso) {
 
 const NON_NUMERIC_RE = /[^0-9+\- ()]/g;
 const CONTROL_KEYS = new Set([
-  'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
-  'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-  'Home', 'End', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
-  'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+  'Backspace',
+  'Delete',
+  'Tab',
+  'Escape',
+  'Enter',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'Home',
+  'End',
+  'F1',
+  'F2',
+  'F3',
+  'F4',
+  'F5',
+  'F6',
+  'F7',
+  'F8',
+  'F9',
+  'F10',
+  'F11',
+  'F12',
 ]);
 
 export function blockNonNumeric(e) {
