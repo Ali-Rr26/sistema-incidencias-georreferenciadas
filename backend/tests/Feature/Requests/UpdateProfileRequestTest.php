@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
 use App\Domains\Users\Models\User;
+use App\Storage\ImageRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +80,7 @@ it('avatar file at exactly the ImageRules size cap is accepted', function (): vo
     $user = User::factory()->create();
     $request = new UpdateProfileRequest;
 
-    $file = UploadedFile::fake()->image('avatar.jpg')->size(\App\Storage\ImageRules::MAX_SIZE_KB);
+    $file = UploadedFile::fake()->image('avatar.jpg')->size(ImageRules::MAX_SIZE_KB);
 
     $request->merge(['first_name' => 'Ana']);
     $request->files->set('avatar', $file);

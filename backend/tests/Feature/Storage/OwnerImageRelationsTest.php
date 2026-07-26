@@ -10,6 +10,7 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -75,7 +76,7 @@ it('exposes an ordered images() morphMany relation on Comment (WU6 cutover)', fu
         'sort_order' => 0,
     ]);
 
-    expect($this->comment->images())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphMany::class);
+    expect($this->comment->images())->toBeInstanceOf(MorphMany::class);
 
     $paths = $this->comment->images()->pluck('storage_path')->all();
 

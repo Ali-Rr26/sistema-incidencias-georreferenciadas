@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Services;
 
 use App\Domains\Incidents\Models\Incident;
 use App\Storage\ImageStorageService;
+use App\Storage\Models\Image;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 
@@ -23,7 +24,7 @@ class IncidentImageService
 
     /**
      * @param  array<int, UploadedFile>|UploadedFile|null  $files
-     * @return Collection<int, \App\Storage\Models\Image>
+     * @return Collection<int, Image>
      */
     public function upload(array|UploadedFile|null $files, Incident $incident, bool $firstIsThumbnail): Collection
     {

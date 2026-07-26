@@ -43,10 +43,7 @@ vi.stubGlobal('bootstrap', { Toast: vi.fn(), Modal: vi.fn() });
 
 // Imported (post-mock) to assert call order in the re-selection regression
 // test below.
-import {
-  initSelect,
-  destroySelect,
-} from '../../../../shared/select-search.js';
+import { initSelect, destroySelect } from '../../../../shared/select-search.js';
 
 // ─── DOM fixture ────────────────────────────────────────────────────────────────
 function buildFixture() {
@@ -133,7 +130,9 @@ describe('organizaciones.form — progressive location loading (WU-3)', () => {
 
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({ level: 'country' });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
+        level: 'country',
+      });
     });
 
     it('does NOT call /locations/tree endpoint', async () => {
@@ -167,7 +166,9 @@ describe('organizaciones.form — progressive location loading (WU-3)', () => {
 
       await new Promise(setImmediate);
 
-      expect(mockLocationService.getChildren).toHaveBeenCalledWith({ parentId: 1 });
+      expect(mockLocationService.getChildren).toHaveBeenCalledWith({
+        parentId: 1,
+      });
     });
 
     // Regression: same trap as incidencias.form.component.js — initSelect()
@@ -192,9 +193,9 @@ describe('organizaciones.form — progressive location loading (WU-3)', () => {
       paisSel.value = '1';
       paisSel.dispatchEvent(new Event('change'));
       await new Promise(setImmediate);
-      expect(
-        Array.from(provinciaSel.options).map((o) => o.value),
-      ).toEqual(expect.arrayContaining(['2', '3']));
+      expect(Array.from(provinciaSel.options).map((o) => o.value)).toEqual(
+        expect.arrayContaining(['2', '3']),
+      );
 
       vi.mocked(destroySelect).mockClear();
       vi.mocked(initSelect).mockClear();
@@ -254,7 +255,9 @@ describe('organizaciones.form — progressive location loading (WU-3)', () => {
 
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({ level: 'country' });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
+        level: 'country',
+      });
     });
 
     it('sets org-location input to selectedId from location_path', async () => {

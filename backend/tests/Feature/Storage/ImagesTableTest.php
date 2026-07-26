@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -48,7 +49,7 @@ it('rejects a second is_thumbnail=true row for the same owner', function (): voi
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-    })->toThrow(\Illuminate\Database\QueryException::class);
+    })->toThrow(QueryException::class);
 
     expect(DB::table('images')->where('imageable_type', 'incident')->where('imageable_id', 1)->count())->toBe(1);
 });

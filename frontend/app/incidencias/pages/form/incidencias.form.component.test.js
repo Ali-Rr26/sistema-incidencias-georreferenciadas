@@ -1437,7 +1437,9 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
     { id: 300, name: 'Quito', level: 'city', parent_id: 200 },
     { id: 301, name: 'Rumiñahui', level: 'city', parent_id: 200 },
   ];
-  const CITIES_GUAYAS = [{ id: 500, name: 'Guayaquil', level: 'city', parent_id: 201 }];
+  const CITIES_GUAYAS = [
+    { id: 500, name: 'Guayaquil', level: 'city', parent_id: 201 },
+  ];
   const NEIGHBORHOODS_QUITO = [
     { id: 400, name: 'La Mariscal', level: 'neighborhood', parent_id: 300 },
     { id: 401, name: 'Iñaquito', level: 'neighborhood', parent_id: 300 },
@@ -1540,10 +1542,13 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
       mockRouter.queryParams = new URLSearchParams();
       document.body.classList.add('ici-create-view');
 
-      const { default: component } = await import('./incidencias.form.component.js');
+      const { default: component } =
+        await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({ level: 'province' });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
+        level: 'province',
+      });
     });
 
     it('does NOT call /locations/tree endpoint', async () => {
@@ -1616,7 +1621,8 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
       mockRouter.queryParams = new URLSearchParams();
       document.body.classList.add('ici-create-view');
 
-      const { default: component } = await import('./incidencias.form.component.js');
+      const { default: component } =
+        await import('./incidencias.form.component.js');
       await component.onInit();
 
       const treeCalls = mockHttp.get.mock.calls.filter(
@@ -1696,19 +1702,26 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
       mockRouter.queryParams = new URLSearchParams();
       document.body.classList.add('ici-create-view');
 
-      const { default: component } = await import('./incidencias.form.component.js');
+      const { default: component } =
+        await import('./incidencias.form.component.js');
       await component.onInit();
 
       mockLocationService.getChildren.mockClear();
 
       const provinceSelect = document.getElementById('ici-location-province');
       // Force value to bypass browser's select validation (no option with value '200').
-      Object.defineProperty(provinceSelect, 'value', { value: '200', writable: true, configurable: true });
+      Object.defineProperty(provinceSelect, 'value', {
+        value: '200',
+        writable: true,
+        configurable: true,
+      });
       provinceSelect.dispatchEvent(new Event('change'));
 
       await new Promise(setImmediate);
 
-      expect(mockLocationService.getChildren).toHaveBeenCalledWith({ parentId: 200 });
+      expect(mockLocationService.getChildren).toHaveBeenCalledWith({
+        parentId: 200,
+      });
     });
 
     // Regression: initSelect() destroys the previous tom-select instance
@@ -1737,7 +1750,8 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
       mockRouter.queryParams = new URLSearchParams();
       document.body.classList.add('ici-create-view');
 
-      const { default: component } = await import('./incidencias.form.component.js');
+      const { default: component } =
+        await import('./incidencias.form.component.js');
       await component.onInit();
 
       const provinceSelect = document.getElementById('ici-location-province');
@@ -1868,10 +1882,13 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
         .mockResolvedValueOnce(CITIES_PICHINCHA)
         .mockResolvedValueOnce(NEIGHBORHOODS_QUITO);
 
-      const { default: component } = await import('./incidencias.form.component.js');
+      const { default: component } =
+        await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({ level: 'province' });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
+        level: 'province',
+      });
     });
   });
 });

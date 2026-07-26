@@ -1,8 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import {
-  mountImageUploader,
-  ACCEPTED_IMAGE_TYPES,
-} from './image-uploader.js';
+import { mountImageUploader, ACCEPTED_IMAGE_TYPES } from './image-uploader.js';
 
 describe('mountImageUploader', () => {
   let container;
