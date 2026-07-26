@@ -378,15 +378,13 @@ export default {
         removeDescendants(id);
         expandedIds.delete(id);
         renderArbol();
+      } else if (childrenMap.has(id)) {
+        // Children already fetched, just expand
+        expandedIds.add(id);
+        renderArbol();
       } else {
-        // Expand: check if children are already loaded
-        if (childrenMap.has(id)) {
-          // Children already fetched, just expand
-          expandedIds.add(id);
-          renderArbol();
-        } else {
-          // Need to fetch children
-          loadingIds.add(id);
+        // Need to fetch children
+        loadingIds.add(id);
           expandedIds.add(id);
           renderArbol(); // Show loading state
 
