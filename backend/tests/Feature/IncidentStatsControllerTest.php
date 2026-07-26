@@ -12,6 +12,7 @@ use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 uses(RefreshDatabase::class);
 
@@ -626,6 +627,23 @@ it('org-scoped operator sees only their organization incidents', function () {
 
     DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     DB::table('roles')->updateOrInsert(['id' => 3], ['name' => 'admin_organizacion', 'updated_at' => now()]);
+
+    DB::table('permissions')->updateOrInsert(
+        ['resource' => 'dashboard', 'action' => 'view'],
+        ['name' => 'dashboard.view', 'description' => 'Ver estadísticas del dashboard', 'updated_at' => now()]
+    );
+    $permId = DB::table('permissions')
+        ->where('resource', 'dashboard')->where('action', 'view')
+        ->value('permission_id');
+
+    // Gates get compiled once at app boot from the permissions that exist
+    // at that time (see AppServiceProvider::boot()). Since this test seeds
+    // dashboard.view after boot, the ability must be (re)defined here too.
+    Gate::define('dashboard.view', fn (User $user) => $user->hasPermission('dashboard.view'));
+
+    DB::table('role_permission')->updateOrInsert(
+        ['role_id' => 3, 'permission_id' => $permId]
+    );
 
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
     $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
