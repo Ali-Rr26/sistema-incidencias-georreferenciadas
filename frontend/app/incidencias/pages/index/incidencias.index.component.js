@@ -254,13 +254,15 @@ export default {
     // "Nueva incidencia" is the sole entry point to /incidencias/crear now
     // (menu_id 4 was removed from MenuSeeder) — its permission gate moved
     // here client-side. Fail closed: no confirmed permission, stays hidden.
+    // SC-127: Validar incidents.create, no incidents.manage.
+    // admin_sistema gestiona/aprueba, no reporta incidencias.
     let permisos;
     try {
       permisos = await permissionService.getMyPermissions();
     } catch {
       permisos = new Set();
     }
-    if (permisos.has('incidents.manage')) {
+    if (permisos.has('incidents.create')) {
       document
         .getElementById('btn-nueva-incidencia')
         ?.classList.remove('d-none');
