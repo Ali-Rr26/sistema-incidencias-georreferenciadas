@@ -113,16 +113,19 @@ class AssignmentService
      */
     public function unassign(Incident $incident, int $assignmentId): void
     {
-        $deleted = DB::table('assignments')
+        $assignment = Assignment::query()
             ->where('incident_id', $incident->id)
             ->where('id', $assignmentId)
-            ->delete();
+            ->first();
 
-        if ($deleted === 0) {
+        if ($assignment === null) {
             throw new \RuntimeException(
                 'Asignación no encontrada.',
                 404
             );
         }
+
+        // Soft delete — preserva el historial de asignación.
+        $assignment->delete();
     }
 }
