@@ -61,6 +61,9 @@ class IncidentStatsController extends Controller
             'ciudad_id' => 'nullable|integer|exists:locations,id',
             'provincia_id' => 'nullable|integer|exists:locations,id',
             'pais_id' => 'nullable|integer|exists:locations,id',
+        ], [
+            'inicio.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
+            'fin.date_format' => 'La fecha ingresada no es válida. Use el formato DD/MM/AAAA.',
         ]);
 
         $cacheKey = $this->buildStatsCacheKey($request->user(), $validated);
