@@ -35,10 +35,10 @@ class UpdateLocationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.unique' => 'This code is already in use.',
-            'level.in' => 'Level must be: country, province, city or neighborhood.',
-            'parent_id.exists' => 'The selected parent location does not exist.',
-            'geom.json' => 'The geometry must be valid JSON.',
+            'code.unique' => 'Este código ya está en uso.',
+            'level.in' => 'El nivel debe ser: country, province, city o neighborhood.',
+            'parent_id.exists' => 'La ubicación padre seleccionada no existe.',
+            'geom.json' => 'La geometría debe ser un JSON válido.',
         ];
     }
 }

@@ -30,7 +30,7 @@ class UpdateIncidentStatusRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.in' => 'Status must be: pending, in_progress or resolved.',
+            'status.in' => 'El estado debe ser: pending, in_progress o resolved.',
         ];
     }
 }

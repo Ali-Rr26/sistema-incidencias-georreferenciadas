@@ -35,7 +35,7 @@ export default {
         const sel = document.getElementById('org-padre');
         sel.innerHTML = '<option value="">-- Ninguna (raíz) --</option>';
         organizations
-          .filter((o) => o.id !== parseInt(exceptId))
+          .filter((o) => o.id !== Number.parseInt(exceptId, 10))
           .forEach((o) => {
             const opt = document.createElement('option');
             opt.value = o.id;
@@ -84,7 +84,7 @@ export default {
           cats
             .map(
               (c) =>
-                `<option value="${c.id}" ${parseInt(selectedId) === c.id ? 'selected' : ''}>${c.name}</option>`,
+                `<option value="${c.id}" ${Number.parseInt(selectedId, 10) === c.id ? 'selected' : ''}>${c.name}</option>`,
             )
             .join('');
 
@@ -109,7 +109,7 @@ export default {
         selectionGeneration++;
         const gen = selectionGeneration;
         const provinces = await locationService.getChildren({
-          parentId: parseInt(val),
+          parentId: Number.parseInt(val, 10),
         });
         // Discard stale response
         if (gen !== selectionGeneration) return;
@@ -142,7 +142,7 @@ export default {
         selectionGeneration++;
         const gen = selectionGeneration;
         const cities = await locationService.getChildren({
-          parentId: parseInt(val),
+          parentId: Number.parseInt(val, 10),
         });
         // Discard stale response
         if (gen !== selectionGeneration) return;
@@ -264,8 +264,9 @@ export default {
 
         const categoriaId = org.incident_category?.id ?? null;
 
+        // cargarPadres es síncrono (no retorna Promise), se ejecuta fuera de Promise.all
+        cargarPadres(catalog.organizations ?? [], editId);
         await Promise.all([
-          cargarPadres(catalog.organizations ?? [], editId),
           initCascadingLocation(org.location_path ?? null, org.location_id),
           cargarCategorias(catalog.categories ?? [], categoriaId),
         ]);
@@ -285,8 +286,8 @@ export default {
         );
         return;
       }
+      cargarPadres(formCatalogs.organizations);
       await Promise.all([
-        cargarPadres(formCatalogs.organizations),
         initCascadingLocation(null),
         cargarCategorias(formCatalogs.categories),
       ]);
@@ -317,13 +318,13 @@ export default {
         const catSelect = getSelect('org-categorias');
         const categoryId =
           catSelect && catSelect.getValue()
-            ? parseInt(catSelect.getValue())
+            ? Number.parseInt(catSelect.getValue(), 10)
             : null;
 
         const payload = {
           name: document.getElementById('org-nombre').value.trim(),
-          location_id: parseInt(locationId),
-          parent_id: padreVal ? parseInt(padreVal) : null,
+          location_id: Number.parseInt(locationId, 10),
+          parent_id: padreVal ? Number.parseInt(padreVal, 10) : null,
           incident_category_id: categoryId,
         };
 

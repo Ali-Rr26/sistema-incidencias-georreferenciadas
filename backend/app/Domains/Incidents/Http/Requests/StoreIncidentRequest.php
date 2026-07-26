@@ -80,10 +80,12 @@ class StoreIncidentRequest extends FormRequest
 
     public function messages(): array
     {
+        $titleRequired = 'El campo título es obligatorio.';
+
         return [
-            'title.required_without' => 'El campo título es obligatorio.',
-            'titulo.required_without' => 'El campo título es obligatorio.',
-            'titulo.required' => 'El campo título es obligatorio.',
+            'title.required_without' => $titleRequired,
+            'titulo.required_without' => $titleRequired,
+            'titulo.required' => $titleRequired,
             'titulo.max' => 'El título no puede superar los 255 caracteres.',
             'title.max' => 'El título no puede superar los 255 caracteres.',
             'incident_category_id.required' => 'La categoría de incidencia es obligatoria.',
