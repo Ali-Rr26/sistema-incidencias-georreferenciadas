@@ -124,10 +124,8 @@ it('admin_organizacion has feed.view per design Decision 1 spec override', funct
     expect(Gate::forUser($user)->allows('feed.view'))->toBeTrue();
     expect(Gate::forUser($user)->allows('profile.view'))->toBeTrue();
     expect(Gate::forUser($user)->allows('incidents.manage'))->toBeTrue();
-    // admin_organizacion still receives incidents.create (pre-existing grant).
-    // The spec's "admin_organizacion does NOT have incidents.create" scenario
-    // is a target-state note — that grant is out of scope for this change.
-    expect(Gate::forUser($user)->allows('incidents.create'))->toBeTrue();
+    // admin_organizacion does NOT have incidents.create.
+    expect(Gate::forUser($user)->allows('incidents.create'))->toBeFalse();
 });
 
 it('operador_sistema has incidents.manage for back-office Nueva Incidencia', function (): void {
