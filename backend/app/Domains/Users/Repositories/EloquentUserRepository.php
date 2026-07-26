@@ -68,6 +68,7 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
                 $query->where('first_name', 'LIKE', "%{$value}%")
                     ->orWhere('last_name', 'LIKE', "%{$value}%")
                     ->orWhere('email', 'LIKE', "%{$value}%");
-            }));
+            }))
+            ->orderBy('created_at', 'desc');
     }
 }
