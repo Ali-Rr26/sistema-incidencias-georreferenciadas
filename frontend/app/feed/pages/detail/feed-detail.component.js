@@ -317,6 +317,7 @@ export default {
       errorId: 'fd-comment-error',
       previewId: 'fd-comment-previews',
       fileInputId: 'fd-comment-images',
+      attachButtonId: 'fd-comment-attach-btn',
       replyBadgeId: 'fd-reply-badge',
       replyParentIdId: 'fd-reply-parent-id',
       lightboxId: 'fd-lightbox',
@@ -693,17 +694,29 @@ export default {
                 type="file"
                 id="fd-comment-images"
                 multiple
-                accept="image/*"
-                class="form-control form-control-sm mb-2"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                class="d-none"
               />
               <div id="fd-comment-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
-              <button
-                type="submit"
-                id="fd-comment-submit"
-                class="btn btn-primary btn-sm"
-              >
-                Publicar
-              </button>
+              <div class="d-flex justify-content-between align-items-center">
+                <button
+                  type="button"
+                  id="fd-comment-attach-btn"
+                  class="btn btn-outline-secondary btn-sm"
+                  title="Adjuntar o tomar foto"
+                  aria-label="Adjuntar o tomar foto"
+                >
+                  <i class="fas fa-camera me-1"></i><span class="small">Foto</span>
+                </button>
+                <button
+                  type="submit"
+                  id="fd-comment-submit"
+                  class="btn btn-primary btn-sm"
+                >
+                  Publicar
+                </button>
+              </div>
             </form>
             <div id="fd-comments-loading" class="d-flex justify-content-center py-2">
               <div class="spinner-border spinner-border-sm text-primary"></div>

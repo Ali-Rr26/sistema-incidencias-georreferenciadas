@@ -383,6 +383,7 @@ async function setupComments(incidentId, initialComments) {
     errorId: 'detalle-comment-error',
     previewId: 'detalle-comment-previews',
     fileInputId: 'detalle-comment-images',
+    attachButtonId: 'detalle-comment-attach-btn',
     replyBadgeId: 'detalle-reply-badge',
     replyParentIdId: 'detalle-reply-parent-id',
     lightboxId: 'incid-detail__lightbox',
