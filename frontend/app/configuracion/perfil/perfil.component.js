@@ -7,7 +7,7 @@ import {
   ACCEPTED_MIME_TYPES,
 } from '../../utils/avatar.constants.js';
 import { mountAvatarUploader } from '../../shared/avatar-uploader.js';
-import { mostrarToast } from '../../utils/ui.js';
+import { mostrarToast, maskPhoneInput } from '../../utils/ui.js';
 
 /** Module-scope so onDestroy can clean it up after the latest onInit. */
 let _avatar = null;
@@ -49,7 +49,11 @@ export default {
     const u = userData ?? {};
     document.getElementById('perfil-nombre').value = u.first_name ?? '';
     document.getElementById('perfil-apellido').value = u.last_name ?? '';
-    document.getElementById('perfil-telefono').value = u.phone ?? '';
+    const phoneEl = document.getElementById('perfil-telefono');
+    if (phoneEl) {
+      phoneEl.value = u.phone ?? '';
+      maskPhoneInput(phoneEl);
+    }
     const emailEl = document.getElementById('perfil-email');
     if (emailEl) {
       emailEl.value = u.email ?? '';
