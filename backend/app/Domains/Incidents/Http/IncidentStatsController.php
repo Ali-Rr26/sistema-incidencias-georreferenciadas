@@ -44,20 +44,7 @@ class IncidentStatsController extends Controller
 
         $validated = $request->validate([
             'inicio' => 'nullable|date_format:Y-m-d',
-            'fin' => [
-                'nullable',
-                'date_format:Y-m-d',
-                Rule::when(
-                    $request->filled('inicio') && $request->filled('fin'),
-                    fn ($rule) => $rule->after(function ($fail) use ($request) {
-                        $inicio = Carbon::createFromFormat('Y-m-d', $request->input('inicio'));
-                        $fin = Carbon::createFromFormat('Y-m-d', $request->input('fin'));
-                        if ($fin->isBefore($inicio)) {
-                            $fail('La fecha fin no puede ser anterior a la fecha inicio.');
-                        }
-                    })
-                ),
-            ],
+            'fin' => 'nullable|date_format:Y-m-d|after_or_equal:inicio',
             'tipo_id' => 'nullable|integer|exists:incident_categories,id',
             'ciudad_id' => 'nullable|integer|exists:locations,id',
             'provincia_id' => 'nullable|integer|exists:locations,id',
