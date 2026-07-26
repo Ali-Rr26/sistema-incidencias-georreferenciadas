@@ -27,7 +27,9 @@ import { point as turfPoint } from '@turf/helpers';
 
 // ── Error field mapping: backend field → error ID suffix ──
 const ERROR_MAP = {
+  title: 'error-title',
   titulo: 'error-title',
+  description: 'error-description',
   descripcion: 'error-description',
   priority: 'error-priority',
   incident_category_id: 'error-category',
@@ -38,7 +40,9 @@ const ERROR_MAP = {
 // ── Which step each backend-validated field lives on, so a 422 jumps
 // the user back to where the offending field actually is ──
 const FIELD_STEP = {
+  title: 1,
   titulo: 1,
+  description: 1,
   descripcion: 1,
   priority: 1,
   incident_category_id: 2,
@@ -1144,7 +1148,7 @@ export default {
       const locationId = locVal ? parseInt(locVal, 10) : null;
 
       const payloadBase = {
-        titulo,
+        title,
         descripcion: description || null,
         priority,
         incident_category_id: categoryId,
