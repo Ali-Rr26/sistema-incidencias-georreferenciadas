@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -180,20 +185,20 @@ beforeEach(function (): void {
 })->group('staff-feed');
 
 it('staff feed returns incidents from Postgres with correct structure', function (): void {
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create(['name' => 'Accidente']);
-    $location = \App\Domains\Locations\Models\Location::create(['name' => 'Quito', 'level' => 'city']);
-    $org = \App\Domains\Organizations\Models\Organization::create([
+    $category = IncidentCategory::create(['name' => 'Accidente']);
+    $location = Location::create(['name' => 'Quito', 'level' => 'city']);
+    $org = Organization::create([
         'name' => 'Defensa Civil',
         'location_id' => $location->id,
     ]);
-    $incident = \App\Domains\Incidents\Models\Incident::create([
+    $incident = Incident::create([
         'incident_category_id' => $category->id,
         'organization_id' => $org->id,
         'user_id' => $this->citizen->id,
         'location_id' => $location->id,
         'title' => 'Incendio forestal',
-        'status' => \App\Domains\Incidents\Models\Incident::STATUS_PENDING,
-        'priority' => \App\Domains\Incidents\Models\Incident::PRIORITY_HIGH,
+        'status' => Incident::STATUS_PENDING,
+        'priority' => Incident::PRIORITY_HIGH,
     ]);
 
     // operador_sistema (role 2) is not a regular user → hits staff path
@@ -222,19 +227,19 @@ it('staff feed returns incidents from Postgres with correct structure', function
 })->group('staff-feed');
 
 it('staff feed respects per_page and paginates', function (): void {
-    $cat = \App\Domains\IncidentCategories\Models\IncidentCategory::create(['name' => 'Cat']);
-    $loc = \App\Domains\Locations\Models\Location::create(['name' => 'Loc', 'level' => 'city']);
-    $org = \App\Domains\Organizations\Models\Organization::create(['name' => 'Org', 'location_id' => $loc->id]);
+    $cat = IncidentCategory::create(['name' => 'Cat']);
+    $loc = Location::create(['name' => 'Loc', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Org', 'location_id' => $loc->id]);
 
     foreach (range(1, 25) as $i) {
-        \App\Domains\Incidents\Models\Incident::create([
+        Incident::create([
             'incident_category_id' => $cat->id,
             'organization_id' => $org->id,
             'user_id' => $this->citizen->id,
             'location_id' => $loc->id,
             'title' => "Incident {$i}",
-            'status' => \App\Domains\Incidents\Models\Incident::STATUS_PENDING,
-            'priority' => \App\Domains\Incidents\Models\Incident::PRIORITY_MEDIUM,
+            'status' => Incident::STATUS_PENDING,
+            'priority' => Incident::PRIORITY_MEDIUM,
         ]);
     }
 
@@ -252,7 +257,7 @@ it('staff feed respects per_page and paginates', function (): void {
 
 it('staff feed requires incidents.view permission', function (): void {
     // Create a throwaway role with NO permissions at all.
-    $noPermRole = \App\Domains\Roles\Models\Role::create(['name' => 'sin_permisos']);
+    $noPermRole = Role::create(['name' => 'sin_permisos']);
     $user = User::factory()->create(['role_id' => $noPermRole->id]);
 
     $response = $this->actingAs($user)->getJson('/api/incidents/feed');
