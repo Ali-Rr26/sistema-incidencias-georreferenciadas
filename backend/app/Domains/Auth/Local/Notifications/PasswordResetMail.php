@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Domains\Auth\Local\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PasswordResetMail extends Notification
+class PasswordResetMail extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -32,7 +33,11 @@ class PasswordResetMail extends Notification
             . '/#/reset-password?token=' . $this->token
             . '&email=' . urlencode($notifiable->email);
 
+        $fromAddress = (string) (config('gmail.from_address') ?: config('mail.from.address') ?: 'noreply@dihm-muertos.site');
+        $fromName = (string) (config('gmail.from_name') ?: config('mail.from.name') ?: config('app.name', 'Sistema de Incidencias'));
+
         return (new MailMessage)
+            ->from($fromAddress, $fromName)
             ->subject('Restablecer contraseña - Sistema de Incidencias')
             ->greeting('¡Hola!')
             ->line('Recibiste este correo porque solicitaste restablecer tu contraseña.')
