@@ -26,10 +26,35 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 # Create backup directory
 mkdir -p "$BACKUP_DIR"
 
+# Helper to execute postgres client commands (local or via docker)
+run_pg_dump() {
+    if command -v pg_dump >/dev/null 2>&1; then
+        pg_dump -U "$DB_USER" -h "$DB_HOST" -p "${DB_PORT:-5435}" -d "$DB"
+    elif docker ps --format '{{.Names}}' | grep -q 'postgres'; then
+        CONTAINER=$(docker ps --format '{{.Names}}' | grep 'postgres' | head -n 1)
+        docker exec -i "$CONTAINER" pg_dump -U "$DB_USER" -d "$DB"
+    else
+        echo "Error: pg_dump client tool and postgres docker container not found." >&2
+        return 1
+    fi
+}
+
+run_psql() {
+    if command -v psql >/dev/null 2>&1; then
+        psql -U "$DB_USER" -h "$DB_HOST" -p "${DB_PORT:-5435}" "$@"
+    elif docker ps --format '{{.Names}}' | grep -q 'postgres'; then
+        CONTAINER=$(docker ps --format '{{.Names}}' | grep 'postgres' | head -n 1)
+        docker exec -i "$CONTAINER" psql -U "$DB_USER" "$@"
+    else
+        echo "Error: psql client tool and postgres docker container not found." >&2
+        return 1
+    fi
+}
+
 # 1. CREATE BACKUP
 echo -e "\n${YELLOW}📦 Creating backup...${NC}"
-pg_dump -U "$DB_USER" -h "$DB_HOST" -d "$DB" > "$BACKUP_FILE"
-if [ $? -eq 0 ]; then
+run_pg_dump > "$BACKUP_FILE"
+if [ $? -eq 0 ] && [ -s "$BACKUP_FILE" ]; then
     SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
     echo -e "${GREEN}✅ Backup created: ${BACKUP_FILE} (${SIZE})${NC}"
 else
@@ -39,18 +64,18 @@ fi
 
 # 2. PREPARE TEST DATABASE
 echo -e "\n${YELLOW}🗑️  Preparing test database...${NC}"
-psql -U "$DB_USER" -h "$DB_HOST" -c "DROP DATABASE IF EXISTS $TEST_DB;" 2>/dev/null || true
-psql -U "$DB_USER" -h "$DB_HOST" -c "CREATE DATABASE $TEST_DB;"
+run_psql -c "DROP DATABASE IF EXISTS $TEST_DB;" 2>/dev/null || true
+run_psql -c "CREATE DATABASE $TEST_DB;"
 echo -e "${GREEN}✅ Test database created: $TEST_DB${NC}"
 
 # 3. RESTORE FROM BACKUP
 echo -e "\n${YELLOW}📥 Restoring from backup...${NC}"
-psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" < "$BACKUP_FILE"
+run_psql -d "$TEST_DB" < "$BACKUP_FILE"
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Restore completed${NC}"
 else
     echo -e "${RED}❌ Restore failed${NC}"
-    psql -U "$DB_USER" -h "$DB_HOST" -c "DROP DATABASE IF EXISTS $TEST_DB;"
+    run_psql -c "DROP DATABASE IF EXISTS $TEST_DB;"
     exit 1
 fi
 
@@ -59,7 +84,7 @@ echo -e "\n${YELLOW}✅ Validating restore integrity...${NC}"
 
 # 4.1 Table counts
 echo -e "\n${YELLOW}📊 Table record counts:${NC}"
-psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" << SQL
+run_psql -d "$TEST_DB" << SQL
 \echo '  Incidents:'
 SELECT COUNT(*) FROM incidents;
 \echo '  Locations:'
@@ -76,7 +101,7 @@ SQL
 
 # 4.2 FK Constraints
 echo -e "\n${YELLOW}🔗 Foreign Key Constraints:${NC}"
-FK_COUNT=$(psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" -t -c "
+FK_COUNT=$(run_psql -d "$TEST_DB" -t -c "
     SELECT COUNT(*) FROM information_schema.table_constraints
     WHERE constraint_type = 'FOREIGN KEY' AND table_schema = 'public';
 ")
@@ -89,7 +114,7 @@ fi
 
 # 4.3 Triggers
 echo -e "\n${YELLOW}⚡ Database Triggers:${NC}"
-TRIGGER_COUNT=$(psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" -t -c "
+TRIGGER_COUNT=$(run_psql -d "$TEST_DB" -t -c "
     SELECT COUNT(*) FROM information_schema.triggers
     WHERE trigger_schema = 'public';
 ")
@@ -102,7 +127,7 @@ fi
 
 # 4.4 GIS Integrity
 echo -e "\n${YELLOW}🗺️  GIS Geometry Validation:${NC}"
-psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" << SQL
+run_psql -d "$TEST_DB" << SQL
 \echo '  NULL geometries:'
 SELECT COUNT(*) FROM incidents WHERE geom IS NULL;
 \echo '  Valid geometries:'
@@ -111,7 +136,7 @@ SQL
 
 # 4.5 Indexes
 echo -e "\n${YELLOW}📑 Database Indexes:${NC}"
-INDEX_COUNT=$(psql -U "$DB_USER" -h "$DB_HOST" -d "$TEST_DB" -t -c "
+INDEX_COUNT=$(run_psql -d "$TEST_DB" -t -c "
     SELECT COUNT(*) FROM pg_indexes
     WHERE schemaname = 'public' AND tablename IN ('incidents', 'locations', 'status_history', 'comments');
 ")
@@ -124,7 +149,7 @@ fi
 
 # 5. CLEANUP
 echo -e "\n${YELLOW}🧹 Cleaning up test database...${NC}"
-psql -U "$DB_USER" -h "$DB_HOST" -c "DROP DATABASE $TEST_DB;"
+run_psql -c "DROP DATABASE $TEST_DB;"
 echo -e "${GREEN}✅ Test database dropped${NC}"
 
 # 6. SUMMARY
