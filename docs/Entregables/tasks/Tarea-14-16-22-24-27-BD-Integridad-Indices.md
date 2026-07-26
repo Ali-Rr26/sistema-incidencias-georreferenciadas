@@ -1,4 +1,4 @@
-# 🟣 TAREAS BD/INFRAESTRUCTURA — Integrante 3 (Yandris)
+# 🟣 TAREAS BD/INFRAESTRUCTURA — Integrante 3
 **Especialista: Base de Datos / PostgreSQL · PostGIS · Docker · Triggers**
 
 **Basadas en E1+E2+E3+E4 · Fecha: 16 de julio de 2026**

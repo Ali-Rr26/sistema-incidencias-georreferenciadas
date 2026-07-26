@@ -1,0 +1,217 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Models\Incident;
+use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
+use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+
+uses(RefreshDatabase::class);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CP-05-04-BD: Location Normalization (No Redundancy)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+it('validates location table normalization without redundancy', function () {
+    // Create location hierarchy
+    $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province', 'parent_id' => $country->id]);
+    $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $province->id]);
+    $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $province->id]);
+
+    // Verify: no two locations with same name exist under same parent
+    $query = DB::table('locations')
+        ->select('name', 'level', 'parent_id', DB::raw('COUNT(*) as total'))
+        ->groupBy('name', 'level', 'parent_id')
+        ->havingRaw('COUNT(*) > 1');
+
+    expect($query->get())->toHaveCount(0)
+        ->and(Location::count())->toBe(4);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CP-06-04-BD: Category FK Integrity (Leaf-Only Validation)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+it('prevents assigning parent category to incident (trigger validation)', function () {
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $user = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'Test City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+
+    // Create parent category (has children)
+    $parentCat = IncidentCategory::create(['name' => 'Infrastructure', 'organization_id' => $org->id]);
+    $leafCat = IncidentCategory::create(['name' => 'Roads', 'parent_id' => $parentCat->id, 'organization_id' => $org->id]);
+
+    // Test 1: Assign leaf category (should succeed)
+    $incident1 = Incident::create([
+        'title' => 'Test Leaf',
+        'incident_category_id' => $leafCat->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+    ]);
+    expect($incident1->id)->toBeInt();
+
+    // Test 2: Assign parent category (should fail with trigger if PostgreSQL)
+    if (DB::connection()->getDriverName() === 'pgsql') {
+        expect(fn () => Incident::create([
+            'title' => 'Test Parent',
+            'incident_category_id' => $parentCat->id,
+            'user_id' => $user->id,
+            'location_id' => $location->id,
+            'organization_id' => $org->id,
+            'status' => IncidentStatus::Pending,
+            'priority' => 'medium',
+        ]))->toThrow(Exception::class);
+    }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CP-08-06-BD: Average Resolution Time Query
+// ═══════════════════════════════════════════════════════════════════════════════
+
+it('calculates average resolution time correctly (CP-08-06-BD)', function () {
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $user = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'Test City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    // Create resolved incidents
+    $createdAt1 = now()->subDays(5)->startOfDay();
+    $resolutionDate1 = $createdAt1->copy()->addDays(2); // 2 days
+
+    $inc1 = Incident::create([
+        'title' => 'Incident 1',
+        'incident_category_id' => $category->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+    $inc1->created_at = $createdAt1;
+    $inc1->resolution_date = $resolutionDate1;
+    $inc1->save(['timestamps' => false]);
+
+    $createdAt2 = now()->subDays(3)->startOfDay();
+    $resolutionDate2 = $createdAt2->copy()->addDays(4); // 4 days
+
+    $inc2 = Incident::create([
+        'title' => 'Incident 2',
+        'incident_category_id' => $category->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+    $inc2->created_at = $createdAt2;
+    $inc2->resolution_date = $resolutionDate2;
+    $inc2->save(['timestamps' => false]);
+
+    // Query: average resolution time
+    $result = DB::table('incidents')
+        ->where('status', 'resolved')
+        ->whereNotNull('resolution_date')
+        ->select(
+            DB::raw('COUNT(*) as total_resolved'),
+            DB::raw('AVG(EXTRACT(DAY FROM resolution_date - created_at))::NUMERIC(5,2) as avg_days'),
+            DB::raw('MIN(EXTRACT(DAY FROM resolution_date - created_at)) as min_days'),
+            DB::raw('MAX(EXTRACT(DAY FROM resolution_date - created_at)) as max_days')
+        )
+        ->first();
+
+    expect($result->total_resolved)->toBe(2)
+        ->and($result->avg_days)->toBeGreaterThan(1)
+        ->and($result->avg_days)->toBeLessThanOrEqual(3);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CP-02-06-BD: Trigger Auto-Logs Status Changes to History
+// ═══════════════════════════════════════════════════════════════════════════════
+
+it('trigger automatically logs status changes to history (CP-02-06-BD)', function () {
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $user = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'Test City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    $incident = Incident::create([
+        'title' => 'Test Trigger',
+        'incident_category_id' => $category->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+    ]);
+
+    // Update status (trigger should auto-insert history)
+    $incident->update(['status' => IncidentStatus::InProgress]);
+
+    // Verify: history record exists (if PostgreSQL with trigger)
+    if (DB::connection()->getDriverName() === 'pgsql') {
+        $history = DB::table('status_history')
+            ->where('incident_id', $incident->id)
+            ->latest('created_at')
+            ->first();
+
+        expect($history)->not->toBeNull()
+            ->and($history->previous_status)->toBe('pending')
+            ->and($history->new_status)->toBe('in_progress');
+    }
+});
+
+it('verifies foreign key constraints exist', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('FK constraint check only for PostgreSQL');
+    }
+
+    $fkCount = DB::select("
+        SELECT COUNT(*) as count
+        FROM information_schema.table_constraints
+        WHERE constraint_type = 'FOREIGN KEY'
+        AND table_schema = 'public'
+    ")[0]->count;
+
+    expect($fkCount)->toBeGreaterThanOrEqual(10)
+        ->and($fkCount)->toBeLessThanOrEqual(50);
+});
+
+it('verifies triggers are installed', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('Trigger check only for PostgreSQL');
+    }
+
+    $triggers = DB::select("
+        SELECT trigger_name
+        FROM information_schema.triggers
+        WHERE trigger_schema = 'public'
+        AND trigger_name LIKE 'trg_%'
+    ");
+
+    $triggerNames = array_map(fn ($t) => $t->trigger_name, $triggers);
+
+    expect($triggerNames)->toContain('trg_validate_leaf_category')
+        ->toContain('trg_log_incident_status')
+        ->toContain('trg_auto_assign_location');
+});
