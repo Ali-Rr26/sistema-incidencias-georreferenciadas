@@ -73,7 +73,7 @@ it('prevents assigning parent category to incident (trigger validation)', functi
             'organization_id' => $org->id,
             'status' => IncidentStatus::Pending,
             'priority' => 'medium',
-        ]))->toThrow(\Exception::class);
+        ]))->toThrow(Exception::class);
     }
 });
 

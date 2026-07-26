@@ -33,12 +33,12 @@ return new class extends Migration
             \$\$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_notify_on_status_change
             AFTER UPDATE ON incidents
             FOR EACH ROW
             EXECUTE FUNCTION notify_on_status_change();
-        ");
+        ');
     }
 
     public function down(): void
