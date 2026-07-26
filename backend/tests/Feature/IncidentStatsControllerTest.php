@@ -243,6 +243,73 @@ it('includes trends in stats response', function () {
     expect($response->json('trends.resolution_rate_pct'))->toBeInt();
 });
 
+it('combines provincia_id + date range filter', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province', 'parent_id' => $country->id]);
+    $city1 = Location::create(['name' => 'Quito', 'level' => 'city', 'parent_id' => $province->id]);
+    $city2 = Location::create(['name' => 'Latacunga', 'level' => 'city', 'parent_id' => $province->id]);
+
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $city1->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    $oldDate = now()->subDays(10)->startOfDay();
+    $recentDate = now()->startOfDay();
+
+    // Old incident in Quito
+    Incident::create([
+        'title' => 'Old Quito Incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $city1->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'high',
+        'created_at' => $oldDate,
+    ]);
+
+    // Recent incident in Quito
+    Incident::create([
+        'title' => 'Recent Quito Incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $city1->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+        'created_at' => $recentDate,
+    ]);
+
+    // Recent incident in Latacunga
+    Incident::create([
+        'title' => 'Recent Latacunga Incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $city2->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'low',
+        'created_at' => $recentDate,
+    ]);
+
+    // Filter: Pichincha province + recent dates only (2 incidents)
+    $rangeStart = $recentDate->format('Y-m-d');
+    $rangeEnd = now()->format('Y-m-d');
+
+    $response = $this->actingAs($admin)->getJson(
+        "/api/incidents/stats?provincia_id={$province->id}&inicio={$rangeStart}&fin={$rangeEnd}"
+    );
+
+    $response->assertOk()
+        ->assertJsonPath('total', 2);
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATE RANGE VALIDATION TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -850,3 +917,4 @@ it('applies both date range and location cascade together', function () {
     $response->assertOk()
         ->assertJsonPath('total', 2);
 });
+

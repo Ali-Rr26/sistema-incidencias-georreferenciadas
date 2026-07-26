@@ -21,25 +21,17 @@ use MatanYadaev\EloquentSpatial\Objects\Polygon;
 /**
  * Feature (HTTP round-trip) tests for `LocationGeomConsistentRule`.
  *
- * Both `locations.geom` AND `incidents.geom` are PostgreSQL-only columns
- * (see `2026_06_15_000002_create_locations_table.php` and
- * `2026_06_15_000005_create_incidents_table.php` — both guard the column
- * behind `getDriverName() === 'pgsql'`). On sqlite (default CI/test
- * driver) submitting a `geom` value to `POST /incidents` fails at the DB
- * layer regardless of this rule — that's a pre-existing repo constraint,
- * not something introduced here. So the full HTTP round-trip scenarios
- * that involve `geom` only run when PostgreSQL is available (same
- * `postgisAvailable()` skip pattern as `IncidentMapBoundsTest`); the
- * driver-guard itself (rule never queries `locations.geom` on sqlite) is
- * covered without touching the incidents table at all, in the sibling
- * unit test `tests/Unit/Domains/Incidents/LocationGeomConsistentRuleTest.php`.
+ * `locations.geom` and `incidents.geom` are PostgreSQL-only columns (see
+ * `2026_06_15_000002_create_locations_table.php` and
+ * `2026_06_15_000005_create_incidents_table.php`) — `composer test` runs
+ * exclusively against Postgres (backend-tests-postgres-migration, issue
+ * #197), so every scenario here always executes for real, no driver
+ * check needed. The rule's own driver-guard (it never queries
+ * `locations.geom` on a non-pgsql connection) is covered separately in
+ * the sibling unit test
+ * `tests/Unit/Domains/Incidents/LocationGeomConsistentRuleTest.php`.
  */
 uses(RefreshDatabase::class);
-
-function locationGeomPostgisAvailable(): bool
-{
-    return DB::connection()->getDriverName() === 'pgsql';
-}
 
 /** A small square polygon: lng ∈ [-80.8, -80.6], lat ∈ [-1.0, -0.8] (Machala-ish). */
 function machalaSquare(): MultiPolygon
@@ -52,6 +44,35 @@ function machalaSquare(): MultiPolygon
                 new Point(-0.8, -80.6),
                 new Point(-0.8, -80.8),
                 new Point(-1.0, -80.8),
+            ]),
+        ]),
+    ]);
+}
+
+/**
+ * Square geom ~400km north of machalaSquare(), non-overlapping
+ * (lng ∈ [-79.0, -78.8], lat ∈ [-0.4, -0.2]). Mirrors
+ * `quitoSquareGeom()` in the sibling unit test
+ * `LocationGeomConsistentRuleTest`.
+ *
+ * `LocationGeomConsistentRule` stays SILENT when the SUBMITTED location
+ * has no polygon of its own (product decision, PR #97 — parroquia and
+ * any other geom-less level get no cross-check, to avoid false 422s).
+ * A "mismatched location_id" scenario can only exercise the rejection
+ * path if the mismatched location has its OWN (non-matching) polygon —
+ * an unrelated location with `geom = null` would silently pass instead,
+ * which is not what these scenarios intend to test.
+ */
+function quitoSquare(): MultiPolygon
+{
+    return new MultiPolygon([
+        new Polygon([
+            new LineString([
+                new Point(-0.4, -79.0),
+                new Point(-0.4, -78.8),
+                new Point(-0.2, -78.8),
+                new Point(-0.2, -79.0),
+                new Point(-0.4, -79.0),
             ]),
         ]),
     ]);
@@ -107,10 +128,6 @@ it('location_id present without geom passes (nothing to cross-check, sqlite-safe
 });
 
 it('pgsql: a point matching no polygon at all passes (no boundary data loaded yet)', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS (geom column not created on other drivers).');
-    }
-
     $location = Location::create(['name' => 'Machala', 'level' => 'city']); // no geom set
     $this->actingAs($this->systemAdmin);
 
@@ -123,10 +140,6 @@ it('pgsql: a point matching no polygon at all passes (no boundary data loaded ye
 });
 
 it('pgsql: a point inside the selected location\'s polygon passes', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     $location = Location::create([
         'name' => 'Machala',
         'level' => 'city',
@@ -143,16 +156,14 @@ it('pgsql: a point inside the selected location\'s polygon passes', function ():
 });
 
 it('pgsql: a point inside the polygon but a mismatched location_id is rejected with 422', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     Location::create([
         'name' => 'Machala',
         'level' => 'city',
         'geom' => machalaSquare(),
     ]);
-    $quito = Location::create(['name' => 'Quito', 'level' => 'city']); // unrelated, no geom
+    // Must have its OWN (non-matching) polygon: the rule stays silent
+    // for a submitted location with geom = null (see quitoSquare()).
+    $quito = Location::create(['name' => 'Quito', 'level' => 'city', 'geom' => quitoSquare()]);
     $this->actingAs($this->systemAdmin);
 
     $response = $this->postJson('/api/incidents', locationGeomBasePayload([
@@ -165,10 +176,6 @@ it('pgsql: a point inside the polygon but a mismatched location_id is rejected w
 });
 
 it('pgsql: submitting the matched location\'s ancestor (broader level) still passes', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     $province = Location::create(['name' => 'El Oro', 'level' => 'province']);
     Location::create([
         'name' => 'Machala',
@@ -196,10 +203,6 @@ it('pgsql: submitting the matched location\'s ancestor (broader level) still pas
 // ──────────────────────────────────────────────────────────────
 
 it('pgsql: multipart submission (with an image) still passes for a consistent point', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     $location = Location::create([
         'name' => 'Machala',
         'level' => 'city',
@@ -217,16 +220,14 @@ it('pgsql: multipart submission (with an image) still passes for a consistent po
 });
 
 it('pgsql: multipart submission (with an image) is rejected for a mismatched location_id', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     Location::create([
         'name' => 'Machala',
         'level' => 'city',
         'geom' => machalaSquare(),
     ]);
-    $quito = Location::create(['name' => 'Quito', 'level' => 'city']);
+    // Must have its OWN (non-matching) polygon: the rule stays silent
+    // for a submitted location with geom = null (see quitoSquare()).
+    $quito = Location::create(['name' => 'Quito', 'level' => 'city', 'geom' => quitoSquare()]);
     $this->actingAs($this->systemAdmin);
 
     $response = $this->post('/api/incidents', locationGeomBasePayload([
@@ -270,16 +271,14 @@ it('location_id present without geom on update passes (sqlite-safe — nothing t
 });
 
 it('pgsql: update with a mismatched location_id + geom is rejected with 422', function (): void {
-    if (! locationGeomPostgisAvailable()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS.');
-    }
-
     Location::create([
         'name' => 'Machala',
         'level' => 'city',
         'geom' => machalaSquare(),
     ]);
-    $quito = Location::create(['name' => 'Quito', 'level' => 'city']);
+    // Must have its OWN (non-matching) polygon: the rule stays silent
+    // for a submitted location with geom = null (see quitoSquare()).
+    $quito = Location::create(['name' => 'Quito', 'level' => 'city', 'geom' => quitoSquare()]);
     $incident = Incident::create([
         'title' => 'Existing incident',
         'incident_category_id' => $this->category->id,

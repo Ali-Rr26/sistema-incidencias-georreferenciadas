@@ -17,6 +17,7 @@ use App\Domains\Users\Http\Resources\UserResource;
 use App\Domains\Users\Models\User;
 use App\Domains\Users\Repositories\UserRepository;
 use App\Domains\Users\Services\ProfileImageService;
+use App\Support\PhoneRules;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -97,6 +98,10 @@ class UserController extends Controller
 
         // Strip non-fillable helper fields; the controller decides avatar fate.
         unset($data['avatar'], $data['_delete_avatar']);
+
+        if (array_key_exists('phone', $data)) {
+            $data['phone'] = PhoneRules::normalize($data['phone']);
+        }
 
         if ($request->hasFile('avatar')) {
             $this->profileImageService->replaceAvatar($user, $request->file('avatar'));

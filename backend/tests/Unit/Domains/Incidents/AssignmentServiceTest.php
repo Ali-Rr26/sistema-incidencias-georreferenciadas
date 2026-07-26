@@ -10,7 +10,6 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -34,11 +33,15 @@ uses(TestCase::class, RefreshDatabase::class);
  * AssignmentControllerTest covers the HTTP contract.
  */
 beforeEach(function (): void {
-    // User::factory() emits role_id=1 (admin_sistema). Without a row
-    // matching that FK the INSERT hits a SQLite constraint error
-    // before the service is even exercised.
-    Role::query()->updateOrCreate(['id' => 1, 'name' => UserRole::AdminSistema->value]);
-    Role::query()->updateOrCreate(['id' => 5, 'name' => UserRole::Usuario->value]);
+    // Direct DB::insert, not Role::query()->updateOrCreate(): Role's
+    // $fillable = ['name'] excludes `id`, so the Eloquent mass-assignment
+    // path silently drops the explicit id and lets auto-increment assign
+    // whatever the sequence happens to be at (see RoleSeederTest / the
+    // same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => UserRole::AdminSistema->value],
+        ['id' => 5, 'name' => UserRole::Usuario->value],
+    ]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);
@@ -147,7 +150,7 @@ it('allows a responsable and multiple apoyo to coexist', function (): void {
     expect($roles)->toContain('apoyo');
 });
 
-it('removes an existing assignment via unassign', function (): void {
+it('soft-deletes an assignment via unassign', function (): void {
     $this->service->assign($this->incident, $this->alice->id, 'responsable');
 
     $assignmentId = (int) DB::table('assignments')
@@ -156,7 +159,51 @@ it('removes an existing assignment via unassign', function (): void {
 
     $this->service->unassign($this->incident, $assignmentId);
 
-    expect(DB::table('assignments')->where('incident_id', $this->incident->id)->count())->toBe(0);
+    // La fila debe persistir con deleted_at seteado (soft delete)
+    $row = DB::table('assignments')
+        ->where('incident_id', $this->incident->id)
+        ->first();
+
+    expect($row)->not->toBeNull();
+    expect($row->deleted_at)->not->toBeNull();
+});
+
+it('excludes soft-deleted assignments from active queries', function (): void {
+    $this->service->assign($this->incident, $this->alice->id, 'responsable');
+
+    $assignmentId = (int) DB::table('assignments')
+        ->where('incident_id', $this->incident->id)
+        ->value('id');
+
+    $this->service->unassign($this->incident, $assignmentId);
+
+    // La query activa (con SoftDeletingScope) no debe traer la fila
+    expect(Assignment::where('incident_id', $this->incident->id)->count())->toBe(0);
+});
+
+it('allows re-assigning a user who was previously unassigned', function (): void {
+    // Assign → unassign → assign again — el partial unique index
+    // (WHERE deleted_at IS NULL) no debe bloquear la re-asignación.
+    // `composer test` corre exclusivamente contra Postgres
+    // (backend-tests-postgres-migration, issue #197), así que este
+    // escenario siempre se ejecuta de verdad.
+
+    $this->service->assign($this->incident, $this->alice->id, 'responsable');
+
+    $assignmentId = (int) DB::table('assignments')
+        ->where('incident_id', $this->incident->id)
+        ->value('id');
+
+    $this->service->unassign($this->incident, $assignmentId);
+
+    // Re-asignar al mismo usuario — debe funcionar
+    $this->service->assign($this->incident, $this->alice->id, 'responsable');
+
+    expect(DB::table('assignments')
+        ->where('incident_id', $this->incident->id)
+        ->whereNull('deleted_at')
+        ->count()
+    )->toBe(1);
 });
 
 it('fires the AssignmentNotificationObserver so the assignee gets a notification', function (): void {

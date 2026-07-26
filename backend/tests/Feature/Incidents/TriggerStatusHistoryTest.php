@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,13 +15,19 @@ uses(RefreshDatabase::class);
 // CP-02-06-B: Trigger automático que genera registro de historial
 // Descripción: Cambiar estado de incidencia vía SQL directo.
 // Criterio: Nuevo registro insertado en status_history con todos los campos requeridos.
+//
+// The trigger only exists on PostgreSQL; `composer test` runs
+// exclusively against Postgres (backend-tests-postgres-migration, issue
+// #197), so every scenario here always executes for real, no driver
+// check needed.
 
 beforeEach(function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        return;
-    }
-
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    // Direct DB::insert, not Role::create(): Role's $fillable = ['name']
+    // excludes `id`, so the Eloquent mass-assignment path silently drops
+    // the explicit id and lets auto-increment assign whatever the
+    // sequence happens to be at (see RoleSeederTest / the same
+    // convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Test Category']);
@@ -40,10 +45,6 @@ beforeEach(function (): void {
 });
 
 it('CP-02-06-B: trigger inserta registro en status_history al cambiar estado por SQL directo', function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('El trigger trg_log_incident_status solo existe en PostgreSQL.');
-    }
-
     DB::table('incidents')
         ->where('id', $this->incident->id)
         ->update(['status' => Incident::STATUS_IN_PROGRESS]);
@@ -62,10 +63,6 @@ it('CP-02-06-B: trigger inserta registro en status_history al cambiar estado por
 });
 
 it('CP-02-06-B: el trigger cae back a user_id del incidente cuando no hay actor autenticado', function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('El trigger trg_log_incident_status solo existe en PostgreSQL.');
-    }
-
     // Sin actingAs() ni set_config → usa COALESCE(NEW.user_id, OLD.user_id)
     DB::table('incidents')
         ->where('id', $this->incident->id)
@@ -80,10 +77,6 @@ it('CP-02-06-B: el trigger cae back a user_id del incidente cuando no hay actor 
 });
 
 it('CP-02-06-B: el trigger no inserta registro si el status no cambia', function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('El trigger trg_log_incident_status solo existe en PostgreSQL.');
-    }
-
     DB::table('incidents')
         ->where('id', $this->incident->id)
         ->update(['status' => Incident::STATUS_PENDING]); // mismo status
@@ -96,10 +89,6 @@ it('CP-02-06-B: el trigger no inserta registro si el status no cambia', function
 });
 
 it('CP-02-06-B: el trigger registra created_at con timestamp válido reciente', function (): void {
-    if (DB::getDriverName() !== 'pgsql') {
-        $this->markTestSkipped('El trigger trg_log_incident_status solo existe en PostgreSQL.');
-    }
-
     $before = now()->subSecond();
 
     DB::table('incidents')

@@ -14,11 +14,6 @@ use MatanYadaev\EloquentSpatial\Objects\Point;
 
 uses(RefreshDatabase::class);
 
-function storeIncidentGeomUsesPostgis(): bool
-{
-    return DB::connection()->getDriverName() === 'pgsql';
-}
-
 beforeEach(function (): void {
     $this->withoutMiddleware([
         JwtAuthenticate::class,
@@ -64,10 +59,6 @@ function storeIncidentGeomPayload(mixed $geom): array
 }
 
 it('creates an incident when geom is a decoded array', function (): void {
-    if (! storeIncidentGeomUsesPostgis()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS (geom column is not created on other drivers).');
-    }
-
     $response = $this->postJson('/api/incidents', storeIncidentGeomPayload([
         'type' => 'Point',
         'coordinates' => [-80.7, -0.9],
@@ -77,10 +68,6 @@ it('creates an incident when geom is a decoded array', function (): void {
 });
 
 it('creates an incident when geom is a JSON string', function (): void {
-    if (! storeIncidentGeomUsesPostgis()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS (geom column is not created on other drivers).');
-    }
-
     $response = $this->postJson('/api/incidents', storeIncidentGeomPayload(json_encode([
         'type' => 'Point',
         'coordinates' => [-80.7, -0.9],
@@ -90,10 +77,6 @@ it('creates an incident when geom is a JSON string', function (): void {
 });
 
 it('creates an incident when geom is an Eloquent Spatial Point', function (): void {
-    if (! storeIncidentGeomUsesPostgis()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS (geom column is not created on other drivers).');
-    }
-
     $response = $this->post('/api/incidents', storeIncidentGeomPayload(
         new Point(-0.9, -80.7, 4326),
     ));
@@ -102,10 +85,6 @@ it('creates an incident when geom is an Eloquent Spatial Point', function (): vo
 });
 
 it('creates an incident when geom is null', function (): void {
-    if (! storeIncidentGeomUsesPostgis()) {
-        $this->markTestSkipped('Requires PostgreSQL+PostGIS (geom column is not created on other drivers).');
-    }
-
     $response = $this->postJson('/api/incidents', storeIncidentGeomPayload(null));
 
     $response->assertCreated();

@@ -581,3 +581,35 @@ it('accepts image_ids that reference real rows in the polymorphic images table (
 
     $response->assertStatus(201);
 });
+
+it('returns 403 unauthenticated when listing comments', function (): void {
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->getJson("/api/incidents/{$this->incident->id}/comments");
+
+    // authorizeResource rejects with 403 before reaching the controller
+    $response->assertStatus(403);
+});
+
+it('returns 403 unauthenticated when storing a comment', function (): void {
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->postJson("/api/incidents/{$this->incident->id}/comments", [
+            'message' => 'No auth',
+        ]);
+
+    $response->assertStatus(403);
+});
+
+it('respects per_page parameter when listing comments', function (): void {
+    Comment::create(['incident_id' => $this->incident->id, 'user_id' => $this->user->id, 'message' => 'C1']);
+    Comment::create(['incident_id' => $this->incident->id, 'user_id' => $this->user->id, 'message' => 'C2']);
+    Comment::create(['incident_id' => $this->incident->id, 'user_id' => $this->user->id, 'message' => 'C3']);
+
+    $response = $this->withoutMiddleware([JwtAuthenticate::class])
+        ->actingAs($this->user)
+        ->getJson("/api/incidents/{$this->incident->id}/comments?per_page=2");
+
+    $response->assertOk();
+    $response->assertJsonCount(2, 'data');
+    $response->assertJsonPath('meta.per_page', 2);
+    $response->assertJsonPath('meta.total', 3);
+});
