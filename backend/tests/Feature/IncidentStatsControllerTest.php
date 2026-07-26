@@ -12,6 +12,7 @@ use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 uses(RefreshDatabase::class);
 
@@ -25,9 +26,7 @@ it('exposes values() on the incident enums', function () {
 it('returns the stats payload with zero-filled known enum values', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
@@ -46,9 +45,7 @@ it('returns the stats payload with zero-filled known enum values', function () {
 it('returns null for average_resolution_time when there are no resolved incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
@@ -60,9 +57,7 @@ it('returns null for average_resolution_time when there are no resolved incident
 it('calculates average_resolution_time correctly for resolved incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $createdAt = now()->subDays(5);
@@ -149,9 +144,7 @@ it('excludes soft-deleted incidents from total, by_status, and average_resolutio
     // total/by_status/by_priority and skews average_resolution_time.
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
@@ -203,9 +196,7 @@ it('excludes soft-deleted incidents from total, by_status, and average_resolutio
 it('includes trends in stats response', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
@@ -250,9 +241,7 @@ it('includes trends in stats response', function () {
 it('rejects date range when fin < inicio', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson(
@@ -266,9 +255,7 @@ it('rejects date range when fin < inicio', function () {
 it('accepts valid date range inicio <= fin', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson(
@@ -282,9 +269,7 @@ it('accepts valid date range inicio <= fin', function () {
 it('accepts same date for inicio and fin', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson(
@@ -297,9 +282,7 @@ it('accepts same date for inicio and fin', function () {
 it('rejects invalid date format', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson(
@@ -317,9 +300,7 @@ it('rejects invalid date format', function () {
 it('filters incidents by tipo_id (category)', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
@@ -360,9 +341,7 @@ it('filters incidents by tipo_id (category)', function () {
 it('returns empty totals when tipo_id matches no incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
@@ -382,9 +361,7 @@ it('returns empty totals when tipo_id matches no incidents', function () {
 it('rejects non-existent tipo_id', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $response = $this->actingAs($admin)->getJson('/api/incidents/stats?tipo_id=9999');
@@ -400,9 +377,7 @@ it('rejects non-existent tipo_id', function () {
 it('filters by ciudad_id (leaf location)', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     // Location hierarchy: Ecuador (country) → Pichincha (province) → Quito (city)
@@ -447,9 +422,7 @@ it('filters by ciudad_id (leaf location)', function () {
 it('cascades provincia_id to include all descendant cities', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
@@ -494,9 +467,7 @@ it('cascades provincia_id to include all descendant cities', function () {
 it('cascades pais_id to include all provinces and cities', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     // Create two provinces in Ecuador
@@ -545,9 +516,7 @@ it('cascades pais_id to include all provinces and cities', function () {
 it('combines tipo_id + ciudad_id filters', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
@@ -605,9 +574,7 @@ it('combines tipo_id + ciudad_id filters', function () {
 it('combines tipo_id + provincia_id filters', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
@@ -658,10 +625,25 @@ it('combines tipo_id + provincia_id filters', function () {
 it('org-scoped operator sees only their organization incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-        ['id' => 3, 'name' => 'admin_organizacion', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
+    DB::table('roles')->updateOrInsert(['id' => 3], ['name' => 'admin_organizacion', 'updated_at' => now()]);
+
+    DB::table('permissions')->updateOrInsert(
+        ['resource' => 'dashboard', 'action' => 'view'],
+        ['name' => 'dashboard.view', 'description' => 'Ver estadísticas del dashboard', 'updated_at' => now()]
+    );
+    $permId = DB::table('permissions')
+        ->where('resource', 'dashboard')->where('action', 'view')
+        ->value('permission_id');
+
+    // Gates get compiled once at app boot from the permissions that exist
+    // at that time (see AppServiceProvider::boot()). Since this test seeds
+    // dashboard.view after boot, the ability must be (re)defined here too.
+    Gate::define('dashboard.view', fn (User $user) => $user->hasPermission('dashboard.view'));
+
+    DB::table('role_permission')->updateOrInsert(
+        ['role_id' => 3, 'permission_id' => $permId]
+    );
 
     $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
     $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
@@ -705,9 +687,7 @@ it('org-scoped operator sees only their organization incidents', function () {
 it('system admin sees all organizations incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
 
     $admin = User::factory()->create(['role_id' => 1]);
 
@@ -753,9 +733,7 @@ it('system admin sees all organizations incidents', function () {
 it('returns zero-filled response when filters match no incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
@@ -787,9 +765,7 @@ it('returns zero-filled response when filters match no incidents', function () {
 it('applies both date range and location cascade together', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
-    ]);
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
     $admin = User::factory()->create(['role_id' => 1]);
 
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);

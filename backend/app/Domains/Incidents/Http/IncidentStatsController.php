@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 /**
  * Aggregates incident counts for the dashboard.
@@ -69,7 +68,7 @@ class IncidentStatsController extends Controller
     private function buildStatsCacheKey(?User $user, array $validated): string
     {
         $orgScope = $this->getOrgScopeKey($user);
-        $filterHash = md5(json_encode($validated));
+        $filterHash = hash('xxh3', serialize($validated));
 
         return "incident-stats:{$orgScope}:{$filterHash}";
     }
@@ -83,15 +82,11 @@ class IncidentStatsController extends Controller
             return 'anonymous';
         }
 
-        if ($user->isSystemAdmin()) {
-            return 'system';
-        }
-
-        if ($user->isOrganizationAdmin() || $user->isOperator()) {
-            return 'org:'.$user->organization_id;
-        }
-
-        return 'user:'.$user->id;
+        return match (true) {
+            $user->isSystemAdmin() => 'system',
+            $user->isOrganizationAdmin(), $user->isOperator() => 'org:'.$user->organization_id,
+            default => 'user:'.$user->id,
+        };
     }
 
     /**
