@@ -20,12 +20,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('incidents', function (Blueprint $table) {
-            $table->index('status', 'idx_incidents_status');
-            $table->index(['organization_id', 'status'], 'idx_incidents_org_status');
-            $table->index('location_id', 'idx_incidents_location_id');
-            $table->index('incident_category_id', 'idx_incidents_category_id');
-            $table->index('user_id', 'idx_incidents_user_id');
-            $table->index('resolution_date', 'idx_incidents_resolution_date');
+            if (! Schema::hasIndex('incidents', 'idx_incidents_status')) {
+                $table->index('status', 'idx_incidents_status');
+            }
+            if (! Schema::hasIndex('incidents', 'idx_incidents_org_status')) {
+                $table->index(['organization_id', 'status'], 'idx_incidents_org_status');
+            }
+            if (! Schema::hasIndex('incidents', 'idx_incidents_location_id')) {
+                $table->index('location_id', 'idx_incidents_location_id');
+            }
+            if (! Schema::hasIndex('incidents', 'idx_incidents_category_id')) {
+                $table->index('incident_category_id', 'idx_incidents_category_id');
+            }
+            if (! Schema::hasIndex('incidents', 'idx_incidents_user_id')) {
+                $table->index('user_id', 'idx_incidents_user_id');
+            }
+            if (! Schema::hasIndex('incidents', 'idx_incidents_resolution_date')) {
+                $table->index('resolution_date', 'idx_incidents_resolution_date');
+            }
         });
 
         Schema::table('locations', function (Blueprint $table) {
