@@ -13,11 +13,19 @@ return new class extends Migration
     {
         Schema::create('status_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('incident_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained();
-            $table->string('previous_status');
-            $table->string('new_status');
-            $table->timestamp('created_at')->useCurrent();
+            $table->foreignId('incident_id')->constrained('incidents')->cascadeOnDelete();
+            $table->string('status_old');
+            $table->string('status_new');
+            $table->foreignId('changed_by_user_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->timestamp('changed_at')->useCurrent();
+            $table->text('notes')->nullable();
+            $table->softDeletes();
+            $table->timestamps();
+
+            // Indices for common queries
+            $table->index('incident_id');
+            $table->index('changed_by_user_id');
+            $table->index('changed_at');
         });
     }
 

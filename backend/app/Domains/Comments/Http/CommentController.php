@@ -51,7 +51,8 @@ class CommentController extends Controller
     {
         $this->authorizeIncidentOrgScope($incident);
 
-        $parentId = $request->input('parent_id');
+        $validated = $request->validated();
+        $parentId = $validated['parent_id'] ?? null;
 
         if ($parentId !== null) {
             $parent = Comment::with('parent')->findOrFail($parentId);
@@ -70,7 +71,7 @@ class CommentController extends Controller
         $comment = $this->comments->create([
             'incident_id' => $incident->id,
             'user_id' => auth()->id(),
-            'message' => $request->input('message'),
+            'message' => $validated['message'] ?? null,
             'parent_id' => $parentId,
         ]);
 
@@ -90,8 +91,10 @@ class CommentController extends Controller
 
     public function update(UpdateCommentRequest $request, Comment $comment): CommentResource
     {
+        $validated = $request->validated();
+
         $this->comments->update($comment->id, [
-            'message' => $request->input('message'),
+            'message' => $validated['message'],
         ]);
 
         $comment = $comment->fresh();

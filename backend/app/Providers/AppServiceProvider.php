@@ -14,6 +14,7 @@ use App\Domains\Incidents\Listeners\RedisIncidentSync;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
+use App\Domains\Incidents\Observers\IncidentStatusHistoryObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Invitations\Services\InvitationService;
@@ -229,6 +230,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Register RedisIncidentSync as observer for Incident model events
         Incident::observe(RedisIncidentSync::class);
+
+        // Register IncidentStatusHistoryObserver to audit all status changes
+        try {
+            Incident::observe(IncidentStatusHistoryObserver::class);
+        } catch (\Throwable) {
+            // StatusHistory table not ready yet — skip silently.
+        }
 
         // Register IncidentNotificationObserver to dispatch user notifications
         // when an incident is claimed, released, or resolved.

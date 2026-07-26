@@ -33,4 +33,17 @@ class StoreCommentRequest extends FormRequest
             return empty($this->input('image_ids'));
         });
     }
+
+    public function validated($key = null, $default = null)
+    {
+        $data = parent::validated($key, $default);
+
+        if (is_array($data)) {
+            if (isset($data['message'])) {
+                $data['message'] = htmlspecialchars($data['message'] ?? '', ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        return $data;
+    }
 }

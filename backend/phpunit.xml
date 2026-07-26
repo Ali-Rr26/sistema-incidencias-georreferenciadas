@@ -29,8 +29,12 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="PROMETHEUS_CACHE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="5435"/>
+        <env name="DB_DATABASE" value="incidencias_test"/>
+        <env name="DB_USERNAME" value="user"/>
+        <env name="DB_PASSWORD" value="password"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
@@ -41,5 +45,6 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="JWT_ACCESS_SECRET" value="dGVzdC1hY2Nlc3Mtc2VjcmV0LWtleS1mb3ItbGNvYnVjY2k="/>
         <env name="JWT_REFRESH_SECRET" value="dGVzdC1yZWZyZXNoLXNlY3JldC1rZXktZm9yLWxjb2J1Y2M="/>
+        <env name="MERCURE_PUBLISHER_JWT_SECRET" value="dGVzdC1tZXJjdXJlLXB1Ymxpc2hlci1qd3Qtc2VjcmV0"/>
     </php>
 </phpunit>

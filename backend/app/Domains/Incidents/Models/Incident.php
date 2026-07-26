@@ -129,4 +129,9 @@ class Incident extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(StatusHistory::class);
+    }
 }

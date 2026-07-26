@@ -2,6 +2,8 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
+use Illuminate\Contracts\Foundation\Application;
+use Symfony\Component\Mercure\HubInterface;
 use Tests\TestCase;
 
 /*
@@ -16,7 +18,13 @@ use Tests\TestCase;
 */
 
 pest()->extend(TestCase::class)
-    ->in('Feature');
+    ->in('Feature')
+    ->beforeEach(function (): void {
+        // Mock HubInterface to avoid Mercure dependency issues in tests
+        $mockHub = \Mockery::mock(HubInterface::class);
+        $mockHub->shouldReceive('publish')->andReturn(null);
+        $this->app->singleton(HubInterface::class, fn () => $mockHub);
+    });
 
 /*
 |--------------------------------------------------------------------------
