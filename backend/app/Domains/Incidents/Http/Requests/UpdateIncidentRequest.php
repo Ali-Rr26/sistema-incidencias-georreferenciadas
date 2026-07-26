@@ -62,6 +62,7 @@ class UpdateIncidentRequest extends FormRequest
             'status' => ['sometimes', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
+            'telefono_contacto' => 'nullable|string|regex:/^(?:\+?58)?4\d{2}-\d{7}$/',
             'geom' => 'nullable|json',
 
             // Imágenes opcionales (multipart)
@@ -79,6 +80,8 @@ class UpdateIncidentRequest extends FormRequest
             'images.*.image' => 'Each file must be an image.',
             'images.*.mimes' => 'Only JPEG, PNG, WEBP or GIF images are allowed.',
             'images.*.max' => 'Each image must not exceed '.(ImageRules::MAX_SIZE_KB / 1024).' MB.',
+
+            'telefono_contacto.regex' => 'El formato del teléfono debe ser 04XX-XXXXXXX o +584XX-XXXXXXX',
         ];
     }
 }

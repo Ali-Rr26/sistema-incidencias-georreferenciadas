@@ -32,6 +32,7 @@ const ERROR_MAP = {
   description: 'error-description',
   descripcion: 'error-description',
   priority: 'error-priority',
+  telefono_contacto: 'error-telefono',
   incident_category_id: 'error-category',
   geom: 'error-geom',
   location_id: 'error-location',
@@ -45,6 +46,7 @@ const FIELD_STEP = {
   description: 1,
   descripcion: 1,
   priority: 1,
+  telefono_contacto: 1,
   incident_category_id: 2,
   location_id: 2,
   geom: 3,
@@ -124,6 +126,7 @@ export default {
     const titleInput = $('title');
     const descInput = $('description');
     const priorityInput = $('priority');
+    const telefonoInput = $('telefono');
     const titleCounter = $('char-counter-title');
     const descCounter = $('char-counter-description');
 
@@ -145,6 +148,12 @@ export default {
     if (priorityInput) {
       priorityInput.addEventListener('change', function () {
         if (this.value) resetFieldError(P + 'error-priority');
+      });
+    }
+
+    if (telefonoInput) {
+      telefonoInput.addEventListener('input', function () {
+        if (this.value.trim()) resetFieldError(P + 'error-telefono');
       });
     }
 
@@ -785,6 +794,11 @@ export default {
         reviewDescription.textContent = descInput?.value || 'Sin descripción';
       }
 
+      const reviewTelefono = $('review-telefono');
+      if (reviewTelefono) {
+        reviewTelefono.textContent = telefonoInput?.value?.trim() || '—';
+      }
+
       const reviewCategory = $('review-category');
       if (reviewCategory) {
         const subcatText = selectedOptionText(subcatSelect);
@@ -846,6 +860,8 @@ export default {
       if (currentStep === TOTAL_STEPS) renderReviewSummary();
     }
 
+    const TELEFONO_REGEX = /^(?:\+?58)?4\d{2}-\d{7}$/;
+
     function validateStep1() {
       let valid = true;
       if (!titleInput?.value.trim()) {
@@ -854,6 +870,14 @@ export default {
       }
       if (!priorityInput?.value) {
         showFieldError(P + 'error-priority', 'Seleccione la prioridad');
+        valid = false;
+      }
+      const tel = telefonoInput?.value.trim();
+      if (tel && !TELEFONO_REGEX.test(tel)) {
+        showFieldError(
+          P + 'error-telefono',
+          'El formato del teléfono debe ser 04XX-XXXXXXX o +584XX-XXXXXXX',
+        );
         valid = false;
       }
       return valid;
@@ -943,6 +967,10 @@ export default {
         }
         if (priorityEl) {
           priorityEl.value = inc.priority ?? '';
+        }
+
+        if (telefonoInput) {
+          telefonoInput.value = inc.telefono_contacto ?? '';
         }
 
         const currentCategoryId = inc.incident_category_id ?? null;
@@ -1147,10 +1175,13 @@ export default {
       const locVal = neighborhoodVal || cityVal;
       const locationId = locVal ? parseInt(locVal, 10) : null;
 
+      const telefonoVal = telefonoInput?.value?.trim() || null;
+
       const payloadBase = {
         title,
         descripcion: description || null,
         priority,
+        telefono_contacto: telefonoVal,
         incident_category_id: categoryId,
         location_id: locationId,
         geom: geomValue,

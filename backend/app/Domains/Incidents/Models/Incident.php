@@ -70,6 +70,7 @@ class Incident extends Model
         'location_id',
         'title',
         'description',
+        'telefono_contacto',
         'status',
         'priority',
         'resolution_date',
