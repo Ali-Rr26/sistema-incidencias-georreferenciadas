@@ -23,7 +23,10 @@ class StoreCommentRequest extends FormRequest
             ],
             'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
             'image_ids' => ['nullable', 'array'],
-            'image_ids.*' => ['integer', 'exists:comment_images,id'],
+            // References the shared polymorphic `images` table
+            // (image-persistence-polymorphic, WU8) — the legacy
+            // `comment_images` table this rule used to check is dropped.
+            'image_ids.*' => ['integer', 'exists:images,id'],
         ];
     }
 
