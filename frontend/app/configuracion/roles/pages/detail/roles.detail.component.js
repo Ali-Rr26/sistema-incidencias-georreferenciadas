@@ -182,18 +182,69 @@ export default {
       </div>
     </div>
   `,
-  async onInit({ params } = {}) {
+  async onInit({ params, query } = {}) {
     const id = params?.id;
     if (!id) {
       router.navigate('/roles');
       return;
     }
 
+    const isViewMode = query?.get('view') === 'true';
+    const isCreateMode = id === 'crear';
+
     function mostrarError(msg) {
       document.getElementById('estado-cargando').classList.add('d-none');
       document.getElementById('error-texto').textContent = msg;
       document.getElementById('estado-error').classList.remove('d-none');
     }
+
+    // ─── Create mode ─────────────────────────────────────────────────────
+    if (isCreateMode) {
+      document.getElementById('estado-cargando').classList.add('d-none');
+      document.getElementById('contenido').classList.remove('d-none');
+      document.getElementById('btn-guardar-nombre').textContent =
+        'Crear rol';
+      document.getElementById('btn-guardar-nombre').innerHTML =
+        '<i class="fa-solid fa-plus me-1"></i> Crear rol';
+
+      document.getElementById('btn-guardar-nombre').onclick = async () => {
+        const nombre = document.getElementById('rol-nombre').value.trim();
+        if (!nombre) {
+          mostrarToast(
+            'El nombre es obligatorio.',
+            'danger',
+            'position-fixed bottom-0 end-0 m-4',
+          );
+          return;
+        }
+        try {
+          const resp = await http.post('/roles', { name: nombre });
+          const newRole = resp.data ?? resp;
+          const newId = newRole.id;
+          mostrarToast(
+            'Rol creado. Ahora puede asignar permisos.',
+            'success',
+            'position-fixed bottom-0 end-0 m-4',
+          );
+          // Redirect to edit mode for the new role
+          setTimeout(() => router.navigate(`/roles/${newId}`), 600);
+        } catch {
+          mostrarToast(
+            'No se pudo crear el rol.',
+            'danger',
+            'position-fixed bottom-0 end-0 m-4',
+          );
+        }
+      };
+
+      // Hide permissions section until role is created
+      const permisosCard = document.querySelector('#contenido .card:last-child');
+      if (permisosCard) permisosCard.style.display = 'none';
+      document.getElementById('btn-guardar-permisos').style.display = 'none';
+      return;
+    }
+
+    // ─── View / Edit mode ────────────────────────────────────────────────
 
     async function cargarRol() {
       try {
@@ -284,6 +335,16 @@ export default {
           );
         }
       });
+
+    // ─── View mode: disable inputs, hide save buttons ────────────────────
+    if (isViewMode) {
+      document.getElementById('rol-nombre').disabled = true;
+      document.getElementById('btn-guardar-nombre').style.display = 'none';
+      document.querySelectorAll('.perm-check').forEach((cb) => {
+        cb.disabled = true;
+      });
+      document.getElementById('btn-guardar-permisos').style.display = 'none';
+    }
 
     cargarRol();
   },

@@ -33,13 +33,13 @@ export default {
         const buscar = document.getElementById('filtro-buscar').value.trim();
         return buscar ? { search: buscar } : {};
       },
-      viewPath: (id) => '/roles/' + id,
-      editPath: (id) => '/roles/crear?id=' + id,
+      viewPath: (id) => '/roles/' + id + '?view=true',
+      editPath: (id) => '/roles/' + id,
       deleteOkMsg: 'Rol eliminado.',
     });
 
     document.getElementById('btn-nuevo-rol').addEventListener('click', () => {
-      router.navigate('/roles/0');
+      router.navigate('/roles/crear');
     });
 
     page.init();
