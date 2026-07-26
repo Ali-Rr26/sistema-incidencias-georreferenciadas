@@ -48,3 +48,36 @@ function something()
 {
     // ..
 }
+
+/**
+ * Rolls back migrations through (and including) the named migration,
+ * anchored by name instead of a positional `--step` count.
+ *
+ * `Artisan::call('migrate:rollback', ['--step' => N])` counts migrations
+ * from HEAD, not batches — every time a new migration lands after the
+ * intended target, N silently drifts and the wrong set gets rolled back
+ * (backend-tests-postgres-migration, GitHub issue #197: this exact drift
+ * already happened once, the three call sites hardcoded `--step 3` where
+ * the comments still said "step 2"). Deriving the step count from the
+ * `migrations` table itself keeps the anchor correct regardless of how
+ * many migrations get added later.
+ *
+ * @throws \RuntimeException when the anchor migration is not found —
+ *                            e.g. it was renamed.
+ */
+function rollbackThroughMigration(string $migration): void
+{
+    $anchorId = \Illuminate\Support\Facades\DB::table('migrations')
+        ->where('migration', $migration)
+        ->value('id');
+
+    if ($anchorId === null) {
+        throw new RuntimeException("Rollback anchor migration [{$migration}] not found — was it renamed?");
+    }
+
+    $steps = \Illuminate\Support\Facades\DB::table('migrations')
+        ->where('id', '>=', $anchorId)
+        ->count();
+
+    \Illuminate\Support\Facades\Artisan::call('migrate:rollback', ['--step' => $steps]);
+}
