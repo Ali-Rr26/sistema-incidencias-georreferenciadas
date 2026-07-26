@@ -159,3 +159,110 @@ it('applies status filter when reading from Redis', function (): void {
     $response->assertJsonPath('meta.total', 1);
     $response->assertJsonPath('data.0.id', 1);
 });
+
+// ============================================================================
+// Staff path tests — FeedController branches to Postgres (via
+// IncidentRepository) for non-citizen roles. These tests create real
+// incidents in the database and verify the staff feed response shape.
+// ============================================================================
+
+beforeEach(function (): void {
+    $this->seed(PermissionSeeder::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
+
+    foreach (Permission::all() as $p) {
+        Gate::define(
+            "{$p->resource}.{$p->action}",
+            fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
+        );
+    }
+})->group('staff-feed');
+
+it('staff feed returns incidents from Postgres with correct structure', function (): void {
+    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create(['name' => 'Accidente']);
+    $location = \App\Domains\Locations\Models\Location::create(['name' => 'Quito', 'level' => 'city']);
+    $org = \App\Domains\Organizations\Models\Organization::create([
+        'name' => 'Defensa Civil',
+        'location_id' => $location->id,
+    ]);
+    $incident = \App\Domains\Incidents\Models\Incident::create([
+        'incident_category_id' => $category->id,
+        'organization_id' => $org->id,
+        'user_id' => $this->citizen->id,
+        'location_id' => $location->id,
+        'title' => 'Incendio forestal',
+        'status' => \App\Domains\Incidents\Models\Incident::STATUS_PENDING,
+        'priority' => \App\Domains\Incidents\Models\Incident::PRIORITY_HIGH,
+    ]);
+
+    // operador_sistema (role 2) is not a regular user → hits staff path
+    $staff = User::factory()->create(['role_id' => 2]);
+
+    $response = $this->actingAs($staff)->getJson('/api/incidents/feed');
+
+    $response->assertOk();
+    $response->assertJsonStructure([
+        'data' => [
+            '*' => [
+                'id', 'incident_category_id', 'organization_id', 'user_id', 'location_id',
+                'title', 'status', 'priority', 'resolution_date',
+                'created_at', 'updated_at', 'geom',
+                'category' => ['id', 'name'],
+                'organization' => ['id', 'name'],
+                'user' => ['id', 'first_name', 'last_name', 'avatar'],
+                'location' => ['id', 'name'],
+            ],
+        ],
+        'meta' => ['current_page', 'per_page', 'total', 'last_page', 'from', 'to'],
+    ]);
+    $response->assertJsonPath('data.0.id', $incident->id);
+    $response->assertJsonPath('data.0.title', 'Incendio forestal');
+    $response->assertJsonPath('meta.total', 1);
+})->group('staff-feed');
+
+it('staff feed respects per_page and paginates', function (): void {
+    $cat = \App\Domains\IncidentCategories\Models\IncidentCategory::create(['name' => 'Cat']);
+    $loc = \App\Domains\Locations\Models\Location::create(['name' => 'Loc', 'level' => 'city']);
+    $org = \App\Domains\Organizations\Models\Organization::create(['name' => 'Org', 'location_id' => $loc->id]);
+
+    foreach (range(1, 25) as $i) {
+        \App\Domains\Incidents\Models\Incident::create([
+            'incident_category_id' => $cat->id,
+            'organization_id' => $org->id,
+            'user_id' => $this->citizen->id,
+            'location_id' => $loc->id,
+            'title' => "Incident {$i}",
+            'status' => \App\Domains\Incidents\Models\Incident::STATUS_PENDING,
+            'priority' => \App\Domains\Incidents\Models\Incident::PRIORITY_MEDIUM,
+        ]);
+    }
+
+    $staff = User::factory()->create(['role_id' => 2]);
+
+    $response = $this->actingAs($staff)->getJson('/api/incidents/feed?per_page=10');
+
+    $response->assertOk();
+    $response->assertJsonCount(10, 'data');
+    $response->assertJsonPath('meta.per_page', 10);
+    $response->assertJsonPath('meta.total', 25);
+    $response->assertJsonPath('meta.current_page', 1);
+    $response->assertJsonPath('meta.last_page', 3);
+})->group('staff-feed');
+
+it('staff feed requires incidents.view permission', function (): void {
+    // Create a throwaway role with NO permissions at all.
+    $noPermRole = \App\Domains\Roles\Models\Role::create(['name' => 'sin_permisos']);
+    $user = User::factory()->create(['role_id' => $noPermRole->id]);
+
+    $response = $this->actingAs($user)->getJson('/api/incidents/feed');
+
+    $response->assertStatus(403);
+    $response->assertSee('No tienes permiso para ver el feed de incidencias');
+})->group('staff-feed');
+
+it('rejects unauthenticated request to feed', function (): void {
+    $response = $this->getJson('/api/incidents/feed');
+
+    $response->assertStatus(401);
+});
