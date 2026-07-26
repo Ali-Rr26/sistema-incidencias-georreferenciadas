@@ -35,7 +35,9 @@ class StoreIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'titulo' => 'required|string|max:255',
+            'title' => 'required_without:titulo|nullable|string|max:255',
+            'titulo' => 'required_without:title|nullable|string|max:255',
+            'description' => 'nullable|string|max:5000',
             'descripcion' => 'nullable|string|max:5000',
             'incident_category_id' => ['required', 'integer', 'exists:incident_categories,id', new CategoryIsLeafRule],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', app(LocationGeomConsistentRule::class)],
@@ -73,8 +75,11 @@ class StoreIncidentRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'title.required_without' => 'El campo título es obligatorio.',
+            'titulo.required_without' => 'El campo título es obligatorio.',
             'titulo.required' => 'El campo título es obligatorio.',
             'titulo.max' => 'El título no puede superar los 255 caracteres.',
+            'title.max' => 'El título no puede superar los 255 caracteres.',
             'incident_category_id.required' => 'La categoría de incidencia es obligatoria.',
             'incident_category_id.exists' => 'La categoría seleccionada no existe.',
             'location_id.exists' => 'La ubicación seleccionada no existe.',
