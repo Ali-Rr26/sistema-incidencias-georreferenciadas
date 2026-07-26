@@ -9,7 +9,6 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -47,7 +46,12 @@ use Illuminate\Support\Facades\Gate;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::query()->updateOrCreate(['id' => 1, 'name' => UserRole::AdminSistema->value]);
+    // Direct DB::insert, not Role::query()->updateOrCreate(): Role's
+    // $fillable = ['name'] excludes `id`, so the Eloquent mass-assignment
+    // path silently drops the explicit id and lets auto-increment assign
+    // whatever the sequence happens to be at (see RoleSeederTest / the
+    // same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert(['id' => 1, 'name' => UserRole::AdminSistema->value]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);

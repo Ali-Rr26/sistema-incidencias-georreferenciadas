@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +21,12 @@ beforeEach(function (): void {
         return;
     }
 
-    Role::create(['id' => 1, 'name' => 'Admin']);
+    // Direct DB::insert, not Role::create(): Role's $fillable = ['name']
+    // excludes `id`, so the Eloquent mass-assignment path silently drops
+    // the explicit id and lets auto-increment assign whatever the
+    // sequence happens to be at (see RoleSeederTest / the same
+    // convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Test Category']);

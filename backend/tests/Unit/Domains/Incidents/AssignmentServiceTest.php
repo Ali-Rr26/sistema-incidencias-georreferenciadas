@@ -10,7 +10,6 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -34,11 +33,15 @@ uses(TestCase::class, RefreshDatabase::class);
  * AssignmentControllerTest covers the HTTP contract.
  */
 beforeEach(function (): void {
-    // User::factory() emits role_id=1 (admin_sistema). Without a row
-    // matching that FK the INSERT hits a SQLite constraint error
-    // before the service is even exercised.
-    Role::query()->updateOrCreate(['id' => 1, 'name' => UserRole::AdminSistema->value]);
-    Role::query()->updateOrCreate(['id' => 5, 'name' => UserRole::Usuario->value]);
+    // Direct DB::insert, not Role::query()->updateOrCreate(): Role's
+    // $fillable = ['name'] excludes `id`, so the Eloquent mass-assignment
+    // path silently drops the explicit id and lets auto-increment assign
+    // whatever the sequence happens to be at (see RoleSeederTest / the
+    // same convention documented in AssignmentPolicyTest.php).
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => UserRole::AdminSistema->value],
+        ['id' => 5, 'name' => UserRole::Usuario->value],
+    ]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);
