@@ -161,4 +161,9 @@ class Incident extends Model
     {
         return $this->morphMany(Image::class, 'imageable')->orderBy('sort_order');
     }
+
+    public function resolutions(): HasMany
+    {
+        return $this->hasMany(ResolutionAudit::class)->orderBy('resolved_at', 'desc');
+    }
 }

@@ -138,8 +138,9 @@ class IncidentController extends Controller
      * `assignments.user` is included here (not in INDEX_RELATIONS) because
      * the detail view embeds assignments directly — the list endpoint does
      * not need them.
+     * `resolutions.resolvedByUser` includes audit trail with resolver info.
      */
-    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'images'];
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'resolutions.resolvedByUser', 'images'];
 
     public function show(Request $request, Incident $incident): JsonResponse
     {

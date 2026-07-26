@@ -125,6 +125,19 @@ class IncidentResource extends JsonResource
                     'user' => $a->relationLoaded('user') ? $a->user : null,
                 ])->values()->all(),
             );
+
+            // Resolution audit trail — who resolved this incident and when
+            $data['resolutions'] = $this->whenLoaded(
+                'resolutions',
+                fn () => $this->resolutions->map(fn ($r) => [
+                    'id' => $r->id,
+                    'incident_id' => $r->incident_id,
+                    'resolved_by_user_id' => $r->resolved_by_user_id,
+                    'resolved_at' => $r->resolved_at,
+                    'notes' => $r->notes,
+                    'resolved_by_user' => $r->relationLoaded('resolvedByUser') ? $r->resolvedByUser : null,
+                ])->values()->all(),
+            );
         }
 
         return $data;

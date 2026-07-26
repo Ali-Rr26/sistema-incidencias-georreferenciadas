@@ -14,6 +14,7 @@ use App\Domains\Incidents\Listeners\RedisIncidentSync;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
+use App\Domains\Incidents\Observers\IncidentResolutionAuditObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Invitations\Services\InvitationService;
@@ -220,6 +221,14 @@ class AppServiceProvider extends ServiceProvider
             Incident::observe(IncidentNotificationObserver::class);
         } catch (\Throwable) {
             // Notifications tables not ready yet — skip silently.
+        }
+
+        // Register IncidentResolutionAuditObserver to create audit trail
+        // when an incident is resolved (status → resolved).
+        try {
+            Incident::observe(IncidentResolutionAuditObserver::class);
+        } catch (\Throwable) {
+            // Resolution audits table not ready yet — skip silently.
         }
 
         // Register AssignmentNotificationObserver to dispatch user notifications
