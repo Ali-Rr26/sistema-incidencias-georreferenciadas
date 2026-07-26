@@ -187,7 +187,7 @@ class IncidentStatsController extends Controller
             'average_resolution_time' => $averageResolutionTime,
             'trends' => $this->calculateTrends($validated),
             'top_categories' => $this->getTopCategories($validated),
-        ]);
+        ];
     }
 
     /**
