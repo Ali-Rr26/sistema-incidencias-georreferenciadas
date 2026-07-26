@@ -69,7 +69,9 @@ const STORAGE_BASE = 'http://localhost:9000/incidencias';
 export function getCommentImageUrl(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${STORAGE_BASE}/${path}`;
+  if (path.startsWith('/storage/')) return path;
+  if (path.startsWith('storage/')) return '/' + path;
+  return `/storage/${path}`;
 }
 
 /**
