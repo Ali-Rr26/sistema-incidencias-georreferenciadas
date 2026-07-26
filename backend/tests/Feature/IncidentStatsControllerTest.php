@@ -890,7 +890,7 @@ it('applies both date range and location cascade together', function () {
     $oldInc->save(['timestamps' => false]);
 
     // Recent incident in Quito
-    Incident::create([
+    $recent1 = Incident::create([
         'title' => 'Recent Quito Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -898,11 +898,12 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'medium',
-        'created_at' => $recentDate,
     ]);
+    $recent1->created_at = $recentDate;
+    $recent1->save(['timestamps' => false]);
 
     // Recent incident in Latacunga
-    Incident::create([
+    $recent2 = Incident::create([
         'title' => 'Recent Latacunga Incident',
         'incident_category_id' => $category->id,
         'user_id' => $admin->id,
@@ -910,8 +911,9 @@ it('applies both date range and location cascade together', function () {
         'organization_id' => $org->id,
         'status' => IncidentStatus::Pending,
         'priority' => 'low',
-        'created_at' => $recentDate,
     ]);
+    $recent2->created_at = $recentDate;
+    $recent2->save(['timestamps' => false]);
 
     // Filter: Pichincha province + recent dates only (2 incidents)
     $rangeStart = $recentDate->format('Y-m-d');
