@@ -88,20 +88,7 @@ jobs:
           cache: composer
 
       - name: Wait for PostgreSQL to be ready
-        run: |
-          for i in {1..30}; do
-            php -r "
-              try {
-                new PDO('pgsql:host=localhost;port=5435;dbname=incidencias_test', 'user', 'password');
-                echo 'PostgreSQL is ready';
-                exit(0);
-              } catch (PDOException \$e) {
-                exit(1);
-              }
-            " && break
-            echo "Waiting for PostgreSQL... ($i/30)"
-            sleep 1
-          done
+        run: sleep 10
 
       - name: Install backend dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
