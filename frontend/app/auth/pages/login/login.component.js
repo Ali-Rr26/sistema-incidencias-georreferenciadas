@@ -112,7 +112,7 @@ export default {
     const registerBanner = document.getElementById('register-banner');
 
     document.querySelectorAll('#register-form input[type="tel"]').forEach((el) => {
-      el.addEventListener('keydown', blockNonNumeric);
+      maskPhoneInput(el);
     });
 
     /** Switch between 'login' and 'register' modes. */
