@@ -90,6 +90,12 @@ class Incident extends Model
             'status' => IncidentStatus::class,
             'priority' => IncidentPriority::class,
             'claimed_at' => 'datetime',
+            // Normalise FK at the model boundary so consumers (e.g.
+            // `IncidentResource::toArray()` → `LocationRepository::ancestors(int $id)`)
+            // always see `int`, not the raw JSON string from
+            // `$request->validated()`. Matches the precedent set by
+            // `Comment::$casts` (`incident_id`/`user_id`/`parent_id`).
+            'location_id' => 'integer',
         ];
     }
 
