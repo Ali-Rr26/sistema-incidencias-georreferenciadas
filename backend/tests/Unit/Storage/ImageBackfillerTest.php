@@ -209,7 +209,7 @@ it('skips users with no profile_image_path', function (): void {
     expect(Image::where('imageable_type', 'user')->count())->toBe(0);
 });
 
-it('verify() reports source vs already-backfilled target counts without writing anything', function (): void {
+it('verify() reports un-backfilled legacy rows without writing anything, then reports clean after backfill', function (): void {
     $this->incident->update([
         'images' => [
             ['path' => 'incidents/1/a.webp', 'original_name' => 'a.jpg', 'mime_type' => 'image/webp', 'size' => 111, 'is_thumbnail' => true],
@@ -219,12 +219,34 @@ it('verify() reports source vs already-backfilled target counts without writing 
 
     $before = $this->backfiller->verify('incidents');
 
-    expect($before)->toBe(['source_count' => 2, 'target_count' => 0]);
+    expect($before['unbackfilled_count'])->toBe(2);
+    expect($before['samples'])->toBe([
+        ['imageable_id' => $this->incident->id, 'storage_path' => 'incidents/1/a.webp'],
+        ['imageable_id' => $this->incident->id, 'storage_path' => 'incidents/1/b.webp'],
+    ]);
     expect(Image::count())->toBe(0);
 
     $this->backfiller->backfillIncidents();
 
     $after = $this->backfiller->verify('incidents');
 
-    expect($after)->toBe(['source_count' => 2, 'target_count' => 2]);
+    expect($after)->toBe(['unbackfilled_count' => 0, 'samples' => []]);
+});
+
+it('verify() does not count a post-cutover images row with no legacy counterpart as unbackfilled (false-positive regression)', function (): void {
+    // This incident has NO legacy `images` JSON at all — nothing to
+    // backfill. Simulate a real post-cutover upload: a brand new `images`
+    // row created directly, exactly as WU5's cutover code does, never
+    // touching the legacy JSON column. Extra `images` rows like this are
+    // expected once the app has served real traffic post-cutover and must
+    // NOT be reported as unbackfilled.
+    $this->incident->images()->create([
+        'storage_path' => 'incidents/'.$this->incident->id.'/post-cutover.webp',
+        'is_thumbnail' => true,
+        'sort_order' => 0,
+    ]);
+
+    $stats = $this->backfiller->verify('incidents');
+
+    expect($stats)->toBe(['unbackfilled_count' => 0, 'samples' => []]);
 });

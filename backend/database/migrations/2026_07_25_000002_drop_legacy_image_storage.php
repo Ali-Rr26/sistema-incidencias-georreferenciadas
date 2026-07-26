@@ -20,13 +20,25 @@ use Illuminate\Support\Facades\Schema;
  * Self-guarding (WU8, closing the WU3-verify WARNING 2 gap — "no enforced
  * operator signal that `images:backfill` must run before WU8 drops legacy
  * columns"): aborts BEFORE dropping anything unless `ImageBackfiller::
- * verify()` reports a clean source==target count for all three sources.
+ * verify()` reports zero un-backfilled rows for all three sources.
  * `php artisan migrate` runs unattended on every deploy (Swarm entrypoint)
  * — without this guard, a deploy where an operator forgot to run
  * `images:backfill` first would silently destroy any un-migrated legacy
  * image data. On a fresh/empty database (dev, CI, new installs) every
- * source is trivially 0==0, so the guard passes and the drop proceeds
- * immediately, same as any other migration.
+ * source trivially has zero legacy rows, so the guard passes and the drop
+ * proceeds immediately, same as any other migration.
+ *
+ * NOTE (bug fixed post-WU8): the guard originally compared an AGGREGATE
+ * `source_count === target_count`. That is wrong once the WU5-WU7 cutover
+ * code has been running for any amount of time: every new image write
+ * after cutover goes straight to `images` and never touches the legacy
+ * source, so `target_count` grows past `source_count` forever in any
+ * environment with real post-cutover usage — the aggregate check could
+ * never pass again and would permanently block this migration. The guard
+ * now checks the correct invariant instead: every LEGACY row has already
+ * been backfilled into a matching `images` row (source ⊆ target, matched
+ * per-row via `ImageBackfiller::alreadyBackfilled()`), so extra `images`
+ * rows from normal post-cutover uploads are expected and do not block.
  *
  * Recovery: if this migration aborts, it throws BEFORE any schema change,
  * so the legacy schema is left completely intact and this migration is
@@ -61,12 +73,11 @@ return new class extends Migration
         foreach (['incidents', 'comments', 'users'] as $source) {
             $stats = $backfiller->verify($source);
 
-            if ($stats['source_count'] !== $stats['target_count']) {
+            if ($stats['unbackfilled_count'] > 0) {
                 $mismatches[] = sprintf(
-                    '%s (source=%d, images=%d)',
+                    '%s (%d unbackfilled row(s))',
                     $source,
-                    $stats['source_count'],
-                    $stats['target_count']
+                    $stats['unbackfilled_count']
                 );
             }
         }

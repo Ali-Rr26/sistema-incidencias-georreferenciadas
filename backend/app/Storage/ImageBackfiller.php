@@ -186,10 +186,22 @@ class ImageBackfiller
     }
 
     /**
-     * Counts source rows vs already-backfilled `images` rows for one
-     * source, WITHOUT writing anything. Backs `images:backfill --verify`.
+     * Counts LEGACY source rows that do NOT yet have a matching `images`
+     * row, WITHOUT writing anything. Backs `images:backfill --verify` and
+     * the `drop_legacy_image_storage` migration's guard.
      *
-     * @return array{source_count:int, target_count:int}
+     * This is deliberately a per-row "every legacy row has been
+     * backfilled" (source ⊆ target) check, NOT an aggregate
+     * `source_count === target_count` comparison. Once the WU5-WU7 cutover
+     * code is live, every NEW image write goes directly to `images` and
+     * never touches the legacy source at all, so `images` legitimately
+     * accumulates rows beyond what backfill created. An aggregate count
+     * comparison would treat that normal growth as a permanent, unfixable
+     * mismatch and block the drop forever — this per-row check does not,
+     * because it only asks whether SOURCE rows are covered, using the exact
+     * same `alreadyBackfilled()` matching logic the real backfill uses.
+     *
+     * @return array{unbackfilled_count:int, samples:array<int,array{imageable_id:int,storage_path:string}>}
      */
     public function verify(string $source): array
     {
@@ -202,51 +214,99 @@ class ImageBackfiller
     }
 
     /**
-     * @return array{source_count:int, target_count:int}
+     * @return array{unbackfilled_count:int, samples:array<int,array{imageable_id:int,storage_path:string}>}
      */
     private function verifyIncidents(): array
     {
-        $sourceCount = Incident::query()
+        $unbackfilledCount = 0;
+        $samples = [];
+
+        Incident::query()
             ->whereNotNull('images')
-            ->get(['images'])
-            ->sum(fn (Incident $incident) => count(array_filter(
-                $incident->images ?? [],
-                fn (array $img) => ($img['path'] ?? null) !== null
-            )));
+            ->chunkById(100, function ($incidents) use (&$unbackfilledCount, &$samples): void {
+                foreach ($incidents as $incident) {
+                    foreach (array_values($incident->images ?? []) as $img) {
+                        $path = $img['path'] ?? null;
 
-        $targetCount = Image::query()
-            ->where('imageable_type', (new Incident)->getMorphClass())
-            ->count();
+                        if ($path === null) {
+                            continue;
+                        }
 
-        return ['source_count' => $sourceCount, 'target_count' => $targetCount];
+                        if ($this->alreadyBackfilled($incident, $path)) {
+                            continue;
+                        }
+
+                        $unbackfilledCount++;
+                        $this->addSample($samples, $incident->id, $path);
+                    }
+                }
+            });
+
+        return ['unbackfilled_count' => $unbackfilledCount, 'samples' => $samples];
     }
 
     /**
-     * @return array{source_count:int, target_count:int}
+     * @return array{unbackfilled_count:int, samples:array<int,array{imageable_id:int,storage_path:string}>}
      */
     private function verifyComments(): array
     {
-        $sourceCount = DB::table('comment_images')->count();
+        $unbackfilledCount = 0;
+        $samples = [];
 
-        $targetCount = Image::query()
-            ->where('imageable_type', (new Comment)->getMorphClass())
-            ->count();
+        DB::table('comment_images')->orderBy('id')->chunkById(100, function ($commentImages) use (&$unbackfilledCount, &$samples): void {
+            foreach ($commentImages as $commentImage) {
+                $comment = Comment::find($commentImage->comment_id);
 
-        return ['source_count' => $sourceCount, 'target_count' => $targetCount];
+                if ($comment === null) {
+                    continue;
+                }
+
+                if ($this->alreadyBackfilled($comment, $commentImage->url)) {
+                    continue;
+                }
+
+                $unbackfilledCount++;
+                $this->addSample($samples, $comment->id, $commentImage->url);
+            }
+        });
+
+        return ['unbackfilled_count' => $unbackfilledCount, 'samples' => $samples];
     }
 
     /**
-     * @return array{source_count:int, target_count:int}
+     * @return array{unbackfilled_count:int, samples:array<int,array{imageable_id:int,storage_path:string}>}
      */
     private function verifyUsers(): array
     {
-        $sourceCount = User::query()->whereNotNull('profile_image_path')->count();
+        $unbackfilledCount = 0;
+        $samples = [];
 
-        $targetCount = Image::query()
-            ->where('imageable_type', (new User)->getMorphClass())
-            ->count();
+        User::query()
+            ->whereNotNull('profile_image_path')
+            ->chunkById(100, function ($users) use (&$unbackfilledCount, &$samples): void {
+                foreach ($users as $user) {
+                    if ($this->alreadyBackfilled($user, $user->profile_image_path)) {
+                        continue;
+                    }
 
-        return ['source_count' => $sourceCount, 'target_count' => $targetCount];
+                    $unbackfilledCount++;
+                    $this->addSample($samples, $user->id, $user->profile_image_path);
+                }
+            });
+
+        return ['unbackfilled_count' => $unbackfilledCount, 'samples' => $samples];
+    }
+
+    /**
+     * @param  array<int,array{imageable_id:int,storage_path:string}>  $samples
+     */
+    private function addSample(array &$samples, int $imageableId, string $storagePath): void
+    {
+        if (count($samples) >= 5) {
+            return;
+        }
+
+        $samples[] = ['imageable_id' => $imageableId, 'storage_path' => $storagePath];
     }
 
     private function alreadyBackfilled(Model $owner, string $storagePath): bool

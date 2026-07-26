@@ -115,3 +115,25 @@ it('proceeds with the drop once images:backfill has made every source clean', fu
     expect(Schema::hasTable('comment_images'))->toBeFalse();
     expect(Schema::hasColumn('users', 'profile_image_path'))->toBeFalse();
 });
+
+it('proceeds with the drop when a post-cutover images row has no legacy counterpart at all (false-positive regression)', function (): void {
+    // This incident has NO legacy `images` JSON — nothing to backfill.
+    // Simulate a real post-cutover upload: a brand new `images` row is
+    // created directly (as WU5's cutover code does), never touching the
+    // legacy JSON column. The old aggregate `source_count === target_count`
+    // guard incorrectly treated this extra row as an unexplained mismatch
+    // (source=0, images=1) and refused to drop, even though there is
+    // nothing left to backfill. The correct invariant is per-row: every
+    // legacy row (there are none here) has a matching `images` row.
+    $this->incident->images()->create([
+        'storage_path' => 'incidents/'.$this->incident->id.'/post-cutover.webp',
+        'is_thumbnail' => true,
+        'sort_order' => 0,
+    ]);
+
+    Artisan::call('migrate');
+
+    expect(Schema::hasColumn('incidents', 'images'))->toBeFalse();
+    expect(Schema::hasTable('comment_images'))->toBeFalse();
+    expect(Schema::hasColumn('users', 'profile_image_path'))->toBeFalse();
+});

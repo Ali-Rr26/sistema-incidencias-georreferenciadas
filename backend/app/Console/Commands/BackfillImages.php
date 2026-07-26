@@ -112,28 +112,33 @@ class BackfillImages extends Command
 
         foreach ($sources as $source) {
             $stats = $this->backfiller->verify($source);
-            $isOk = $stats['source_count'] === $stats['target_count'];
+            $isOk = $stats['unbackfilled_count'] === 0;
 
             if (! $isOk) {
                 $mismatches++;
             }
 
             $this->line(sprintf(
-                '%s: source=%d images=%d [%s]',
+                '%s: %d unbackfilled row(s) [%s]',
                 $source,
-                $stats['source_count'],
-                $stats['target_count'],
+                $stats['unbackfilled_count'],
                 $isOk ? 'OK' : 'MISMATCH'
             ));
+
+            if (! $isOk) {
+                foreach ($stats['samples'] as $sample) {
+                    $this->line(sprintf('  - imageable_id=%d storage_path=%s', $sample['imageable_id'], $sample['storage_path']));
+                }
+            }
         }
 
         if ($mismatches > 0) {
-            $this->error(sprintf('%d source(s) have mismatched counts.', $mismatches));
+            $this->error(sprintf('%d source(s) still have un-backfilled rows.', $mismatches));
 
             return self::FAILURE;
         }
 
-        $this->info('All sources match.');
+        $this->info('All sources are fully backfilled.');
 
         return self::SUCCESS;
     }
