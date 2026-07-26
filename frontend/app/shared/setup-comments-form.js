@@ -17,6 +17,7 @@ export default async function setupCommentsForm({
   errorId,
   previewId,
   fileInputId,
+  attachButtonId,
   replyBadgeId,
   replyParentIdId,
   lightboxId,
@@ -34,6 +35,9 @@ export default async function setupCommentsForm({
   const listEl = document.getElementById(listId);
   const emptyEl = document.getElementById(emptyId);
   const fileInput = document.getElementById(fileInputId);
+  const attachBtn = attachButtonId
+    ? document.getElementById(attachButtonId)
+    : null;
   const previewEl = document.getElementById(previewId);
   const replyBadgeEl = document.getElementById(replyBadgeId);
   const replyParentIdEl = document.getElementById(replyParentIdId);
@@ -151,6 +155,10 @@ export default async function setupCommentsForm({
   fileInput?.addEventListener('change', () => {
     handleFileSelect(fileInput.files);
     fileInput.value = '';
+  });
+
+  attachBtn?.addEventListener('click', () => {
+    fileInput?.click();
   });
 
   if (replyBadgeEl) {
@@ -296,6 +304,13 @@ export default async function setupCommentsForm({
       } finally {
         delImgBtn.disabled = false;
       }
+    }
+  });
+
+  listEl?.addEventListener('dblclick', (event) => {
+    const thumb = event.target.closest(thumbnailSelector);
+    if (thumb) {
+      openLightbox(thumb.dataset.src, thumb.dataset.caption || '');
     }
   });
 

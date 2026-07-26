@@ -53,12 +53,22 @@ export function openInlineReplyForm({
       'Usuario'
     : 'Usuario';
 
+  const selectedFiles = [];
+  const previewUrls = [];
+
   const form = document.createElement('form');
   form.className = 'fd-comment-inline-reply mt-3 pt-3 border-top';
   form.dataset.parentId = String(comment.id);
   form.innerHTML = `
     <textarea class="form-control form-control-sm" rows="2" placeholder="Escribe tu respuesta a @${escapeHtml(parentUser)}... (Enter para enviar, Shift+Enter para nueva línea)" required></textarea>
-    <div class="fd-comment-inline-reply__error text-danger small mt-2" style="display:none"></div>
+    <input type="file" class="fd-inline-reply-file d-none" multiple accept="image/jpeg,image/png,image/webp" capture="environment" />
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm fd-inline-reply-attach" title="Adjuntar o tomar foto" aria-label="Adjuntar o tomar foto">
+        <i class="fas fa-camera"></i>
+      </button>
+    </div>
+    <div class="fd-inline-reply-previews d-flex flex-wrap gap-2 my-2"></div>
+    <div class="fd-comment-inline-reply__error text-danger small mb-2" style="display:none"></div>
     <div class="d-flex gap-2 mt-2 justify-content-end">
       <button type="button" class="btn btn-link btn-sm text-muted fd-inline-reply-cancel">Cancelar</button>
       <button type="submit" class="btn btn-primary btn-sm fd-inline-reply-submit">
@@ -69,8 +79,58 @@ export function openInlineReplyForm({
 
   commentBody.appendChild(form);
   const textarea = form.querySelector('textarea');
+  const fileInput = form.querySelector('.fd-inline-reply-file');
+  const attachBtn = form.querySelector('.fd-inline-reply-attach');
+  const previewsEl = form.querySelector('.fd-inline-reply-previews');
   const errorBox = form.querySelector('.fd-comment-inline-reply__error');
   textarea.focus();
+
+  function renderPreviews() {
+    previewsEl.innerHTML = selectedFiles
+      .map((_, i) => {
+        const url = previewUrls[i];
+        if (!url) return '';
+        return `<div class="position-relative d-inline-block" style="margin-bottom:4px">
+          <img src="${url}" class="incid-detail__preview-thumb" alt="Preview" />
+          <button type="button" class="incid-detail__preview-remove fd-inline-reply-remove-preview" data-index="${i}">&times;</button>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function clearFiles() {
+    for (const url of previewUrls) URL.revokeObjectURL(url);
+    selectedFiles.length = 0;
+    previewUrls.length = 0;
+    renderPreviews();
+  }
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files) {
+      for (const file of Array.from(fileInput.files)) {
+        if (!file.type.startsWith('image/')) continue;
+        selectedFiles.push(file);
+        previewUrls.push(URL.createObjectURL(file));
+      }
+      renderPreviews();
+      fileInput.value = '';
+    }
+  });
+
+  previewsEl.addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.fd-inline-reply-remove-preview');
+    if (removeBtn) {
+      const idx = Number(removeBtn.dataset.index);
+      if (idx >= 0 && idx < previewUrls.length) {
+        URL.revokeObjectURL(previewUrls[idx]);
+        previewUrls.splice(idx, 1);
+        selectedFiles.splice(idx, 1);
+        renderPreviews();
+      }
+    }
+  });
 
   // Double-submit guard: `submitBtn.disabled = true` only takes effect
   // AFTER the submit handler runs, so a fast second Enter could trigger
@@ -89,7 +149,10 @@ export function openInlineReplyForm({
 
   form
     .querySelector('.fd-inline-reply-cancel')
-    .addEventListener('click', () => form.remove());
+    .addEventListener('click', () => {
+      clearFiles();
+      form.remove();
+    });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -105,11 +168,41 @@ export function openInlineReplyForm({
     errorBox.style.display = 'none';
 
     try {
-      await commentService.create(incidentId, {
-        message,
-        parentId: comment.id,
-        imageIds: [],
-      });
+      if (selectedFiles.length > 0) {
+        const created = await commentService.create(incidentId, {
+          message,
+          parentId: comment.id,
+          imageIds: [],
+        });
+        const commentId = created?.id ?? created?.data?.id;
+        if (!commentId) throw new Error('No se pudo crear el comentario.');
+
+        const results = await Promise.allSettled(
+          selectedFiles.map((file) =>
+            commentService.uploadImages(commentId, [file]),
+          ),
+        );
+        const failed = results.filter(
+          (result) =>
+            result.status === 'rejected' ||
+            (result.status === 'fulfilled' && result.value?.status >= 400),
+        );
+        if (failed.length > 0) {
+          clearFiles();
+          await commentService.delete(commentId);
+          throw new Error(
+            'Error al subir una o más imágenes. La respuesta no fue publicada.',
+          );
+        }
+      } else {
+        await commentService.create(incidentId, {
+          message,
+          parentId: comment.id,
+          imageIds: [],
+        });
+      }
+
+      clearFiles();
       form.remove();
       await onPosted?.();
     } catch (err) {

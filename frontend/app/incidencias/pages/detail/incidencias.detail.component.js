@@ -1,4 +1,5 @@
 import template from './incidencias.detail.component.html?raw';
+import style from './incidencias.detail.component.css?raw';
 import {
   STATUS_LABEL,
   PRIORITY_LABEL,
@@ -33,6 +34,7 @@ const DROPDOWN_STATUSES = [
 ];
 
 export default {
+  style,
   template,
 
   async onInit({ params } = {}) {
@@ -210,6 +212,8 @@ function setupUpload(incidentId) {
   const btnSubir = document.getElementById('btn-subir-imagen');
   const progress = document.getElementById('detalle-upload-progress');
 
+  if (!fileInput || !btnSubir) return;
+
   btnSubir.addEventListener('click', async () => {
     const file = fileInput.files[0];
     if (!file) return;
@@ -383,11 +387,12 @@ async function setupComments(incidentId, initialComments) {
     errorId: 'detalle-comment-error',
     previewId: 'detalle-comment-previews',
     fileInputId: 'detalle-comment-images',
+    attachButtonId: 'detalle-comment-attach-btn',
     replyBadgeId: 'detalle-reply-badge',
     replyParentIdId: 'detalle-reply-parent-id',
     lightboxId: 'incid-detail__lightbox',
     lightboxCloseId: 'incid-detail__lightbox-close',
-    thumbnailSelector: '.incid-detail__thumbnail[data-src]',
+    thumbnailSelector: '.incid-detail__thumbnail-wrapper[data-src]',
     canDelete: true,
     getUserName: (user) =>
       [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
