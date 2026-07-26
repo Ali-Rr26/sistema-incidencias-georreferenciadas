@@ -4,7 +4,6 @@ import { router } from '../../../../core/router.js';
 import { locationService } from '../../../../shared/location.service.js';
 import { renderPaginacion } from '../../../../shared/pagination/pagination.js';
 import { isForbidden } from '../../../../shared/forbidden.js';
-// eslint-disable-next-line no-unused-vars
 import { permissionService } from '../../../../shared/permission.service.js';
 import { hydrateKebabActions } from '../../../../shared/kebab-actions.js';
 import {
@@ -25,6 +24,11 @@ export default {
   template,
 
   async onInit() {
+    const locPerms = await permissionService.getMyPermissions();
+    if (!locPerms.has('locations.create')) {
+      document.querySelectorAll('a[href*="localizaciones/crear"]').forEach(el => el.classList.add('d-none'));
+    }
+
     let paginaActual = 1;
     let totalPaginas = 1;
     let idEliminar = null;

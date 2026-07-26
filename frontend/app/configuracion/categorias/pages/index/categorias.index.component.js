@@ -1,11 +1,17 @@
 import template from './categorias.index.component.html?raw';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
+import { permissionService } from '../../../../shared/permission.service.js';
 
 export default {
   template,
 
   async onInit() {
+    const perms = await permissionService.getMyPermissions();
+    if (!perms.has('incident-categories.create')) {
+      document.querySelectorAll('a[href*="categorias/crear"]').forEach(el => el.classList.add('d-none'));
+    }
+
     let categoriasPadre = [];
 
     const page = createCrudIndexPage({
