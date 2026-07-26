@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Http;
 
-use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
+use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
-use App\Domains\Locations\Models\Location;
-use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -31,6 +28,7 @@ use Illuminate\Validation\Rule;
 class IncidentStatsController extends Controller
 {
     use ScopesIncidentQueries;
+
     public function __invoke(Request $request): JsonResponse
     {
         // Solo roles con dashboard.view pueden acceder a estadísticas.
