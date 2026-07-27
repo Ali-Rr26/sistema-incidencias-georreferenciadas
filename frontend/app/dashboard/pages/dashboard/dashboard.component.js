@@ -24,8 +24,6 @@ const filterState = {
   categories: [],
 };
 
-
-
 // ─────────────────────────────────────────────
 // Carga D3 + C3 de forma lazy (ya están en assets)
 // ─────────────────────────────────────────────

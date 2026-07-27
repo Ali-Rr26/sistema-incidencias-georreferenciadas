@@ -9,7 +9,9 @@ export default {
   async onInit() {
     const perms = await permissionService.getMyPermissions();
     if (!perms.has('incident-categories.create')) {
-      document.querySelectorAll('a[href*="categorias/crear"]').forEach(el => el.classList.add('d-none'));
+      document
+        .querySelectorAll('a[href*="categorias/crear"]')
+        .forEach((el) => el.classList.add('d-none'));
     }
 
     let categoriasPadre = [];

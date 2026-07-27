@@ -2,7 +2,6 @@ import template from './forgot-password.component.html?raw';
 import style from '../login/login.component.css?raw';
 import { http } from '../../../core/http.service.js';
 
-
 export default {
   template,
   style,
@@ -31,17 +30,22 @@ export default {
         await http.post('/forgot-password', { email });
         const exitoTexto = document.getElementById('exito-texto');
         if (exitoTexto) {
-          exitoTexto.textContent = 'Te hemos enviado un enlace de restablecimiento por correo electrónico.';
+          exitoTexto.textContent =
+            'Te hemos enviado un enlace de restablecimiento por correo electrónico.';
         }
         document.getElementById('estado-exito')?.classList.remove('d-none');
         if (emailInput) emailInput.value = '';
       } catch (err) {
-        const isTechnicalError = err.message && (err.message.includes('SQLSTATE') || err.message.includes('Connection.php'));
-        const msg = err.status === 429
-          ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.message && !isTechnicalError
+        const isTechnicalError =
+          err.message &&
+          (err.message.includes('SQLSTATE') ||
+            err.message.includes('Connection.php'));
+        const msg =
+          err.status === 429
+            ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
+            : err.message && !isTechnicalError
               ? err.message
-              : 'No pudimos enviar el enlace. Intenta de nuevo en unos minutos.');
+              : 'No pudimos enviar el enlace. Intenta de nuevo en unos minutos.';
         const errorTexto = document.getElementById('error-texto');
         if (errorTexto) {
           errorTexto.textContent = msg;
