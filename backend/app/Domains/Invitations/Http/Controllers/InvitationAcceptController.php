@@ -37,4 +37,23 @@ class InvitationAcceptController
 
         return response()->json(['message' => __('messages.account_activated')], JsonResponse::HTTP_OK);
     }
+
+    /**
+     * Preview de los metadatos de una invitación SIN consumirla.
+     *
+     * GET /api/invitations/{token}/preview
+     *
+     * Pensado para que el frontend de /accept-invite muestre org,
+     * invitador, rol y expiración ANTES de pedirle al usuario que
+     * tipee su contraseña. Read-only: el token queda intacto y puede
+     * ser consumido por `accept` luego.
+     *
+     * @throws InvitationNotFoundException 404 cuando el token no existe
+     */
+    public function preview(string $token): JsonResponse
+    {
+        $resource = $this->invitationService->previewInvitation($token);
+
+        return response()->json($resource->resolve());
+    }
 }

@@ -6,6 +6,7 @@ namespace App\Domains\Invitations\Services;
 
 use App\Domains\Invitations\Exceptions\InvitationGoneException;
 use App\Domains\Invitations\Exceptions\InvitationNotFoundException;
+use App\Domains\Invitations\Http\Resources\InvitationPreviewResource;
 use App\Domains\Invitations\Models\UserInvitation;
 use App\Domains\Mail\Services\MailJobDispatcher;
 use App\Domains\Users\Models\User;
@@ -175,10 +176,7 @@ class InvitationService
      */
     private function findInvitationByToken(string $tokenPlain): ?UserInvitation
     {
-        $hash = hash('sha256', $tokenPlain);
-
-        // Búsqueda directa O(1) indexada en la base de datos
-        $invitation = UserInvitation::where('token_hash', $hash)->first();
+        $invitation = $this->lookupInvitationByHash($tokenPlain);
 
         if ($invitation === null) {
             return null;
@@ -195,5 +193,50 @@ class InvitationService
 
         // Vigente y pendiente
         return $invitation;
+    }
+
+    /**
+     * Lookup compartido por SHA-256 sin chequeo de estado. Usado por
+     * `findInvitationByToken` (que después valida pending-only) y por
+     * `previewInvitation` (que reporta cualquier estado).
+     */
+    private function lookupInvitationByHash(string $tokenPlain): ?UserInvitation
+    {
+        $hash = hash('sha256', $tokenPlain);
+
+        return UserInvitation::where('token_hash', $hash)->first();
+    }
+
+    /**
+     * Read-only preview de una invitación. NO consume ni modifica el
+     * estado: sólo carga la fila y construye el payload via
+     * `InvitationPreviewResource`. Permite al frontend mostrar la
+     * invitación (org, invitador, expiración) ANTES de pedirle al
+     * usuario que tipee la contraseña.
+     *
+     * @throws InvitationNotFoundException cuando el token no existe (404)
+     */
+    public function previewInvitation(string $tokenPlain): InvitationPreviewResource
+    {
+        $invitation = $this->lookupInvitationByHash($tokenPlain);
+
+        if ($invitation === null) {
+            throw new InvitationNotFoundException;
+        }
+
+        // Eager load para evitar N+1 en el resource.
+        $invitation->loadMissing([
+            'user.role',
+            'user.organization',
+            'invitedByUser.role',
+        ]);
+
+        $status = match (true) {
+            $invitation->accepted_at !== null => 'consumed',
+            $invitation->isExpired() => 'expired',
+            default => 'pending',
+        };
+
+        return new InvitationPreviewResource($invitation, $status);
     }
 }
