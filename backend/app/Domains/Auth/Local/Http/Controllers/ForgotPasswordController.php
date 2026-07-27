@@ -18,7 +18,7 @@ class ForgotPasswordController
 
             $status = Password::sendResetLink(['email' => $email]);
 
-            if ($status === Password::RESET_LINK_SENT) {
+            if ($status === Password::RESET_LINK_SENT || $status === Password::INVALID_USER) {
                 return response()->json(['message' => __('messages.reset_link_sent')]);
             }
 
