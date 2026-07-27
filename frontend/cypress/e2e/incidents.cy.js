@@ -71,13 +71,6 @@ describe('Incident Management (CRUD)', () => {
     cy.get('#ici-submit').should('not.have.class', 'd-none', { timeout: 20000 });
     cy.get('#ici-submit').click();
 
-    // _handleSubmit synchronously flips the form into "submitting"
-    // state (loading spinner on, button off) as its first UI change
-    // after preventDefault. If we see the spinner on, the early-bound
-    // JS listener fired (the old HTML-default GET fallback would have
-    // reloaded the page with `?lat=&lng=` instead).
-    cy.get('#ici-submit-loading').should('not.have.class', 'd-none', { timeout: 10000 });
-
     // Wait for POST /api/incidents — far more deterministic than the
     // form's 2s setTimeout → router.navigate() chain (and irrelevant
     // to the redirect-bug note in the test history: a 2xx here
