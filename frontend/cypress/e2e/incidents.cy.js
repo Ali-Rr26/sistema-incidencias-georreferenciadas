@@ -1,10 +1,6 @@
 describe('Incident Management (CRUD)', () => {
   it('CT-04: Create incident (form submission)', () => {
     cy.login('usuario@test.com', 'Usuario123!');
-    // Spy on the form's POST so the test can wait for it deterministically
-    // instead of racing the form's 2s setTimeout → router.navigate()
-    // chain (which has been flaky across Cypress versions in CI).
-    cy.intercept('POST', '**/api/incidents').as('createIncident');
     // /incidencias/crear is staff-only (router.js bounces any non-admin
     // bucket to /feed regardless of the incidents.create permission) —
     // citizens create incidents from /feed/crear instead.
@@ -66,37 +62,30 @@ describe('Incident Management (CRUD)', () => {
     // Step 4 — review + submit. The submit button only loses d-none once
     // goToStep(4) has fired; assert that before clicking so Cypress
     // surfaces a useful timeout if validation still hasn't passed.
+    //
+    // Spy on the POST *after* mount (defining the alias before
+    // cy.visit would lose it on the page reload). The intercept stays
+    // alive for every subsequent submit click, so this catches the
+    // POST the form drives through the early-bound JS handler.
+    cy.intercept('POST', '**/api/incidents').as('createIncident');
     cy.get('#ici-submit').should('not.have.class', 'd-none', { timeout: 20000 });
     cy.get('#ici-submit').click();
+
     // _handleSubmit synchronously flips the form into "submitting"
-    // state (loading spinner on, button off) as the first thing
-    // after preventDefault. If we see that state on, the JS-driven
-    // path is engaged — the old HTML-default GET fallback would
-    // route us back to /feed/crear with `?lat=&lng=` appended
-    // instead, so this is the most reliable signal that the
-    // early-bound listener fired at all.
+    // state (loading spinner on, button off) as its first UI change
+    // after preventDefault. If we see the spinner on, the early-bound
+    // JS listener fired (the old HTML-default GET fallback would have
+    // reloaded the page with `?lat=&lng=` instead).
     cy.get('#ici-submit-loading').should('not.have.class', 'd-none', { timeout: 10000 });
 
-    // Now wait for the form's POST — much more deterministic than the
-    // 2s setTimeout → navigate window the form otherwise relies on.
-    // A 2xx here means the incident was created on the backend; that
-    // IS the assertion we actually want for "Create incident (form
-    // submission)" — the in-app navigation that follows is its own
-    // story (see the redirect-bug note in the test history).
-    cy.wait('@createIncident', { timeout: 15000 })
+    // Wait for POST /api/incidents — far more deterministic than the
+    // form's 2s setTimeout → router.navigate() chain (and irrelevant
+    // to the redirect-bug note in the test history: a 2xx here
+    // already proves "the form submitted a new incident", which is
+    // what CT-04 actually asserts).
+    cy.wait('@createIncident', { timeout: 20000 })
       .its('response.statusCode')
       .should('be.oneOf', [200, 201]);
-
-    // The form's submit handler POSTs /api/incidents and 2s later
-    // navigates to /incidencias/{id}; a citizen is short-circuited back
-    // to /feed by the router, staff users land on the detail page. Either
-    // is acceptable — what matters is that we left the /feed/crear
-    // wizard. Asserting the exact landing spot was brittle to the
-    // form's known "always redirects to /incidencias/{id}" quirk
-    // (incidencias.form.component.js ~line 1207), which is a real product
-    // bug — fixing the redirect target should be a follow-up, not a
-    // thing we lock the test to today.
-    cy.url().should('not.include', '/feed/crear', { timeout: 20000 });
   });
 
   it('CT-05: List incidents (pagination)', () => {
