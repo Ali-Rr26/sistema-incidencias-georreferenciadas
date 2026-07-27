@@ -148,6 +148,31 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->organization_id !== null;
     }
 
+    /**
+     * Back-port of the canonical role checks lost when the email verification
+     * feature branch merged onto the older sc-117 base. AppServiceProvider::boot
+     * and MenuService rely on isAdmin() in Gate::before and the admin branch of
+     * getMyMenus; the AppServiceProvider's feed rate limiter additionally
+     * guards with method_exists($user, 'isSystemAdmin') — without it, every
+     * authenticated request that touches a Gate crashes with
+     * BadMethodCallException, and the whole /api/menus/my flow returns 500.
+     *
+     * isOperator() and isRegularUser() already exist below; this only
+     * restores the two helpers that didn't survive the merge.
+     */
+    public function isAdmin(): bool
+    {
+        return in_array($this->role?->name, [
+            UserRole::AdminSistema->value,
+            UserRole::OperadorSistema->value,
+        ], true);
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->role?->name === UserRole::AdminSistema->value;
+    }
+
     public function isOperator(): bool
     {
         return $this->role?->name === UserRole::OperadorOrganizacion->value;
