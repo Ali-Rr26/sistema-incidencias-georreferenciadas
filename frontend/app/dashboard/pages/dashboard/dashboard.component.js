@@ -24,19 +24,7 @@ const filterState = {
   categories: [],
 };
 
-// ─────────────────────────────────────────────
-// Estado global de filtros
-// ─────────────────────────────────────────────
-const filterState = {
-  inicio: null,
-  fin: null,
-  tipo_id: null,
-  ciudad_id: null,
-  provincia_id: null,
-  pais_id: null,
-  locationTree: [],
-  categories: [],
-};
+
 
 // ─────────────────────────────────────────────
 // Carga D3 + C3 de forma lazy (ya están en assets)
