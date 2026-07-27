@@ -167,6 +167,8 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
           APP_URL: http://localhost:8000
+          JWT_ACCESS_SECRET: ci-e2e-test-access-secret-not-for-production-use
+          JWT_REFRESH_SECRET: ci-e2e-test-refresh-secret-not-for-production-use
         run: |
           (cd ../backend && php artisan serve --port=8000) &
           npm run dev &
