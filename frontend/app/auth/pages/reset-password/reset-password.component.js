@@ -79,7 +79,7 @@ export default {
       } catch (err) {
         const msg = err.status === 429
           ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.response?.message ?? 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
+          : (err.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
         const errTxt = document.getElementById('error-texto');
         if (errTxt) errTxt.textContent = msg;
         document.getElementById('estado-error')?.classList.remove('d-none');

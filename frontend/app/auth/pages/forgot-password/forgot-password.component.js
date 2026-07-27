@@ -38,7 +38,7 @@ export default {
       } catch (err) {
         const msg = err.status === 429
           ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.response?.message ?? 'No pudimos enviar el enlace. Verifica tu correo.');
+          : (err.message || 'No pudimos enviar el enlace. Verifica tu correo.');
         const errorTexto = document.getElementById('error-texto');
         if (errorTexto) {
           errorTexto.textContent = msg;
