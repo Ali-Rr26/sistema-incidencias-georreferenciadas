@@ -4,73 +4,22 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Controllers;
 
-use App\Domains\Auth\Local\Notifications\VerifyEmailMail;
 use App\Domains\Users\Models\User;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Verificación de correo electrónico — story sc-117.
+ * Verificación de correo electrónico mediante código OTP — story sc-117.
  *
  * Endpoints:
- *
- *   GET  /api/email/verify/{id}/{hash}        (verify  — pública, signed URL)
- *   POST /api/email/resend                     (resend  — autenticada, throttle)
- *   GET  /api/email/notice                     (notice  — autenticada)
- *
- * Esta clase NO contiene la lógica de generación de URLs firmadas: el
- * mail (VerifyEmailMail) la delega a `URL::temporarySignedRoute`
- * vinculado a la ruta `verification.verify` (que es la GET pública de
- * arriba). El middleware `signed` valida `signature` y `expires` en la
- * query string. La validación se hace antes de llegar al método
- * `verify()`, así que dentro del mismo asumimos `signature` válido.
+ *   POST /api/email/verify-otp  (verifyOtp — pública, rate-limited)
+ *   POST /api/email/resend      (resend    — pública/autenticada, rate-limited)
+ *   GET  /api/email/notice      (notice    — autenticada)
  */
 class VerificationController
 {
-    /**
-     * GET /api/email/verify/{id}/{hash}
-     *
-     * Ruta firmada con `signed` middleware (verificación de firma +
-     * expiración). También verificamos que el `hash` del email coincida
-     * con el hash actual (defense in depth — si un admin rota el correo
-     * del usuario mientras el enlace está en vuelo, el enlace viejo
-     * deja de aplicar).
-     */
-    public function verify(Request $request, int|string $id, string $hash): JsonResponse
-    {
-        /** @var User|null $user */
-        $user = User::find($id);
-
-        if ($user === null) {
-            return $this->verificationFailed('verification_invalid', 'El usuario asociado al enlace no existe.');
-        }
-
-        if (! hash_equals(sha1((string) $user->getEmailForVerification()), (string) $hash)) {
-            return $this->verificationFailed('verification_invalid', 'El enlace de verificación no es válido o ya fue utilizado.');
-        }
-
-        if ($user->hasVerifiedEmail()) {
-            // Idempotente — si el usuario pica el enlace dos veces,
-            // devolvemos 200 igual y no devolvemos error. Esto evita
-            // falsos negativos en clientes que reintenten.
-            return $this->verificationSucceeded($user);
-        }
-
-        if ($user->markEmailAsVerified()) {
-            Log::info('auth.email_verified', [
-                'user_id' => $user->id,
-                'email_hash' => hash('sha256', (string) $user->email),
-            ]);
-        }
-
-        return $this->verificationSucceeded($user);
-    }
-
     /**
      * POST /api/email/verify-otp
      *
@@ -140,10 +89,7 @@ class VerificationController
     /**
      * GET /api/email/notice
      *
-     * Reporta el estado de verificación del usuario autenticado. El
-     * frontend lo consulta en el flujo "estoy logueado pero olvidé
-     * verificar" o al cargar el dashboard para mostrar banner de
-     * "verifica tu correo".
+     * Reporta el estado de verificación del usuario autenticado.
      */
     public function notice(Request $request): JsonResponse
     {

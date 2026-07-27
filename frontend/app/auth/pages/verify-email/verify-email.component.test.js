@@ -56,52 +56,11 @@ describe('verify-email component — story sc-117', () => {
     expect(document.getElementById('estado-error')).not.toBeNull();
   });
 
-  it('calls the verify API with the query params intact when landing with a signed token', async () => {
-    httpMock.get.mockResolvedValueOnce({
-      message: 'Tu correo fue verificado correctamente.',
-      verified: true,
-    });
-
-    const query = new URLSearchParams(
-      'id=42&hash=abc123&expires=1700000000&signature=deadbeef',
-    );
-    await mountComponent({ query });
-
-    expect(httpMock.get).toHaveBeenCalledTimes(1);
-    // Verifica que la URL armada preserva `id`, `hash`, `expires`, `signature`.
-    const calledPath = httpMock.get.mock.calls[0][0];
-    expect(calledPath).toContain('/email/verify/42/abc123');
-    expect(calledPath).toContain('expires=1700000000');
-    expect(calledPath).toContain('signature=deadbeef');
-
-    // Tras 3s, el componente redirige al login (async, lo suficiente).
-    // No verificamos el setTimeout real para mantener el test veloz.
-  });
-
-  it('shows an error state when the verify API returns 403 with an expired code', async () => {
-    const err = Object.assign(new Error('El enlace de verificación expiró.'), {
-      status: 403,
-      code: 'verification_expired',
-    });
-    httpMock.get.mockRejectedValueOnce(err);
-
-    const query = new URLSearchParams(
-      'id=42&hash=abc123&expires=1000&signature=deadbeef',
-    );
-    await mountComponent({ query });
-
-    const errorEl = document.getElementById('estado-error');
-    expect(errorEl.classList.contains('d-none')).toBe(false);
-    expect(errorEl.textContent).toMatch(/expir/i);
-  });
-
-  it('shows the initial banner when the URL has no token params (post-201 register flow)', async () => {
+  it('shows the initial banner when mounting the component', async () => {
     await mountComponent({ query: new URLSearchParams() });
 
     const inicial = document.getElementById('estado-inicial');
     expect(inicial.classList.contains('d-none')).toBe(false);
-
-    expect(httpMock.get).not.toHaveBeenCalled();
   });
 
   it('sends POST /email/resend when the user clicks the reenviar button', async () => {

@@ -72,16 +72,6 @@ function validRegisterPayloadSc117(array $overrides = []): array
         'password_confirmation' => 'Password1',
     ], $overrides);
 }
-
-function validSignedVerificationUrl(int $userId, string $email): string
-{
-    return URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $userId, 'hash' => sha1($email)],
-    );
-}
-
 // ─── R8 — RegisterService dispara VerifyEmailMail ─────────────────────
 
 it('R8: RegisterService sends the VerifyEmailMail notification on registration', function (): void {
@@ -111,121 +101,6 @@ it('R8b: RegisterService never sends the framework default VerifyEmail notificat
     // ese override es lo que apunta a VerifyEmailMail en vez del
     // VerifyEmail por defecto de Illuminate.
     Notification::assertNotSentTo($user, VerifyEmail::class);
-});
-
-// ─── R9 — GET /api/email/verify/{id}/{hash} ───────────────────────────
-
-it('R9a: verify with a valid signed URL marks email_verified_at and returns 200', function (): void {
-    $user = User::factory()->create([
-        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
-        'email_verified_at' => null,
-    ]);
-
-    expect($user->fresh()->email_verified_at)->toBeNull();
-
-    $url = validSignedVerificationUrl($user->id, $user->email);
-    $urlHost = parse_url($url, PHP_URL_HOST);
-
-    // When the URL host matches the current request host (true in tests),
-    // the test client can drive it directly. Otherwise, swap the host
-    // to the local test URL so the request resolves correctly.
-    if ($urlHost !== null && $urlHost !== 'localhost' && $urlHost !== '127.0.0.1') {
-        $url = preg_replace('#^https?://[^/]+#', 'http://localhost', $url);
-    }
-
-    $response = $this->get($url);
-
-    $response->assertOk()
-        ->assertJsonStructure(['message', 'verified', 'user_id'])
-        ->assertJsonPath('verified', true)
-        ->assertJsonPath('user_id', $user->id);
-
-    expect($user->fresh()->email_verified_at)->not->toBeNull();
-});
-
-it('R9b: verify with an unsigned URL returns 403', function (): void {
-    $user = User::factory()->create([
-        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
-        'email_verified_at' => null,
-    ]);
-
-    $unsignedUrl = '/api/email/verify/'.$user->id.'/'.sha1($user->email);
-
-    $response = $this->get($unsignedUrl);
-
-    $response->assertStatus(403);
-    expect($user->fresh()->email_verified_at)->toBeNull();
-});
-
-it('R9c: verify with an expired signature returns 403', function (): void {
-    $user = User::factory()->create([
-        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
-        'email_verified_at' => null,
-    ]);
-
-    // Generamos la firma expirando en el pasado para forzar el path
-    // `Response::HTTP_FORBIDDEN` de ValidateSignature (InvalidSignature).
-    $expiredUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->subMinutes(5),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
-
-    $response = $this->get($expiredUrl);
-
-    $response->assertStatus(403);
-    expect($user->fresh()->email_verified_at)->toBeNull();
-});
-
-it('R9d: verify is idempotent — second visit still returns 200', function (): void {
-    $user = User::factory()->create([
-        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
-        'email_verified_at' => null,
-    ]);
-
-    $url = validSignedVerificationUrl($user->id, $user->email);
-    $urlHost = parse_url($url, PHP_URL_HOST);
-    if ($urlHost !== null && $urlHost !== 'localhost' && $urlHost !== '127.0.0.1') {
-        $url = preg_replace('#^^https?://[^/]+#', 'http://localhost', $url);
-    }
-
-    $this->get($url)->assertOk();
-
-    $verifiedAtFirst = $user->fresh()->email_verified_at;
-    expect($verifiedAtFirst)->not->toBeNull();
-
-    // Re-picar el mismo enlace debe seguir siendo 200 (no rompemos UX).
-    $this->get($url)->assertOk();
-
-    $verifiedAtSecond = $user->fresh()->email_verified_at;
-    expect($verifiedAtSecond)->not->toBeNull();
-    expect(\Carbon\Carbon::parse($verifiedAtSecond)->equalTo(\Carbon\Carbon::parse($verifiedAtFirst)))->toBeTrue();
-});
-
-it('R9e: verify rejects a hash that does not match the user email', function (): void {
-    $user = User::factory()->create([
-        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
-        'email_verified_at' => null,
-    ]);
-
-    // hash falso pero con firma válida para id+hash — el middleware
-    // `signed` valida la firma pero NO valida que el hash sea el del
-    // email actual, eso lo hace el controller.
-    $url = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1('wrong@email.example.com')],
-    );
-    $urlHost = parse_url($url, PHP_URL_HOST);
-    if ($urlHost !== null && $urlHost !== 'localhost' && $urlHost !== '127.0.0.1') {
-        $url = preg_replace('#^https?://[^/]+#', 'http://localhost', $url);
-    }
-
-    $response = $this->get($url);
-
-    $response->assertStatus(403)
-        ->assertJsonPath('code', 'verification_invalid');
-    expect($user->fresh()->email_verified_at)->toBeNull();
 });
 
 // ─── R10/R11 — POST /api/email/resend ─────────────────────────────────

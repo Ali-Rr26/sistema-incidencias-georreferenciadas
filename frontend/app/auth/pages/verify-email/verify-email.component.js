@@ -1,11 +1,8 @@
 /**
  * Verify-email landing page — story sc-117.
  *
- * Soporta dos vías de verificación:
- *   1. **Ingreso de código OTP de 6 dígitos**: el usuario ingresa el código
- *      recibido en su correo y presiona "Verificar código" (POST /api/email/verify-otp).
- *   2. **Landing con enlace firmado**: si la URL contiene params firmados,
- *      se llama a GET /api/email/verify/{id}/{hash}.
+ * Flujo OTP: El usuario ingresa su correo y el código OTP de 6 dígitos
+ * recibido en su casilla (POST /api/email/verify-otp).
  */
 import template from './verify-email.component.html?raw';
 import style from '../login/login.component.css?raw';
@@ -37,15 +34,9 @@ export default {
     }
 
     const hideAllStates = () => {
-      document.getElementById('estado-cargando')?.classList.add('d-none');
       document.getElementById('estado-exito')?.classList.add('d-none');
       document.getElementById('estado-error')?.classList.add('d-none');
       document.getElementById('estado-reenvio')?.classList.add('d-none');
-    };
-
-    const showLoading = () => {
-      hideAllStates();
-      document.getElementById('estado-cargando')?.classList.remove('d-none');
     };
 
     const showSuccess = (msg) => {
@@ -149,32 +140,6 @@ export default {
           btnVerificarLoading?.classList.add('d-none');
         }
       });
-    }
-
-    // ─── Path alternativo — landing con token firmado ─────────────────────
-    const id = query?.get('id');
-    const hash = query?.get('hash');
-    const expires = query?.get('expires');
-    const signature = query?.get('signature');
-
-    if (id && hash && expires && signature) {
-      showLoading();
-
-      try {
-        const path = `/email/verify/${encodeURIComponent(id)}/${encodeURIComponent(hash)}`;
-        const sep = path.includes('?') ? '&' : '?';
-        const verifyUrl = `${path}${sep}expires=${encodeURIComponent(expires)}&signature=${encodeURIComponent(signature)}`;
-
-        const data = await http.get(verifyUrl);
-        showSuccess(data?.message || 'Tu correo fue verificado correctamente.');
-        setTimeout(() => router.navigate('/login'), 2500);
-      } catch (err) {
-        if (err?.status === 403 && err?.code === 'verification_expired') {
-          showError('El enlace de verificación expiró. Solicitá un nuevo código.');
-        } else {
-          showError(err?.message || 'No pudimos verificar tu correo. El enlace puede haber expirado o ya fue utilizado.');
-        }
-      }
     }
   },
 

@@ -47,10 +47,7 @@ Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
-// Email verification — story sc-117
-Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
-    ->name('verification.verify')
-    ->middleware('signed');
+// Email verification — story sc-117 (OTP code verification)
 Route::post('/email/verify-otp', [VerificationController::class, 'verifyOtp'])
     ->middleware('throttle:5,1');
 Route::post('/email/resend', [VerificationController::class, 'resend'])
