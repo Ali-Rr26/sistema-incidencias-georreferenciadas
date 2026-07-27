@@ -373,6 +373,43 @@ function populateSelectError(selectEl, message) {
   selectEl.disabled = true;
 }
 
+async function setupQuickFilterListeners() {
+  const container = document.getElementById('gr-quick-filters');
+  if (!container) return;
+
+  container.querySelectorAll('.gr-quick-filter-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      container
+        .querySelectorAll('.gr-quick-filter-btn')
+        .forEach((b) => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+
+      const preset = e.currentTarget.dataset.preset;
+      const now = new Date();
+      const formatDate = (d) => d.toISOString().slice(0, 10);
+
+      if (preset === 'today') {
+        filterState.inicio = formatDate(now);
+        filterState.fin = formatDate(now);
+      } else if (preset === 'week') {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        filterState.inicio = formatDate(weekAgo);
+        filterState.fin = formatDate(now);
+      } else if (preset === 'month') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        filterState.inicio = formatDate(monthStart);
+        filterState.fin = formatDate(now);
+      } else {
+        filterState.inicio = null;
+        filterState.fin = null;
+      }
+
+      await refreshDashboard();
+    });
+  });
+}
+
 async function setupFilterListeners() {
   // Load categories (unchanged — still uses tree endpoint)
   http
@@ -667,6 +704,7 @@ export default {
 
     // Setup de filtros (carga listener e inicializa opciones)
     setupFilterListeners();
+    setupQuickFilterListeners();
     setupExportListeners();
 
     // Cargar stats iniciales (sin filtros)
