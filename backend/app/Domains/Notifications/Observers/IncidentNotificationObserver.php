@@ -15,6 +15,8 @@ class IncidentNotificationObserver
 {
     public function updated(Incident $incident): void
     {
+        \App\Domains\Users\Services\OperatorDashboardService::clearCacheForIncident($incident);
+
         try {
             $this->handleClaimChange($incident);
             $this->handleReleaseChange($incident);

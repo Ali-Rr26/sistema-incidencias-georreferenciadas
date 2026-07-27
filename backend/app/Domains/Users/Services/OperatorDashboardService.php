@@ -12,6 +12,7 @@ use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 
 class OperatorDashboardService
 {
@@ -285,6 +286,42 @@ class OperatorDashboardService
             $operator->id,
             hash('xxh3', serialize([$filters, $position])),
         );
+    }
+
+    public static function clearCacheForOperator(int $userId): void
+    {
+        try {
+            if (config('cache.default') === 'redis' || config('cache.default') === 'octane') {
+                $redis = Redis::connection();
+                $prefix = config('database.redis.options.prefix', '');
+                $pattern = "{$prefix}operator-dashboard:{$userId}:*";
+                $keys = $redis->keys($pattern);
+                foreach ($keys as $key) {
+                    $unprefixedKey = preg_replace('/^' . preg_quote($prefix, '/') . '/', '', $key);
+                    Cache::forget($unprefixedKey);
+                }
+            } else {
+                Cache::forget("operator-dashboard:{$userId}");
+            }
+        } catch (\Throwable) {
+            // Ignore cache invalidation failures
+        }
+    }
+
+    public static function clearCacheForIncident(Incident $incident): void
+    {
+        try {
+            $assignedUserIds = DB::table('assignments')
+                ->where('incident_id', $incident->id)
+                ->pluck('user_id')
+                ->all();
+
+            foreach ($assignedUserIds as $userId) {
+                self::clearCacheForOperator((int) $userId);
+            }
+        } catch (\Throwable) {
+            // Ignore cache invalidation failures
+        }
     }
 
     private function emptyPayload(array $filters, bool $hasRecentLocation, float $radiusKm): array
