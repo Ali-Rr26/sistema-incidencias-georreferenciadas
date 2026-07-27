@@ -6,15 +6,18 @@ describe('Incident Management (CRUD)', () => {
     // citizens create incidents from /feed/crear instead.
     cy.visit('/#/feed/crear', {
       onBeforeLoad(win) {
-        const fakePosition = success => success({ coords: { latitude: -0.22, longitude: -78.5 } });
-        if (win.navigator.geolocation) {
-          cy.stub(win.navigator.geolocation, 'getCurrentPosition').callsFake(fakePosition);
-        } else {
-          Object.defineProperty(win.navigator, 'geolocation', {
-            value: { getCurrentPosition: fakePosition },
-            configurable: true,
-          });
-        }
+        // navigator.geolocation.getCurrentPosition is a host method on Chromium
+        // (non-configurable), so cy.stub() is a no-op there and the real
+        // permission-gated call silently fails — which is what CT-04 was
+        // tripping on: form never reached step 4 because geomValue stayed null.
+        // Define a fresh geolocation object up front so the form picks up the
+        // mock regardless of the host navigator state.
+        const fakePosition = success =>
+          success({ coords: { latitude: -0.22, longitude: -78.5 } });
+        Object.defineProperty(win.navigator, 'geolocation', {
+          value: { getCurrentPosition: fakePosition, watchPosition: () => {}, clearWatch: () => {} },
+          configurable: true,
+        });
       },
     });
 
@@ -28,11 +31,18 @@ describe('Incident Management (CRUD)', () => {
     cy.get('#ici-category').select(1, { force: true });
     cy.get('#ici-btn-next').click();
 
-    // Step 3 — geolocation (stubbed above)
+    // Step 3 — geolocation (mocked above). #ici-btn-geo briefly disables
+    // itself and re-enables on the success callback; wait for that flip
+    // before clicking next, otherwise the validation may run before
+    // setMarker has stored geomValue.
     cy.get('#ici-btn-geo').click();
+    cy.get('#ici-btn-geo').should('not.be.disabled');
     cy.get('#ici-btn-next').click();
 
-    // Step 4 — review + submit
+    // Step 4 — review + submit. The submit button only loses d-none once
+    // goToStep(4) has fired; assert that before clicking so Cypress
+    // surfaces a useful timeout if validation still hasn't passed.
+    cy.get('#ici-submit').should('not.have.class', 'd-none');
     cy.get('#ici-submit').click();
 
     // BUG: the form always redirects to /incidencias/{id} on success (see

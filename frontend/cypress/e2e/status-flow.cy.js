@@ -13,12 +13,18 @@ describe('Incident Status Flow', () => {
               // Change to in_progress
               cy.changeIncidentStatus(id, 'in_progress', opToken);
 
-              // Change to resolved
-              cy.changeIncidentStatus(id, 'resolved', opToken).then(() => {
-                cy.login('operador.gad-municipal-del-canton-quito@organizacion.com', 'Operador123!');
-                cy.visit(`/#/incidencias/${id}`);
-                cy.get('body').should('contain', /resuelto|resolved/i);
-              });
+                // Change to resolved
+                cy.changeIncidentStatus(id, 'resolved', opToken).then(() => {
+                  cy.login('operador.gad-municipal-del-canton-quito@organizacion.com', 'Operador123!');
+                  cy.visit(`/#/incidencias/${id}`);
+                  // Wait for the detail page's content panel to be revealed
+                  // (it toggles off #detalle-content's d-none once the
+                  // /incidents/:id fetch returns) and pin the assertion to
+                  // the status badge specifically — the body assertion was
+                  // racing the initial render.
+                  cy.get('#detalle-content').should('not.have.class', 'd-none');
+                  cy.get('#detalle-status').should('contain', /resuelto/i);
+                });
             });
           });
         });
