@@ -177,10 +177,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return in_array($this->role?->name, [
-            UserRole::AdminSistema->value,
-            UserRole::OperadorSistema->value,
-        ], true);
+        return $this->role?->name === UserRole::AdminSistema->value;
     }
 
     public function isSystemAdmin(): bool
