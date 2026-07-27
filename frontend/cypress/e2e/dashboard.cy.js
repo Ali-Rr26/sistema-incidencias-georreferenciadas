@@ -30,6 +30,6 @@ describe('Dashboard + Filters', () => {
 
   it('CT-11: Weekly performance chart visible', () => {
     cy.get('[id*="chart"], svg').should('have.length.greaterThan', 0);
-    cy.get('body').should('contain', /recibidas|resueltas|semanal/i);
+    cy.get('.gr-stat-card__label', { timeout: 15000 }).should('contain', 'Resueltas');
   });
 });

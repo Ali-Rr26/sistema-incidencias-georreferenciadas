@@ -37,7 +37,7 @@ Cypress.Commands.add('assignIncident', (incidentId, userId, role, token) => {
     method: 'POST',
     url: `${Cypress.env('API_BASE')}/incidents/${incidentId}/assignments`,
     headers: { Authorization: `Bearer ${token}` },
-    body: { user_id: userId, assignment_role: role },
+    body: { user_id: userId, role },
   });
 });
 

@@ -6,6 +6,7 @@ describe('Incident Comments', () => {
           cy.login('usuario@test.com', 'Usuario123!');
           cy.visit(`/#/incidencias/${id}`);
 
+          cy.get('#detalle-content', { timeout: 15000 }).should('not.have.class', 'd-none');
           cy.get('textarea[name*="comment"], #detalle-comment-input, [placeholder*="comentario"]').type('Este es mi comentario E2E');
           cy.get('button:contains("Enviar"), button:contains("Comentar"), #detalle-comment-submit').click();
 

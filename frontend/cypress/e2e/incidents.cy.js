@@ -3,9 +3,15 @@ describe('Incident Management (CRUD)', () => {
     cy.login('usuario@test.com', 'Usuario123!');
     cy.visit('/#/incidencias/crear', {
       onBeforeLoad(win) {
-        cy.stub(win.navigator.geolocation, 'getCurrentPosition').callsFake(success => {
-          success({ coords: { latitude: -0.22, longitude: -78.5 } });
-        });
+        const fakePosition = success => success({ coords: { latitude: -0.22, longitude: -78.5 } });
+        if (win.navigator.geolocation) {
+          cy.stub(win.navigator.geolocation, 'getCurrentPosition').callsFake(fakePosition);
+        } else {
+          Object.defineProperty(win.navigator, 'geolocation', {
+            value: { getCurrentPosition: fakePosition },
+            configurable: true,
+          });
+        }
       },
     });
 
@@ -35,6 +41,7 @@ describe('Incident Management (CRUD)', () => {
     cy.login('admin.gad-municipal-del-canton-quito@organizacion.com', 'Admin123!');
     cy.visit('/#/incidencias');
 
+    cy.get('#contenedor-tabla').should('not.have.class', 'd-none');
     cy.get('table tbody tr, [data-testid*="incident-row"]').should('have.length.greaterThan', 0);
   });
 
@@ -45,6 +52,7 @@ describe('Incident Management (CRUD)', () => {
           cy.login('usuario@test.com', 'Usuario123!');
           cy.visit(`/#/incidencias/${id}`);
 
+          cy.get('#detalle-content').should('not.have.class', 'd-none');
           cy.get('body').should('contain', 'E2E Test Incident');
         });
       });

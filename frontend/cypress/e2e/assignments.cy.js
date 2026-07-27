@@ -31,7 +31,7 @@ describe('Incident Assignments', () => {
               method: 'POST',
               url: `${Cypress.env('API_BASE')}/incidents/${id}/assignments`,
               headers: { Authorization: `Bearer ${adminToken}` },
-              body: { user_id: 5, assignment_role: 'responsable' },
+              body: { user_id: 5, role: 'responsable' },
               failOnStatusCode: false,
             }).then(res => {
               expect(res.status).to.be.oneOf([409, 422]);
