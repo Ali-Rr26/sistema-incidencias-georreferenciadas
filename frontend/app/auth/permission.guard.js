@@ -38,6 +38,7 @@ import { permissionService } from '../shared/permission.service.js';
  * segment, same convention as router.js's own route patterns.
  */
 const CHILD_ROUTE_PERMISSIONS = {
+  '/operator/dashboard': 'dashboard.view',
   '/usuarios/crear': 'users.create',
   '/organizaciones/crear': 'organizations.create',
   '/localizaciones/crear': 'locations.create',

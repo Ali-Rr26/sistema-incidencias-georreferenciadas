@@ -44,7 +44,9 @@ export default {
   async onInit() {
     const perms = await permissionService.getMyPermissions();
     if (!perms.has('users.create')) {
-      document.querySelectorAll('a[href*="usuarios/crear"]').forEach(el => el.classList.add('d-none'));
+      document
+        .querySelectorAll('a[href*="usuarios/crear"]')
+        .forEach((el) => el.classList.add('d-none'));
     }
 
     let roles = [];

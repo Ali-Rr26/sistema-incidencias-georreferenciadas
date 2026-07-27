@@ -97,13 +97,25 @@ it('admin_organizacion sees back-office plus citizen entries (spec override)', f
     expect($routes)->toContain('/dashboard')
         ->and($routes)->toContain('/incidencias')
         ->and($routes)->toContain('/usuarios')
-        ->and($routes)->toContain('/roles')
+        ->and($routes)->not->toContain('/roles')
         ->and($routes)->toContain('/organizaciones');
 
     // Citizen items (per design Decision 1: feed.view granted to admin_organizacion)
     expect($routes)->toContain('/feed')
         ->and($routes)->toContain('/feed/crear')
         ->and($routes)->toContain('/configuracion/perfil');
+});
+
+it('operador_organizacion receives the operator dashboard route', function (): void {
+    $user = User::factory()->create(['role_id' => 4]);
+
+    $response = $this->withoutMiddleware()->actingAs($user)->getJson('/api/menus/my');
+
+    $response->assertOk();
+    $routes = collectRoutes($response->json('data'));
+
+    expect($routes)->toContain('/operator/dashboard')
+        ->and($routes)->not->toContain('/dashboard');
 });
 
 it('usuario sees only the four citizen entries — no back-office, no /incidencias', function (): void {

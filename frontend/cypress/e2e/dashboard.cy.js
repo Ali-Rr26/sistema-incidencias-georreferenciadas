@@ -11,23 +11,25 @@ describe('Dashboard + Filters', () => {
   });
 
   it('CT-09: Filter by date range applies', () => {
-    cy.get('input[type="date"], [placeholder*="fecha"]').first().type('2026-07-01');
-    cy.get('input[type="date"], [placeholder*="fecha"]').last().type('2026-07-31');
-    cy.get('button:contains("Aplicar"), button[type="submit"]').click();
+    cy.get('#btn-open-filter-modal').click();
+    cy.get('#filter-inicio').type('2026-07-01');
+    cy.get('#filter-fin').type('2026-07-31');
+    cy.get('#btn-filter-apply').click();
 
     cy.get('[class*="stat"], [class*="card"]').should('exist');
   });
 
   it('CT-10: Filter by type + location', () => {
-    cy.get('select[name*="type"], select[name*="category"]').select('2', { force: true });
-    cy.get('select[name*="location"], select[name*="city"]').select('284', { force: true });
-    cy.get('button:contains("Aplicar"), button[type="submit"]').click();
+    cy.get('#btn-open-filter-modal').click();
+    cy.get('#filter-tipo').select(1, { force: true });
+    cy.get('#filter-pais').select(1, { force: true });
+    cy.get('#btn-filter-apply').click();
 
     cy.get('[id*="chart"], svg').should('exist');
   });
 
   it('CT-11: Weekly performance chart visible', () => {
     cy.get('[id*="chart"], svg').should('have.length.greaterThan', 0);
-    cy.get('body').should('contain', /recibidas|resueltas|semanal/i);
+    cy.get('.gr-stat-card__label', { timeout: 15000 }).should('contain', 'Resueltas');
   });
 });

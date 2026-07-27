@@ -42,6 +42,10 @@ class DatabaseSeeder extends Seeder
         // the RedisIncidentSync listener never fires for seed-created incidents.
         // Rebuild the Redis feed so the `usuario` role (and any Redis-backed
         // read) sees the same data that Postgres has.
-        Artisan::call('feed:rebuild');
+        $exitCode = Artisan::call('feed:rebuild');
+
+        if ($exitCode !== 0) {
+            throw new \RuntimeException('feed:rebuild failed with exit code '.$exitCode.': '.Artisan::output());
+        }
     }
 }

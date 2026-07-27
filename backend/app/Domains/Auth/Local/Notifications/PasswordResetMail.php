@@ -30,8 +30,8 @@ class PasswordResetMail extends Notification implements ShouldQueue
         }
 
         $url = rtrim((string) $baseUrl, '/')
-            . '/#/reset-password?token=' . $this->token
-            . '&email=' . urlencode($notifiable->email);
+            .'/#/reset-password?token='.$this->token
+            .'&email='.urlencode($notifiable->email);
 
         $fromAddress = (string) (config('gmail.from_address') ?: config('mail.from.address') ?: 'noreply@dihm-muertos.site');
         $fromName = (string) (config('gmail.from_name') ?: config('mail.from.name') ?: config('app.name', 'Sistema de Incidencias'));

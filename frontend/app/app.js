@@ -4,6 +4,7 @@ import { appShell } from './app-shell/app-shell.component.js';
 import loginComponent from './auth/pages/login/login.component.js';
 import acceptInviteComponent from './invitations/pages/accept-invite/accept-invite.component.js';
 import dashboardComponent from './dashboard/pages/dashboard/dashboard.component.js';
+import operatorDashboardComponent from './dashboard/pages/operator-dashboard/operator-dashboard.component.js';
 import incidenciasIndexComponent from './incidencias/pages/index/incidencias.index.component.js';
 import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.component.js';
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
@@ -60,6 +61,12 @@ router.addRoute('/configuracion/perfil', perfilComponent, [authGuard], 'both');
 // (hardcoded role name); the guard replaces roleGuard on /roles too —
 // /roles/:id is gated by roles.update, which only admin_sistema holds.
 router.addRoute('/dashboard', dashboardComponent, [permissionGuard], 'admin');
+router.addRoute(
+  '/operator/dashboard',
+  operatorDashboardComponent,
+  [permissionGuard],
+  'both',
+);
 router.addRoute(
   '/incidencias',
   incidenciasIndexComponent,

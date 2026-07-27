@@ -59,7 +59,11 @@ class FeedController extends Controller
     {
         $user = $request->user();
 
-        if ($user !== null && ! $user->isRegularUser()) {
+        if ($user === null) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        if (! $user->isRegularUser()) {
             // Staff path: requiere incidents.view (mismos datos que /api/incidents).
             // Defense-in-depth: el frontend ya gatera la ruta, pero si alguien
             // pega al endpoint directo sin el permiso, se rechaza.
@@ -73,7 +77,7 @@ class FeedController extends Controller
         // Ciudadano: requiere feed.view explícito.
         // El frontend no muestra la entrada de menú sin feed.view,
         // pero el backend también lo exige por defensa en profundidad.
-        if ($user !== null && ! $user->can('feed.view')) {
+        if (! $user->can('feed.view')) {
             abort(403, 'No tienes permiso para ver el feed ciudadano.');
         }
 

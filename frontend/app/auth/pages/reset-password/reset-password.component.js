@@ -14,8 +14,12 @@ export default {
     if (!token || !email) {
       document.getElementById('estado-error')?.classList.remove('d-none');
       const errTxt = document.getElementById('error-texto');
-      if (errTxt) errTxt.textContent = 'Enlace inválido. Solicita un nuevo restablecimiento de contraseña.';
-      const submitBtn = document.getElementById('reset-form')?.querySelector('button[type="submit"]');
+      if (errTxt)
+        errTxt.textContent =
+          'Enlace inválido. Solicita un nuevo restablecimiento de contraseña.';
+      const submitBtn = document
+        .getElementById('reset-form')
+        ?.querySelector('button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
       return;
     }
@@ -77,12 +81,16 @@ export default {
         // Redirect to login after a delay
         setTimeout(() => router.navigate('/login'), 3000);
       } catch (err) {
-        const isTechnicalError = err.message && (err.message.includes('SQLSTATE') || err.message.includes('Connection.php'));
-        const msg = err.status === 429
-          ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.message && !isTechnicalError
+        const isTechnicalError =
+          err.message &&
+          (err.message.includes('SQLSTATE') ||
+            err.message.includes('Connection.php'));
+        const msg =
+          err.status === 429
+            ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
+            : err.message && !isTechnicalError
               ? err.message
-              : 'No se pudo restablecer la contraseña. El enlace puede haber expirado o ser inválido.');
+              : 'No se pudo restablecer la contraseña. El enlace puede haber expirado o ser inválido.';
         const errTxt = document.getElementById('error-texto');
         if (errTxt) errTxt.textContent = msg;
         document.getElementById('estado-error')?.classList.remove('d-none');

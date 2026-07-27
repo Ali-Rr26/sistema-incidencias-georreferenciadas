@@ -332,7 +332,8 @@ function setupEstado(incidentId, inc) {
 
       const statusEl = document.getElementById('detalle-status');
       if (statusEl) {
-        statusEl.textContent = STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
+        statusEl.textContent =
+          STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
         statusEl.className = `ig-status-badge ig-status-${updatedInc.status}`;
       }
 
