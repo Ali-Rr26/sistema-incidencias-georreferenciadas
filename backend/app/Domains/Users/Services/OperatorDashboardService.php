@@ -191,9 +191,10 @@ class OperatorDashboardService
     private function applyFilters(Builder $query, array $filters): Builder
     {
         return $query
-            ->when($filters['inicio'] ?? null, fn (Builder $builder, string $date) => $builder->whereDate('incidents.created_at', '>=', $date))
-            ->when($filters['fin'] ?? null, fn (Builder $builder, string $date) => $builder->whereDate('incidents.created_at', '<=', $date))
-            ->when($filters['location_id'] ?? null, function (Builder $builder, int $locationId): void {
+            ->when(! empty($filters['inicio']), fn (Builder $builder) => $builder->whereDate('incidents.created_at', '>=', $filters['inicio']))
+            ->when(! empty($filters['fin']), fn (Builder $builder) => $builder->whereDate('incidents.created_at', '<=', $filters['fin']))
+            ->when(! empty($filters['location_id']), function (Builder $builder) use ($filters): void {
+                $locationId = (int) $filters['location_id'];
                 $builder->whereRaw('incidents.location_id IN (
                     WITH RECURSIVE location_tree AS (
                         SELECT id FROM locations WHERE id = ?
