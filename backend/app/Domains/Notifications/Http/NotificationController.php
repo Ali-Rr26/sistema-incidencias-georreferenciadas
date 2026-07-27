@@ -69,9 +69,32 @@ class NotificationController extends Controller
         return (new NotificationResource($notification->fresh('incident')))->response();
     }
 
-    /**
-     * Marca todas las notificaciones del usuario como leídas.
-     */
+    public function approve(Notification $notification): JsonResponse
+    {
+        $this->authorize('approve', $notification);
+
+        $data = $notification->data ?? [];
+        $data['decision'] = 'approved';
+        $data['rejection_reason'] = null;
+        $notification->update(['data' => $data, 'read' => true]);
+
+        return (new NotificationResource($notification->fresh('incident')))->response();
+    }
+
+    public function reject(Request $request, Notification $notification): JsonResponse
+    {
+        $this->authorize('reject', $notification);
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+
+        $data = $notification->data ?? [];
+        $data['decision'] = 'rejected';
+        $data['rejection_reason'] = $validated['reason'];
+        $notification->update(['data' => $data, 'read' => true]);
+
+        return (new NotificationResource($notification->fresh('incident')))->response();
+    }
+
+
     public function markAllRead(Request $request): JsonResponse
     {
         $user = $request->user();

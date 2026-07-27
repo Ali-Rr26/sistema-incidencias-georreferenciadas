@@ -15,8 +15,16 @@ class NotificationResource extends JsonResource
             'id' => $this->id,
             'type' => $this->type?->value,
             'message' => $this->message,
-            'data' => $this->data ?? [],
+            'data' => array_merge([
+                'incident_id' => $this->incident_id,
+                'actor_user_id' => null,
+                'decision' => null,
+                'rejection_reason' => null,
+                'expires_at' => null,
+                'organization_id' => null,
+            ], $this->data ?? []),
             'read' => (bool) $this->read,
+            'read_at' => $this->read ? $this->updated_at?->toIso8601String() : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'incident' => $this->whenLoaded('incident', fn () => $this->incident ? [
                 'id' => $this->incident->id,

@@ -42,6 +42,18 @@ class NotificationPolicy
         return $user->id === $notification->user_id;
     }
 
+    public function approve(User $user, Notification $notification): bool
+    {
+        return $user->hasPermission('notifications.update')
+            && $user->id === $notification->user_id;
+    }
+
+    public function reject(User $user, Notification $notification): bool
+    {
+        return $this->approve($user, $notification);
+    }
+
+
     /**
      * Acción específica de PATCH .../read — equivalente a update en este caso.
      */

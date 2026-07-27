@@ -106,7 +106,9 @@ Route::middleware('jwt')->group(function () {
     // Notificaciones
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
-    Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
+     Route::post('notifications/{notification}/approve', [NotificationController::class, 'approve']);
+     Route::post('notifications/{notification}/reject', [NotificationController::class, 'reject']);
+     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
     // SSE stream for the notification bell. The `jwt` middleware already
     // supports a cookie-based access_token fallback because native
