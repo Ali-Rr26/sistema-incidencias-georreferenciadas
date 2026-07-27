@@ -1,6 +1,10 @@
 describe('Incident Management (CRUD)', () => {
   it('CT-04: Create incident (form submission)', () => {
     cy.login('usuario@test.com', 'Usuario123!');
+    // Spy on the form's POST so the test can wait for it deterministically
+    // instead of racing the form's 2s setTimeout → router.navigate()
+    // chain (which has been flaky across Cypress versions in CI).
+    cy.intercept('POST', '**/api/incidents').as('createIncident');
     // /incidencias/crear is staff-only (router.js bounces any non-admin
     // bucket to /feed regardless of the incidents.create permission) —
     // citizens create incidents from /feed/crear instead.
@@ -72,6 +76,16 @@ describe('Incident Management (CRUD)', () => {
     // instead, so this is the most reliable signal that the
     // early-bound listener fired at all.
     cy.get('#ici-submit-loading').should('not.have.class', 'd-none', { timeout: 10000 });
+
+    // Now wait for the form's POST — much more deterministic than the
+    // 2s setTimeout → navigate window the form otherwise relies on.
+    // A 2xx here means the incident was created on the backend; that
+    // IS the assertion we actually want for "Create incident (form
+    // submission)" — the in-app navigation that follows is its own
+    // story (see the redirect-bug note in the test history).
+    cy.wait('@createIncident', { timeout: 15000 })
+      .its('response.statusCode')
+      .should('be.oneOf', [200, 201]);
 
     // The form's submit handler POSTs /api/incidents and 2s later
     // navigates to /incidencias/{id}; a citizen is short-circuited back
