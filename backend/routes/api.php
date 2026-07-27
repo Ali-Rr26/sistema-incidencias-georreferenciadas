@@ -7,6 +7,9 @@ use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\Controllers\AssignmentController;
+use App\Domains\Incidents\Http\Controllers\IncidentDuplicateController;
+use App\Domains\Incidents\Http\Controllers\IncidentFollowerController;
+use App\Domains\Incidents\Http\Controllers\MeTooController;
 use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
@@ -43,6 +46,15 @@ Route::post('/reset-password', [\App\Domains\Auth\Local\Http\Controllers\ResetPa
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
+// Public read-only endpoints for me-too / follow / duplicates. Auth is
+// optional — the controllers inspect $request->user() and degrade to
+// the count-only payload when nobody is logged in. Kept out of the
+// jwt group so anonymous feed traffic can still render the buttons'
+// passive state.
+Route::get('incidents/{incident}/me-too', [MeTooController::class, 'show'])->whereNumber('incident');
+Route::get('incidents/{incident}/follow', [IncidentFollowerController::class, 'show'])->whereNumber('incident');
+Route::get('incidents/{incident}/duplicates', [IncidentDuplicateController::class, 'index'])->whereNumber('incident');
+
 Route::middleware('jwt')->group(function () {
 
     // Auth
@@ -72,6 +84,26 @@ Route::middleware('jwt')->group(function () {
     // Comment images (nested under comments for image CRUD) — inherits jwt group middleware
     Route::post('/comments/{comment}/images', [CommentImageController::class, 'store']);
     Route::delete('/comments/{comment}/images/{image}', [CommentImageController::class, 'destroy']);
+
+    // "Yo también reporto" (me-too). Auth-required for the toggle; the
+    // GET that returns the count + viewer state is intentionally inside
+    // the JWT group because reading the toggle state of the current
+    // viewer requires auth (anonymous traffic gets count-only via a
+    // separate route in the public group below).
+    Route::post('incidents/{incident}/me-too', [MeTooController::class, 'store'])->whereNumber('incident');
+    Route::delete('incidents/{incident}/me-too', [MeTooController::class, 'destroy'])->whereNumber('incident');
+    Route::get('incidents/{incident}/me-too/users', [MeTooController::class, 'users'])->whereNumber('incident');
+
+    // "Seguir" (follow). Same shape as me-too.
+    Route::post('incidents/{incident}/follow', [IncidentFollowerController::class, 'store'])->whereNumber('incident');
+    Route::delete('incidents/{incident}/follow', [IncidentFollowerController::class, 'destroy'])->whereNumber('incident');
+
+    // Manual duplicate marking. mark + list are JWT-protected because
+    // listing users (mark endpoint) is auth-gated; the staff-only
+    // review endpoint is a PATCH under the same controller.
+    Route::post('incidents/{incident}/duplicates', [IncidentDuplicateController::class, 'store'])->whereNumber('incident');
+    Route::patch('incidents/{incident}/duplicates/{duplicate}', [IncidentDuplicateController::class, 'update'])
+        ->whereNumber(['incident', 'duplicate']);
 
     // `assignments` sub-resource (Phase 1 of historial-asignacion-operadores).
     // Explicit named routes instead of `apiResource` because we only expose

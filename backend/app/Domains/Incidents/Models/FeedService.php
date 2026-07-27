@@ -186,6 +186,14 @@ class FeedService
                 'id' => (int) ($data['location_id'] ?? 0),
                 'name' => $data['location_name'] ?? '',
             ],
+            // Counters cached on the read model. New fields default to 0
+            // / false when reading a row written by an older serializer
+            // (forward compat — old rows just render the empty state).
+            'comment_count' => (int) ($data['comment_count'] ?? 0),
+            'me_too_count' => (int) ($data['me_too_count'] ?? 0),
+            'followers_count' => (int) ($data['followers_count'] ?? 0),
+            'duplicates_count' => (int) ($data['duplicates_count'] ?? 0),
+            'is_duplicate' => (bool) ($data['is_duplicate'] ?? false),
         ];
     }
 

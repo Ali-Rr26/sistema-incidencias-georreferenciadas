@@ -51,6 +51,9 @@ class IncidentResource extends JsonResource
         // index), not by array/sort_order position ($images[0]).
         $thumbnail = $images->firstWhere('is_thumbnail', true) ?? $images->first();
 
+        $viewer = $request->user();
+        $viewerId = $viewer?->id;
+
         $data = [
             'id' => $this->id,
             'incident_category_id' => $this->incident_category_id,
@@ -80,6 +83,28 @@ class IncidentResource extends JsonResource
                 'original_name' => $img->original_name,
                 'is_thumbnail' => $img->is_thumbnail,
             ])->values()->all(),
+            // Counters exposed both as the count itself and (when the
+            // current viewer is authenticated) the per-viewer toggle
+            // state. The withCount on the repository already populates
+            // `comments_count`; the others fall back to a live query if
+            // not eager-loaded.
+            'comments_count' => (int) ($this->comments_count ?? $this->comments()->count()),
+            'me_too_count' => (int) ($this->me_too_count ?? $this->meTooReports()->count()),
+            'followers_count' => (int) ($this->followers_count ?? $this->followers()->count()),
+            'duplicates_count' => (int) ($this->duplicates_count ?? $this->duplicates()->count()),
+            // Per-viewer flags — only when authenticated. Frontend uses
+            // these to render the toggle state of "me too" / "follow"
+            // buttons without a second round-trip.
+            'viewer_has_me_too' => $viewerId !== null
+                ? $this->resource->meTooReports()->where('user_id', $viewerId)->exists()
+                : false,
+            'viewer_is_following' => $viewerId !== null
+                ? $this->resource->followers()->where('user_id', $viewerId)->exists()
+                : false,
+            // Whether this incident is a confirmed duplicate of another.
+            // The frontend detail page shows a banner pointing to the
+            // original when this is true.
+            'is_duplicate' => $this->resource->duplicateOf()->exists(),
         ];
 
         // Add location_path for progressive-loading preselection cascade
@@ -126,6 +151,21 @@ class IncidentResource extends JsonResource
                     'user' => $a->relationLoaded('user') ? $a->user : null,
                 ])->values()->all(),
             );
+
+            // If this incident is a confirmed duplicate of another, expose
+            // a small payload with the original's id and title so the
+            // detail page can render the banner "marcada como duplicada
+            // de #N — título".
+            $duplicateLink = $this->resource->duplicateOf()->first();
+            if ($duplicateLink !== null) {
+                $original = $duplicateLink->original;
+                $data['duplicate_of'] = [
+                    'incident_id' => (int) $duplicateLink->original_incident_id,
+                    'title' => $original?->title,
+                    'status' => $original?->status?->value,
+                    'reviewed_at' => $duplicateLink->reviewed_at?->toIso8601String(),
+                ];
+            }
         }
 
         return $data;

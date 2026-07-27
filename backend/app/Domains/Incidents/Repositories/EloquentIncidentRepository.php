@@ -89,7 +89,12 @@ class EloquentIncidentRepository extends EloquentRepository implements IncidentR
 
         $query
             ->with(is_array($relations) ? $relations : [])
-            ->withCount('comments')
+            ->withCount([
+                'comments',
+                'meTooReports',
+                'followers',
+                'duplicates',
+            ])
             ->when($filters['title'] ?? null, fn (Builder $q, string $v) => $q->where(function (Builder $q) use ($v): void {
                 $q->where('title', 'ilike', '%'.$v.'%')
                     ->orWhere('description', 'ilike', '%'.$v.'%');

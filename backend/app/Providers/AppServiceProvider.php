@@ -14,6 +14,7 @@ use App\Domains\Incidents\Listeners\RedisIncidentSync;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Observers\AssignmentNotificationObserver;
+use App\Domains\Incidents\Observers\FollowerCommentNotificationObserver;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Incidents\Repositories\IncidentRepository;
 use App\Domains\Invitations\Services\InvitationService;
@@ -234,6 +235,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Register RedisCommentSync as observer for Comment model events
         Comment::observe(RedisCommentSync::class);
+
+        // Register FollowerCommentNotificationObserver to push Comment
+        // notifications to every user following the incident where a
+        // comment was just posted (sc-118 "Seguir" integration).
+        try {
+            Comment::observe(FollowerCommentNotificationObserver::class);
+        } catch (\Throwable) {
+            // Notifications tables not ready yet — skip silently.
+        }
 
         // =====================================================================
         // Connection health checks — logged on every boot

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -125,6 +126,38 @@ class Incident extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function meTooReports(): HasMany
+    {
+        return $this->hasMany(MeTooReport::class);
+    }
+
+    public function followers(): HasMany
+    {
+        return $this->hasMany(IncidentFollower::class);
+    }
+
+    /**
+     * Incidents confirmed as duplicates OF this one (this is the canonical).
+     */
+    public function duplicates(): HasMany
+    {
+        return $this->hasMany(IncidentDuplicate::class, 'original_incident_id')
+            ->where('status', 'confirmed');
+    }
+
+    /**
+     * The canonical incident that this incident is a confirmed duplicate of.
+     * Returns the `IncidentDuplicate` row (which carries the original id)
+     * rather than the incident itself — keeps the SQL small and lets the
+     * consumer decide whether to fetch the original via the `original()`
+     * relation on the duplicate row.
+     */
+    public function duplicateOf(): HasOne
+    {
+        return $this->hasOne(IncidentDuplicate::class, 'duplicate_incident_id')
+            ->where('status', 'confirmed');
     }
 
     public function assignedUsers(): BelongsToMany
