@@ -1,81 +1,56 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     /**
      * Add query optimization indexes for dashboard filters and common queries.
-     *
-     * Indexes added:
-     * - status: for dashboard state filtering
-     * - organization_id + status: for org-scoped queries
-     * - resolution_date: for time-based queries (WHERE resolution_date IS NOT NULL)
-     * - location_id, incident_category_id: for FK lookups
-     * - locations.parent_id: for hierarchy queries
-     * - status_history, comments: for relationship lookups
      */
     public function up(): void
     {
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->index('status', 'idx_incidents_status');
-            $table->index(['organization_id', 'status'], 'idx_incidents_org_status');
-            $table->index('location_id', 'idx_incidents_location_id');
-            $table->index('incident_category_id', 'idx_incidents_category_id');
-            $table->index('user_id', 'idx_incidents_user_id');
-            $table->index('resolution_date', 'idx_incidents_resolution_date');
-        });
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents (status)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_org_status ON incidents (organization_id, status)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_location_id ON incidents (location_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_category_id ON incidents (incident_category_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents (user_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_incidents_resolution_date ON incidents (resolution_date)');
 
-        Schema::table('locations', function (Blueprint $table) {
-            $table->index('parent_id', 'idx_locations_parent_id');
-        });
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_locations_parent_id ON locations (parent_id)');
 
-        Schema::table('status_history', function (Blueprint $table) {
-            $table->index('incident_id', 'idx_status_history_incident_id');
-            $table->index('user_id', 'idx_status_history_user_id');
-        });
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_status_history_incident_id ON status_history (incident_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_status_history_user_id ON status_history (user_id)');
 
-        Schema::table('comments', function (Blueprint $table) {
-            $table->index('incident_id', 'idx_comments_incident_id');
-            $table->index('user_id', 'idx_comments_user_id');
-        });
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_comments_incident_id ON comments (incident_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments (user_id)');
 
-        Schema::table('assignments', function (Blueprint $table) {
-            $table->index('incident_id', 'idx_assignments_incident_id');
-            $table->index('user_id', 'idx_assignments_user_id');
-        });
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_assignments_incident_id ON assignments (incident_id)');
+            DB::statement('CREATE INDEX IF NOT EXISTS idx_assignments_user_id ON assignments (user_id)');
+        }
     }
 
     public function down(): void
     {
-        Schema::table('incidents', function (Blueprint $table) {
-            $table->dropIndex('idx_incidents_status');
-            $table->dropIndex('idx_incidents_org_status');
-            $table->dropIndex('idx_incidents_location_id');
-            $table->dropIndex('idx_incidents_category_id');
-            $table->dropIndex('idx_incidents_user_id');
-            $table->dropIndex('idx_incidents_resolution_date');
-        });
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_status');
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_org_status');
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_location_id');
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_category_id');
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_user_id');
+            DB::statement('DROP INDEX IF EXISTS idx_incidents_resolution_date');
 
-        Schema::table('locations', function (Blueprint $table) {
-            $table->dropIndex('idx_locations_parent_id');
-        });
+            DB::statement('DROP INDEX IF EXISTS idx_locations_parent_id');
 
-        Schema::table('status_history', function (Blueprint $table) {
-            $table->dropIndex('idx_status_history_incident_id');
-            $table->dropIndex('idx_status_history_user_id');
-        });
+            DB::statement('DROP INDEX IF EXISTS idx_status_history_incident_id');
+            DB::statement('DROP INDEX IF EXISTS idx_status_history_user_id');
 
-        Schema::table('comments', function (Blueprint $table) {
-            $table->dropIndex('idx_comments_incident_id');
-            $table->dropIndex('idx_comments_user_id');
-        });
+            DB::statement('DROP INDEX IF EXISTS idx_comments_incident_id');
+            DB::statement('DROP INDEX IF EXISTS idx_comments_user_id');
 
-        Schema::table('assignments', function (Blueprint $table) {
-            $table->dropIndex('idx_assignments_incident_id');
-            $table->dropIndex('idx_assignments_user_id');
-        });
+            DB::statement('DROP INDEX IF EXISTS idx_assignments_incident_id');
+            DB::statement('DROP INDEX IF EXISTS idx_assignments_user_id');
+        }
     }
 };
