@@ -325,11 +325,28 @@ function setupEstado(incidentId, inc) {
         payload.resolution_date = new Date().toISOString();
       }
       await http.put(`/incidents/${incidentId}`, payload);
-      window.location.reload();
+
+      // Actualización reactiva SPA (sin recargar la página completa)
+      const res = await http.get(`/incidents/${incidentId}`);
+      const updatedInc = res.data ?? res;
+
+      const statusEl = document.getElementById('detalle-status');
+      if (statusEl) {
+        statusEl.textContent = STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
+        statusEl.className = `ig-status-badge ig-status-${updatedInc.status}`;
+      }
+
+      setupEstado(incidentId, updatedInc);
+      renderHistorial(updatedInc.status_history ?? []);
+
+      if (notesInput) {
+        notesInput.value = '';
+      }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       errorMsg.textContent = err.message || 'No se pudo cambiar el estado.';
       errorEl.classList.remove('d-none');
+    } finally {
       btnTexto.classList.remove('d-none');
       btnLoading.classList.add('d-none');
       btnGuardar.disabled = false;
