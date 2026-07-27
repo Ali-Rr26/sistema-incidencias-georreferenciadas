@@ -48,7 +48,7 @@ const CHILD_ROUTE_PERMISSIONS = {
   // roles: /roles/create requires roles.create (parametrized create route)
   // /roles/:id requires roles.update for edit, or roles.create if id='create'
   '/roles/create': 'roles.create',
-  '/roles/:id': ['roles.update', 'roles.create'],
+  '/roles/:id': 'roles.update',
 };
 
 /**
