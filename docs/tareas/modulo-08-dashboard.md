@@ -160,5 +160,20 @@
 
 ---
 
+## Dashboard del operador por ubicación
+
+El rol `operador_organizacion` dispone de un dashboard operativo propio en `/#/operator/dashboard`. La pantalla muestra únicamente incidencias de su organización y separa el trabajo en dos grupos:
+
+- **Asignadas:** incidencias vinculadas al operador mediante asignaciones activas, con paginación, estado, prioridad, ubicación y distancia cuando existe un GPS reciente.
+- **Recomendaciones cercanas:** hasta 10 incidencias pendientes o en proceso, no asignadas al operador, ordenadas por distancia y limitadas al radio configurado.
+
+`GET /api/operator/dashboard` requiere `dashboard.view`, acepta `inicio`, `fin`, `location_id`, `page` y `per_page`, y devuelve `assigned_incidents`, `nearby_recommendations`, `summary_counts`, `filter_options` y `has_recent_location`. El resultado se almacena en caché durante cinco minutos por operador, filtros y posición reciente.
+
+La posición se actualiza con `POST /api/operator/location`. Si no existe un registro de GPS dentro de los últimos 300 segundos, las distancias son nulas y la interfaz reemplaza las recomendaciones por una invitación para compartir la ubicación.
+
+El radio se configura con `OPERATOR_DASHBOARD_NEARBY_RADIUS_KM` y usa `10` km por defecto. La consulta espacial combina el operador de bounding box `&&`, aprovechando el índice GiST de `incidents.geom`, con `ST_DWithin(...::geography)` para validar el radio en metros y `ST_Distance(...::geography)` para ordenar con precisión.
+
+---
+
 > **Total tareas:** 12 | **Completadas:** 12/12 (100%) | **Parciales:** 0/12 | **Pendientes:** 0/12
 > **ESTADO M08:** ☑ COMPLETADO (100% implementado) — Dashboard + filtros end-to-end funcional

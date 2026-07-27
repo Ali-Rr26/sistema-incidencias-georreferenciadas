@@ -8,6 +8,19 @@ import {
   STATUS_COLOR,
 } from '../../../utils/format.js';
 
+const __ = (message) => message;
+
+const dashboardMessages = {
+  empty: __('Sin datos en este período'),
+  loadError: __(
+    'No pudimos cargar las estadísticas. Revisá tu conexión e intentá nuevamente.',
+  ),
+  retry: __('Reintentar'),
+  previousPeriod: __('respecto al período anterior'),
+  resolutionRate: __('tasa de resolución'),
+  noTrend: __('Sin comparación disponible'),
+};
+
 // ─────────────────────────────────────────────
 // Estado global de filtros
 // ─────────────────────────────────────────────
@@ -23,8 +36,6 @@ const filterState = {
   cities: [], // loaded via locationService.getChildren({ parentId }) when province selected
   categories: [],
 };
-
-
 
 // ─────────────────────────────────────────────
 // Carga D3 + C3 de forma lazy (ya están en assets)
@@ -55,9 +66,18 @@ function loadC3() {
 // ─────────────────────────────────────────────
 // Counter animation — cuenta desde 0 al valor final
 // ─────────────────────────────────────────────
+function renderEmptyMetric(el) {
+  if (!el) return;
+  el.classList.remove('is-loading');
+  el.classList.add('is-empty');
+  el.innerHTML = `<i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>${dashboardMessages.empty}</span>`;
+}
+
 function animateCounter(el, target, duration = 900) {
-  if (!el || target === 0) {
-    if (el) el.textContent = 0;
+  if (!el) return;
+  el.classList.remove('is-loading', 'is-empty');
+  if (target === 0) {
+    renderEmptyMetric(el);
     return;
   }
   const start = Date.now();
@@ -184,7 +204,7 @@ function buildActivityFeed(items) {
 // no hay incidencias resueltas todavía.
 // ─────────────────────────────────────────────
 function formatResolutionTime(avg) {
-  if (!avg) return 'Sin datos';
+  if (!avg) return dashboardMessages.empty;
   const { days, hours } = avg;
   if (days > 0 && hours > 0) return `${days}d ${hours}h`;
   if (days > 0) return `${days}d`;
@@ -205,15 +225,10 @@ async function loadStats() {
   if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
 
   const query = params.toString();
-  try {
-    const stats = await http.get(
-      query ? `/incidents/stats?${query}` : '/incidents/stats',
-    );
-    return stats ?? {};
-  } catch (e) {
-    console.error('Error loading stats:', e);
-    return {};
-  }
+  const stats = await http.get(
+    query ? `/incidents/stats?${query}` : '/incidents/stats',
+  );
+  return stats ?? {};
 }
 
 // ─────────────────────────────────────────────
@@ -230,15 +245,10 @@ async function loadWeeklyStats() {
   if (filterState.pais_id) params.append('pais_id', filterState.pais_id);
 
   const query = params.toString();
-  try {
-    const weekly = await http.get(
-      query ? `/incidents/weekly-stats?${query}` : '/incidents/weekly-stats',
-    );
-    return weekly ?? { days: [] };
-  } catch (e) {
-    console.error('Error loading weekly stats:', e);
-    return { days: [] };
-  }
+  const weekly = await http.get(
+    query ? `/incidents/weekly-stats?${query}` : '/incidents/weekly-stats',
+  );
+  return weekly ?? { days: [] };
 }
 
 // ─────────────────────────────────────────────
@@ -284,72 +294,165 @@ function initVolumeChart(days) {
 // ─────────────────────────────────────────────
 // Actualiza el dashboard con nuevos datos
 // ─────────────────────────────────────────────
+function setDashboardLoading(isLoading) {
+  const statsRow = document.querySelector('.gr-stats-row');
+  statsRow?.setAttribute('aria-busy', String(isLoading));
+  document.querySelectorAll('[data-stat-card]').forEach((card) => {
+    card.classList.toggle('is-loading', isLoading);
+  });
+  if (!isLoading) return;
+  document.querySelectorAll('.gr-stat-card__num').forEach((value) => {
+    value.className = 'gr-stat-card__num is-loading';
+    value.innerHTML = '<span class="gr-skeleton gr-skeleton--value"></span>';
+  });
+  document.querySelectorAll('.gr-chart').forEach((chart) => {
+    chart.classList.add('is-loading');
+    chart.innerHTML = '<span class="gr-skeleton gr-skeleton--chart"></span>';
+  });
+}
+
+function showDashboardError() {
+  const error = document.getElementById('dashboard-error');
+  const message = document.getElementById('dashboard-error-message');
+  if (message) message.textContent = dashboardMessages.loadError;
+  if (error) error.hidden = false;
+}
+
+function hideDashboardError() {
+  const error = document.getElementById('dashboard-error');
+  if (error) error.hidden = true;
+}
+
+function updateCardAccessibility(card, label, value, trend) {
+  if (!card) return;
+  const valueLabel = value === 0 ? dashboardMessages.empty : value;
+  const trendLabel = trend || dashboardMessages.noTrend;
+  card.setAttribute('role', 'group');
+  card.setAttribute('aria-label', `${label}: ${valueLabel}. ${trendLabel}`);
+}
+
 async function refreshDashboard() {
-  // Cargar stats + weekly en paralelo
-  const [stats, weekly] = await Promise.all([loadStats(), loadWeeklyStats()]);
+  setDashboardLoading(true);
+  hideDashboardError();
 
-  const byStatus = stats.by_status ?? {};
-  const total = stats.total ?? 0;
-  const pendientes = byStatus.pending ?? 0;
-  const en_proceso = byStatus.in_progress ?? 0;
-  const resueltas = byStatus.resolved ?? 0;
-  const ubicaciones = stats.locations_count ?? 0;
-  const tiempoResolucion = stats.average_resolution_time ?? null;
-  const trends = stats.trends ?? {};
-  const topCategories = stats.top_categories ?? [];
+  try {
+    const [stats, weekly] = await Promise.all([loadStats(), loadWeeklyStats()]);
 
-  // Re-animar counters
-  animateCounter(document.getElementById('stat-incidencias'), total);
-  animateCounter(document.getElementById('stat-pendientes'), pendientes);
-  animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
-  animateCounter(document.getElementById('stat-resueltas'), resueltas);
-  animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
+    const byStatus = stats.by_status ?? {};
+    const total = stats.total ?? 0;
+    const pendientes = byStatus.pending ?? 0;
+    const en_proceso = byStatus.in_progress ?? 0;
+    const resueltas = byStatus.resolved ?? 0;
+    const ubicaciones = stats.locations_count ?? 0;
+    const tiempoResolucion = stats.average_resolution_time ?? null;
+    const trends = stats.trends ?? {};
+    const topCategories = stats.top_categories ?? [];
 
-  // Tiempo promedio
-  const resolucionEl = document.getElementById('stat-tiempo-resolucion');
-  if (resolucionEl) {
-    resolucionEl.textContent = formatResolutionTime(tiempoResolucion);
-  }
+    // Re-animar counters
+    animateCounter(document.getElementById('stat-incidencias'), total);
+    animateCounter(document.getElementById('stat-pendientes'), pendientes);
+    animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
+    animateCounter(document.getElementById('stat-resueltas'), resueltas);
+    animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
 
-  // Trends (total, pendientes, resolution rate)
-  const updateTrend = (id, value) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (value === null || value === undefined) {
-      el.textContent = '—';
-    } else {
-      const absValue = Math.abs(value);
-      el.innerHTML = `<i class="fa-solid ${value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i> ${absValue}% vs. mes anterior`;
+    // Tiempo promedio
+    const resolucionEl = document.getElementById('stat-tiempo-resolucion');
+    if (resolucionEl) {
+      resolucionEl.textContent = formatResolutionTime(tiempoResolucion);
     }
-  };
 
-  updateTrend('trend-total', trends.total_pct);
-  updateTrend('trend-pendientes', trends.pendientes_pct);
+    // Trends (total, pendientes, resolution rate)
+    const updateTrend = (id, value) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (value === null || value === undefined) {
+        el.textContent = dashboardMessages.noTrend;
+        el.className = 'gr-stat-card__trend is-neutral';
+      } else {
+        const absValue = Math.abs(value);
+        const direction = value >= 0 ? __('aumento') : __('disminución');
+        el.className = `gr-stat-card__trend ${value >= 0 ? 'is-positive' : 'is-negative'}`;
+        el.innerHTML = `<i class="fa-solid ${value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}" aria-hidden="true"></i><span>${absValue}% ${dashboardMessages.previousPeriod}</span>`;
+        el.setAttribute(
+          'aria-label',
+          `${direction} ${absValue}% ${dashboardMessages.previousPeriod}`,
+        );
+      }
+    };
 
-  // Trend resueltas muestra tasa de resolución (siempre porcentaje actual)
-  const trendResueltasEl = document.getElementById('trend-resueltas');
-  if (trendResueltasEl) {
-    if (
-      trends.resolution_rate_pct !== null &&
-      trends.resolution_rate_pct !== undefined
-    ) {
-      trendResueltasEl.innerHTML = `<i class="fa-solid fa-arrow-up"></i> ${trends.resolution_rate_pct}% tasa de resolución`;
-    } else {
-      trendResueltasEl.textContent = '—';
+    updateTrend('trend-total', trends.total_pct);
+    updateTrend('trend-pendientes', trends.pendientes_pct);
+
+    // Trend resueltas muestra tasa de resolución (siempre porcentaje actual)
+    const trendResueltasEl = document.getElementById('trend-resueltas');
+    if (trendResueltasEl) {
+      if (
+        trends.resolution_rate_pct !== null &&
+        trends.resolution_rate_pct !== undefined
+      ) {
+        trendResueltasEl.className = 'gr-stat-card__trend is-positive';
+        trendResueltasEl.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>${trends.resolution_rate_pct}% ${dashboardMessages.resolutionRate}</span>`;
+        trendResueltasEl.setAttribute(
+          'aria-label',
+          `${trends.resolution_rate_pct}% ${dashboardMessages.resolutionRate}`,
+        );
+      } else {
+        trendResueltasEl.className = 'gr-stat-card__trend is-neutral';
+        trendResueltasEl.textContent = dashboardMessages.noTrend;
+      }
     }
+
+    // Re-inicializar gráfico de top categorías
+    initCategoriesChart(topCategories);
+
+    // Gráfico de volumen mensual
+    initVolumeChart(weekly.days ?? []);
+
+    document.querySelectorAll('.gr-chart').forEach((chart) => {
+      chart.classList.remove('is-loading');
+    });
+
+    const cards = document.querySelectorAll('[data-stat-card]');
+    updateCardAccessibility(
+      cards[0],
+      __('Total de incidencias'),
+      total,
+      document.getElementById('trend-total')?.textContent,
+    );
+    updateCardAccessibility(
+      cards[1],
+      __('Incidencias en proceso'),
+      en_proceso,
+      null,
+    );
+    updateCardAccessibility(
+      cards[2],
+      __('Incidencias resueltas'),
+      resueltas,
+      trendResueltasEl?.textContent,
+    );
+    updateCardAccessibility(
+      cards[3],
+      __('Incidencias pendientes'),
+      pendientes,
+      document.getElementById('trend-pendientes')?.textContent,
+    );
+    updateCardAccessibility(
+      cards[4],
+      __('Tiempo promedio de resolución'),
+      formatResolutionTime(tiempoResolucion),
+      null,
+    );
+
+    const modal = bootstrap?.Modal?.getOrCreateInstance?.(
+      document.getElementById('filter-modal'),
+    );
+    if (modal) modal.hide();
+  } catch {
+    showDashboardError();
+  } finally {
+    setDashboardLoading(false);
   }
-
-  // Re-inicializar gráfico de top categorías
-  initCategoriesChart(topCategories);
-
-  // Gráfico de volumen mensual
-  initVolumeChart(weekly.days ?? []);
-
-  // Cerrar modal de filtros si está abierto
-  const modal = bootstrap?.Modal?.getOrCreateInstance?.(
-    document.getElementById('filter-modal'),
-  );
-  if (modal) modal.hide();
 }
 
 // ─────────────────────────────────────────────
@@ -708,6 +811,12 @@ export default {
     setupFilterListeners();
     setupQuickFilterListeners();
     setupExportListeners();
+
+    const retryButton = document.getElementById('dashboard-retry');
+    if (retryButton) {
+      retryButton.textContent = dashboardMessages.retry;
+      retryButton.addEventListener('click', refreshDashboard);
+    }
 
     // Cargar stats iniciales (sin filtros)
     await refreshDashboard();

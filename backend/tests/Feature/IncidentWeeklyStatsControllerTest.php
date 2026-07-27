@@ -9,7 +9,9 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
@@ -149,6 +151,85 @@ it('separates received vs resolved incidents correctly', function () {
                 '*' => ['date', 'label', 'recibidas', 'resueltas'],
             ],
         ]);
+});
+
+it('composes category and location filters', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+    $this->seed(RoleSeeder::class);
+
+    $admin = User::factory()->create(['role_id' => 1]);
+    $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
+    $province = Location::create(['name' => 'Santa Elena', 'level' => 'province', 'parent_id' => $country->id]);
+    $city = Location::create(['name' => 'La Libertad', 'level' => 'city', 'parent_id' => $province->id]);
+    $otherCity = Location::create(['name' => 'Guayaquil', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Filter Org', 'location_id' => $city->id]);
+    $category = IncidentCategory::create(['name' => 'Roads', 'organization_id' => $org->id]);
+    $otherCategory = IncidentCategory::create(['name' => 'Water', 'organization_id' => $org->id]);
+
+    foreach ([[$category, $city], [$category, $otherCity], [$otherCategory, $city]] as $index => [$incidentCategory, $location]) {
+        Incident::create([
+            'title' => "Filtered incident {$index}",
+            'incident_category_id' => $incidentCategory->id,
+            'user_id' => $admin->id,
+            'location_id' => $location->id,
+            'organization_id' => $org->id,
+            'status' => IncidentStatus::Pending,
+            'priority' => 'medium',
+            'created_at' => now()->startOfDay(),
+        ]);
+    }
+
+    $date = now()->format('Y-m-d');
+    $response = $this->actingAs($admin)->getJson(
+        "/api/incidents/weekly-stats?inicio={$date}&fin={$date}&tipo_id={$category->id}&provincia_id={$province->id}"
+    );
+
+    $response->assertOk()
+        ->assertJsonPath('days.0.recibidas', 1);
+});
+
+it('serves the same daily series from cache on the second request', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+    Cache::tags(['incident-stats'])->flush();
+    $this->seed(RoleSeeder::class);
+
+    $admin = User::factory()->create(['role_id' => 1]);
+    $location = Location::create(['name' => 'Cache City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Cache Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'Cache Category', 'organization_id' => $org->id]);
+    $date = now()->format('Y-m-d');
+
+    Incident::create([
+        'title' => 'Cached weekly incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+        'created_at' => now()->startOfDay(),
+    ]);
+
+    $path = "/api/incidents/weekly-stats?inicio={$date}&fin={$date}";
+    $first = $this->actingAs($admin)->getJson($path)->assertOk();
+
+    DB::table('incidents')->insert([
+        'title' => 'Inserted without invalidation',
+        'description' => 'Cache sentinel',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending->value,
+        'priority' => 'medium',
+        'created_at' => now()->startOfDay(),
+        'updated_at' => now(),
+    ]);
+
+    $second = $this->actingAs($admin)->getJson($path)->assertOk();
+
+    expect($second->json())->toBe($first->json())
+        ->and($second->json('days.0.recibidas'))->toBe(1);
 });
 
 it('requires dashboard.view permission', function () {

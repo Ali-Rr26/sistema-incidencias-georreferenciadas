@@ -34,28 +34,43 @@ describe('ForgotPasswordComponent', () => {
     emailInput.value = 'user@example.com';
 
     const form = document.getElementById('forgot-form');
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    form.dispatchEvent(
+      new Event('submit', { cancelable: true, bubbles: true }),
+    );
 
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(http.post).toHaveBeenCalledWith('/forgot-password', { email: 'user@example.com' });
-    expect(document.getElementById('estado-exito').classList.contains('d-none')).toBe(false);
+    expect(http.post).toHaveBeenCalledWith('/forgot-password', {
+      email: 'user@example.com',
+    });
+    expect(
+      document.getElementById('estado-exito').classList.contains('d-none'),
+    ).toBe(false);
     expect(emailInput.value).toBe('');
   });
 
   it('shows error message when API request fails', async () => {
-    http.post.mockRejectedValueOnce({ status: 400, response: { message: 'Error de servidor' } });
+    http.post.mockRejectedValueOnce({
+      status: 400,
+      response: { message: 'Error de servidor' },
+    });
     await forgotPasswordComponent.onInit();
 
     const emailInput = document.getElementById('email');
     emailInput.value = 'user@example.com';
 
     const form = document.getElementById('forgot-form');
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    form.dispatchEvent(
+      new Event('submit', { cancelable: true, bubbles: true }),
+    );
 
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(http.post).toHaveBeenCalledWith('/forgot-password', { email: 'user@example.com' });
-    expect(document.getElementById('estado-error').classList.contains('d-none')).toBe(false);
+    expect(http.post).toHaveBeenCalledWith('/forgot-password', {
+      email: 'user@example.com',
+    });
+    expect(
+      document.getElementById('estado-error').classList.contains('d-none'),
+    ).toBe(false);
   });
 });

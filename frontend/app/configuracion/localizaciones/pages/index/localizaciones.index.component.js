@@ -26,7 +26,9 @@ export default {
   async onInit() {
     const locPerms = await permissionService.getMyPermissions();
     if (!locPerms.has('locations.create')) {
-      document.querySelectorAll('a[href*="localizaciones/crear"]').forEach(el => el.classList.add('d-none'));
+      document
+        .querySelectorAll('a[href*="localizaciones/crear"]')
+        .forEach((el) => el.classList.add('d-none'));
     }
 
     let paginaActual = 1;

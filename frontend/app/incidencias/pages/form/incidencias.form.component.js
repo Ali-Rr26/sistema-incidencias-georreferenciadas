@@ -75,6 +75,17 @@ export default {
     let provinces = [];
     let lastCities = [];
     let lastNeighborhoods = [];
+    // Image uploader controller is assigned later in onInit, but the
+    // submit handler (bound early below) needs the reference, so the
+    // `let` lives up here to keep both the binding and the eventual
+    // assignment safe from each other regardless of init ordering.
+    let imageUploaderController = null;
+    // Edit mode flags — same early-declared pattern. `router.queryParams`
+    // is stable for the lifetime of the route, so reading them once at
+    // top is fine and avoids a TDZ ReferenceError when the submit
+    // handler fires before the original declaration at line ~904.
+    const isEdit = router.queryParams.has('id');
+    const incId = router.queryParams.get('id');
 
     // ── Helpers ──
 
@@ -174,6 +185,19 @@ export default {
           goToStep(n);
         });
     });
+
+    // ── Submit handler — bound EARLY, BEFORE the awaits below. The
+    // 4-step wizard's click-submit cycle can race onInit past its
+    // categories/locations fetch; if the handler weren't registered
+    // yet the form would fall back to its default GET submission
+    // and reload the URL with `?lat=&lng=` apppended (the hidden
+    // form fields), bypassing the JS-driven POST + navigation.
+    // The handler body is hoisted (`async function _handleSubmit`
+    // lives further down in onInit), referenced here by name so
+    // closure captures the shared state without duplication.
+    document
+      .getElementById('ici-form')
+      ?.addEventListener('submit', _handleSubmit);
 
     // ── Boundary overlay state (feature: map-location-boundary) ──
     //
@@ -544,6 +568,18 @@ export default {
     // on demand via getChildren. This replaces the old /locations/tree call.
     let locationSelection = null; // { provinceId, cityId, neighborhoodId } for boundary
 
+    // Pin the location-select DOM references here, BEFORE the awaits below.
+    // renderReviewSummary() runs from the click handler bound way up at
+    // the bootstrap block on line ~158, so by the time the user reaches
+    // step 4 we may still be paused in the very awaits this opens.
+    // Declaring these `const`s up here means the review summary can read
+    // them safely without hitting a temporal-dead-zone ReferenceError.
+    const provinceSelect = document.getElementById('ici-location-province');
+    const citySelect = document.getElementById('ici-location-city');
+    const neighborhoodSelect = document.getElementById(
+      'ici-location-neighborhood',
+    );
+
     try {
       const catResp = await http.get('/incident-categories/tree');
       categoryTree = catResp.data ?? catResp ?? [];
@@ -579,18 +615,6 @@ export default {
       populateSubcategories(this.value);
       resetFieldError(P + 'error-category');
     });
-
-    // ── Location cascade: Provincia → Cantón → Parroquia ──
-    // Mirrors the category/subcategory cascade above. Province roots are loaded
-    // via locationService.getRoots; city and parish are fetched progressively via
-    // locationService.getChildren. Parroquia stays optional: the submitted
-    // location_id is the deepest level actually chosen (neighborhood if picked,
-    // else city, else null).
-    const provinceSelect = document.getElementById('ici-location-province');
-    const citySelect = document.getElementById('ici-location-city');
-    const neighborhoodSelect = document.getElementById(
-      'ici-location-neighborhood',
-    );
 
     // Stale-request guard — incremented before each async call; stale
     // responses are discarded when generation mismatches.
@@ -726,7 +750,6 @@ export default {
     neighborhoodSelect.addEventListener('change', onNeighborhoodChange);
 
     // ── Image Uploader ──
-    let imageUploaderController = null;
     const uploaderContainer = $('image-uploader-container');
     if (uploaderContainer) {
       imageUploaderController = mountImageUploader({
@@ -901,8 +924,9 @@ export default {
     });
 
     // ── Edit mode loading ──
-    const isEdit = router.queryParams.has('id');
-    const incId = router.queryParams.get('id');
+    // isEdit and incId are declared at the top of onInit so the
+    // submit handler (bound early below) can reference them without
+    // hitting a TDZ ReferenceError.
 
     if (isEdit) {
       const pageTitleEl = document.getElementById('ici-page-title');
@@ -1057,12 +1081,15 @@ export default {
       }
     }
 
-    // ── Submit handler ──
-    const form = document.getElementById('ici-form');
-    if (!form) return;
-
-    form.addEventListener('submit', async function (e) {
+    // Submit handler body (function declaration is hoisted, so the
+    // early binding above can reference `_handleSubmit` by name).
+    // Lexical closure captures `geomValue`, `imageUploaderController`,
+    // `isEdit`, `incId` — all declared at the top of onInit so they're
+    // safe to read here regardless of which awaits have settled by the
+    // time a click fires the event.
+    async function _handleSubmit(e) {
       e.preventDefault();
+      console.warn('[handleSubmit] fired');
 
       // Defense in depth — `refreshPinVsBoundary()` disables the submit
       // button when the pin is outside the selected location's polygon,
@@ -1258,7 +1285,7 @@ export default {
         submitText.classList.remove('d-none');
         submitLoading.classList.add('d-none');
       }
-    });
+    }
   },
 
   onDestroy() {

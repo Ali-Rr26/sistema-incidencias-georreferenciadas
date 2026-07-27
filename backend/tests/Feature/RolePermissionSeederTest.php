@@ -55,10 +55,12 @@ it('admin_organizacion has correct permission configuration', function (): void 
     expect(Gate::forUser($user)->allows('incidents.update'))->toBeTrue();
 });
 
-it('operador_organizacion has incident view, notification update, and comment creation/update permissions', function (): void {
+it('operador_organizacion has dashboard, incident, notification, and comment permissions', function (): void {
     $user = User::factory()->create([
         'role_id' => 4, // operador_organizacion
     ]);
+
+    expect(Gate::forUser($user)->allows('dashboard.view'))->toBeTrue();
 
     // Has incident view
     expect(Gate::forUser($user)->allows('incidents.view'))->toBeTrue();

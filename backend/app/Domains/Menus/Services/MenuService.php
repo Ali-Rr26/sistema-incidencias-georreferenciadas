@@ -55,7 +55,9 @@ class MenuService
             $current = $parents->values();
         }
 
-        return $this->buildTree($menuMap->sortKeys()->values());
+        $tree = $this->buildTree($menuMap->sortKeys()->values());
+
+        return $user->isOperator() ? $this->withOperatorDashboardRoute($tree) : $tree;
     }
 
     /** @param iterable<Menu> $menus */
@@ -88,6 +90,19 @@ class MenuService
         // a parent menu (e.g., "Incidencias" group) has no visible children
         // after role-based filtering. Don't render empty section headers in UX.
         return $this->filterEmptyHeaders($tree);
+    }
+
+    private function withOperatorDashboardRoute(array $menus): array
+    {
+        return array_map(function (array $menu): array {
+            if ($menu['route'] === '/dashboard') {
+                $menu['route'] = '/operator/dashboard';
+            }
+
+            $menu['children'] = $this->withOperatorDashboardRoute($menu['children']);
+
+            return $menu;
+        }, $menus);
     }
 
     private function filterEmptyHeaders(array $menus): array

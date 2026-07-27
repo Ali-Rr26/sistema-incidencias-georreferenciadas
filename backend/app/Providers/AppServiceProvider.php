@@ -158,6 +158,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute((int) env('FEED_RATE_LIMIT_PER_MIN', 60));
         });
 
+        // /login — brute-force protection. 5/min per IP by default, same as
+        // before this became a named limiter; overridable via
+        // LOGIN_RATE_LIMIT_PER_MIN for environments (e.g. CI E2E suites)
+        // that legitimately log in far more than 5 times a minute.
+        RateLimiter::for('login', function (Request $request): Limit {
+            return Limit::perMinute((int) env('LOGIN_RATE_LIMIT_PER_MIN', 5))->by($request->ip());
+        });
+
         // /register — anti-spam for self-service account creation. R6.
         // 5 attempts per minute per IP: low enough to block account-creation
         // automation, high enough to tolerate a citizen typing their

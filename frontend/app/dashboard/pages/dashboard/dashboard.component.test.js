@@ -62,6 +62,10 @@ describe('dashboard — average resolution time stat card', () => {
 
     document.body.innerHTML = `
       <div id="stat-tiempo-resolucion">—</div>
+      <div id="dashboard-error" hidden>
+        <span id="dashboard-error-message"></span>
+        <button id="dashboard-retry"></button>
+      </div>
     `;
 
     mockHttp.get.mockImplementation((path) => {
@@ -134,7 +138,7 @@ describe('dashboard — average resolution time stat card', () => {
     );
   });
 
-  it('renders a placeholder ("Sin datos") when there are no resolved incidents yet (null)', async () => {
+  it('renders the meaningful empty state when there are no resolved incidents yet', async () => {
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incidents/stats') {
         return Promise.resolve({
@@ -149,7 +153,7 @@ describe('dashboard — average resolution time stat card', () => {
     await component.onInit();
 
     expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
-      'Sin datos',
+      'Sin datos en este período',
     );
   });
 
@@ -164,11 +168,11 @@ describe('dashboard — average resolution time stat card', () => {
     await component.onInit();
 
     expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
-      'Sin datos',
+      'Sin datos en este período',
     );
   });
 
-  it('renders the placeholder when GET /incidents/stats fails (allSettled swallows the rejection)', async () => {
+  it('shows an inline retry state when GET /incidents/stats fails', async () => {
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incidents/stats') {
         return Promise.reject(new Error('network error'));
@@ -178,8 +182,12 @@ describe('dashboard — average resolution time stat card', () => {
 
     await component.onInit();
 
-    expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
-      'Sin datos',
+    expect(document.getElementById('dashboard-error').hidden).toBe(false);
+    expect(
+      document.getElementById('dashboard-error-message').textContent,
+    ).toContain('No pudimos cargar las estadísticas');
+    expect(document.getElementById('dashboard-retry').textContent).toBe(
+      'Reintentar',
     );
   });
 });
