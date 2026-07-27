@@ -87,6 +87,21 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Back-port of avatarImage() lost in the email-verification branch merge.
+     * UserResource, UserController, ProfileImageService, ImageBackfiller and
+     * EloquentUserRepository all eager-load or access $user->avatarImage; the
+     * query-builder relation MUST exist on the model or Laravel throws
+     * RelationNotFoundException on /api/users, /api/auth/profile, etc.
+     * Mirror of the `image()` morphOne targeting the same `images` table —
+     * kept as a separate method for read-site intent (canonical name used by
+     * every call site in this codebase).
+     */
+    public function avatarImage(): MorphOne
+    {
+        return $this->morphOne(Image::class, 'imageable');
+    }
+
+    /**
      * Virtual avatar attribute: returns storage_path if custom avatar uploaded,
      * null otherwise (frontend generates initials fallback).
      */
