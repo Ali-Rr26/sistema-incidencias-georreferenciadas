@@ -30,7 +30,7 @@ use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');

@@ -404,6 +404,7 @@ export default {
       const idToken = await credential.user.getIdToken();
       const { user } = await auth.googleLogin({ idToken });
 
+      router.setCurrentUserRole(classifyRole(user));
       router.navigate(homeRouteForUser(user));
     } catch (err) {
       // Step 6: any non-cancel error — surface the backend's spec copy

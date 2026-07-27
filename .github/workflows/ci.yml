@@ -114,7 +114,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, pdo_sqlite, sqlite3, intl, bcmath, curl, swoole
+          extensions: mbstring, pdo_pgsql, pgsql, pdo_sqlite, sqlite3, intl, bcmath, curl, swoole, redis
           tools: composer
           coverage: none
           cache: composer
@@ -128,7 +128,7 @@ jobs:
 
       - name: Setup backend env
         working-directory: backend
-        run: cp .env.example .env && php artisan key:generate
+        run: cp ../.env.example .env && php artisan key:generate
 
       - name: Run database migrations
         working-directory: backend
@@ -139,6 +139,8 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
         run: php artisan migrate --force
 
       - name: Seed database
@@ -150,10 +152,11 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
         run: php artisan db:seed --force
 
-      - name: Start backend (background)
-        working-directory: backend
+      - name: Start services and run Cypress E2E tests
         env:
           DB_CONNECTION: pgsql
           DB_HOST: localhost
@@ -161,20 +164,47 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
           APP_URL: http://localhost:8000
+          JWT_ACCESS_SECRET: ci-e2e-test-access-secret-not-for-production-use
+          JWT_REFRESH_SECRET: ci-e2e-test-refresh-secret-not-for-production-use
+          LOGIN_RATE_LIMIT_PER_MIN: 100
         run: |
-          php artisan serve --port=8000 &
-          sleep 3
-          curl -f http://localhost:8000/api/health || echo "Backend not ready yet"
-
-      - name: Start frontend (background)
-        run: |
+          (cd ../backend && PHP_CLI_SERVER_WORKERS=4 php artisan serve --port=8000) &
           npm run dev &
-          sleep 5
-          curl -f http://localhost:3000 || echo "Frontend not ready yet"
 
-      - name: Run Cypress E2E tests
-        run: npm run test:e2e
+          echo "Waiting for backend..."
+          backend_ready=false
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              backend_ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$backend_ready" != "true" ]; then
+            echo "Backend did not become ready within 30s" >&2
+            exit 1
+          fi
+
+          echo "Waiting for frontend..."
+          frontend_ready=false
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              frontend_ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$frontend_ready" != "true" ]; then
+            echo "Frontend did not become ready within 30s" >&2
+            exit 1
+          fi
+
+          npm run test:e2e
 
   backend:
     name: Backend checks

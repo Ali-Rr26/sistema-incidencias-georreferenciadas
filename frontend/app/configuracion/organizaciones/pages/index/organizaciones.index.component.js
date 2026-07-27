@@ -9,7 +9,9 @@ export default {
   async onInit() {
     const perms = await permissionService.getMyPermissions();
     if (!perms.has('organizations.create')) {
-      document.querySelectorAll('a[href*="organizaciones/crear"]').forEach(el => el.classList.add('d-none'));
+      document
+        .querySelectorAll('a[href*="organizaciones/crear"]')
+        .forEach((el) => el.classList.add('d-none'));
     }
     const page = createCrudIndexPage({
       endpoint: '/organizations',
