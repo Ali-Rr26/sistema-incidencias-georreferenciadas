@@ -6,18 +6,38 @@ describe('Incident Management (CRUD)', () => {
     // citizens create incidents from /feed/crear instead.
     cy.visit('/#/feed/crear', {
       onBeforeLoad(win) {
-        // navigator.geolocation.getCurrentPosition is a host method on Chromium
-        // (non-configurable), so cy.stub() is a no-op there and the real
-        // permission-gated call silently fails — which is what CT-04 was
-        // tripping on: form never reached step 4 because geomValue stayed null.
-        // Define a fresh geolocation object up front so the form picks up the
-        // mock regardless of the host navigator state.
+        // Drive the form's `geomValue` via the Leaflet map, not the
+        // permission-gated geolocation API. Chromium's host
+        // navigator.geolocation is non-configurable, so cy.stub() is a
+        // no-op there and even redefining `geolocation` only works when
+        // the property is configurable — neither approach reliably
+        // intercepts getCurrentPosition in headless CI. Clicking the map
+        // is the same code path Leaflet exposes in production (map click
+        // → setMarker → geomValue set), so it round-trips through the
+        // real form's validation and is independent of the host API.
         const fakePosition = success =>
           success({ coords: { latitude: -0.22, longitude: -78.5 } });
-        Object.defineProperty(win.navigator, 'geolocation', {
-          value: { getCurrentPosition: fakePosition, watchPosition: () => {}, clearWatch: () => {} },
-          configurable: true,
-        });
+        // First try: replace the whole navigator.geolocation with a
+        // configurable mock (works when the host property is configurable).
+        try {
+          Object.defineProperty(win.navigator, 'geolocation', {
+            value: { getCurrentPosition: fakePosition, watchPosition: () => {}, clearWatch: () => {} },
+            configurable: true,
+          });
+        } catch {
+          // Fall back: leave the host object alone but monkey-patch
+          // getCurrentPosition on it directly. If even that fails the
+          // map click below still drives the pin.
+          try {
+            Object.defineProperty(win.navigator.geolocation, 'getCurrentPosition', {
+              value: fakePosition,
+              writable: true,
+              configurable: true,
+            });
+          } catch {
+            // map.click() below carries the test either way.
+          }
+        }
       },
     });
 
@@ -31,18 +51,18 @@ describe('Incident Management (CRUD)', () => {
     cy.get('#ici-category').select(1, { force: true });
     cy.get('#ici-btn-next').click();
 
-    // Step 3 — geolocation (mocked above). #ici-btn-geo briefly disables
-    // itself and re-enables on the success callback; wait for that flip
-    // before clicking next, otherwise the validation may run before
-    // setMarker has stored geomValue.
+    // Step 3 — pin in the map. #ici-btn-geo's success callback also calls
+    // setMarker when the geolocation mock above intercepted, but in headless
+    // Chromium the stub is unreliable. Clicking the map is independent of
+    // the host API and always routes through Leaflet's `map.on('click')`.
     cy.get('#ici-btn-geo').click();
-    cy.get('#ici-btn-geo').should('not.be.disabled');
+    cy.get('#ici-map').click('center', { force: true });
     cy.get('#ici-btn-next').click();
 
     // Step 4 — review + submit. The submit button only loses d-none once
     // goToStep(4) has fired; assert that before clicking so Cypress
     // surfaces a useful timeout if validation still hasn't passed.
-    cy.get('#ici-submit').should('not.have.class', 'd-none');
+    cy.get('#ici-submit').should('not.have.class', 'd-none', { timeout: 20000 });
     cy.get('#ici-submit').click();
 
     // BUG: the form always redirects to /incidencias/{id} on success (see

@@ -19,11 +19,14 @@ describe('Incident Status Flow', () => {
                   cy.visit(`/#/incidencias/${id}`);
                   // Wait for the detail page's content panel to be revealed
                   // (it toggles off #detalle-content's d-none once the
-                  // /incidents/:id fetch returns) and pin the assertion to
-                  // the status badge specifically — the body assertion was
-                  // racing the initial render.
+                  // /incidents/:id fetch returns) and assert on the
+                  // status badge's resolved-via-class instead of its
+                  // text: STATUS_LABEL keeps getting touched in PR
+                  // updates and the body assertion was racing the
+                  // initial render — the ig-status-resolved class is the
+                  // single source of truth that inc.status === 'resolved'.
                   cy.get('#detalle-content').should('not.have.class', 'd-none');
-                  cy.get('#detalle-status').should('contain', /resuelto/i);
+                  cy.get('#detalle-status').should('have.class', 'ig-status-resolved');
                 });
             });
           });
