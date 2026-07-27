@@ -26,6 +26,15 @@ class GoogleAuthController
 
     private const ACCESS_TTL = 900;
 
+    /**
+     * Mirrors the Local auth controller's access_token cookie so the
+     * EventSource fallback in JwtAuthenticate works on the Google login
+     * path too. See AuthController::accessCookie for the rationale.
+     */
+    private const ACCESS_COOKIE = 'access_token';
+
+    private const ACCESS_COOKIE_PATH = '/api/notifications';
+
     public function __construct(
         private readonly GoogleAuthService $googleAuthService,
     ) {}
@@ -74,7 +83,8 @@ class GoogleAuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($user),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']));
+            ->withCookie($this->refreshCookie($result['refreshToken']))
+            ->withCookie($this->accessCookie($result['accessToken']));
     }
 
     // Cookie builders
@@ -86,6 +96,21 @@ class GoogleAuthController
             $token,
             self::COOKIE_MINUTES,
             self::COOKIE_PATH,
+            null,
+            app()->isProduction(),
+            true,
+            false,
+            'Strict',
+        );
+    }
+
+    private function accessCookie(string $token): Cookie
+    {
+        return cookie(
+            self::ACCESS_COOKIE,
+            $token,
+            (int) (self::ACCESS_TTL / 60),
+            self::ACCESS_COOKIE_PATH,
             null,
             app()->isProduction(),
             true,

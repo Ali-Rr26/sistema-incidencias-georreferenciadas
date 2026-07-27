@@ -30,6 +30,18 @@ class AuthController
 
     private const ACCESS_TTL = 900;
 
+    /**
+     * Cookie name + path for the access_token cookie that
+     * `JwtAuthenticate` reads as a fallback on /api/notifications/stream
+     * (where EventSource cannot send Authorization headers).
+     *
+     * Path scope matches the SSE endpoint prefix; the cookie is never
+     * attached to /api/menus/my or any other unrelated request.
+     */
+    private const ACCESS_COOKIE = 'access_token';
+
+    private const ACCESS_COOKIE_PATH = '/api/notifications';
+
     public function __construct(
         private readonly AuthService $authService,
         private readonly ProfileImageService $profileImageService,
@@ -85,7 +97,8 @@ class AuthController
             'expires_in' => self::ACCESS_TTL,
             'user' => new UserResource($result['user']),
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']));
+            ->withCookie($this->refreshCookie($result['refreshToken']))
+            ->withCookie($this->accessCookie($result['accessToken']));
     }
 
     /**
@@ -117,7 +130,8 @@ class AuthController
             'token_type' => 'Bearer',
             'expires_in' => self::ACCESS_TTL,
         ])
-            ->withCookie($this->refreshCookie($result['refreshToken']));
+            ->withCookie($this->refreshCookie($result['refreshToken']))
+            ->withCookie($this->accessCookie($result['accessToken']));
     }
 
     /**
@@ -134,7 +148,8 @@ class AuthController
         return response()->json([
             'message' => __('messages.session_closed'),
         ])
-            ->withCookie($this->expiredCookie());
+            ->withCookie($this->expiredCookie())
+            ->withCookie($this->expiredAccessCookie());
     }
 
     /**
@@ -219,6 +234,45 @@ class AuthController
             '',
             -60,
             self::COOKIE_PATH,
+            null,
+            app()->isProduction(),
+            true,
+            false,
+            'Strict',
+        );
+    }
+
+    /**
+     * Build HttpOnly cookie scoped to /api/notifications so native
+     * EventSource on /api/notifications/stream can authenticate without
+     * Authorization headers. Same Strict + production-only-secure posture
+     * as refreshCookie.
+     */
+    private function accessCookie(string $token): Cookie
+    {
+        return cookie(
+            self::ACCESS_COOKIE,
+            $token,
+            (int) (self::ACCESS_TTL / 60),
+            self::ACCESS_COOKIE_PATH,
+            null,
+            app()->isProduction(),
+            true,
+            false,
+            'Strict',
+        );
+    }
+
+    /**
+     * Expire the access_token cookie on logout.
+     */
+    private function expiredAccessCookie(): Cookie
+    {
+        return cookie(
+            self::ACCESS_COOKIE,
+            '',
+            -60,
+            self::ACCESS_COOKIE_PATH,
             null,
             app()->isProduction(),
             true,
