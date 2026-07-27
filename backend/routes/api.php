@@ -46,6 +46,12 @@ Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
 // Invitation acceptance — public (no auth required), rate-limited
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
+// Preview of invitation metadata (org, inviter, role, expiry) without consuming it.
+// Public: the token is opaque until consumed, but the caller may want to show
+// the welcome context BEFORE the user types a password.
+Route::get('/invitations/{token}/preview', [InvitationAcceptController::class, 'preview'])
+    ->where('token', '[A-Za-z0-9_\-]+')
+    ->middleware('throttle:invitations');
 
 // Email verification — story sc-117 (OTP code verification)
 Route::post('/email/verify-otp', [VerificationController::class, 'verifyOtp'])

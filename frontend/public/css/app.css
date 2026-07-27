@@ -1058,3 +1058,102 @@ select,
 .gr-input {
   font-size: max(16px, 1rem) !important;
 }
+
+/* ─── Shared form utilities (sc-130 fix) ─────────────────────────
+   These classes were scoped inside login.component.css but used by
+   login, register, forgot-password, accept-invite, reset-password,
+   and verify-email. Moving them here is the correct location so every
+   auth/identity page picks them up automatically.
+   ──────────────────────────────────────────────────────────────── */
+
+.gr-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #5b6172;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+  .gr-form-label {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+}
+
+.gr-input-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+  .gr-input-wrap {
+    margin-bottom: 16px;
+  }
+}
+
+.gr-input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.gr-input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 0 16px 0 44px;
+  font-size: 14.5px;
+  font-family: var(--font-family);
+  color: #23283b;
+  box-sizing: border-box;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* The font-size floor above (max(16px, 1rem) !important) wins for
+   .gr-input specifically; the 14.5px base here is overridden by it
+   in practice (iOS auto-zoom guard takes precedence). */
+
+.gr-input--pad-right {
+  padding-right: 44px;
+}
+
+.gr-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(106, 92, 243, 0.12);
+}
+
+.gr-input-eye {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 0;
+}
+
+.gr-input-error {
+  color: #c0394f;
+  font-size: 12.5px;
+  font-weight: 500;
+  margin: -12px 0 16px;
+  padding-left: 4px;
+}
+
+/* Tighten the gap between an input-wrap and the error that follows
+   it so the layout doesn't breathe awkwardly. */
+.gr-input-wrap + .gr-input-error {
+  margin-top: -12px;
+}
