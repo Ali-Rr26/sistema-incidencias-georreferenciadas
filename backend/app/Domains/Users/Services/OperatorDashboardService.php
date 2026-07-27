@@ -26,11 +26,16 @@ class OperatorDashboardService
         $cacheKey = $this->cacheKey($operator, $filters, $position);
         $ttl = max(1, (int) config('operator-dashboard.cache_ttl_seconds', 300));
 
-        return Cache::remember(
-            $cacheKey,
-            $ttl,
-            fn (): array => $this->compute($operator, $filters, $position),
-        );
+        try {
+            if (Cache::supportsTags()) {
+                return Cache::tags(['operator-dashboard', "operator:{$operator->id}"])
+                    ->remember($cacheKey, $ttl, fn (): array => $this->compute($operator, $filters, $position));
+            }
+        } catch (\Throwable) {
+            // Cache driver does not support tags; fallback to live computation
+        }
+
+        return $this->compute($operator, $filters, $position);
     }
 
     private function compute(User $operator, array $filters, ?array $position): array
@@ -291,6 +296,10 @@ class OperatorDashboardService
     public static function clearCacheForOperator(int $userId): void
     {
         try {
+            if (Cache::supportsTags()) {
+                Cache::tags(["operator:{$userId}"])->flush();
+            }
+
             if (config('cache.default') === 'redis' || config('cache.default') === 'octane') {
                 $redis = Redis::connection();
                 $prefix = config('database.redis.options.prefix', '');
@@ -300,8 +309,6 @@ class OperatorDashboardService
                     $unprefixedKey = preg_replace('/^' . preg_quote($prefix, '/') . '/', '', $key);
                     Cache::forget($unprefixedKey);
                 }
-            } else {
-                Cache::forget("operator-dashboard:{$userId}");
             }
         } catch (\Throwable) {
             // Ignore cache invalidation failures
@@ -311,6 +318,10 @@ class OperatorDashboardService
     public static function clearCacheForIncident(Incident $incident): void
     {
         try {
+            if (Cache::supportsTags()) {
+                Cache::tags(['operator-dashboard'])->flush();
+            }
+
             $assignedUserIds = DB::table('assignments')
                 ->where('incident_id', $incident->id)
                 ->pluck('user_id')
