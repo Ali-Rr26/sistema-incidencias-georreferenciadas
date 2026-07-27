@@ -6,6 +6,37 @@
       </div>
       <span>GeoReporta</span>
     </div>
+
+    <!--
+      Context block — sc-130.
+      Initial state is a skeleton (3-4 shimmer rows) while the preview
+      request is in flight. The component replaces it with the loaded
+      card on 200, a status banner on 404/410, or removes it entirely
+      on network fallback. No matter what, the form on the right stays
+      visible and usable unless the token itself is unusable (404/410).
+    -->
+    <div
+      id="invite-hero-context"
+      class="gr-accept-invite__hero-context"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div class="gr-accept-invite__hero-skeleton">
+        <div
+          class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--avatar"
+        ></div>
+        <div
+          class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--title"
+        ></div>
+        <div
+          class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--line"
+        ></div>
+        <div
+          class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--line gr-accept-invite__hero-skeleton-row--short"
+        ></div>
+      </div>
+    </div>
+
     <div class="gr-accept-invite__hero-content">
       <h1 class="gr-accept-invite__hero-title">
         Bienvenido/a a Sistema de Incidencias
@@ -33,9 +64,10 @@
         id="accept-invite-success"
         class="gr-accept-invite__success d-none"
         role="status"
+        aria-live="polite"
       >
         <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        Cuenta activada, redirigiendo...
+        <span>Cuenta activada</span>
       </div>
 
       <form id="accept-invite-form" novalidate>
@@ -51,11 +83,14 @@
             placeholder="Mínimo 8 caracteres, una mayúscula, una minúscula y un dígito"
             required
             autocomplete="new-password"
+            aria-describedby="invite-password-rules"
           />
           <button
             type="button"
             class="gr-input-eye"
+            data-eye-for="invite-password"
             aria-label="Mostrar contraseña"
+            aria-pressed="false"
           >
             <i class="fa-regular fa-eye"></i>
           </button>
@@ -74,11 +109,14 @@
             placeholder="Repetí tu contraseña"
             required
             autocomplete="new-password"
+            aria-describedby="invite-password-rules"
           />
           <button
             type="button"
             class="gr-input-eye"
+            data-eye-for="invite-password-confirm"
             aria-label="Mostrar confirmación"
+            aria-pressed="false"
           >
             <i class="fa-regular fa-eye"></i>
           </button>
@@ -87,6 +125,93 @@
           class="gr-input-error d-none"
           data-error-for="passwordConfirmation"
         ></div>
+
+        <!--
+          Password rules checklist + strength meter — sc-130.
+          Updated live as the user types. The backend regex stays the
+          source of truth (this mirrors its rules for UX only).
+        -->
+        <ul
+          id="invite-password-rules"
+          class="gr-accept-invite__rules"
+          aria-label="Reglas de la contraseña"
+        >
+          <li
+            class="gr-accept-invite__rule"
+            data-rule="minLength"
+            aria-live="polite"
+          >
+            <span class="gr-accept-invite__rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-accept-invite__rule-label"
+              >Mínimo 8 caracteres</span
+            >
+          </li>
+          <li
+            class="gr-accept-invite__rule"
+            data-rule="hasUpper"
+            aria-live="polite"
+          >
+            <span class="gr-accept-invite__rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-accept-invite__rule-label"
+              >Una mayúscula (A-Z)</span
+            >
+          </li>
+          <li
+            class="gr-accept-invite__rule"
+            data-rule="hasLower"
+            aria-live="polite"
+          >
+            <span class="gr-accept-invite__rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-accept-invite__rule-label"
+              >Una minúscula (a-z)</span
+            >
+          </li>
+          <li
+            class="gr-accept-invite__rule"
+            data-rule="hasDigit"
+            aria-live="polite"
+          >
+            <span class="gr-accept-invite__rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-accept-invite__rule-label">Un dígito (0-9)</span>
+          </li>
+          <li
+            class="gr-accept-invite__rule"
+            data-rule="matches"
+            aria-live="polite"
+          >
+            <span class="gr-accept-invite__rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-accept-invite__rule-label"
+              >Las contraseñas coinciden</span
+            >
+          </li>
+        </ul>
+
+        <div
+          id="invite-password-meter"
+          class="gr-accept-invite__meter"
+          role="meter"
+          aria-valuemin="0"
+          aria-valuemax="4"
+          aria-valuenow="0"
+          aria-label="Seguridad de la contraseña"
+        >
+          <div class="gr-accept-invite__meter-segments">
+            <span class="gr-accept-invite__meter-segment"></span>
+            <span class="gr-accept-invite__meter-segment"></span>
+            <span class="gr-accept-invite__meter-segment"></span>
+            <span class="gr-accept-invite__meter-segment"></span>
+          </div>
+          <span
+            class="gr-accept-invite__meter-label"
+            id="invite-password-meter-label"
+            >—</span
+          >
+        </div>
 
         <div class="gr-accept-invite__terms">
           <label class="gr-accept-invite__checkbox-label">

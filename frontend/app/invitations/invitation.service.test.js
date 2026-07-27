@@ -222,4 +222,211 @@ describe('invitation.service — WU-4', () => {
       ).rejects.toMatchObject({ status: 500 });
     });
   });
+
+  // ─── livePasswordRules — sc-130 ─────────────────────────────────────
+
+  describe('livePasswordRules', () => {
+    let livePasswordRules;
+
+    beforeEach(async () => {
+      const mod = await import('./invitation.service.js');
+      livePasswordRules = mod.livePasswordRules;
+    });
+
+    it('marks every rule as failing for an empty password', () => {
+      expect(
+        livePasswordRules({
+          password: '',
+          passwordConfirmation: '',
+        }),
+      ).toEqual({
+        minLength: false,
+        hasUpper: false,
+        hasLower: false,
+        hasDigit: false,
+        matches: false,
+      });
+    });
+
+    it('marks minLength as ok when the password is >= 8 chars', () => {
+      const rules = livePasswordRules({
+        password: 'longenough',
+        passwordConfirmation: '',
+      });
+      expect(rules.minLength).toBe(true);
+    });
+
+    it('marks hasUpper / hasLower / hasDigit independently', () => {
+      const all = livePasswordRules({
+        password: 'Aa1aaaaa',
+        passwordConfirmation: '',
+      });
+      expect(all.hasUpper).toBe(true);
+      expect(all.hasLower).toBe(true);
+      expect(all.hasDigit).toBe(true);
+
+      const upperOnly = livePasswordRules({
+        password: 'AAAAAAAA',
+        passwordConfirmation: '',
+      });
+      expect(upperOnly.hasUpper).toBe(true);
+      expect(upperOnly.hasLower).toBe(false);
+      expect(upperOnly.hasDigit).toBe(false);
+    });
+
+    it('marks matches as false when the confirmation is empty, even if password is set', () => {
+      const rules = livePasswordRules({
+        password: 'ValidPass1',
+        passwordConfirmation: '',
+      });
+      expect(rules.matches).toBe(false);
+    });
+
+    it('marks matches as true only when confirmation equals password', () => {
+      const ok = livePasswordRules({
+        password: 'ValidPass1',
+        passwordConfirmation: 'ValidPass1',
+      });
+      expect(ok.matches).toBe(true);
+
+      const mismatch = livePasswordRules({
+        password: 'ValidPass1',
+        passwordConfirmation: 'DifferentPass2',
+      });
+      expect(mismatch.matches).toBe(false);
+    });
+
+    it('treats missing passwordConfirmation as empty', () => {
+      const rules = livePasswordRules({ password: 'ValidPass1' });
+      expect(rules.matches).toBe(false);
+    });
+  });
+
+  // ─── scorePassword — sc-130 ─────────────────────────────────────────
+
+  describe('scorePassword', () => {
+    let scorePassword;
+
+    beforeEach(async () => {
+      const mod = await import('./invitation.service.js');
+      scorePassword = mod.scorePassword;
+    });
+
+    it('returns 0 for empty / undefined input', () => {
+      expect(scorePassword('')).toBe(0);
+      expect(scorePassword(undefined)).toBe(0);
+      expect(scorePassword(null)).toBe(0);
+    });
+
+    it('returns 1 for length-only (>=8 chars, no class diversity)', () => {
+      expect(scorePassword('aaaaaaaa')).toBe(1);
+    });
+
+    it('returns 2 when 2 character classes are present', () => {
+      expect(scorePassword('aaaaaaaaA')).toBe(2);
+      expect(scorePassword('aaaaaaaa1')).toBe(2);
+    });
+
+    it('returns 3 when all 3 character classes are present', () => {
+      expect(scorePassword('aaaaaaaaA1')).toBe(3);
+    });
+
+    it('returns 4 for length >= 12 AND all 3 character classes', () => {
+      expect(scorePassword('StrongP4ssword!!')).toBe(4);
+    });
+
+    it('returns 0 for short passwords without enough class diversity', () => {
+      expect(scorePassword('Aa1')).toBe(0);
+    });
+  });
+
+  // ─── previewInvitation — sc-130 ─────────────────────────────────────
+
+  describe('previewInvitation', () => {
+    it('GETs the preview endpoint and returns the response body', async () => {
+      const { previewInvitation } = await import('./invitation.service.js');
+      http.get.mockResolvedValueOnce({
+        status: 'pending',
+        organization: { name: 'GAD', initials: 'G' },
+        invitedBy: null,
+        role: 'operador',
+        issuedAt: '2026-07-27T00:00:00+00:00',
+        expiresAt: '2026-07-29T00:00:00+00:00',
+        termsVersion: 'v0',
+      });
+
+      const result = await previewInvitation('sometoken');
+
+      expect(http.get).toHaveBeenCalledTimes(1);
+      expect(http.get).toHaveBeenCalledWith('/invitations/sometoken/preview');
+      expect(result.status).toBe('pending');
+    });
+
+    it('encodes special characters in the token', async () => {
+      const { previewInvitation } = await import('./invitation.service.js');
+      http.get.mockResolvedValueOnce({ status: 'pending' });
+
+      await previewInvitation('token with spaces / slash');
+
+      expect(http.get).toHaveBeenCalledWith(
+        '/invitations/token%20with%20spaces%20%2F%20slash/preview',
+      );
+    });
+
+    it('throws InvitationNotFoundError on 404', async () => {
+      const { previewInvitation, InvitationNotFoundError } =
+        await import('./invitation.service.js');
+      const err = new Error('Not found');
+      err.status = 404;
+      http.get.mockRejectedValueOnce(err);
+
+      await expect(previewInvitation('unknown')).rejects.toBeInstanceOf(
+        InvitationNotFoundError,
+      );
+    });
+
+    it('throws InvitationGoneError on 410', async () => {
+      const { previewInvitation, InvitationGoneError } =
+        await import('./invitation.service.js');
+      const err = new Error('Gone');
+      err.status = 410;
+      http.get.mockRejectedValueOnce(err);
+
+      await expect(previewInvitation('gone')).rejects.toBeInstanceOf(
+        InvitationGoneError,
+      );
+    });
+
+    it('returns null + console.warn on network error (graceful fallback)', async () => {
+      const { previewInvitation } = await import('./invitation.service.js');
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      http.get.mockRejectedValueOnce(new TypeError('Network down'));
+
+      const result = await previewInvitation('anytoken');
+
+      expect(result).toBeNull();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('returns null + console.warn on unexpected non-HTTP error', async () => {
+      const { previewInvitation } = await import('./invitation.service.js');
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      const err = new Error('Something blew up');
+      err.status = 503;
+      http.get.mockRejectedValueOnce(err);
+
+      const result = await previewInvitation('anytoken');
+
+      expect(result).toBeNull();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
 });
