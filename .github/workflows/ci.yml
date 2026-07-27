@@ -114,7 +114,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, pdo_pgsql, pgsql, pdo_sqlite, sqlite3, intl, bcmath, curl, swoole
+          extensions: mbstring, pdo_pgsql, pgsql, pdo_sqlite, sqlite3, intl, bcmath, curl, swoole, redis
           tools: composer
           coverage: none
           cache: composer
@@ -139,6 +139,8 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
         run: php artisan migrate --force
 
       - name: Seed database
@@ -150,6 +152,8 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
         run: php artisan db:seed --force
 
       - name: Start backend (background)
@@ -161,15 +165,17 @@ jobs:
           DB_DATABASE: incidencias_db
           DB_USERNAME: user
           DB_PASSWORD: password
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
           APP_URL: http://localhost:8000
         run: |
           php artisan serve --port=8000 &
-          sleep 3
+          sleep 5
           curl -f http://localhost:8000/api/health || echo "Backend not ready yet"
 
       - name: Start frontend (background)
         run: |
-          npm run dev &
+          npm run dev -- --port 3000 &
           sleep 5
           curl -f http://localhost:3000 || echo "Frontend not ready yet"
 
