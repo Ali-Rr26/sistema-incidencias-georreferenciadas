@@ -221,6 +221,33 @@ export default {
       });
     }
 
+    // ─── Toggle password visibility (eye icon) ──────────────────────────
+    document.querySelectorAll('.gr-input-eye').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = btn.previousElementSibling;
+        if (input?.type === 'password') {
+          input.type = 'text';
+          btn.querySelector('i').className = 'fa-regular fa-eye-slash';
+          btn.setAttribute('aria-label', 'Ocultar contraseña');
+        } else if (input) {
+          input.type = 'password';
+          btn.querySelector('i').className = 'fa-regular fa-eye';
+          btn.setAttribute('aria-label', 'Mostrar contraseña');
+        }
+      });
+    });
+
+    // ─── Forgot password link ───────────────────────────────────────────
+    const forgotLink = document.querySelector('.gr-login__forgot');
+    if (forgotLink) {
+      forgotLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        router.navigate('/forgot-password');
+      });
+      forgotLink.removeAttribute('href');
+      forgotLink.style.cursor = 'pointer';
+    }
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 

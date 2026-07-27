@@ -52,6 +52,14 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('incidents', 'images')) {
+            return [
+                'source_count' => 0,
+                'created_count' => 0,
+                'legacy_url_rows' => [],
+            ];
+        }
+
         DB::table('incidents')
             ->select('id', 'images')
             ->whereNotNull('images')
@@ -131,6 +139,14 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
+        if (!\Illuminate\Support\Facades\Schema::hasTable('comment_images')) {
+            return [
+                'source_count' => 0,
+                'created_count' => 0,
+                'legacy_url_rows' => [],
+            ];
+        }
+
         // Read via the query builder, not an Eloquent model: `CommentImage`
         // was deleted in the WU6 cutover (comments now write to the
         // shared `images` table), but the legacy `comment_images` table
@@ -180,6 +196,14 @@ class ImageBackfiller
     {
         $sourceCount = 0;
         $createdCount = 0;
+
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'profile_image_path')) {
+            return [
+                'source_count' => 0,
+                'created_count' => 0,
+                'legacy_url_rows' => [],
+            ];
+        }
 
         User::query()
             ->whereNotNull('profile_image_path')
@@ -351,11 +375,15 @@ class ImageBackfiller
 
     private function alreadyBackfilled(Model $owner, string $storagePath): bool
     {
-        return Image::query()
+        $query = Image::query()
             ->where('imageable_type', $owner->getMorphClass())
-            ->where('imageable_id', $owner->getKey())
-            ->where('storage_path', $storagePath)
-            ->exists();
+            ->where('imageable_id', $owner->getKey());
+
+        if ($owner instanceof User) {
+            return $query->exists();
+        }
+
+        return $query->where('storage_path', $storagePath)->exists();
     }
 
     /**

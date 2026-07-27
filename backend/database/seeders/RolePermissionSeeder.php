@@ -72,7 +72,6 @@ class RolePermissionSeeder extends Seeder
     private const ADMIN_ORGANIZACION_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
-        ['resource' => 'incidents',           'action' => 'create'],
         ['resource' => 'incidents',           'action' => 'update'],
         ['resource' => 'incidents',           'action' => 'delete'],
         ['resource' => 'incidents',           'action' => 'manage'],
@@ -90,7 +89,6 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'locations',           'action' => 'view'],
         ['resource' => 'organizations',       'action' => 'view'],
         ['resource' => 'organizations',       'action' => 'update'],
-        ['resource' => 'roles',               'action' => 'view'],
         ['resource' => 'incident-categories', 'action' => 'view'],
         ['resource' => 'users',               'action' => 'view'],
         ['resource' => 'users',               'action' => 'create'],
