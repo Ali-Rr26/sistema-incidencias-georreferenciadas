@@ -77,9 +77,12 @@ export default {
         // Redirect to login after a delay
         setTimeout(() => router.navigate('/login'), 3000);
       } catch (err) {
+        const isTechnicalError = err.message && (err.message.includes('SQLSTATE') || err.message.includes('Connection.php'));
         const msg = err.status === 429
           ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.message || 'No se pudo restablecer la contraseña. El enlace puede haber expirado.');
+          : (err.message && !isTechnicalError
+              ? err.message
+              : 'No se pudo restablecer la contraseña. El enlace puede haber expirado o ser inválido.');
         const errTxt = document.getElementById('error-texto');
         if (errTxt) errTxt.textContent = msg;
         document.getElementById('estado-error')?.classList.remove('d-none');

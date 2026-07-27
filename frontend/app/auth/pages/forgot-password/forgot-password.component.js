@@ -36,9 +36,12 @@ export default {
         document.getElementById('estado-exito')?.classList.remove('d-none');
         if (emailInput) emailInput.value = '';
       } catch (err) {
+        const isTechnicalError = err.message && (err.message.includes('SQLSTATE') || err.message.includes('Connection.php'));
         const msg = err.status === 429
           ? 'Demasiados intentos. Intenta de nuevo en unos minutos.'
-          : (err.message || 'No pudimos enviar el enlace. Verifica tu correo.');
+          : (err.message && !isTechnicalError
+              ? err.message
+              : 'No pudimos enviar el enlace. Intenta de nuevo en unos minutos.');
         const errorTexto = document.getElementById('error-texto');
         if (errorTexto) {
           errorTexto.textContent = msg;
