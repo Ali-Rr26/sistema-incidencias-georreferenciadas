@@ -16,13 +16,13 @@ return new class extends Migration
             RETURNS TRIGGER AS \$\$
             BEGIN
                 IF OLD.status IS DISTINCT FROM NEW.status THEN
-                    INSERT INTO notifications (user_id, incident_id, type, leido, created_at, updated_at)
+                    INSERT INTO notifications (user_id, incident_id, type, message, read, created_at)
                     SELECT
                         COALESCE(assignments.user_id, NEW.user_id),
                         NEW.id,
-                        'status_changed',
+                        'status_change',
+                        'El estado de la incidencia #' || NEW.id || ' ha cambiado a ' || NEW.status,
                         false,
-                        NOW(),
                         NOW()
                     FROM assignments
                     WHERE incident_id = NEW.id
