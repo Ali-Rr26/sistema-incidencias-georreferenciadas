@@ -65,13 +65,7 @@ class HttpService {
       options.body = body instanceof FormData ? body : JSON.stringify(body);
     }
 
-    // Convert relative URLs to absolute for jsdom test environment
-    let fullUrl = `${this.baseUrl}${path}`;
-    if (!fullUrl.startsWith('http')) {
-      fullUrl = `http://localhost:8000${fullUrl}`;
-    }
-
-    const res = await fetch(fullUrl, options);
+    const res = await fetch(`${this.baseUrl}${path}`, options);
 
     // 401 → token inválido/expirado, intentar refresh
     if (res.status === 401) {
@@ -181,13 +175,7 @@ class HttpService {
   }
 
   async doRefresh() {
-    // Convert relative URLs to absolute for jsdom test environment
-    let fullUrl = `${this.baseUrl}/auth/refresh`;
-    if (!fullUrl.startsWith('http')) {
-      fullUrl = `http://localhost:8000${fullUrl}`;
-    }
-
-    const res = await fetch(fullUrl, {
+    const res = await fetch(`${this.baseUrl}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
