@@ -4,13 +4,15 @@ describe('Incident Comments', () => {
       cy.fixture('incidents').then(data => {
         cy.createIncidentViaAPI(token, data.minimal).then(id => {
           cy.login('usuario@test.com', 'Usuario123!');
-          cy.visit(`/#/incidencias/${id}`);
+          // Citizens view incidents via /feed/:id (feed-detail component),
+          // not /incidencias/:id — that route is staff-only and bounces
+          // citizens back to /feed regardless of feed.detail permission.
+          cy.visit(`/#/feed/${id}`);
 
-          cy.get('#detalle-content', { timeout: 15000 }).should('not.have.class', 'd-none');
-          cy.get('textarea[name*="comment"], #detalle-comment-input, [placeholder*="comentario"]').type('Este es mi comentario E2E');
-          cy.get('button:contains("Enviar"), button:contains("Comentar"), #detalle-comment-submit').click();
+          cy.get('#fd-comment-input').type('Este es mi comentario E2E');
+          cy.get('#fd-comment-submit').click();
 
-          cy.get('.alert-success, .toast-success, [class*="comment"]').should('exist');
+          cy.get('#fd-comments-list').should('contain', 'Este es mi comentario E2E');
         });
       });
     });
