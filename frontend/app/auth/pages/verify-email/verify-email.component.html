@@ -1,0 +1,80 @@
+<div class="gr-login">
+  <!-- Left Hero Panel -->
+  <div class="gr-login__hero">
+    <div class="gr-login__hero-logo">
+      <div class="gr-login__hero-icon">
+        <i class="fa-solid fa-location-dot"></i>
+      </div>
+      <span>GeoReporta</span>
+    </div>
+    <div class="gr-login__hero-content">
+      <h1 class="gr-login__hero-title">
+        Verificá tu correo electrónico.
+      </h1>
+      <p class="gr-login__hero-desc">
+        Te enviamos un enlace seguro a tu correo. Hacé clic para activar tu cuenta y empezar a reportar incidencias.
+      </p>
+    </div>
+    <div class="gr-login__hero-stats">
+      <div><span class="gr-login__hero-stat-num">1</span>Paso</div>
+      <div><span class="gr-login__hero-stat-num">Verifica</span>y listo</div>
+      <div><span class="gr-login__hero-stat-num">60'</span>Expira</div>
+    </div>
+    <i class="fa-solid fa-envelope-open gr-login__deco" style="top: 120px; right: 80px; font-size: 30px; opacity: 0.16"></i>
+    <i class="fa-solid fa-shield-check gr-login__deco" style="top: 240px; right: 160px; font-size: 18px; opacity: 0.18"></i>
+    <i class="fa-solid fa-key gr-login__deco" style="top: 300px; right: 60px; font-size: 22px; opacity: 0.14"></i>
+    <div class="gr-login__deco-circle"></div>
+  </div>
+
+  <!-- Right Form Panel -->
+  <div class="gr-login__form-wrap">
+    <div class="gr-login__form-box">
+      <h2 class="gr-login__form-title">Verificá tu correo</h2>
+      <p class="gr-login__form-sub">Activá tu cuenta abriendo el enlace que te enviamos por correo electrónico.</p>
+
+      <div id="estado-inicial" class="gr-login__banner gr-login__banner--info mb-3" role="status">
+        <i class="fa-solid fa-circle-info"></i>
+        <span id="inicial-texto">Revisá tu bandeja de entrada (y la carpeta de spam) y abrí el enlace de verificación.</span>
+      </div>
+
+      <div id="estado-cargando" class="gr-login__banner d-none" role="status">
+        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+        <span>Verificando tu correo&hellip;</span>
+      </div>
+
+      <div id="estado-exito" class="gr-login__banner gr-login__banner--success d-none" role="alert">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="exito-texto">Tu correo fue verificado correctamente.</span>
+      </div>
+
+      <div id="estado-error" class="alert alert-danger d-none mb-3" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-1"></i>
+        <span id="error-texto">No pudimos verificar tu correo. El enlace puede haber expirado.</span>
+      </div>
+
+      <p class="gr-login__text-muted">
+        ¿No recibiste el correo? Solicitá uno nuevo.
+      </p>
+
+      <button type="button" class="gr-btn-primary gr-btn-primary--full" id="btn-reenviar">
+        <span id="btn-texto">Reenviar correo de verificación</span>
+        <span id="btn-loading" class="d-none">
+          <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+          Enviando...
+        </span>
+        <span id="btn-countdown" class="d-none"></span>
+      </button>
+
+      <div id="estado-reenvio" class="gr-login__banner gr-login__banner--success d-none mt-3" role="status">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="reenvio-texto">Te hemos enviado un nuevo correo de verificación.</span>
+      </div>
+
+      <div class="text-center mt-4">
+        <a href="#/login" class="gr-login__forgot" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-arrow-left"></i> Volver al inicio de sesión
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Shared\Services;
 
+use App\Domains\Auth\Local\Exceptions\EmailNotVerifiedException;
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Sessions\Repositories\SessionRepository;
@@ -23,6 +24,8 @@ class AuthService
      * @return array{accessToken: string, refreshToken: string, expiresIn: int, user: User}
      *
      * @throws AuthenticationException
+     * @throws EmailNotVerifiedException
+     * @throws PendingInvitationException
      */
     public function login(string $email, string $password, ?string $ip, ?string $ua): array
     {
@@ -38,6 +41,18 @@ class AuthService
 
         if ($user->password === null) {
             throw new PendingInvitationException;
+        }
+
+        // Story sc-117 — el registro local exige que el correo esté
+        // verificado antes de habilitar el login. Google Auth e invitación
+        // aceptan el email verified porque ya lo garantizan aguas arriba,
+        // pero los usuarios que llegan vía /register tienen
+        // email_verified_at = NULL hasta que pican el enlace firmado
+        // del correo. Sin esta guardia, cualquiera que sepa (o adivine)
+        // una password podría iniciar sesión antes de probar ownership
+        // del correo.
+        if ($user->email_verified_at === null && config('auth.local.require_email_verification', true)) {
+            throw new EmailNotVerifiedException;
         }
 
         if (! Hash::check($password, $user->password)) {

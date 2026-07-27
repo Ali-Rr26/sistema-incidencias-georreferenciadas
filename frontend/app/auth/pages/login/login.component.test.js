@@ -276,6 +276,75 @@ describe('R11 — frontend registration form', () => {
     expect(sessionStorage.getItem('auth_token')).toBeNull();
     expect(sessionStorage.getItem('auth_session_id')).toBeNull();
   });
+
+  // Story sc-117 — flujo de verificación de correo para registros
+  // locales. El backend devuelve `requires_verification: true` en el
+  // 201 de POST /api/register cuando el usuario debe verificar su
+  // correo antes de poder iniciar sesión. El componente debe redirigir
+  // a /verify-email en lugar de mostrar el banner.
+  it('redirects to /verify-email when the 201 from /register carries requires_verification=true', async () => {
+    authMock.register.mockResolvedValue({
+      message: 'Usuario creado correctamente',
+      requires_verification: true,
+    });
+
+    await mountComponent();
+    document.querySelector('[data-mode-btn="register"]').click();
+
+    document.getElementById('first_name').value = 'Ada';
+    document.getElementById('last_name').value = 'Lovelace';
+    document.getElementById('register-email').value = 'ada@example.com';
+    document.getElementById('register-password').value = 'ValidPass1';
+    document.getElementById('password_confirmation').value = 'ValidPass1';
+
+    document
+      .getElementById('register-form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => {
+      expect(authMock.register).toHaveBeenCalledTimes(1);
+    });
+
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(
+      `/verify-email?source=register&email=${encodeURIComponent('ada@example.com')}`,
+    );
+
+    // El banner NO se muestra: el usuario es redirigido fuera de /login.
+    const banner = document.getElementById('register-banner');
+    expect(banner.classList.contains('d-none')).toBe(true);
+  });
+
+  // Story sc-117 — `/api/login` retorna 403 con `code: 'email_not_verified'`
+  // cuando el usuario existe pero su correo no fue verificado. El componente
+  // debe redirigir a /verify-email en lugar de mostrar el error genérico.
+  it('redirects to /verify-email when login returns 403 with code=email_not_verified', async () => {
+    authMock.login.mockRejectedValue(
+      Object.assign(new Error('Debes verificar tu correo'), {
+        status: 403,
+        code: 'email_not_verified',
+      }),
+    );
+
+    await mountComponent();
+
+    document.getElementById('email').value = 'unverified@example.com';
+    document.getElementById('password').value = 'ValidPass1';
+    document
+      .getElementById('login-form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => {
+      expect(authMock.login).toHaveBeenCalledTimes(1);
+    });
+
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(
+      `/verify-email?source=login&email=${encodeURIComponent('unverified@example.com')}`,
+    );
+  });
 });
 
 /**

@@ -3,6 +3,7 @@
 use App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
+use App\Domains\Auth\Local\Http\Controllers\VerificationController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -43,12 +44,26 @@ Route::post('/reset-password', [\App\Domains\Auth\Local\Http\Controllers\ResetPa
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
+// Email verification — story sc-117 (registro local exige correo verificado
+// antes de login). El `verify` es público y firmado (signed middleware
+// valida `expires` + `signature`); `resend` y `notice` viven adentro del
+// grupo `jwt` porque requieren un usuario autenticado para evitar
+// enumeración de correos ajenos.
+Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->name('verification.verify')
+    ->middleware('signed');
+
 Route::middleware('jwt')->group(function () {
 
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Email verification — status + reenvío autenticados.
+    Route::post('/email/resend', [VerificationController::class, 'resend'])
+        ->middleware('throttle:email-verify');
+    Route::get('/email/notice', [VerificationController::class, 'notice']);
 
     // Avatar handling is owned by PUT /users/{user} now (avatar file or
     // `_delete_avatar` flag in the same FormData/JSON payload) — see

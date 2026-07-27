@@ -19,8 +19,14 @@ class RegisterController
     {
         $this->registerService->register($request->validated());
 
+        // Story sc-117 — el frontend usa `requires_verification: true`
+        // como señal para mostrar la pantalla "Verifica tu correo"
+        // (POST /api/email/resend) en lugar de volver al login.
         return response()->json(
-            ['message' => 'Usuario creado correctamente'],
+            [
+                'message' => 'Usuario creado correctamente',
+                'requires_verification' => true,
+            ],
             Response::HTTP_CREATED,
         );
     }

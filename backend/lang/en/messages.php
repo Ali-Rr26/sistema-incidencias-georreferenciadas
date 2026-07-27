@@ -15,4 +15,11 @@ return [
     'unauthenticated' => 'Unauthenticated.',
     'unauthorized' => 'Unauthorized.',
     'google_auth_error' => 'Internal error processing Google authentication.',
+    'verification_sent' => 'We have emailed your verification link.',
+    'verification_success' => 'Your email address has been verified. You can now sign in.',
+    'verification_invalid' => 'The verification link is invalid or has already been used.',
+    'verification_expired' => 'The verification link has expired. Please request a new one.',
+    'email_already_verified' => 'Your email address has already been verified.',
+    'email_not_verified' => 'You must verify your email address before signing in. Check your inbox and open the link we sent.',
+    'verification_unauthorized' => 'You cannot resend the verification email for this account.',
 ];

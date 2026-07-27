@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Models;
 
+use App\Domains\Auth\Local\Notifications\VerifyEmailMail;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Models\Session;
 use App\Storage\Models\Image;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /**
      * Maximum avatar upload size in kilobytes, used ONLY by
@@ -166,5 +168,23 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new \App\Domains\Auth\Local\Notifications\PasswordResetMail($token));
+    }
+
+    /**
+     * Send the email verification notification — story sc-117 / R8 del
+     * registro local.
+     *
+     * Override del hook `MustVerifyEmail` (firma del trait
+     * `Illuminate\Auth\MustVerifyEmail`): el dispatch de la notificación
+     * por defecto apunta a `Illuminate\Auth\Notifications\VerifyEmail`,
+     * que genera un enlace firmado hacia una ruta del backend
+     * (`/email/verify/{id}/{hash}` con signature del APP_KEY). Nuestra
+     * notificación custom reescribe ese host al frontend para que la
+     * pantalla de "verificación de correo" viva en el SPA, mientras
+     * sigue preservando el path + query firmados.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailMail);
     }
 }

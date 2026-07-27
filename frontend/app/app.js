@@ -14,6 +14,7 @@ import { auth } from './auth/auth.service.js';
 
 import forgotPasswordComponent from './auth/pages/forgot-password/forgot-password.component.js';
 import resetPasswordComponent from './auth/pages/reset-password/reset-password.component.js';
+import verifyEmailComponent from './auth/pages/verify-email/verify-email.component.js';
 import organizacionesComponent from './configuracion/organizaciones/pages/index/organizaciones.index.component.js';
 import organizacionesFormComponent from './configuracion/organizaciones/pages/form/organizaciones.form.component.js';
 import localizacionesComponent from './configuracion/localizaciones/pages/index/localizaciones.index.component.js';
@@ -40,6 +41,7 @@ router.setShell(appShell);
 router.addRoute('/login', loginComponent);
 router.addRoute('/forgot-password', forgotPasswordComponent);
 router.addRoute('/reset-password', resetPasswordComponent);
+router.addRoute('/verify-email', verifyEmailComponent);
 router.addRoute('/accept-invite', acceptInviteComponent);
 
 // ─── Citizen routes (authGuard only) ────────────────────────────────

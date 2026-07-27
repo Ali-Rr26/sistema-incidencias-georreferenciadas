@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Auth\Local\Http\Controllers;
 
+use App\Domains\Auth\Local\Exceptions\EmailNotVerifiedException;
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Local\Http\Requests\LoginRequest;
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
@@ -57,6 +58,23 @@ class AuthController
             return response()->json([
                 'message' => $e->getMessage(),
             ], Response::HTTP_UNAUTHORIZED);
+        } catch (EmailNotVerifiedException $e) {
+            // Story sc-117 — 403 estructurado con código
+            // `email_not_verified` para que el frontend redirija a
+            // la pantalla de verificación (POST /api/email/resend).
+            // Reemplazamos el `getMessage()` del exception con la
+            // traducción canónica del i18n (mensajes.email_not_verified)
+            // para que la copia llegue al usuario en su idioma activo.
+            Log::info('auth.local.email_not_verified', [
+                'method' => __METHOD__,
+                'email' => $request->validated()['email'],
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'message' => __('messages.email_not_verified'),
+                'code' => 'email_not_verified',
+            ], Response::HTTP_FORBIDDEN);
         } catch (AuthenticationException $e) {
             throw $e->toValidationException();
         }

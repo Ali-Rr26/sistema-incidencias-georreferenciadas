@@ -75,8 +75,12 @@ it('R1: creates a user with role usuario and returns 201 with the success messag
     $response = $this->postJson('/api/register', validRegisterPayload());
 
     $response->assertStatus(201)
-        ->assertExactJson([
+        ->assertJson([
             'message' => 'Usuario creado correctamente',
+            // Story sc-117 — 201 con `requires_verification: true` para
+            // que el frontend redirija a la pantalla de verificación de
+            // correo en vez de volver a /login.
+            'requires_verification' => true,
         ]);
 
     $this->assertDatabaseHas('users', [

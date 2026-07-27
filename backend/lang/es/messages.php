@@ -15,4 +15,11 @@ return [
     'unauthenticated' => 'No autenticado.',
     'unauthorized' => 'No autorizado.',
     'google_auth_error' => 'Error interno al procesar la autenticación con Google.',
+    'verification_sent' => 'Te hemos enviado un correo de verificación. Revisa tu bandeja de entrada.',
+    'verification_success' => 'Tu correo electrónico fue verificado correctamente. Ya podés iniciar sesión.',
+    'verification_invalid' => 'El enlace de verificación no es válido o ya fue utilizado.',
+    'verification_expired' => 'El enlace de verificación expiró. Solicitá uno nuevo.',
+    'email_already_verified' => 'Tu correo electrónico ya fue verificado.',
+    'email_not_verified' => 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisá tu bandeja de entrada y abrí el enlace que te enviamos.',
+    'verification_unauthorized' => 'No podés reenviar el correo de verificación para esta cuenta.',
 ];

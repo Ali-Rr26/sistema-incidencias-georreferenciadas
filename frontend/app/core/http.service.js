@@ -120,6 +120,11 @@ class HttpService {
     if (!res.ok) {
       const err = new Error(data.message || 'Error en la solicitud');
       err.status = res.status;
+      // `code` opcional para errores estructurados por el backend
+      // (ej: `email_not_verified` del flujo de verificación de
+      // correo — story sc-117). Permite al frontend dispatchar
+      // flujos diferenciados sin parsear el `message` (i18n-fragile).
+      if (data.code) err.code = data.code;
       err.errors = data.errors;
       throw err;
     }
