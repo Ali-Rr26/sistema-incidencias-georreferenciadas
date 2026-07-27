@@ -45,12 +45,10 @@ const CHILD_ROUTE_PERMISSIONS = {
   '/categorias/crear': 'incident-categories.create',
   '/incidencias/crear': 'incidents.create',
   '/incidencias/:id': ['incidents.view', 'feed.detail'],
-  // roles.update is granted to admin_sistema only (RolePermissionSeeder
-  // never assigns it to any other role) — replicates the original
-  // roleGuard(['admin_sistema']) restriction on this route through the
-  // permission system instead of a hardcoded role name.
-  '/roles/crear': 'roles.create',
-  '/roles/:id': 'roles.update',
+  // roles: /roles/create requires roles.create (parametrized create route)
+  // /roles/:id requires roles.update for edit, or roles.create if id='create'
+  '/roles/create': 'roles.create',
+  '/roles/:id': ['roles.update', 'roles.create'],
 };
 
 /**
