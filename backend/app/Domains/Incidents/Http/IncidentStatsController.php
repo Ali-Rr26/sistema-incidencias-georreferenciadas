@@ -277,7 +277,7 @@ class IncidentStatsController extends Controller
         // Calculate percentages
         if ($previousTotal > 0) {
             $totalPct = round((($currentTotal - $previousTotal) / $previousTotal) * 100, 2);
-        } else if ($currentTotal > 0) {
+        } elseif ($currentTotal > 0) {
             $totalPct = 100.0;
         } else {
             $totalPct = 0.0;
@@ -285,7 +285,7 @@ class IncidentStatsController extends Controller
 
         if ($previousPendientes > 0) {
             $pendientesPct = round((($currentPendientes - $previousPendientes) / $previousPendientes) * 100, 2);
-        } else if ($currentPendientes > 0) {
+        } elseif ($currentPendientes > 0) {
             $pendientesPct = 100.0;
         } else {
             $pendientesPct = 0.0;
