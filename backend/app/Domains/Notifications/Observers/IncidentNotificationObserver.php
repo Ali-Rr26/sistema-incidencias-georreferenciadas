@@ -8,6 +8,9 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
+use App\Domains\Notifications\Services\NotificationService;
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Users\Models\User;
 use App\Domains\Users\Services\OperatorDashboardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +25,7 @@ class IncidentNotificationObserver
             $this->handleClaimChange($incident);
             $this->handleReleaseChange($incident);
             $this->handleConfirmChange($incident);
+            $this->handleAdminApprovalChange($incident);
         } catch (\Throwable $e) {
             Log::warning('IncidentNotificationObserver failed', [
                 'incident_id' => $incident->id,
@@ -88,7 +92,56 @@ class IncidentNotificationObserver
         }
     }
 
-    private function queueNotification(
+    private function handleAdminApprovalChange(Incident $incident): void
+    {
+        if (! $incident->wasChanged('status')) {
+            return;
+        }
+
+        $previous = (string) $incident->getRawOriginal('status');
+        $current = $incident->status instanceof IncidentStatus
+            ? $incident->status->value
+            : (string) $incident->status;
+
+        if ($previous === IncidentStatus::Resolved->value || $current !== IncidentStatus::Resolved->value) {
+            return;
+        }
+
+        $organizationId = (int) $incident->organization_id;
+        $incidentId = (int) $incident->id;
+        $actorUserId = (int) ($incident->claimed_by ?: $incident->user_id);
+
+        DB::afterCommit(function () use ($organizationId, $incidentId, $actorUserId): void {
+            $admins = User::query()
+                ->where(function ($query) use ($organizationId): void {
+                    $query->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminSistema->value))
+                        ->orWhere(function ($organizationQuery) use ($organizationId): void {
+                            $organizationQuery->where('organization_id', $organizationId)
+                                ->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminOrganizacion->value));
+                        });
+                })
+                ->get();
+
+            $service = app(NotificationService::class);
+            foreach ($admins as $admin) {
+                $service->notify(
+                    user: $admin,
+                    type: NotificationType::IncidenciaAtendidaParaAprobacion,
+                    message: 'Una incidencia atendida requiere tu aprobación.',
+                    incidentId: $incidentId,
+                    data: [
+                        'incident_id' => $incidentId,
+                        'actor_user_id' => $actorUserId,
+                        'decision' => null,
+                        'rejection_reason' => null,
+                        'expires_at' => now()->addDays(7)->toIso8601String(),
+                        'organization_id' => $organizationId,
+                    ],
+                );
+            }
+        });
+    }
+
         Incident $incident,
         NotificationType $type,
         string $message,
