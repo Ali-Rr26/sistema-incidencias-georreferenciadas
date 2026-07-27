@@ -39,7 +39,7 @@ export default {
     });
 
     document.getElementById('btn-nuevo-rol').addEventListener('click', () => {
-      router.navigate('/roles/crear');
+      router.navigate('/roles/create');
     });
 
     page.init();
