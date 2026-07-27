@@ -118,6 +118,26 @@ function renderizarIncidencia(inc) {
   document.getElementById('detalle-loading').classList.toggle('d-none', true);
   document.getElementById('detalle-content').classList.toggle('d-none', false);
 
+  // Banner: si esta incidencia fue confirmada como duplicada de otra,
+  // mostramos el enlace al original. Solo aparece cuando `is_duplicate`
+  // es true (controlado por la API, no por el cliente).
+  const banner = document.getElementById('detalle-duplicate-banner');
+  if (banner) {
+    if (inc.is_duplicate && inc.duplicate_of) {
+      const original = inc.duplicate_of;
+      const title = original.title ?? `#${original.incident_id}`;
+      banner.innerHTML = `
+        <i class="fas fa-link me-2"></i>
+        Esta incidencia fue marcada como duplicada de
+        <a href="#/incidencias/${original.incident_id}" class="alert-link fw-semibold">${title}</a>
+      `;
+      banner.classList.remove('d-none');
+    } else {
+      banner.classList.add('d-none');
+      banner.innerHTML = '';
+    }
+  }
+
   // Plain text fields.
   document.getElementById('detalle-titulo').textContent =
     inc.title ?? 'Sin título';
@@ -763,6 +783,122 @@ function setupActionButtons(incidentId, inc) {
       });
     }
   }
+
+  // ── "Marcar como duplicada" (sc-118) ──
+  // El modal permite buscar otra incidencia por id o título. La lista
+  // de sugerencias la pedimos al feed público (mismo endpoint que la
+  // home) — el filtrado en cliente basta para una lista corta.
+  setupDuplicateModal(incidentId);
+}
+
+/**
+ * Wire the "Marcar como duplicada" modal: input + autocomplete +
+ * confirm button. Posts to /api/incidents/{id}/duplicates and reloads
+ * on success so the banner appears.
+ */
+function setupDuplicateModal(incidentId) {
+  const input = document.getElementById('detalle-duplicate-input');
+  const reason = document.getElementById('detalle-duplicate-reason');
+  const suggestions = document.getElementById('detalle-duplicate-suggestions');
+  const confirmBtn = document.getElementById('detalle-duplicate-confirm');
+  const errorEl = document.getElementById('detalle-duplicate-error');
+
+  if (!input || !confirmBtn) return;
+
+  let pickedId = null;
+
+  function clearSuggestions() {
+    suggestions?.replaceChildren();
+    if (confirmBtn) confirmBtn.disabled = true;
+  }
+
+  function pickSuggestion(inc) {
+    pickedId = inc.id;
+    input.value = `${inc.id} — ${inc.title ?? ''}`;
+    clearSuggestions();
+    confirmBtn.disabled = false;
+  }
+
+  let debounce = null;
+  input.addEventListener('input', () => {
+    pickedId = null;
+    confirmBtn.disabled = true;
+    if (debounce) clearTimeout(debounce);
+    const q = input.value.trim();
+    if (q.length < 2) {
+      clearSuggestions();
+      return;
+    }
+    debounce = setTimeout(async () => {
+      try {
+        const numeric = /^\d+$/.test(q) ? q : null;
+        const url = numeric
+          ? `/incidents/${numeric}`
+          : `/incidents/feed?per_page=8`;
+        const json = await http.get(url);
+        const candidates = numeric
+          ? [json.data ?? json]
+          : (json.data ?? [])
+              .filter((inc) => String(inc.id) !== String(incidentId))
+              .filter((inc) =>
+                (inc.title ?? '').toLowerCase().includes(q.toLowerCase()),
+              );
+
+        if (!suggestions) return;
+        suggestions.replaceChildren(
+          ...candidates.slice(0, 8).map((inc) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className =
+              'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+            btn.innerHTML = `<span><strong>#${inc.id}</strong> — ${escapeHtml(inc.title ?? '')}</span><span class="badge text-bg-light">${escapeHtml(inc.status ?? '')}</span>`;
+            btn.addEventListener('click', () => pickSuggestion(inc));
+            return btn;
+          }),
+        );
+        if (candidates.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'text-muted small px-2 py-1';
+          empty.textContent = 'Sin coincidencias.';
+          suggestions.replaceChildren(empty);
+        }
+      } catch (e) {
+        if (suggestions) {
+          const empty = document.createElement('div');
+          empty.className = 'text-muted small px-2 py-1';
+          empty.textContent = 'Sin coincidencias.';
+          suggestions.replaceChildren(empty);
+        }
+      }
+    }, 250);
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    errorEl?.classList.add('d-none');
+    if (!pickedId) {
+      if (errorEl) errorEl.textContent = 'Selecciona una incidencia de la lista.';
+      errorEl?.classList.remove('d-none');
+      return;
+    }
+    if (Number(pickedId) === Number(incidentId)) {
+      if (errorEl) errorEl.textContent = 'Una incidencia no puede ser duplicada de sí misma.';
+      errorEl?.classList.remove('d-none');
+      return;
+    }
+    confirmBtn.disabled = true;
+    try {
+      await http.post(`/incidents/${incidentId}/duplicates`, {
+        duplicate_incident_id: Number(pickedId),
+        reason: reason?.value?.trim() || null,
+      });
+      // Recarga la página para que el banner "is_duplicate" aparezca.
+      window.location.reload();
+    } catch (e) {
+      if (errorEl) errorEl.textContent = e.message || 'No se pudo marcar como duplicada.';
+      errorEl?.classList.remove('d-none');
+      confirmBtn.disabled = false;
+    }
+  });
 }
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────

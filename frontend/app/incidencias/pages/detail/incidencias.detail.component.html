@@ -35,9 +35,17 @@
     </div>
   </div>
 
-  <!-- Content -->
-  <div id="detalle-content" class="d-none">
-    <div class="row g-4">
+<!-- Content -->
+<div id="detalle-content" class="d-none">
+  <!-- Banner: aparece solo cuando la API marca `is_duplicate: true` y
+       expone `duplicate_of`. La lógica de render vive en el componente
+       JS (renderizarIncidencia). -->
+  <div
+    id="detalle-duplicate-banner"
+    class="alert alert-warning d-none mb-3"
+    role="alert"
+  ></div>
+  <div class="row g-4">
       <!-- Main info -->
       <div class="col-lg-8">
         <div class="gr-card">
@@ -233,6 +241,17 @@
               <div id="detalle-confirm-actions" class="d-none">
                 <button id="btn-confirmar" class="btn btn-success w-100 mb-2">
                   <i class="fas fa-check-circle me-1"></i>Confirmar y asignar
+                </button>
+              </div>
+              <div id="detalle-duplicate-actions">
+                <button
+                  id="btn-marcar-duplicada"
+                  class="btn btn-outline-secondary w-100 mb-2"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#detalle-duplicate-modal"
+                >
+                  <i class="fas fa-link me-1"></i>Marcar como duplicada
                 </button>
               </div>
               <div id="detalle-acciones-loading" class="d-none">
@@ -528,4 +547,82 @@
   >
     &times;
   </button>
+</div>
+
+<!-- Modal: marcar como duplicada (sc-118). Permite seleccionar otra
+     incidencia por id o por título (autocomplete via /incidents/feed
+     ya cacheado). POST /api/incidents/{id}/duplicates. -->
+<div
+  class="modal fade"
+  id="detalle-duplicate-modal"
+  tabindex="-1"
+  aria-labelledby="detalle-duplicate-modal-label"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detalle-duplicate-modal-label">
+          Marcar como duplicada
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="detalle-duplicate-input" class="form-label">
+            Título o ID de la incidencia original
+          </label>
+          <input
+            type="text"
+            id="detalle-duplicate-input"
+            class="form-control"
+            placeholder="Buscar por título o pegar un ID..."
+            autocomplete="off"
+          />
+        </div>
+        <div class="mb-3">
+          <label for="detalle-duplicate-reason" class="form-label">
+            Motivo (opcional)
+          </label>
+          <textarea
+            id="detalle-duplicate-reason"
+            class="form-control"
+            rows="2"
+            maxlength="1000"
+            placeholder="¿Por qué crees que es un duplicado?"
+          ></textarea>
+        </div>
+        <div
+          id="detalle-duplicate-suggestions"
+          class="list-group small"
+        ></div>
+        <div
+          id="detalle-duplicate-error"
+          class="alert alert-danger small mt-2 d-none"
+        ></div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          id="detalle-duplicate-confirm"
+          class="btn btn-primary"
+          disabled
+        >
+          Marcar como duplicada
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

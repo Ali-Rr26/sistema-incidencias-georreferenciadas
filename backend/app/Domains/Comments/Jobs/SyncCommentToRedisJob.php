@@ -73,5 +73,7 @@ final class SyncCommentToRedisJob implements ShouldQueue
         $pipe->hmset($commentHashKey, $data);
         $pipe->hincrby($incidentHashKey, 'comment_count', 1);
         $pipe->exec();
+
+        \App\Domains\Incidents\Jobs\SyncIncidentToRedisJob::dispatch((int) $comment->incident_id);
     }
 }

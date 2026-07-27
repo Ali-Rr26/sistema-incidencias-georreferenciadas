@@ -89,6 +89,33 @@ class FeedController extends Controller
             perPage: min(max(1, (int) $request->integer('per_page', 12)), 50),
         );
 
+        if (! empty($result['data'])) {
+            $incidentIds = array_column($result['data'], 'id');
+
+            $meTooIds = \App\Domains\Incidents\Models\MeTooReport::query()
+                ->whereIn('incident_id', $incidentIds)
+                ->where('user_id', $user->id)
+                ->pluck('incident_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+                ->all();
+
+            $followedIds = \App\Domains\Incidents\Models\IncidentFollower::query()
+                ->whereIn('incident_id', $incidentIds)
+                ->where('user_id', $user->id)
+                ->pluck('incident_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+                ->all();
+
+            foreach ($result['data'] as &$item) {
+                $itemId = (int) ($item['id'] ?? 0);
+                $item['viewer_has_me_too'] = isset($meTooIds[$itemId]);
+                $item['viewer_is_following'] = isset($followedIds[$itemId]);
+            }
+            unset($item);
+        }
+
         return response()->json($result);
     }
 

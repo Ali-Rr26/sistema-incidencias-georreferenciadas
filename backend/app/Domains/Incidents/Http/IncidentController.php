@@ -140,12 +140,15 @@ class IncidentController extends Controller
      * the detail view embeds assignments directly — the list endpoint does
      * not need them.
      * `resolutions.resolvedByUser` includes audit trail with resolver info.
+     * `duplicateOf.original` is included for sc-118 so the "marked as
+     * duplicate of #N" banner can render in one round-trip.
      */
-    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'images'];
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'images', 'duplicateOf.original'];
 
     public function show(Request $request, Incident $incident): JsonResponse
     {
         $incident->load(self::SHOW_RELATIONS);
+        $incident->loadCount(['comments', 'meTooReports', 'followers', 'duplicates']);
 
         return (new IncidentResource($incident))->withDetail()->response();
     }

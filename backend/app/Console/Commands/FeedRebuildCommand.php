@@ -6,6 +6,9 @@ namespace App\Console\Commands;
 
 use App\Domains\Comments\Models\Comment;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Models\IncidentDuplicate;
+use App\Domains\Incidents\Models\IncidentFollower;
+use App\Domains\Incidents\Models\MeTooReport;
 use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +43,11 @@ class FeedRebuildCommand extends Command
             $incidentCount = 0;
 
             Incident::with(['category', 'location', 'user'])
+                ->withCount([
+                    'comments',
+                    'meTooReports',
+                    'followers',
+                ])
                 ->chunk(100, function ($incidents) use (&$incidentCount): void {
                     $pipe = Redis::pipeline();
 
@@ -92,27 +100,72 @@ class FeedRebuildCommand extends Command
                     $pipe->exec();
                 });
 
-            // Rebuild comment_count for each incident that has comments.
+            // Rebuild per-incident counters in the `incident:{id}` hash.
             // HSET (absolute), never HINCRBY: the incident:{id} hashes are not
             // wiped above (only the feed:v2 keys are), so an increment would
             // stack on top of the value left by the previous rebuild.
-            $counts = Comment::query()
-                ->selectRaw('incident_id, COUNT(*) AS total')
-                ->groupBy('incident_id')
-                ->pluck('total', 'incident_id');
-
-            foreach ($counts as $incidentId => $count) {
-                Redis::hset('incident:'.$incidentId, 'comment_count', (int) $count);
-            }
+            $this->rebuildCommentCounts();
+            $this->rebuildMeTooCounts();
+            $this->rebuildFollowerCounts();
+            $this->rebuildDuplicateCounts();
 
             $this->info("Synced {$commentCount} comments to Redis.");
+
+            return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->warn('Redis feed rebuild skipped (Redis unavailable: '.$e->getMessage().')');
             Log::warning('Redis feed rebuild failed', ['exception' => $e]);
 
             return self::FAILURE;
         }
+    }
 
-        return self::SUCCESS;
+    private function rebuildCommentCounts(): void
+    {
+        $counts = Comment::query()
+            ->selectRaw('incident_id, COUNT(*) AS total')
+            ->groupBy('incident_id')
+            ->pluck('total', 'incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'comment_count', (int) $count);
+        }
+    }
+
+    private function rebuildMeTooCounts(): void
+    {
+        $counts = MeTooReport::query()
+            ->selectRaw('incident_id, COUNT(*) AS total')
+            ->groupBy('incident_id')
+            ->pluck('total', 'incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'me_too_count', (int) $count);
+        }
+    }
+
+    private function rebuildFollowerCounts(): void
+    {
+        $counts = IncidentFollower::query()
+            ->selectRaw('incident_id, COUNT(*) AS total')
+            ->groupBy('incident_id')
+            ->pluck('total', 'incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'followers_count', (int) $count);
+        }
+    }
+
+    private function rebuildDuplicateCounts(): void
+    {
+        $counts = IncidentDuplicate::query()
+            ->where('status', 'confirmed')
+            ->selectRaw('original_incident_id, COUNT(*) AS total')
+            ->groupBy('original_incident_id')
+            ->pluck('total', 'original_incident_id');
+
+        foreach ($counts as $incidentId => $count) {
+            Redis::hset('incident:'.$incidentId, 'duplicates_count', (int) $count);
+        }
     }
 }

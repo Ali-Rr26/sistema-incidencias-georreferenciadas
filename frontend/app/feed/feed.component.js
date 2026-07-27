@@ -112,7 +112,12 @@ function renderCard(inc) {
     `;
   }
 
-  const commentCount = inc.comments_count ?? 0;
+  const commentCount = inc.comment_count ?? inc.comments_count ?? 0;
+  const meTooCount = inc.me_too_count ?? 0;
+  const followersCount = inc.followers_count ?? 0;
+  const viewerHasMeToo = Boolean(inc.viewer_has_me_too);
+  const viewerIsFollowing = Boolean(inc.viewer_is_following);
+  const isAuthed = typeof auth !== 'undefined' && auth.isAuthenticated();
 
   // Status badge — soft-fill chip
   const statusBadgeClass = `feed-status-chip feed-status-${inc.status || 'default'}`;
@@ -148,15 +153,31 @@ function renderCard(inc) {
 
       <div class="card-footer bg-transparent d-flex align-items-center gap-2 px-3 py-2 feed-card-footer">
         <div class="d-flex gap-1 flex-grow-1 flex-wrap">
-          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
+          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()" data-route="/feed/${inc.id}" data-comments-target="true" title="Ver comentarios">
             <i class="fa-regular fa-comment me-1"></i>
             ${commentCount}
           </button>
-          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
-            <i class="fa-regular fa-eye me-1"></i>Seguir
+          <button
+            type="button"
+            class="btn btn-sm rounded-pill feed-follow-btn ${viewerIsFollowing ? 'btn-primary text-white' : 'btn-light'}"
+            style="font-size:13px"
+            data-incident-id="${inc.id}"
+            data-action="follow"
+            ${isAuthed ? '' : 'disabled title="Inicia sesión para seguir"'}
+            aria-pressed="${viewerIsFollowing}"
+          >
+            <i class="fa-regular ${viewerIsFollowing ? 'fa-bell' : 'fa-eye'} me-1"></i>${viewerIsFollowing ? `Siguiendo (${followersCount})` : `Seguir (${followersCount})`}
           </button>
-          <button class="btn btn-light btn-sm rounded-pill" style="font-size:13px" onclick="event.stopPropagation()">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i>Yo también reporto
+          <button
+            type="button"
+            class="btn btn-sm rounded-pill feed-metoo-btn ${viewerHasMeToo ? 'btn-warning text-white' : 'btn-light'}"
+            style="font-size:13px"
+            data-incident-id="${inc.id}"
+            data-action="me-too"
+            ${isAuthed ? '' : 'disabled title="Inicia sesión para reportar"'}
+            aria-pressed="${viewerHasMeToo}"
+          >
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>${viewerHasMeToo ? 'Ya lo reporté' : 'Yo también reporto'} (${meTooCount})
           </button>
         </div>
         <button class="feed-action-btn btn btn-primary btn-sm rounded-pill" data-route="/feed/${inc.id}" title="Ver detalle" style="white-space:nowrap" onclick="event.stopPropagation()">
@@ -281,6 +302,18 @@ export default {
     }
 
     feedList.addEventListener('click', (e) => {
+      const meTooBtn = e.target.closest('[data-action="me-too"]');
+      if (meTooBtn) {
+        e.stopPropagation();
+        toggleMeToo(meTooBtn.dataset.incidentId, meTooBtn);
+        return;
+      }
+      const followBtn = e.target.closest('[data-action="follow"]');
+      if (followBtn) {
+        e.stopPropagation();
+        toggleFollow(followBtn.dataset.incidentId, followBtn);
+        return;
+      }
       const target = e.target.closest('[data-route]');
       if (!target) return;
       navigateFromTarget(target, e);
@@ -505,6 +538,76 @@ export default {
           toggleFilterPanel();
         }
       });
+    }
+
+    // ── "Yo también reporto" + "Seguir" toggle handlers (sc-118) ──
+    // The buttons dispatch the request optimistically, then patch the
+    // returned count + viewer flag back into the DOM. We expose them on
+    // `window` so the inline onclick handlers above can find them
+    // without a refactor of the existing event-delegation pattern.
+    function setMeTooButtonState(btn, isOn, count) {
+      btn.classList.toggle('btn-warning', isOn);
+      btn.classList.toggle('text-white', isOn);
+      btn.classList.toggle('btn-light', !isOn);
+      btn.setAttribute('aria-pressed', String(isOn));
+      const label = isOn ? 'Ya lo reporté' : 'Yo también reporto';
+      btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${label} (${count})`;
+    }
+
+    function setFollowButtonState(btn, isOn, count) {
+      btn.classList.toggle('btn-primary', isOn);
+      btn.classList.toggle('text-white', isOn);
+      btn.classList.toggle('btn-light', !isOn);
+      btn.setAttribute('aria-pressed', String(isOn));
+      const iconClass = isOn ? 'fa-bell' : 'fa-eye';
+      const label = isOn ? 'Siguiendo' : 'Seguir';
+      btn.innerHTML = `<i class="fa-regular ${iconClass} me-1"></i>${label} (${count})`;
+    }
+
+    async function toggleMeToo(incidentId, btn) {
+      if (!auth.isAuthenticated()) {
+        auth.requireLogin?.() ?? router.navigate('/login');
+        return;
+      }
+      const isOn = btn.getAttribute('aria-pressed') === 'true';
+      btn.disabled = true;
+      try {
+        const path = `/incidents/${incidentId}/me-too`;
+        const json = isOn
+          ? await http.delete(path)
+          : await http.post(path, {});
+        const data = json?.data ?? {};
+        const count = data.me_too_count ?? 0;
+        const flag = data.viewer_has_me_too ?? !isOn;
+        setMeTooButtonState(btn, flag, count);
+      } catch (e) {
+        console.error('[feed] me-too toggle failed', e);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function toggleFollow(incidentId, btn) {
+      if (!auth.isAuthenticated()) {
+        auth.requireLogin?.() ?? router.navigate('/login');
+        return;
+      }
+      const isOn = btn.getAttribute('aria-pressed') === 'true';
+      btn.disabled = true;
+      try {
+        const path = `/incidents/${incidentId}/follow`;
+        const json = isOn
+          ? await http.delete(path)
+          : await http.post(path, {});
+        const data = json?.data ?? {};
+        const count = data.followers_count ?? 0;
+        const flag = data.is_following ?? !isOn;
+        setFollowButtonState(btn, flag, count);
+      } catch (e) {
+        console.error('[feed] follow toggle failed', e);
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     // ── First load ──

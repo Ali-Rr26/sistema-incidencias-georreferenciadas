@@ -6,6 +6,7 @@ namespace App\Domains\Notifications\Observers;
 
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Models\IncidentFollower;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
 use App\Domains\Users\Services\OperatorDashboardService;
@@ -79,13 +80,60 @@ class IncidentNotificationObserver
         $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
 
         if ($previous !== IncidentStatus::Resolved->value && $currentValue === IncidentStatus::Resolved->value) {
+            // Notify the owner (existing behavior).
             $this->queueNotification(
                 $incident,
                 NotificationType::StatusChange,
                 "Tu incidencia \"{$incident->title}\" fue resuelta.",
                 ['status' => IncidentStatus::Resolved->value],
             );
+
+            // Also notify every follower of the status change (sc-118 —
+            // "Seguir" integration). The owner of the incident is
+            // excluded since they already got a direct notification.
+            $this->queueFollowerStatusChange($incident, $currentValue);
         }
+    }
+
+    private function queueFollowerStatusChange(Incident $incident, string $newStatus): void
+    {
+        $followerIds = IncidentFollower::query()
+            ->where('incident_id', $incident->id)
+            ->where('user_id', '!=', (int) $incident->user_id)
+            ->pluck('user_id');
+
+        if ($followerIds->isEmpty()) {
+            return;
+        }
+
+        $title = (string) $incident->title;
+        $message = "La incidencia \"{$title}\" cambió de estado a \"{$newStatus}\".";
+        $type = NotificationType::StatusChange;
+        $data = [
+            'incident_id' => (int) $incident->id,
+            'incident_title' => $title,
+            'status' => $newStatus,
+        ];
+
+        DB::afterCommit(function () use ($followerIds, $incident, $type, $message, $data): void {
+            foreach ($followerIds as $userId) {
+                try {
+                    SendIncidentNotificationJob::dispatch(
+                        (int) $userId,
+                        (int) $incident->id,
+                        $type->value,
+                        $message,
+                        $data,
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to queue follower status notification', [
+                        'user_id' => (int) $userId,
+                        'incident_id' => (int) $incident->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
     }
 
     private function queueNotification(
