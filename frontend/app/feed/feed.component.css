@@ -197,24 +197,33 @@
 
 /* --- Scrollable incidents region (vertical scroll only) --- */
 .feed-scroll-region {
-  max-height: calc(100dvh - 240px);
   overflow-y: auto;
   overflow-x: hidden;
 }
-@supports not (height: 100dvh) {
+
+/* Desktop only: cap height for constrained scroll */
+@media (min-width: 992px) {
   .feed-scroll-region {
-    max-height: calc(100vh - 240px);
+    max-height: calc(100dvh - 240px);
+  }
+  @supports not (height: 100dvh) {
+    .feed-scroll-region {
+      max-height: calc(100vh - 240px);
+    }
   }
 }
 
-/* When the feed is mounted we want the ONLY scrollable area to be
-   `.feed-scroll-region` — disable the app-shell-main's own overflow
-   so the user never sees two scrollbars on the same page. */
+/* Mobile: allow body scroll; desktop: disable for fixed regions */
 body.feed-view {
-  overflow: hidden;
+  overflow: auto;
 }
-body.feed-view .app-shell-main {
-  overflow: hidden !important;
+@media (min-width: 992px) {
+  body.feed-view {
+    overflow: hidden;
+  }
+  body.feed-view .app-shell-main {
+    overflow: hidden !important;
+  }
 }
 
 /* --- Card preview gradient background --- */
