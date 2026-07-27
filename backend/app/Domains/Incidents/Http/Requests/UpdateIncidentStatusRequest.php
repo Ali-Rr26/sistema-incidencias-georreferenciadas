@@ -24,6 +24,7 @@ class UpdateIncidentStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
 

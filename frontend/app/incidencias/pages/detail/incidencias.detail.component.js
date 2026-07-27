@@ -314,6 +314,13 @@ function setupEstado(incidentId, inc) {
 
     try {
       const payload = { status: newStatus };
+      const notesInput = document.getElementById('detalle-estado-notas');
+      const notes = notesInput?.value.trim() ?? '';
+
+      if (notes) {
+        payload.notes = notes;
+      }
+
       if (newStatus === 'resolved') {
         payload.resolution_date = new Date().toISOString();
       }
@@ -362,10 +369,20 @@ function renderHistorial(items) {
         hour: '2-digit',
         minute: '2-digit',
       });
+
+      const isResolved = item.new_status === 'resolved';
+      const borderClass = isResolved ? 'border-success' : 'border-primary';
+      const notesHtml = item.notes
+        ? `<div class="mt-1 p-2 rounded ${isResolved ? 'bg-success-subtle text-dark border border-success-subtle' : 'bg-light text-secondary'} small">
+             <i class="fa-solid fa-sticky-note me-1 ${isResolved ? 'text-success' : 'text-muted'}"></i><strong>Notas:</strong> ${escapeHtml(item.notes)}
+           </div>`
+        : '';
+
       return `
-        <div class="border-start border-2 border-primary ps-3 mb-3">
+        <div class="border-start border-2 ${borderClass} ps-3 mb-3">
           <div class="small fw-semibold">${prev} → ${next}</div>
           <div class="text-muted" style="font-size:0.75rem;">${userName} · ${fecha}</div>
+          ${notesHtml}
         </div>`;
     })
     .join('');

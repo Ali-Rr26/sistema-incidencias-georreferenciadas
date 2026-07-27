@@ -63,6 +63,7 @@ class UpdateIncidentRequest extends FormRequest
             'status' => ['sometimes', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
             'priority' => ['sometimes', Rule::in([Incident::PRIORITY_LOW, Incident::PRIORITY_MEDIUM, Incident::PRIORITY_HIGH])],
             'resolution_date' => 'nullable|date',
+            'notes' => 'sometimes|nullable|string|max:2000',
             'geom' => 'nullable|json',
 
             // Imágenes opcionales (multipart)

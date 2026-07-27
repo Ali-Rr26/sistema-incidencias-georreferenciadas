@@ -140,7 +140,7 @@ class IncidentController extends Controller
      * not need them.
      * `resolutions.resolvedByUser` includes audit trail with resolver info.
      */
-    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'resolutions.resolvedByUser', 'images'];
+    private const SHOW_RELATIONS = ['category', 'organization', 'user', 'location', 'assignments.user', 'images'];
 
     public function show(Request $request, Incident $incident): JsonResponse
     {
@@ -151,7 +151,11 @@ class IncidentController extends Controller
 
     public function update(UpdateIncidentRequest $request, Incident $incident): JsonResponse
     {
-        $data = $this->castGeomToPoint($request->validated());
+        $validated = $request->validated();
+        $notes = $validated['notes'] ?? null;
+        unset($validated['notes']);
+
+        $data = $this->castGeomToPoint($validated);
 
         unset($data['images']);
 
@@ -161,6 +165,14 @@ class IncidentController extends Controller
         }
 
         $incident = $this->incidents->update($incident->id, $data);
+
+        if ($notes !== null) {
+            DB::table('status_history')
+                ->where('incident_id', $incident->id)
+                ->latest('created_at')
+                ->limit(1)
+                ->update(['notes' => $notes]);
+        }
 
         return (new IncidentResource($incident))->response();
     }
@@ -180,6 +192,14 @@ class IncidentController extends Controller
         $this->authorize('updateStatus', [$incident, $validated['status']]);
 
         $incident = $this->incidents->update($incident->id, ['status' => $validated['status']]);
+
+        if (! empty($validated['notes'])) {
+            DB::table('status_history')
+                ->where('incident_id', $incident->id)
+                ->latest('created_at')
+                ->limit(1)
+                ->update(['notes' => $validated['notes']]);
+        }
 
         return (new IncidentResource($incident))->response();
     }

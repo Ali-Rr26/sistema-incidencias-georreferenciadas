@@ -102,12 +102,13 @@ class IncidentResource extends JsonResource
                 ->where('incident_id', $this->id)
                 ->orderBy('created_at')
                 ->orderBy('id')
-                ->get(['id', 'user_id', 'previous_status', 'new_status', 'created_at'])
+                ->get(['id', 'user_id', 'previous_status', 'new_status', 'notes', 'created_at'])
                 ->map(fn ($r) => [
                     'id' => (int) $r->id,
                     'user_id' => (int) $r->user_id,
                     'previous_status' => $r->previous_status,
                     'new_status' => $r->new_status,
+                    'notes' => $r->notes ?? null,
                     'created_at' => $r->created_at,
                 ])
                 ->all();
@@ -123,19 +124,6 @@ class IncidentResource extends JsonResource
                     'created_at' => $a->created_at,
                     'updated_at' => $a->updated_at,
                     'user' => $a->relationLoaded('user') ? $a->user : null,
-                ])->values()->all(),
-            );
-
-            // Resolution audit trail — who resolved this incident and when
-            $data['resolutions'] = $this->whenLoaded(
-                'resolutions',
-                fn () => $this->resolutions->map(fn ($r) => [
-                    'id' => $r->id,
-                    'incident_id' => $r->incident_id,
-                    'resolved_by_user_id' => $r->resolved_by_user_id,
-                    'resolved_at' => $r->resolved_at,
-                    'notes' => $r->notes,
-                    'resolved_by_user' => $r->relationLoaded('resolvedByUser') ? $r->resolvedByUser : null,
                 ])->values()->all(),
             );
         }
