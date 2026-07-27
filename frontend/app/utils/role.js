@@ -25,6 +25,15 @@ export function resolveRoleName(user) {
 /**
  * Map from role name keys to Spanish display labels.
  */
+export function homeRouteForUser(user) {
+  const roleName = resolveRoleName(user);
+
+  if (roleName === 'usuario') return '/feed';
+  if (roleName === 'operador_organizacion') return '/operator/dashboard';
+
+  return '/dashboard';
+}
+
 export const ROLE_LABELS = Object.freeze({
   admin_sistema: 'Super Administrador',
   admin_organizacion: 'Administrador de Organización',

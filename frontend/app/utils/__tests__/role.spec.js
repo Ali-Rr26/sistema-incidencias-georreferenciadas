@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { resolveRoleName, ROLE_LABELS, OPERATIONAL_ROLES } from '../role.js';
+import {
+  resolveRoleName,
+  homeRouteForUser,
+  ROLE_LABELS,
+  OPERATIONAL_ROLES,
+} from '../role.js';
 
 describe('resolveRoleName', () => {
   it('returns the name when role is an object', () => {
@@ -31,6 +36,18 @@ describe('resolveRoleName', () => {
   it('returns null when role is an unrecognised shape', () => {
     expect(resolveRoleName({ role: 42 })).toBeNull();
     expect(resolveRoleName({ role: true })).toBeNull();
+  });
+});
+
+describe('homeRouteForUser', () => {
+  it('routes citizens, organization operators, and administrators to their homes', () => {
+    expect(homeRouteForUser({ role: { name: 'usuario' } })).toBe('/feed');
+    expect(homeRouteForUser({ role: { name: 'operador_organizacion' } })).toBe(
+      '/operator/dashboard',
+    );
+    expect(homeRouteForUser({ role: { name: 'admin_sistema' } })).toBe(
+      '/dashboard',
+    );
   });
 });
 

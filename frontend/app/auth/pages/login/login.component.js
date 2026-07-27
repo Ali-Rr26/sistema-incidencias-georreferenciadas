@@ -23,6 +23,7 @@ import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
 import { maskPhoneInput } from '../../../utils/ui.js';
 import { EMAIL_RE } from '../../../utils/format.js';
+import { homeRouteForUser } from '../../../utils/role.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -281,14 +282,7 @@ export default {
         // if we navigate first the role-bucket check sees a stale
         // 'guest' and redirects the citizen back to /feed with no mount.
         router.setCurrentUserRole(classifiedRole);
-        // citizen-style users land on /feed; everyone else on /dashboard.
-        // Using router.navigate() (not window.location.hash) so the router
-        // re-resolves and the role-based guards run with the fresh token.
-        if (classifiedRole === 'citizen') {
-          router.navigate('/feed');
-        } else {
-          router.navigate('/dashboard');
-        }
+        router.navigate(homeRouteForUser(user));
       } catch (err) {
         errorAlert.textContent =
           err.message || 'Error al iniciar sesión. Verificá tus credenciales.';
@@ -410,15 +404,7 @@ export default {
       const idToken = await credential.user.getIdToken();
       const { user } = await auth.googleLogin({ idToken });
 
-      // Step 5: role-based redirect — reuse the same branch as the
-      // email/password login flow (PR-1). citizen (usuario) → /feed,
-      // everyone else → /dashboard.
-      const role = user?.role?.name;
-      if (role === 'usuario') {
-        router.navigate('/feed');
-      } else {
-        router.navigate('/dashboard');
-      }
+      router.navigate(homeRouteForUser(user));
     } catch (err) {
       // Step 6: any non-cancel error — surface the backend's spec copy
       // (either "Token de Google inválido" or "Esta cuenta ya existe,

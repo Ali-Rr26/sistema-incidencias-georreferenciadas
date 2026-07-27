@@ -418,7 +418,7 @@ describe('R12 — frontend Google login button', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('R12: stores token and redirects by role — citizen (usuario) goes to /feed, others go to /dashboard', async () => {
+  it('R12: stores token and redirects citizens to /feed and administrators to /dashboard', async () => {
     // ─── Case A: citizen (role = 'usuario') → /feed ─────────────────────
     await mountComponent();
     firebaseMock.signInWithGoogle.mockResolvedValueOnce({
@@ -468,5 +468,29 @@ describe('R12 — frontend Google login button', () => {
     });
     const { router: router2 } = await import('../../../core/router.js');
     expect(router2.navigate).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('R12: redirects operador_organizacion to the operator dashboard', async () => {
+    await mountComponent();
+    firebaseMock.signInWithGoogle.mockResolvedValueOnce({
+      user: {
+        getIdToken: vi.fn(() => Promise.resolve('fb-tok-operator')),
+      },
+    });
+    authMock.googleLogin.mockResolvedValueOnce({
+      user: {
+        id: 13,
+        email: 'operator@gmail.com',
+        role: { name: 'operador_organizacion' },
+      },
+    });
+
+    document.getElementById('google-signin-btn').click();
+
+    await vi.waitFor(() => {
+      expect(authMock.googleLogin).toHaveBeenCalledTimes(1);
+    });
+    const { router } = await import('../../../core/router.js');
+    expect(router.navigate).toHaveBeenCalledWith('/operator/dashboard');
   });
 });
