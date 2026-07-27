@@ -39,23 +39,23 @@ class VerifyEmailMail extends Notification implements ShouldQueue
 
         $mail = (new MailMessage)
             ->from($fromAddress, $fromName)
-            ->subject('Código de verificación OTP - Sistema de Incidencias')
-            ->greeting('¡Hola!')
-            ->line('Gracias por registrarte en el Sistema de Incidencias.');
+            ->subject(__('messages.verification_email_subject'))
+            ->greeting(__('messages.verification_email_greeting'))
+            ->line(__('messages.verification_email_intro'));
 
         if ($this->otp !== null) {
-            $mail->line('Tu código de verificación de 6 dígitos es:')
+            $mail->line(__('messages.verification_email_otp_label'))
                 ->line("# **{$this->otp}**")
-                ->line('Podés ingresarlo en la pantalla de verificación o hacer clic en el botón de abajo:');
+                ->line(__('messages.verification_email_cta_intro'));
         } else {
-            $mail->line('Para activar tu cuenta y poder iniciar sesión, verificá tu correo electrónico en la aplicación.');
+            $mail->line(__('messages.verification_email_link_intro'));
         }
 
         return $mail
-            ->action('Ingresar código de verificación', $verifyUrl)
-            ->line("Este código expirará en {$expireMinutes} minutos.")
-            ->line('Si no creaste esta cuenta, podés ignorar este mensaje.')
-            ->salutation('Saludos, el equipo del Sistema de Incidencias');
+            ->action(__('messages.verification_email_action'), $verifyUrl)
+            ->line(__('messages.verification_email_expiry', ['minutes' => $expireMinutes]))
+            ->line(__('messages.verification_email_ignore'))
+            ->salutation(__('messages.verification_email_salutation'));
     }
 
     public function verificationUrl(object $notifiable): string

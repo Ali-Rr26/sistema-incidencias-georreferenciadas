@@ -36,7 +36,7 @@ class VerificationController
         $user = User::where('email', strtolower($validated['email']))->first();
 
         if ($user === null) {
-            return $this->verificationFailed('user_not_found', 'El correo ingresado no está registrado.');
+            return $this->verificationFailed('user_not_found', __('messages.verification_otp_user_not_found'));
         }
 
         if ($user->hasVerifiedEmail()) {
@@ -45,7 +45,7 @@ class VerificationController
 
         if (! $user->verifyOtp($validated['otp'])) {
             return response()->json([
-                'message' => 'El código OTP es inválido o ha expirado.',
+                'message' => __('messages.verification_otp_invalid'),
                 'code' => 'otp_invalid',
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
