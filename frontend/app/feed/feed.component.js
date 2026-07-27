@@ -244,6 +244,43 @@ export default {
 
     document.body.classList.add('feed-view');
 
+    // ── Fetch stats for today ──
+    async function fetchStats() {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const params = new URLSearchParams({
+          inicio: today,
+          fin: today,
+        });
+        const statsData = await http.get(`/incidents/stats?${params.toString()}`);
+
+        // Parse stats and update UI
+        const newCount = statsData.by_status?.pending ?? 0;
+        const resolvedCount = statsData.by_status?.resolved ?? 0;
+        const avgTime = statsData.average_resolution_time?.formatted ?? 'N/A';
+
+        // Update main stats cards
+        const statNewEl = document.getElementById('stat-new');
+        const statResolvedEl = document.getElementById('stat-resolved');
+        const statAvgEl = document.getElementById('stat-avg');
+
+        if (statNewEl) statNewEl.textContent = newCount;
+        if (statResolvedEl) statResolvedEl.textContent = resolvedCount;
+        if (statAvgEl) statAvgEl.textContent = avgTime;
+
+        // Update right panel stats (desktop)
+        const rpStatNewEl = document.getElementById('rp-stat-new');
+        const rpStatResolvedEl = document.getElementById('rp-stat-resolved');
+        const rpStatAvgEl = document.getElementById('rp-stat-avg');
+
+        if (rpStatNewEl) rpStatNewEl.textContent = newCount;
+        if (rpStatResolvedEl) rpStatResolvedEl.textContent = resolvedCount;
+        if (rpStatAvgEl) rpStatAvgEl.textContent = avgTime;
+      } catch (error) {
+        console.error('[feed] Error fetching stats:', error);
+      }
+    }
+
     // Composer setup
     const composerBar = document.getElementById('composer-bar');
     if (composerBar) {
@@ -480,16 +517,55 @@ export default {
       });
     }
 
-    // ── Right panel collapsible toggle (mobile only) ──
-    const rpFilterToggle = document.getElementById('rp-filter-toggle');
-    if (rpFilterToggle) {
-      // Mobile only: start collapsed (panels hidden by default)
-      const isMobile = window.innerWidth <= 576;
-      if (isMobile) {
-        rpFilterToggle.classList.add('collapsed');
-        rpFilterToggle.setAttribute('aria-expanded', 'false');
+    // ── Filter feed collapsible toggle (main column, mobile) ──
+    const feedFilterToggle = document.getElementById('feed-filter-toggle');
+    const feedFilterContent = document.getElementById('feed-filter-content');
+    if (feedFilterToggle && feedFilterContent) {
+      function toggleFeedFilterPanel() {
+        const isExpanded =
+          feedFilterToggle.getAttribute('aria-expanded') === 'true';
+        feedFilterToggle.setAttribute('aria-expanded', !isExpanded);
+        feedFilterContent.classList.toggle('d-none');
       }
 
+      feedFilterToggle.addEventListener('click', toggleFeedFilterPanel);
+      feedFilterToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFeedFilterPanel();
+        }
+      });
+    }
+
+    // ── Active Zones tabs (filter by status) ──
+    const zoneTabs = document.getElementById('zone-tabs');
+    if (zoneTabs) {
+      zoneTabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('.zone-tab');
+        if (!tab) return;
+
+        // Update active tab
+        document.querySelectorAll('.zone-tab').forEach((t) => {
+          t.classList.remove('active');
+        });
+        tab.classList.add('active');
+
+        // Apply status filter
+        const zoneStatus = tab.dataset.zone;
+        const filterStatus = zoneStatus === 'all' ? '' : zoneStatus;
+
+        const chip = document.querySelector(
+          `.feed-chip[data-status="${filterStatus}"]`,
+        );
+        if (chip) {
+          applyStatusFilter(chip);
+        }
+      });
+    }
+
+    // ── Right panel collapsible toggle (desktop ≥992px) ──
+    const rpFilterToggle = document.getElementById('rp-filter-toggle');
+    if (rpFilterToggle) {
       function toggleFilterPanel() {
         rpFilterToggle.classList.toggle('collapsed');
         rpFilterToggle.setAttribute(
@@ -510,6 +586,7 @@ export default {
     // ── First load ──
     await fetchIncidencias(1, false);
     setupInfiniteScroll();
+    await fetchStats();
   },
 
   onDestroy() {

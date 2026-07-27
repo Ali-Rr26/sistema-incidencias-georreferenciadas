@@ -20,32 +20,84 @@
       </div>
     </div>
 
-    <!-- Filter chips (shared across viewports) -->
-    <div class="feed-filters d-flex flex-wrap gap-2 mb-3" id="feed-filters">
-      <button
-        class="feed-chip active btn btn-outline-primary btn-sm"
-        data-status=""
+    <!-- Stats Cards — Top Section (Mobile-First) -->
+    <div id="stats-container" class="stats-cards mb-4">
+      <!-- Nuevas hoy card -->
+      <div class="stats-card">
+        <div class="stats-icon stats-icon-new">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <div class="stats-content">
+          <div class="stats-value" id="stat-new">14</div>
+          <div class="stats-label">Nuevas hoy</div>
+        </div>
+      </div>
+
+      <!-- Resueltas hoy card -->
+      <div class="stats-card">
+        <div class="stats-icon stats-icon-resolved">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="stats-content">
+          <div class="stats-value" id="stat-resolved">8</div>
+          <div class="stats-label">Resueltas hoy</div>
+        </div>
+      </div>
+
+      <!-- Promedio resolución card -->
+      <div class="stats-card">
+        <div class="stats-icon stats-icon-avg">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div class="stats-content">
+          <div class="stats-value" id="stat-avg">2.4d</div>
+          <div class="stats-label">Promedio resolución</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Feed — Collapsible Section -->
+    <div class="feed-filter-section mb-4">
+      <div
+        class="feed-filter-toggle d-flex align-items-center justify-content-between"
+        id="feed-filter-toggle"
+        role="button"
+        tabindex="0"
+        aria-expanded="false"
+        aria-controls="feed-filter-content"
       >
-        Todo
-      </button>
-      <button
-        class="feed-chip btn btn-outline-primary btn-sm"
-        data-status="in_progress"
-      >
-        En proceso
-      </button>
-      <button
-        class="feed-chip btn btn-outline-primary btn-sm"
-        data-status="pending"
-      >
-        Pendientes
-      </button>
-      <button
-        class="feed-chip btn btn-outline-primary btn-sm"
-        data-status="resolved"
-      >
-        Resueltos
-      </button>
+        <div class="fw-bold" style="font-size: 15px">Filtrar feed</div>
+        <i class="fa-solid fa-chevron-down feed-filter-chevron"></i>
+      </div>
+      <div id="feed-filter-content" class="feed-filter-content d-none">
+        <!-- Filter chips (in collapsible) -->
+        <div class="feed-filters d-flex flex-wrap gap-2 mt-3" id="feed-filters">
+          <button
+            class="feed-chip active btn btn-outline-primary btn-sm"
+            data-status=""
+          >
+            Todo
+          </button>
+          <button
+            class="feed-chip btn btn-outline-primary btn-sm"
+            data-status="in_progress"
+          >
+            En proceso
+          </button>
+          <button
+            class="feed-chip btn btn-outline-primary btn-sm"
+            data-status="pending"
+          >
+            Pendientes
+          </button>
+          <button
+            class="feed-chip btn btn-outline-primary btn-sm"
+            data-status="resolved"
+          >
+            Resueltos
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Loading skeleton -->
@@ -72,6 +124,25 @@
       </div>
     </div>
 
+    <!-- Active Zones / Tabs Section -->
+    <div class="active-zones-section mb-4">
+      <div class="fw-bold mb-3" style="font-size: 15px">Incidencias activas</div>
+      <div class="zone-tabs d-flex gap-2 flex-wrap" id="zone-tabs">
+        <button class="zone-tab active" data-zone="all">
+          Todos los reportes
+        </button>
+        <button class="zone-tab" data-zone="in_progress">
+          En proceso
+        </button>
+        <button class="zone-tab" data-zone="pending">
+          Pendientes
+        </button>
+        <button class="zone-tab" data-zone="resolved">
+          Resueltos
+        </button>
+      </div>
+    </div>
+
     <div id="feed-scroll-region" class="feed-scroll-region">
       <div id="feed-list" class="feed-cards row g-3"></div>
 
@@ -84,11 +155,16 @@
           <div class="feed-spinner"></div>
         </div>
       </div>
+
+      <!-- All incidents viewed footer -->
+      <div class="feed-footer-message text-center text-muted mt-4 pb-3">
+        Todos los incidentes han sido mostrados
+      </div>
     </div>
   </div>
 
-  <!-- Right panel (full width mobile, sticky ≥ 992px) -->
-  <aside class="col-12 col-lg-4 position-sticky top-0">
+  <!-- Right panel (hidden mobile <992px, sticky ≥ 992px) -->
+  <aside class="col-12 col-lg-4 position-sticky top-0 d-none d-lg-block">
     <!-- Filtros -->
     <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
       <div
@@ -192,7 +268,7 @@
           <i class="fa-solid fa-circle-plus text-purple"></i>
         </div>
         <div class="col">
-          <div class="rp-stat-value fs-5 fw-bold">14</div>
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-new">14</div>
           <div class="rp-stat-label small text-muted">Nuevas hoy</div>
         </div>
       </div>
@@ -201,7 +277,7 @@
           <i class="fa-solid fa-circle-check text-success"></i>
         </div>
         <div class="col">
-          <div class="rp-stat-value fs-5 fw-bold">8</div>
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-resolved">8</div>
           <div class="rp-stat-label small text-muted">Resueltas hoy</div>
         </div>
       </div>
@@ -210,7 +286,7 @@
           <i class="fa-regular fa-clock text-warning"></i>
         </div>
         <div class="col">
-          <div class="rp-stat-value fs-5 fw-bold">2.4 d</div>
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-avg">2.4 d</div>
           <div class="rp-stat-label small text-muted">Promedio resolución</div>
         </div>
       </div>

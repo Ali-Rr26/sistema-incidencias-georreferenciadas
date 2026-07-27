@@ -27,11 +27,33 @@ const FEED_TEMPLATE = `
         </button>
       </div>
     </div>
-    <div class="feed-filters d-flex flex-wrap gap-2 mb-3" id="feed-filters">
-      <button class="feed-chip active btn btn-outline-primary btn-sm" data-status="">Todo</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="pending">Pendientes</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="in_progress">En proceso</button>
-      <button class="feed-chip btn btn-outline-primary btn-sm" data-status="resolved">Resueltos</button>
+    <div id="stats-container" class="stats-cards mb-4">
+      <div class="stats-card"><div class="stats-value" id="stat-new">14</div><div class="stats-label">Nuevas hoy</div></div>
+      <div class="stats-card"><div class="stats-value" id="stat-resolved">8</div><div class="stats-label">Resueltas hoy</div></div>
+      <div class="stats-card"><div class="stats-value" id="stat-avg">2.4d</div><div class="stats-label">Promedio resolución</div></div>
+    </div>
+    <div class="feed-filter-section mb-4">
+      <div class="feed-filter-toggle" id="feed-filter-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="feed-filter-content">
+        <div class="fw-bold">Filtrar feed</div>
+        <i class="fa-solid fa-chevron-down feed-filter-chevron"></i>
+      </div>
+      <div id="feed-filter-content" class="feed-filter-content d-none">
+        <div class="feed-filters d-flex flex-wrap gap-2 mt-3" id="feed-filters">
+          <button class="feed-chip active btn btn-outline-primary btn-sm" data-status="">Todo</button>
+          <button class="feed-chip btn btn-outline-primary btn-sm" data-status="pending">Pendientes</button>
+          <button class="feed-chip btn btn-outline-primary btn-sm" data-status="in_progress">En proceso</button>
+          <button class="feed-chip btn btn-outline-primary btn-sm" data-status="resolved">Resueltos</button>
+        </div>
+      </div>
+    </div>
+    <div class="active-zones-section mb-4">
+      <div class="fw-bold mb-3">Incidencias activas</div>
+      <div class="zone-tabs d-flex gap-2 flex-wrap" id="zone-tabs">
+        <button class="zone-tab active" data-zone="all">Todos los reportes</button>
+        <button class="zone-tab" data-zone="in_progress">En proceso</button>
+        <button class="zone-tab" data-zone="pending">Pendientes</button>
+        <button class="zone-tab" data-zone="resolved">Resueltos</button>
+      </div>
     </div>
     <div id="feed-cargando" class="feed-skeleton-wrap d-none">
       <div class="feed-skeleton-card card">
@@ -59,11 +81,30 @@ const FEED_TEMPLATE = `
       <div id="feed-sentinel" class="feed-sentinel d-flex justify-content-center">
         <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
       </div>
+      <div class="feed-footer-message text-center text-muted mt-4 pb-3">Todos los incidentes han sido mostrados</div>
     </div>
   </div>
-  <aside class="col-lg-4">
-    <div class="rp-card card shadow-sm border-0 rounded-3 p-3">
-      <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
+  <aside class="col-12 col-lg-4 position-sticky top-0 d-none d-lg-block">
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Estadísticas hoy</div>
+      <div class="rp-stat row align-items-center mb-2">
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-new">14</div>
+          <div class="rp-stat-label small text-muted">Nuevas hoy</div>
+        </div>
+      </div>
+      <div class="rp-stat row align-items-center mb-2">
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-resolved">8</div>
+          <div class="rp-stat-label small text-muted">Resueltas hoy</div>
+        </div>
+      </div>
+      <div class="rp-stat row align-items-center">
+        <div class="col">
+          <div class="rp-stat-value fs-5 fw-bold" id="rp-stat-avg">2.4 d</div>
+          <div class="rp-stat-label small text-muted">Promedio resolución</div>
+        </div>
+      </div>
     </div>
   </aside>
 </div>
@@ -145,6 +186,39 @@ describe('feed integration', () => {
             Promise.resolve({
               data: MOCK_INCIDENTS,
               meta: { current_page: 1, last_page: 1 },
+            }),
+        };
+      }
+      if (url.includes('/incidents/stats')) {
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              total: 3,
+              by_status: {
+                pending: 1,
+                in_progress: 1,
+                resolved: 1,
+              },
+              by_priority: {
+                high: 1,
+                medium: 1,
+                low: 1,
+              },
+              recent_count: 3,
+              locations_count: 3,
+              average_resolution_time: {
+                formatted: '1d 2h',
+                days: 1,
+                hours: 2,
+                seconds: 93600,
+              },
+              trends: {
+                total_pct: 10.5,
+                pendientes_pct: -5.0,
+                resolution_rate_pct: 33,
+              },
+              top_categories: [],
             }),
         };
       }

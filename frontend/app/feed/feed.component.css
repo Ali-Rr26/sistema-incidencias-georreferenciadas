@@ -440,3 +440,236 @@ body.feed-view .app-shell-main {
     overflow: hidden;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   STATS CARDS (Mockup Opción B)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  padding: 0;
+}
+
+.stats-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.stats-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.stats-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.stats-icon-new {
+  background: linear-gradient(135deg, #a06bf5, #5e3bdb);
+  color: #fff;
+}
+
+.stats-icon-resolved {
+  background: linear-gradient(135deg, #16a96b, #0d6d3a);
+  color: #fff;
+}
+
+.stats-icon-avg {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  color: #fff;
+}
+
+.stats-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #23283b;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stats-label {
+  font-size: 12px;
+  color: #6b7180;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FILTER FEED — COLLAPSIBLE SECTION
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-filter-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.feed-filter-toggle {
+  cursor: pointer;
+  user-select: none;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.feed-filter-toggle:hover {
+  opacity: 0.8;
+}
+
+.feed-filter-toggle:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
+}
+
+.feed-filter-chevron {
+  transition: transform 0.3s ease;
+  color: #6b7180;
+}
+
+.feed-filter-toggle[aria-expanded='true'] .feed-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.feed-filter-content {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.feed-filter-content.d-none {
+  max-height: 0;
+  opacity: 0;
+  display: block !important;
+  pointer-events: none;
+}
+
+.feed-filter-content:not(.d-none) {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ACTIVE ZONES — TABS SECTION
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.active-zones-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.zone-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zone-tab {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6b7180;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+  white-space: nowrap;
+}
+
+.zone-tab:hover {
+  border-color: #5e3bdb;
+  background-color: #f8f7ff;
+}
+
+.zone-tab:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
+}
+
+.zone-tab.active {
+  background: linear-gradient(118deg, #5e3bdb, #a06bf5);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(94, 59, 219, 0.25);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FEED FOOTER MESSAGE
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-footer-message {
+  font-size: 13px;
+  color: #a3a8b8;
+}
+
+.feed-sentinel.done ~ .feed-footer-message {
+  display: block;
+}
+
+.feed-sentinel:not(.done) ~ .feed-footer-message {
+  display: none;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   RESPONSIVE: Mobile-first stats cards
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 576px) {
+  .stats-cards {
+    gap: 12px;
+  }
+
+  .stats-card {
+    padding: 12px;
+  }
+
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .stats-value {
+    font-size: 18px;
+  }
+
+  .stats-label {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 577px) {
+  .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Hide filter section on desktop (≥992px) if filter is in main column */
+@media (min-width: 992px) {
+  .feed-filter-section {
+    display: none;
+  }
+}
