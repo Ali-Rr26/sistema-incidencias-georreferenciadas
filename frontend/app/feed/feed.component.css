@@ -197,7 +197,6 @@
 
 /* --- Scrollable incidents region (vertical scroll only) --- */
 .feed-scroll-region {
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -205,6 +204,7 @@
 @media (min-width: 992px) {
   .feed-scroll-region {
     max-height: calc(100dvh - 240px);
+    overflow-y: auto;
   }
   @supports not (height: 100dvh) {
     .feed-scroll-region {
