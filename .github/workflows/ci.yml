@@ -156,8 +156,7 @@ jobs:
           REDIS_PORT: 6379
         run: php artisan db:seed --force
 
-      - name: Start backend (background)
-        working-directory: backend
+      - name: Start services and run Cypress E2E tests
         env:
           DB_CONNECTION: pgsql
           DB_HOST: localhost
@@ -169,18 +168,28 @@ jobs:
           REDIS_PORT: 6379
           APP_URL: http://localhost:8000
         run: |
-          php artisan serve --port=8000 &
-          sleep 5
-          curl -f http://localhost:8000/api/health || echo "Backend not ready yet"
+          (cd ../backend && php artisan serve --port=8000) &
+          npm run dev &
 
-      - name: Start frontend (background)
-        run: |
-          npm run dev -- --port 3000 &
-          sleep 5
-          curl -f http://localhost:3000 || echo "Frontend not ready yet"
+          echo "Waiting for backend..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            sleep 1
+          done
 
-      - name: Run Cypress E2E tests
-        run: npm run test:e2e
+          echo "Waiting for frontend..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              break
+            fi
+            sleep 1
+          done
+
+          npm run test:e2e
 
   backend:
     name: Backend checks
