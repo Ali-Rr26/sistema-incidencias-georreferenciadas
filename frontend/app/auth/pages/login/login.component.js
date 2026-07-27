@@ -288,7 +288,9 @@ export default {
         // al usuario a la pantalla de verificación con un query param
         // para que el componente sepa que llegó del flujo de login.
         if (err?.status === 403 && err?.code === 'email_not_verified') {
-          router.navigate(`/verify-email?source=login&email=${encodeURIComponent(emailInput.value.trim())}`);
+          router.navigate(
+            `/verify-email?source=login&email=${encodeURIComponent(emailInput.value.trim())}`,
+          );
           return;
         }
 
@@ -345,7 +347,9 @@ export default {
         // a la pantalla "Verifica tu correo" para que abra el mail
         // que le acabamos de mandar y, opcionalmente, pueda reenviarlo.
         if (res && res.requires_verification === true) {
-          router.navigate(`/verify-email?source=register&email=${encodeURIComponent(wirePayload.email)}`);
+          router.navigate(
+            `/verify-email?source=register&email=${encodeURIComponent(wirePayload.email)}`,
+          );
           return;
         }
 

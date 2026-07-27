@@ -20,25 +20,20 @@ declare(strict_types=1);
  *   R14  Login local funciona cuando email_verified_at IS NOT NULL.
  */
 
-use App\Domains\Auth\Local\Http\Controllers\VerificationController;
-use App\Domains\Auth\Local\Notifications\VerifyEmailMail;
-use App\Domains\Auth\Shared\Services\AuthService;
-use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
 use App\Domains\Auth\Local\Exceptions\EmailNotVerifiedException;
+use App\Domains\Auth\Local\Notifications\VerifyEmailMail;
 use App\Domains\Auth\Local\Services\RegisterService;
-use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
+use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Carbon\Carbon;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\URL;
-use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -205,7 +200,7 @@ it('R12b: GET /api/email/notice reports verified=true for a verified user', func
     // El roundtrip JSON → ISO8601 puede redondear subsegundos; las
     // marcas de tiempo que retorna la API son razonablemente próximas
     // dentro del mismo segundo (diffInSeconds == 0).
-    expect(\Carbon\Carbon::parse($returnedAt)->diffInSeconds(\Carbon\Carbon::parse($verifiedAt)))->toBeLessThanOrEqual(1);
+    expect(Carbon::parse($returnedAt)->diffInSeconds(Carbon::parse($verifiedAt)))->toBeLessThanOrEqual(1);
 });
 
 it('R12c: GET /api/email/notice without auth returns 401', function (): void {

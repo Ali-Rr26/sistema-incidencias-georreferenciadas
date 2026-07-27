@@ -81,12 +81,19 @@ describe('verify-email component — story sc-117', () => {
   });
 
   it('submits 6-digit OTP code to POST /email/verify-otp on form submit', async () => {
-    httpMock.post.mockResolvedValueOnce({ message: 'Tu correo fue verificado correctamente.', verified: true });
+    httpMock.post.mockResolvedValueOnce({
+      message: 'Tu correo fue verificado correctamente.',
+      verified: true,
+    });
 
-    await mountComponent({ query: new URLSearchParams('email=user@example.com') });
+    await mountComponent({
+      query: new URLSearchParams('email=user@example.com'),
+    });
 
     document.getElementById('otp-input').value = '123456';
-    document.getElementById('form-otp').dispatchEvent(new Event('submit', { cancelable: true }));
+    document
+      .getElementById('form-otp')
+      .dispatchEvent(new Event('submit', { cancelable: true }));
 
     await vi.waitFor(() => {
       expect(httpMock.post).toHaveBeenCalledTimes(1);

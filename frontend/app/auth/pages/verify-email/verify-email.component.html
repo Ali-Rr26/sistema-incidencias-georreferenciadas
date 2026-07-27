@@ -8,11 +8,10 @@
       <span>GeoReporta</span>
     </div>
     <div class="gr-login__hero-content">
-      <h1 class="gr-login__hero-title">
-        Verificá tu correo electrónico.
-      </h1>
+      <h1 class="gr-login__hero-title">Verificá tu correo electrónico.</h1>
       <p class="gr-login__hero-desc">
-        Ingresá el código OTP de 6 dígitos enviado a tu casilla para activar tu cuenta y empezar a reportar incidencias.
+        Ingresá el código OTP de 6 dígitos enviado a tu casilla para activar tu
+        cuenta y empezar a reportar incidencias.
       </p>
     </div>
     <div class="gr-login__hero-stats">
@@ -20,9 +19,18 @@
       <div><span class="gr-login__hero-stat-num">Ingresá</span>código</div>
       <div><span class="gr-login__hero-stat-num">15'</span>Expira</div>
     </div>
-    <i class="fa-solid fa-envelope-open gr-login__deco" style="top: 120px; right: 80px; font-size: 30px; opacity: 0.16"></i>
-    <i class="fa-solid fa-shield-check gr-login__deco" style="top: 240px; right: 160px; font-size: 18px; opacity: 0.18"></i>
-    <i class="fa-solid fa-key gr-login__deco" style="top: 300px; right: 60px; font-size: 22px; opacity: 0.14"></i>
+    <i
+      class="fa-solid fa-envelope-open gr-login__deco"
+      style="top: 120px; right: 80px; font-size: 30px; opacity: 0.16"
+    ></i>
+    <i
+      class="fa-solid fa-shield-check gr-login__deco"
+      style="top: 240px; right: 160px; font-size: 18px; opacity: 0.18"
+    ></i>
+    <i
+      class="fa-solid fa-key gr-login__deco"
+      style="top: 300px; right: 60px; font-size: 22px; opacity: 0.14"
+    ></i>
     <div class="gr-login__deco-circle"></div>
   </div>
 
@@ -30,61 +38,124 @@
   <div class="gr-login__form-wrap">
     <div class="gr-login__form-box">
       <h2 class="gr-login__form-title">Verificá tu correo</h2>
-      <p class="gr-login__form-sub">Ingresá el código OTP de 6 dígitos que enviamos a tu correo electrónico.</p>
+      <p class="gr-login__form-sub">
+        Ingresá el código OTP de 6 dígitos que enviamos a tu correo electrónico.
+      </p>
 
-      <div id="estado-inicial" class="gr-login__banner gr-login__banner--info mb-3" role="status">
+      <div
+        id="estado-inicial"
+        class="gr-login__banner gr-login__banner--info mb-3"
+        role="status"
+      >
         <i class="fa-solid fa-circle-info"></i>
-        <span id="inicial-texto">Revisá tu bandeja de entrada e ingresá el código de 6 dígitos.</span>
+        <span id="inicial-texto"
+          >Revisá tu bandeja de entrada e ingresá el código de 6 dígitos.</span
+        >
       </div>
 
       <form id="form-otp" class="mb-3">
         <div class="mb-3">
-          <label for="otp-email" class="form-label text-muted small fw-bold">CORREO ELECTRÓNICO</label>
-          <input type="email" id="otp-email" class="gr-login__input" placeholder="tu.correo@ejemplo.com" required />
+          <label for="otp-email" class="form-label text-muted small fw-bold"
+            >CORREO ELECTRÓNICO</label
+          >
+          <input
+            type="email"
+            id="otp-email"
+            class="gr-login__input"
+            placeholder="tu.correo@ejemplo.com"
+            required
+          />
         </div>
 
         <div class="mb-3">
-          <label for="otp-input" class="form-label text-muted small fw-bold">CÓDIGO DE VERIFICACIÓN (6 DÍGITOS)</label>
-          <input type="text" id="otp-input" class="gr-login__input text-center fw-bold fs-4" placeholder="123456" maxlength="6" pattern="\d{6}" required autocomplete="one-time-code" style="letter-spacing: 4px;" />
+          <label for="otp-input" class="form-label text-muted small fw-bold"
+            >CÓDIGO DE VERIFICACIÓN (6 DÍGITOS)</label
+          >
+          <input
+            type="text"
+            id="otp-input"
+            class="gr-login__input text-center fw-bold fs-4"
+            placeholder="123456"
+            maxlength="6"
+            pattern="\d{6}"
+            required
+            autocomplete="one-time-code"
+            style="letter-spacing: 4px"
+          />
         </div>
 
-        <button type="submit" class="gr-btn-primary gr-btn-primary--full" id="btn-verificar">
+        <button
+          type="submit"
+          class="gr-btn-primary gr-btn-primary--full"
+          id="btn-verificar"
+        >
           <span id="btn-verificar-texto">Verificar código</span>
           <span id="btn-verificar-loading" class="d-none">
-            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
             Verificando&hellip;
           </span>
         </button>
       </form>
 
-      <div id="estado-exito" class="gr-login__banner gr-login__banner--success d-none" role="alert">
+      <div
+        id="estado-exito"
+        class="gr-login__banner gr-login__banner--success d-none"
+        role="alert"
+      >
         <i class="fa-solid fa-circle-check"></i>
         <span id="exito-texto">Tu correo fue verificado correctamente.</span>
       </div>
 
-      <div id="estado-error" class="alert alert-danger d-none mb-3" role="alert">
+      <div
+        id="estado-error"
+        class="alert alert-danger d-none mb-3"
+        role="alert"
+      >
         <i class="fa-solid fa-circle-exclamation me-1"></i>
         <span id="error-texto">El código OTP es inválido o ha expirado.</span>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+      <div
+        class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top"
+      >
         <span class="text-muted small">¿No recibiste el código?</span>
-        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold" id="btn-reenviar">
+        <button
+          type="button"
+          class="btn btn-link btn-sm p-0 text-decoration-none fw-bold"
+          id="btn-reenviar"
+        >
           <span id="btn-texto">Reenviar código</span>
           <span id="btn-loading" class="d-none">
-            <span class="spinner-border spinner-border-sm me-1" role="status"></span>Enviando...
+            <span
+              class="spinner-border spinner-border-sm me-1"
+              role="status"
+            ></span
+            >Enviando...
           </span>
           <span id="btn-countdown" class="d-none"></span>
         </button>
       </div>
 
-      <div id="estado-reenvio" class="gr-login__banner gr-login__banner--success d-none mt-2" role="status">
+      <div
+        id="estado-reenvio"
+        class="gr-login__banner gr-login__banner--success d-none mt-2"
+        role="status"
+      >
         <i class="fa-solid fa-circle-check"></i>
-        <span id="reenvio-texto">Te hemos enviado un nuevo código de verificación.</span>
+        <span id="reenvio-texto"
+          >Te hemos enviado un nuevo código de verificación.</span
+        >
       </div>
 
       <div class="text-center mt-4">
-        <a href="#/login" class="gr-login__forgot" style="display: inline-flex; align-items: center; gap: 6px;">
+        <a
+          href="#/login"
+          class="gr-login__forgot"
+          style="display: inline-flex; align-items: center; gap: 6px"
+        >
           <i class="fa-solid fa-arrow-left"></i> Volver al inicio de sesión
         </a>
       </div>

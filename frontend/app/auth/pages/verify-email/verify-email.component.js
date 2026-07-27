@@ -21,7 +21,9 @@ export default {
     const formOtp = document.getElementById('form-otp');
     const btnVerificar = document.getElementById('btn-verificar');
     const btnVerificarTexto = document.getElementById('btn-verificar-texto');
-    const btnVerificarLoading = document.getElementById('btn-verificar-loading');
+    const btnVerificarLoading = document.getElementById(
+      'btn-verificar-loading',
+    );
 
     const btnResend = document.getElementById('btn-reenviar');
     const btnText = document.getElementById('btn-texto');
@@ -96,9 +98,14 @@ export default {
         startResendCooldown();
       } catch (err) {
         if (err?.status === 429) {
-          showError('Has realizado demasiadas solicitudes. Esperá unos minutos e intentá de nuevo.');
+          showError(
+            'Has realizado demasiadas solicitudes. Esperá unos minutos e intentá de nuevo.',
+          );
         } else {
-          showError(err?.message || 'No pudimos reenviar el correo. Intentalo de nuevo.');
+          showError(
+            err?.message ||
+              'No pudimos reenviar el correo. Intentalo de nuevo.',
+          );
         }
       } finally {
         btnLoading?.classList.add('d-none');
@@ -130,7 +137,9 @@ export default {
 
         try {
           const data = await http.post('/email/verify-otp', { email, otp });
-          showSuccess(data?.message || 'Tu correo fue verificado correctamente.');
+          showSuccess(
+            data?.message || 'Tu correo fue verificado correctamente.',
+          );
           setTimeout(() => router.navigate('/login'), 2500);
         } catch (err) {
           showError(err?.message || 'El código OTP es inválido o ha expirado.');
