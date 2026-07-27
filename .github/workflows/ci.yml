@@ -128,7 +128,7 @@ jobs:
 
       - name: Setup backend env
         working-directory: backend
-        run: cp .env.example .env && php artisan key:generate
+        run: cp ../.env.example .env && php artisan key:generate
 
       - name: Run database migrations
         working-directory: backend
