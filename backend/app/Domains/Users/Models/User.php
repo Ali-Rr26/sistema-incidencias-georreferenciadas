@@ -173,6 +173,20 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role?->name === UserRole::AdminSistema->value;
     }
 
+    /**
+     * Back-port of the third missing role check surfaced by
+     * IncidentPolicy / IncidentQueryScope filters. Same split-merge origin
+     * as isAdmin()/isSystemAdmin() (commit 3461d43): IncidentPolicy and
+     * IncidentController scope queries by \$user->isOrganizationAdmin(),
+     * which throws BadMethodCallException for any admin_organizacion
+     * user, returning 500 on /api/incidents, /api/incidents/feed,
+     * /api/incidents/stats and /api/incidents/weekly-stats.
+     */
+    public function isOrganizationAdmin(): bool
+    {
+        return $this->role?->name === UserRole::AdminOrganizacion->value;
+    }
+
     public function isOperator(): bool
     {
         return $this->role?->name === UserRole::OperadorOrganizacion->value;
