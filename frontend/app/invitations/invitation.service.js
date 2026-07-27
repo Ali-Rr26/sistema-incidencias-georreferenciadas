@@ -140,9 +140,13 @@ export function scorePassword(password) {
     (/[a-z]/.test(pw) ? 1 : 0) +
     (/[0-9]/.test(pw) ? 1 : 0);
 
+  // Minimum length is a hard floor: a 3-char password with all three
+  // character classes ("Aa1") is NOT a strong password — the backend
+  // rejects it for failing minLength. The meter mirrors that: a
+  // positive score requires >= 8 chars.
   if (pw.length >= 12 && classes === 3) return 4;
-  if (classes === 3) return 3;
-  if (classes >= 2) return 2;
+  if (pw.length >= 8 && classes === 3) return 3;
+  if (pw.length >= 8 && classes >= 2) return 2;
   if (pw.length >= 8) return 1;
   return 0;
 }

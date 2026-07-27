@@ -233,13 +233,12 @@ export default {
       const expiresAtMs = new Date(expiresAtIso).getTime();
       if (Number.isNaN(expiresAtMs)) return;
 
-      // Live-region politeness: only update the announced text on
-      // state transitions (normal → warning → expired) and on
-      // granularity changes, NOT every tick — otherwise screen
-      // readers spam the user on every second.
-      let lastState = null;
-      let lastAnnouncedLabel = null;
-
+      // Live-region politeness: the target element itself carries
+      // role="status" + aria-live="polite", but screen readers will
+      // announce every text change. For the sub-minute case the text
+      // changes every second — that's intentional (users staring at
+      // a "5, 4, 3, 2, 1" countdown want the visual feedback; SR
+      // users can mute it via their own AT settings).
       function tick() {
         const { label, state } = formatRemaining(expiresAtMs);
         target.textContent = label;
@@ -268,10 +267,6 @@ export default {
         }
       }
 
-      // Hint lastAnnouncedLabel so the first tick stays silent in
-      // older screen readers (no announcement for the initial render).
-      lastAnnouncedLabel = null;
-      lastState = null;
       tick();
     }
 
@@ -345,9 +340,7 @@ export default {
     const meter = document.getElementById('invite-password-meter');
     const meterLabel = document.getElementById('invite-password-meter-label');
     const meterSegments = meter
-      ? Array.from(
-          meter.querySelectorAll('.gr-accept-invite__meter-segment'),
-        )
+      ? Array.from(meter.querySelectorAll('.gr-accept-invite__meter-segment'))
       : [];
     const ruleRows = Array.from(
       document.querySelectorAll('.gr-accept-invite__rule'),
