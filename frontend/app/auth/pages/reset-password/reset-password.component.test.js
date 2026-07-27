@@ -25,9 +25,17 @@ describe('ResetPasswordComponent', () => {
     const query = new URLSearchParams('');
     await resetPasswordComponent.onInit({ query });
 
-    expect(document.getElementById('estado-error').classList.contains('d-none')).toBe(false);
-    expect(document.getElementById('error-texto').textContent).toContain('Enlace inválido');
-    expect(document.getElementById('reset-form').querySelector('button[type="submit"]').disabled).toBe(true);
+    expect(
+      document.getElementById('estado-error').classList.contains('d-none'),
+    ).toBe(false);
+    expect(document.getElementById('error-texto').textContent).toContain(
+      'Enlace inválido',
+    );
+    expect(
+      document
+        .getElementById('reset-form')
+        .querySelector('button[type="submit"]').disabled,
+    ).toBe(true);
   });
 
   it('shows error if passwords do not match', async () => {
@@ -38,12 +46,18 @@ describe('ResetPasswordComponent', () => {
     document.getElementById('password-confirm').value = 'mismatch123';
 
     const form = document.getElementById('reset-form');
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    form.dispatchEvent(
+      new Event('submit', { cancelable: true, bubbles: true }),
+    );
 
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(document.getElementById('estado-error').classList.contains('d-none')).toBe(false);
-    expect(document.getElementById('error-texto').textContent).toBe('Las contraseñas no coinciden.');
+    expect(
+      document.getElementById('estado-error').classList.contains('d-none'),
+    ).toBe(false);
+    expect(document.getElementById('error-texto').textContent).toBe(
+      'Las contraseñas no coinciden.',
+    );
     expect(http.post).not.toHaveBeenCalled();
   });
 
@@ -51,14 +65,18 @@ describe('ResetPasswordComponent', () => {
     vi.useFakeTimers();
     http.post.mockResolvedValueOnce({ message: 'Contraseña restablecida.' });
 
-    const query = new URLSearchParams('token=validtoken123&email=user@example.com');
+    const query = new URLSearchParams(
+      'token=validtoken123&email=user@example.com',
+    );
     await resetPasswordComponent.onInit({ query });
 
     document.getElementById('password').value = 'newsecret123';
     document.getElementById('password-confirm').value = 'newsecret123';
 
     const form = document.getElementById('reset-form');
-    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    form.dispatchEvent(
+      new Event('submit', { cancelable: true, bubbles: true }),
+    );
 
     await vi.runAllTimersAsync();
 
@@ -68,7 +86,9 @@ describe('ResetPasswordComponent', () => {
       password: 'newsecret123',
       password_confirmation: 'newsecret123',
     });
-    expect(document.getElementById('estado-exito').classList.contains('d-none')).toBe(false);
+    expect(
+      document.getElementById('estado-exito').classList.contains('d-none'),
+    ).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith('/login');
 
     vi.useRealTimers();

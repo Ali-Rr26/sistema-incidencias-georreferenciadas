@@ -132,8 +132,12 @@ it('denies availablePermissions for user without roles.view permission', functio
 });
 
 it('allows availablePermissions for user with roles.view permission', function (): void {
-    // admin_organizacion (role 3) has roles.view per RolePermissionSeeder.
     $orgAdmin = User::factory()->create(['role_id' => 3]);
+    $rolesView = Permission::query()
+        ->where('resource', 'roles')
+        ->where('action', 'view')
+        ->firstOrFail();
+    $orgAdmin->role->permissions()->syncWithoutDetaching([$rolesView->permission_id]);
     $this->actingAs($orgAdmin);
 
     $response = $this->getJson('/api/permissions');

@@ -8,7 +8,6 @@ use App\Domains\Auth\Local\Http\Requests\ResetPasswordRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 
 class ResetPasswordController
 {

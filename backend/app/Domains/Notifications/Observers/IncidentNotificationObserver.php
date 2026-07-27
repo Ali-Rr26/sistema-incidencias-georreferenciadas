@@ -9,6 +9,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Models\IncidentFollower;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
+use App\Domains\Users\Services\OperatorDashboardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,8 @@ class IncidentNotificationObserver
 {
     public function updated(Incident $incident): void
     {
+        DB::afterCommit(fn () => OperatorDashboardService::clearCacheForIncident($incident));
+
         try {
             $this->handleClaimChange($incident);
             $this->handleReleaseChange($incident);

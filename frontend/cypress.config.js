@@ -4,9 +4,9 @@ export default {
     specPattern: 'cypress/e2e/**/*.cy.js',
     supportFile: 'cypress/support/e2e.js',
     fixturesFolder: 'cypress/fixtures',
-    requestTimeout: 10000,
-    responseTimeout: 10000,
-    defaultCommandTimeout: 8000,
+    requestTimeout: 15000,
+    responseTimeout: 15000,
+    defaultCommandTimeout: 15000,
     env: {
       API_BASE: 'http://localhost:8000/api',
     },

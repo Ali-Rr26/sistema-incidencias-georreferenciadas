@@ -2,7 +2,9 @@
 
 use App\Domains\Auth\Firebase\Http\Controllers\GoogleAuthController;
 use App\Domains\Auth\Local\Http\Controllers\AuthController;
+use App\Domains\Auth\Local\Http\Controllers\ForgotPasswordController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
+use App\Domains\Auth\Local\Http\Controllers\ResetPasswordController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -24,22 +26,23 @@ use App\Domains\Notifications\Http\NotificationController;
 use App\Domains\Notifications\Http\NotificationStreamController;
 use App\Domains\Organizations\Http\OrganizationController;
 use App\Domains\Roles\Http\RoleController;
+use App\Domains\Users\Http\OperatorDashboardController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
 use App\StatusHistory\Interfaces\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [GoogleAuthController::class, 'login'])->middleware('throttle:google');
 Route::get('/health', fn () => response()->json(['status' => 'ok']));
 
 // Password recovery — public, rate-limited
-Route::post('/forgot-password', [\App\Domains\Auth\Local\Http\Controllers\ForgotPasswordController::class, '__invoke'])
+Route::post('/forgot-password', [ForgotPasswordController::class, '__invoke'])
     ->middleware('throttle:5,1');
-Route::post('/reset-password', [\App\Domains\Auth\Local\Http\Controllers\ResetPasswordController::class, '__invoke'])
+Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
     ->middleware('throttle:5,1');
 
 // Invitation acceptance — public (no auth required), rate-limited
@@ -69,6 +72,7 @@ Route::middleware('jwt')->group(function () {
     // Operator tracking
     Route::post('/operator/location', [OperatorLocationController::class, 'update']);
     Route::get('/operator/locations', [OperatorLocationController::class, 'index']);
+    Route::get('/operator/dashboard', OperatorDashboardController::class);
 
     // Core
     Route::get('incidents/stats', IncidentStatsController::class);

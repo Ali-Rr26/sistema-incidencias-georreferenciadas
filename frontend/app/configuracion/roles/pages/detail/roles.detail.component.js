@@ -202,8 +202,7 @@ export default {
     if (isCreateMode) {
       document.getElementById('estado-cargando').classList.add('d-none');
       document.getElementById('contenido').classList.remove('d-none');
-      document.getElementById('btn-guardar-nombre').textContent =
-        'Crear rol';
+      document.getElementById('btn-guardar-nombre').textContent = 'Crear rol';
       document.getElementById('btn-guardar-nombre').innerHTML =
         '<i class="fa-solid fa-plus me-1"></i> Crear rol';
 
@@ -238,7 +237,9 @@ export default {
       };
 
       // Hide permissions section until role is created
-      const permisosCard = document.querySelector('#contenido .card:last-child');
+      const permisosCard = document.querySelector(
+        '#contenido .card:last-child',
+      );
       if (permisosCard) permisosCard.style.display = 'none';
       document.getElementById('btn-guardar-permisos').style.display = 'none';
       return;

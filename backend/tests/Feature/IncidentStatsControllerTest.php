@@ -10,7 +10,11 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -760,6 +764,60 @@ it('returns zero-filled response when filters match no incidents', function () {
         ->assertJsonPath('by_priority.high', 0)
         ->assertJsonPath('by_priority.medium', 0)
         ->assertJsonPath('by_priority.low', 0);
+});
+
+it('returns 403 without dashboard.view permission', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(PermissionSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
+
+    $user = User::factory()->create(['role_id' => 5]);
+
+    $this->actingAs($user)
+        ->getJson('/api/incidents/stats')
+        ->assertForbidden();
+});
+
+it('serves the same stats payload from cache on the second request', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+    Cache::tags(['incident-stats'])->flush();
+    $this->seed(RoleSeeder::class);
+
+    $admin = User::factory()->create(['role_id' => 1]);
+    $location = Location::create(['name' => 'Cache City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Cache Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'Cache Category', 'organization_id' => $org->id]);
+
+    Incident::create([
+        'title' => 'Cached incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => IncidentPriority::Medium,
+    ]);
+
+    $first = $this->actingAs($admin)->getJson('/api/incidents/stats')->assertOk();
+
+    DB::table('incidents')->insert([
+        'title' => 'Inserted without invalidation',
+        'description' => 'Cache sentinel',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending->value,
+        'priority' => IncidentPriority::Medium->value,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $second = $this->actingAs($admin)->getJson('/api/incidents/stats')->assertOk();
+
+    expect($second->json())->toBe($first->json())
+        ->and($second->json('total'))->toBe(1);
 });
 
 it('applies both date range and location cascade together', function () {

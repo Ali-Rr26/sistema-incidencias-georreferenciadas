@@ -103,6 +103,7 @@ class RolePermissionSeeder extends Seeder
     ];
 
     private const OPERADOR_ORGANIZACION_PERMISSIONS = [
+        ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'update'],
         // Previously missing: the menu item Notificaciones was gated by
