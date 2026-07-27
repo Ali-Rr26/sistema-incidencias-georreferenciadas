@@ -104,7 +104,7 @@ function renderCard(inc) {
     `;
   } else if (geomCoords) {
     mediaHtml = `
-      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3"
+      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3 d-none d-lg-block"
            data-lat="${geomCoords.lat}" data-lng="${geomCoords.lng}"
            style="height:180px;background:#e8ecf1">
         ${coordsHtml}
