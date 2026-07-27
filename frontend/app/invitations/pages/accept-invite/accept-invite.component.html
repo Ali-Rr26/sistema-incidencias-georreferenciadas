@@ -6,6 +6,29 @@
       </div>
       <span>GeoReporta</span>
     </div>
+
+    <!--
+      Context block — sc-130.
+      Initial state is a skeleton (3-4 shimmer rows) while the preview
+      request is in flight. The component replaces it with the loaded
+      card on 200, a status banner on 404/410, or removes it entirely
+      on network fallback. No matter what, the form on the right stays
+      visible and usable unless the token itself is unusable (404/410).
+    -->
+    <div
+      id="invite-hero-context"
+      class="gr-accept-invite__hero-context"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div class="gr-accept-invite__hero-skeleton">
+        <div class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--avatar"></div>
+        <div class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--title"></div>
+        <div class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--line"></div>
+        <div class="gr-accept-invite__hero-skeleton-row gr-accept-invite__hero-skeleton-row--line gr-accept-invite__hero-skeleton-row--short"></div>
+      </div>
+    </div>
+
     <div class="gr-accept-invite__hero-content">
       <h1 class="gr-accept-invite__hero-title">
         Bienvenido/a a Sistema de Incidencias

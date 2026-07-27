@@ -1,7 +1,7 @@
 /**
  * invitation.service.js — WU-4: invitation acceptance service.
  *
- * Spec: R-INV-11, R-INV-14.
+ * Spec: R-INV-11, R-INV-14, sc-130.
  *
  * Endpoints:
  *   POST /api/invitations/{token}/accept
@@ -10,6 +10,12 @@
  *     404 → InvitationNotFoundError
  *     410 → InvitationGoneError
  *     422 → propagates HTTP errors (caller handles field errors)
+ *
+ *   GET /api/invitations/{token}/preview (sc-130 / issue #109)
+ *     200 → InvitationPreview payload (status: 'pending')
+ *     404 → InvitationNotFoundError
+ *     410 → InvitationGoneError
+ *     network/other → console.warn + returns null (graceful fallback)
  */
 import { http } from '../core/http.service.js';
 
@@ -108,4 +114,46 @@ export async function acceptInvitation(
     throw err;
   }
   return response;
+}
+
+/**
+ * Read-only preview of an invitation's metadata. Does NOT consume the
+ * token — the same token can still be passed to `acceptInvitation()`.
+ *
+ * Semantics:
+ *   200 → returns the preview payload (organisation, inviter, role,
+ *         issued/expires timestamps, terms version). Never contains
+ *         PII: no email, no phone, no token material, no internal ids.
+ *   404 → throws InvitationNotFoundError (token unknown)
+ *   410 → throws InvitationGoneError (token expired or consumed)
+ *   network or unexpected → console.warn + returns null
+ *     The caller is expected to fall back gracefully: the form must
+ *     remain usable even if the preview request failed (offline,
+ *     transient CORS issue, etc.). Showing the activation form is
+ *     always safer than blocking on a metadata fetch.
+ *
+ * @param {string} tokenPlain — raw token from the URL
+ * @returns {Promise<object|null>} preview payload, or null on network/unexpected
+ * @throws {InvitationNotFoundError}
+ * @throws {InvitationGoneError}
+ */
+export async function previewInvitation(tokenPlain) {
+  try {
+    return await http.get(
+      `/invitations/${encodeURIComponent(tokenPlain)}/preview`,
+    );
+  } catch (err) {
+    if (err.status === 404) {
+      throw new InvitationNotFoundError();
+    }
+    if (err.status === 410) {
+      throw new InvitationGoneError();
+    }
+    // Graceful degradation — never block the form on a metadata fetch.
+    console.warn(
+      '[invitation] preview request failed; continuing without context',
+      err,
+    );
+    return null;
+  }
 }
