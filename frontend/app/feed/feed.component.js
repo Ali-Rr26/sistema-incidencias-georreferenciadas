@@ -301,7 +301,7 @@ export default {
 
     const feedList = document.getElementById(LIST);
     const feedFilters = document.getElementById(FILTERS);
-    if (!feedFilters || !feedList) return;
+    if (!feedList) return;
 
     // Event delegation: any click on an element with [data-route]
     // (cards, "Ver detalle" buttons) navigates via the router. The
@@ -456,10 +456,12 @@ export default {
       return fetchIncidencias(1, false).then(() => setupInfiniteScroll());
     }
 
-    feedFilters.addEventListener('click', (e) => {
-      const chip = e.target.closest(CHIP_SELECTOR);
-      if (chip) applyStatusFilter(chip);
-    });
+    if (feedFilters) {
+      feedFilters.addEventListener('click', (e) => {
+        const chip = e.target.closest(CHIP_SELECTOR);
+        if (chip) applyStatusFilter(chip);
+      });
+    }
 
     const rpStatusFilters = document.getElementById('rp-status-filters');
     if (rpStatusFilters) {
