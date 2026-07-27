@@ -65,7 +65,7 @@ router.addRoute(
   '/operator/dashboard',
   operatorDashboardComponent,
   [permissionGuard],
-  'admin',
+  'both',
 );
 router.addRoute(
   '/incidencias',

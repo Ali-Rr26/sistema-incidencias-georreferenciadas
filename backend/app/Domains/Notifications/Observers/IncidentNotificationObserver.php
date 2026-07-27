@@ -16,7 +16,7 @@ class IncidentNotificationObserver
 {
     public function updated(Incident $incident): void
     {
-        OperatorDashboardService::clearCacheForIncident($incident);
+        DB::afterCommit(fn () => OperatorDashboardService::clearCacheForIncident($incident));
 
         try {
             $this->handleClaimChange($incident);

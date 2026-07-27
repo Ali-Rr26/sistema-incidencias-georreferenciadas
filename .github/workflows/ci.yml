@@ -175,22 +175,34 @@ jobs:
           npm run dev &
 
           echo "Waiting for backend..."
+          backend_ready=false
           for i in {1..30}; do
             if curl -sf http://localhost:8000/api/health > /dev/null 2>&1; then
               echo "Backend is ready!"
+              backend_ready=true
               break
             fi
             sleep 1
           done
+          if [ "$backend_ready" != "true" ]; then
+            echo "Backend did not become ready within 30s" >&2
+            exit 1
+          fi
 
           echo "Waiting for frontend..."
+          frontend_ready=false
           for i in {1..30}; do
             if curl -sf http://localhost:3000 > /dev/null 2>&1; then
               echo "Frontend is ready!"
+              frontend_ready=true
               break
             fi
             sleep 1
           done
+          if [ "$frontend_ready" != "true" ]; then
+            echo "Frontend did not become ready within 30s" >&2
+            exit 1
+          fi
 
           npm run test:e2e
 

@@ -109,6 +109,8 @@ class FeedRebuildCommand extends Command
         } catch (\Throwable $e) {
             $this->warn('Redis feed rebuild skipped (Redis unavailable: '.$e->getMessage().')');
             Log::warning('Redis feed rebuild failed', ['exception' => $e]);
+
+            return self::FAILURE;
         }
 
         return self::SUCCESS;

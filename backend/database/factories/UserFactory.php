@@ -53,34 +53,30 @@ class UserFactory extends Factory
      */
     private function resolveDefaultRoleId(): int
     {
-        try {
-            $existingId = DB::table('roles')->where('name', 'admin_sistema')->value('id');
+        $existingId = DB::table('roles')->where('name', 'admin_sistema')->value('id');
 
-            if ($existingId !== null) {
-                return (int) $existingId;
-            }
-
-            $nextId = (int) DB::table('roles')->max('id') + 1;
-
-            DB::table('roles')->insert([
-                'id' => $nextId,
-                'name' => 'admin_sistema',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Keep `roles_id_seq` in sync with this explicit-id insert (see
-            // RoleSeeder::resyncIdSequence — same reasoning) so a later real
-            // `Role::create()` elsewhere in the same test doesn't collide.
-            if (DB::connection()->getDriverName() === 'pgsql') {
-                DB::statement(
-                    "select setval(pg_get_serial_sequence('roles', 'id'), (select max(id) from roles))"
-                );
-            }
-
-            return $nextId;
-        } catch (\Throwable) {
-            return 1;
+        if ($existingId !== null) {
+            return (int) $existingId;
         }
+
+        $nextId = (int) DB::table('roles')->max('id') + 1;
+
+        DB::table('roles')->insert([
+            'id' => $nextId,
+            'name' => 'admin_sistema',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Keep `roles_id_seq` in sync with this explicit-id insert (see
+        // RoleSeeder::resyncIdSequence — same reasoning) so a later real
+        // `Role::create()` elsewhere in the same test doesn't collide.
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement(
+                "select setval(pg_get_serial_sequence('roles', 'id'), (select max(id) from roles))"
+            );
+        }
+
+        return $nextId;
     }
 }

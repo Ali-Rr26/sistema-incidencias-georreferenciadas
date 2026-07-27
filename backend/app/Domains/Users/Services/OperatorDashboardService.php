@@ -298,6 +298,8 @@ class OperatorDashboardService
         try {
             if (Cache::supportsTags()) {
                 Cache::tags(["operator:{$userId}"])->flush();
+
+                return;
             }
 
             if (config('cache.default') === 'redis' || config('cache.default') === 'octane') {
