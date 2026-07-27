@@ -181,7 +181,11 @@
   >
     <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
     <span id="dashboard-error-message"></span>
-    <button type="button" class="gr-dashboard-error__retry" id="dashboard-retry"></button>
+    <button
+      type="button"
+      class="gr-dashboard-error__retry"
+      id="dashboard-retry"
+    ></button>
   </div>
 
   <!-- Stats row -->
@@ -189,7 +193,9 @@
     <div class="gr-stat-card gr-stat-card--blue" data-stat-card>
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num is-loading" id="stat-incidencias"><span class="gr-skeleton gr-skeleton--value"></span></div>
+          <div class="gr-stat-card__num is-loading" id="stat-incidencias">
+            <span class="gr-skeleton gr-skeleton--value"></span>
+          </div>
           <div class="gr-stat-card__label">Total incidencias</div>
         </div>
       </div>
@@ -203,7 +209,9 @@
     <div class="gr-stat-card gr-stat-card--cyan" data-stat-card>
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num is-loading" id="stat-en-proceso"><span class="gr-skeleton gr-skeleton--value"></span></div>
+          <div class="gr-stat-card__num is-loading" id="stat-en-proceso">
+            <span class="gr-skeleton gr-skeleton--value"></span>
+          </div>
           <div class="gr-stat-card__label">En proceso</div>
         </div>
       </div>
@@ -217,7 +225,9 @@
     <div class="gr-stat-card gr-stat-card--green" data-stat-card>
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num is-loading" id="stat-resueltas"><span class="gr-skeleton gr-skeleton--value"></span></div>
+          <div class="gr-stat-card__num is-loading" id="stat-resueltas">
+            <span class="gr-skeleton gr-skeleton--value"></span>
+          </div>
           <div class="gr-stat-card__label">Resueltas</div>
         </div>
       </div>
@@ -231,7 +241,9 @@
     <div class="gr-stat-card gr-stat-card--red" data-stat-card>
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num is-loading" id="stat-pendientes"><span class="gr-skeleton gr-skeleton--value"></span></div>
+          <div class="gr-stat-card__num is-loading" id="stat-pendientes">
+            <span class="gr-skeleton gr-skeleton--value"></span>
+          </div>
           <div class="gr-stat-card__label">Pendientes</div>
         </div>
       </div>
@@ -243,7 +255,9 @@
     <div class="gr-stat-card gr-stat-card--purple" data-stat-card>
       <div class="gr-stat-card__left">
         <div>
-          <div class="gr-stat-card__num is-loading" id="stat-tiempo-resolucion"><span class="gr-skeleton gr-skeleton--value"></span></div>
+          <div class="gr-stat-card__num is-loading" id="stat-tiempo-resolucion">
+            <span class="gr-skeleton gr-skeleton--value"></span>
+          </div>
           <div class="gr-stat-card__label">Tiempo promedio de resolución</div>
         </div>
       </div>
@@ -259,7 +273,13 @@
     <!-- Top 5 Categories chart -->
     <div class="gr-card gr-card--categories">
       <div class="gr-card__title">Top 5 Categorías</div>
-      <div id="chart-categorias" class="gr-chart is-loading" style="height: 320px; width: 100%"><span class="gr-skeleton gr-skeleton--chart"></span></div>
+      <div
+        id="chart-categorias"
+        class="gr-chart is-loading"
+        style="height: 320px; width: 100%"
+      >
+        <span class="gr-skeleton gr-skeleton--chart"></span>
+      </div>
     </div>
 
     <!-- Activity feed -->
@@ -292,7 +312,13 @@
           </li>
         </ul>
       </div>
-      <div id="chart-volumen" class="gr-chart is-loading" style="height: 260px; width: 100%"><span class="gr-skeleton gr-skeleton--chart"></span></div>
+      <div
+        id="chart-volumen"
+        class="gr-chart is-loading"
+        style="height: 260px; width: 100%"
+      >
+        <span class="gr-skeleton gr-skeleton--chart"></span>
+      </div>
     </div>
   </div>
 

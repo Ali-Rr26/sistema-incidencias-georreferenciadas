@@ -183,9 +183,9 @@ describe('dashboard — average resolution time stat card', () => {
     await component.onInit();
 
     expect(document.getElementById('dashboard-error').hidden).toBe(false);
-    expect(document.getElementById('dashboard-error-message').textContent).toContain(
-      'No pudimos cargar las estadísticas',
-    );
+    expect(
+      document.getElementById('dashboard-error-message').textContent,
+    ).toContain('No pudimos cargar las estadísticas');
     expect(document.getElementById('dashboard-retry').textContent).toBe(
       'Reintentar',
     );
