@@ -97,7 +97,9 @@ describe('notificationService', () => {
   it('reject posts the reason', async () => {
     http.post.mockResolvedValue({ data: { id: 7 } });
     await notificationService.reject(7, 'Falta evidencia');
-    expect(http.post).toHaveBeenCalledWith('/notifications/7/reject', { reason: 'Falta evidencia' });
+    expect(http.post).toHaveBeenCalledWith('/notifications/7/reject', {
+      reason: 'Falta evidencia',
+    });
   });
 
   it('markAllRead no afecta el fetch del badge', async () => {

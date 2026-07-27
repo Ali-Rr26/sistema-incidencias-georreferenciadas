@@ -97,7 +97,9 @@ export default {
     };
 
     try {
-      const result = await notificationService.list({ perPage: QUEUE_PAGE_SIZE });
+      const result = await notificationService.list({
+        perPage: QUEUE_PAGE_SIZE,
+      });
       state.notifications = result.data;
       render();
     } catch {
@@ -106,7 +108,10 @@ export default {
       );
     }
 
-    filter.addEventListener('change', () => { state.filter = filter.value; render(); });
+    filter.addEventListener('change', () => {
+      state.filter = filter.value;
+      render();
+    });
     list.addEventListener('click', async (event) => {
       const button = event.target.closest('button');
       if (!button) return;
@@ -115,21 +120,25 @@ export default {
       );
       if (!item) return;
       try {
-        if (button.classList.contains('approve')) await notificationService.approve(item.id);
+        if (button.classList.contains('approve'))
+          await notificationService.approve(item.id);
         if (button.classList.contains('reject')) {
           const reason = window.prompt('Motivo del rechazo');
           if (!reason) return;
           await notificationService.reject(item.id, reason);
         }
-        if (button.classList.contains('mark-read')) await notificationService.markRead(item.id);
+        if (button.classList.contains('mark-read'))
+          await notificationService.markRead(item.id);
         item.read = true;
         // Guard item.data before mutating it: the API update succeeded but
         // the client-side cache may still hold a null data bag from older
         // notifications created before this PR. Initialising here keeps
         // the UI in sync without re-fetching.
         item.data = item.data ?? {};
-        if (button.classList.contains('approve')) item.data.decision = 'approved';
-        if (button.classList.contains('reject')) item.data.decision = 'rejected';
+        if (button.classList.contains('approve'))
+          item.data.decision = 'approved';
+        if (button.classList.contains('reject'))
+          item.data.decision = 'rejected';
         render();
         mostrarToast('Notificación actualizada.', 'success');
       } catch {

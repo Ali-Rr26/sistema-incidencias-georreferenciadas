@@ -60,7 +60,6 @@ export const notificationService = {
     return resp.data ?? resp ?? null;
   },
 
-
   async markAllRead() {
     return await http.patch('/notifications/read-all');
   },

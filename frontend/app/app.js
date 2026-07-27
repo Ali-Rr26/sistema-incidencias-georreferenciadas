@@ -140,9 +140,13 @@ router.addRoute(
   'admin',
 );
 router.addRoute('/roles/:id', rolesDetailComponent, [permissionGuard], 'admin');
-router.addRoute('/notificaciones', notificacionesIndexComponent, [permissionGuard], 'admin');
+router.addRoute(
+  '/notificaciones',
+  notificacionesIndexComponent,
+  [permissionGuard],
+  'admin',
+);
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
-
 
 // ─── Global listeners (cleaned up if app is ever re-booted in tests) ──
 // AbortController: every listener is registered with the controller's signal,
