@@ -59,7 +59,7 @@ describe('http service', () => {
     expect(result).toEqual({ ok: true });
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'http://localhost:8000/api/incidents',
+      '/api/incidents',
       expect.objectContaining({
         method: 'GET',
         credentials: 'include',
@@ -68,7 +68,7 @@ describe('http service', () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'http://localhost:8000/api/auth/refresh',
+      '/api/auth/refresh',
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
@@ -76,7 +76,7 @@ describe('http service', () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      'http://localhost:8000/api/incidents',
+      '/api/incidents',
       expect.objectContaining({
         method: 'GET',
         credentials: 'include',
@@ -98,7 +98,7 @@ describe('http service', () => {
     // confirm the service returned the value `res.blob()` resolved to.
     expect(result).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8000/api/incidents/exportar?format=pdf',
+      '/api/incidents/exportar?format=pdf',
       expect.objectContaining({
         method: 'GET',
         credentials: 'include',
