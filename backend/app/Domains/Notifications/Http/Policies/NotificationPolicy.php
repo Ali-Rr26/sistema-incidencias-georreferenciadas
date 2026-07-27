@@ -53,7 +53,6 @@ class NotificationPolicy
         return $this->approve($user, $notification);
     }
 
-
     /**
      * Acción específica de PATCH .../read — equivalente a update en este caso.
      */

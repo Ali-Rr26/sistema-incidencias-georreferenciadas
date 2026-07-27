@@ -9,6 +9,8 @@ import incidenciasIndexComponent from './incidencias/pages/index/incidencias.ind
 import incidenciaFormComponent from './incidencias/pages/form/incidencias.form.component.js';
 import incidenciasDetailComponent from './incidencias/pages/detail/incidencias.detail.component.js';
 import notFoundComponent from './shared/not-found/not-found.component.js';
+import notificacionesIndexComponent from './notificaciones/pages/index/notificaciones-index.component.js';
+
 import { authGuard } from './auth/auth.guard.js';
 import { permissionGuard } from './auth/permission.guard.js';
 import { auth } from './auth/auth.service.js';
@@ -138,7 +140,9 @@ router.addRoute(
   'admin',
 );
 router.addRoute('/roles/:id', rolesDetailComponent, [permissionGuard], 'admin');
+router.addRoute('/notificaciones', notificacionesIndexComponent, [permissionGuard], 'admin');
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
+
 
 // ─── Global listeners (cleaned up if app is ever re-booted in tests) ──
 // AbortController: every listener is registered with the controller's signal,

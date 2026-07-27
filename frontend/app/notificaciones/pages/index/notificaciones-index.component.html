@@ -1,0 +1,16 @@
+<div class="gr-page">
+  <div class="gr-page__header">
+    <div><h1 class="gr-page__title">Notificaciones</h1><nav class="gr-breadcrumb"><span class="gr-breadcrumb__item">Gestión</span><span class="gr-breadcrumb__sep">/</span><span class="gr-breadcrumb__item gr-breadcrumb__item--active">Notificaciones</span></nav></div>
+  </div>
+  <div class="gr-card gr-filters">
+    <label for="notificaciones-filtro">Tipo</label>
+    <select id="notificaciones-filtro" class="gr-select">
+      <option value="incidencia_atendida_para_aprobacion">Incidencias atendidas para aprobación</option>
+      <option value="">Todas</option>
+      <option value="claim">Reclamos</option>
+      <option value="assignment">Asignaciones</option>
+      <option value="status_change">Cambios de estado</option>
+    </select>
+  </div>
+  <div class="gr-card" id="notificaciones-lista" aria-live="polite"><p class="text-muted">Cargando notificaciones...</p></div>
+</div>

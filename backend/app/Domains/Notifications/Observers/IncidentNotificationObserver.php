@@ -142,6 +142,7 @@ class IncidentNotificationObserver
         });
     }
 
+    private function queueNotification(
         Incident $incident,
         NotificationType $type,
         string $message,

@@ -94,7 +94,6 @@ class NotificationController extends Controller
         return (new NotificationResource($notification->fresh('incident')))->response();
     }
 
-
     public function markAllRead(Request $request): JsonResponse
     {
         $user = $request->user();

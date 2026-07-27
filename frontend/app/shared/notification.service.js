@@ -50,9 +50,17 @@ export const notificationService = {
     return resp.data ?? resp ?? null;
   },
 
-  /**
-   * Marca todas las notificaciones del usuario como leídas.
-   */
+  async approve(id) {
+    const resp = await http.post(`/notifications/${id}/approve`);
+    return resp.data ?? resp ?? null;
+  },
+
+  async reject(id, reason) {
+    const resp = await http.post(`/notifications/${id}/reject`, { reason });
+    return resp.data ?? resp ?? null;
+  },
+
+
   async markAllRead() {
     return await http.patch('/notifications/read-all');
   },

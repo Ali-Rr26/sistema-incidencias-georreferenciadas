@@ -88,6 +88,18 @@ describe('notificationService', () => {
     expect(http.get).toHaveBeenCalledTimes(2);
   });
 
+  it('approve posts the approval action', async () => {
+    http.post.mockResolvedValue({ data: { id: 7 } });
+    await notificationService.approve(7);
+    expect(http.post).toHaveBeenCalledWith('/notifications/7/approve');
+  });
+
+  it('reject posts the reason', async () => {
+    http.post.mockResolvedValue({ data: { id: 7 } });
+    await notificationService.reject(7, 'Falta evidencia');
+    expect(http.post).toHaveBeenCalledWith('/notifications/7/reject', { reason: 'Falta evidencia' });
+  });
+
   it('markAllRead no afecta el fetch del badge', async () => {
     http.get.mockResolvedValue({ unread_count: 7 });
     http.patch.mockResolvedValue({ updated: 7 });
