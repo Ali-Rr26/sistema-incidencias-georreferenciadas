@@ -1089,6 +1089,7 @@ export default {
     // time a click fires the event.
     async function _handleSubmit(e) {
       e.preventDefault();
+      console.warn('[handleSubmit] fired');
 
       // Defense in depth — `refreshPinVsBoundary()` disables the submit
       // button when the pin is outside the selected location's polygon,
