@@ -48,7 +48,13 @@ class InvitationAcceptController
      * tipee su contraseña. Read-only: el token queda intacto y puede
      * ser consumido por `accept` luego.
      *
-     * @throws InvitationNotFoundException 404 cuando el token no existe
+     * Estado HTTP:
+     *   200 → payload con org/invitador/role/expiración (token pendiente)
+     *   404 → token desconocido (InvitationNotFoundException)
+     *   410 → token expirado o ya consumido (InvitationGoneException)
+     *
+     * @throws InvitationNotFoundException cuando el token no existe (404)
+     * @throws InvitationGoneException cuando el token está expirado o consumido (410)
      */
     public function preview(string $token): JsonResponse
     {

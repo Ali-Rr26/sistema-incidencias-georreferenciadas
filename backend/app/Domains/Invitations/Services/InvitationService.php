@@ -214,7 +214,15 @@ class InvitationService
      * invitación (org, invitador, expiración) ANTES de pedirle al
      * usuario que tipee la contraseña.
      *
+     * El preview sólo aplica a invitaciones pendientes. Si el token ya
+     * fue consumido o expiró, se lanza `InvitationGoneException` para
+     * que la respuesta HTTP lleve 410: el frontend muestra un banner de
+     * estado y deshabilita el formulario en lugar de pretender que el
+     * token sigue activo. El recurso nunca se construye en esos casos,
+     * así no hay riesgo de exponer PII accidentalmente.
+     *
      * @throws InvitationNotFoundException cuando el token no existe (404)
+     * @throws InvitationGoneException cuando el token está expirado o consumido (410)
      */
     public function previewInvitation(string $tokenPlain): InvitationPreviewResource
     {
@@ -224,6 +232,17 @@ class InvitationService
             throw new InvitationNotFoundException;
         }
 
+        // Estado del token. Si NO está pendiente, el preview no aplica:
+        // queremos que el cliente reciba 410 y muestre el banner
+        // correspondiente, no un payload con `status: 'expired'`.
+        if ($invitation->accepted_at !== null) {
+            throw new InvitationGoneException('Invitación ya utilizada');
+        }
+
+        if ($invitation->isExpired()) {
+            throw new InvitationGoneException('Token expirado');
+        }
+
         // Eager load para evitar N+1 en el resource.
         $invitation->loadMissing([
             'user.role',
@@ -231,12 +250,6 @@ class InvitationService
             'invitedByUser.role',
         ]);
 
-        $status = match (true) {
-            $invitation->accepted_at !== null => 'consumed',
-            $invitation->isExpired() => 'expired',
-            default => 'pending',
-        };
-
-        return new InvitationPreviewResource($invitation, $status);
+        return new InvitationPreviewResource($invitation, 'pending');
     }
 }
