@@ -36,4 +36,8 @@ return [
     'verification_email_expiry' => 'This code will expire in :minutes minutes.',
     'verification_email_ignore' => 'If you did not create this account, you can safely ignore this message.',
     'verification_email_salutation' => 'Regards, the Incidents System team',
+
+    // sc-123: returned when an approval notification already has a decision
+    // recorded or has expired (admin-vs-admin race or re-decide attempt).
+    'notification_already_decided' => 'This notification already has a decision recorded or has expired.',
 ];

@@ -24,7 +24,6 @@ class NotificationResource extends JsonResource
                 'organization_id' => null,
             ], $this->data ?? []),
             'read' => (bool) $this->read,
-            'read_at' => $this->read ? $this->updated_at?->toIso8601String() : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'incident' => $this->whenLoaded('incident', fn () => $this->incident ? [
                 'id' => $this->incident->id,

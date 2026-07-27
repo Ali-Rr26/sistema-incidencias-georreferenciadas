@@ -36,4 +36,8 @@ return [
     'verification_email_expiry' => 'Este código expirará en :minutes minutos.',
     'verification_email_ignore' => 'Si no creaste esta cuenta, podés ignorar este mensaje.',
     'verification_email_salutation' => 'Saludos, el equipo del Sistema de Incidencias',
+
+    // sc-123: respuesta cuando una notificación de aprobación ya tiene decisión
+    // registrada o está expirada (concurrencia entre dos admins o re-decide).
+    'notification_already_decided' => 'Esta notificación ya tiene una decisión registrada o está expirada.',
 ];

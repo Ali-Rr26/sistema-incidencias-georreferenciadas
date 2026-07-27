@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Notifications\Http\Policies;
 
+use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Users\Models\User;
 
@@ -44,13 +45,62 @@ class NotificationPolicy
 
     public function approve(User $user, Notification $notification): bool
     {
-        return $user->hasPermission('notifications.update')
-            && $user->id === $notification->user_id;
+        return $this->canDecide($user, $notification);
     }
 
     public function reject(User $user, Notification $notification): bool
     {
-        return $this->approve($user, $notification);
+        return $this->canDecide($user, $notification);
+    }
+
+    /**
+     * Shared predicate for approve/reject authorization.
+     *
+     * Requires:
+     *  - the actor holds `notifications.update` permission (admin_sistema /
+     *    admin_organizacion, configured in the role permission seeder);
+     *  - the notification belongs to the actor (only the recipient decides);
+     *  - the notification is the approval type — admins MUST NOT be able to
+     *    approve unrelated types like `comment`, `claim`, etc.;
+     *  - there is no decision recorded yet — once approved/rejected, the
+     *    decision is immutable from the API surface;
+     *  - `expires_at` (when present) is still in the future.
+     *
+     * Without these checks an authorized admin could re-decide or decide
+     * notifications of unrelated types. The controller re-checks the same
+     * state atomically to prevent concurrent overwrite races.
+     */
+    private function canDecide(User $user, Notification $notification): bool
+    {
+        if (! $user->hasPermission('notifications.update')) {
+            return false;
+        }
+
+        if ($user->id !== $notification->user_id) {
+            return false;
+        }
+
+        if ($notification->type !== NotificationType::IncidenciaAtendidaParaAprobacion) {
+            return false;
+        }
+
+        $data = $notification->data ?? [];
+        if (! empty($data['decision'])) {
+            return false;
+        }
+
+        $expiresAt = $data['expires_at'] ?? null;
+        if ($expiresAt !== null) {
+            try {
+                if (new \DateTimeImmutable($expiresAt) <= new \DateTimeImmutable) {
+                    return false;
+                }
+            } catch (\Throwable) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
