@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domains\Users\Models;
 
+use App\Domains\Auth\Local\Notifications\PasswordResetMail;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Models\Session;
 use App\Storage\Models\Image;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -42,7 +43,7 @@ class User extends Authenticatable
     public const AVATAR_MAX_KB = 800;
 
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, CanResetPassword;
+    use CanResetPassword, HasFactory, Notifiable, SoftDeletes;
 
     protected static function newFactory(): UserFactory
     {
@@ -165,6 +166,6 @@ class User extends Authenticatable
 
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new \App\Domains\Auth\Local\Notifications\PasswordResetMail($token));
+        $this->notify(new PasswordResetMail($token));
     }
 }

@@ -306,7 +306,7 @@ class OperatorDashboardService
                 $pattern = "{$prefix}operator-dashboard:{$userId}:*";
                 $keys = $redis->keys($pattern);
                 foreach ($keys as $key) {
-                    $unprefixedKey = preg_replace('/^' . preg_quote($prefix, '/') . '/', '', $key);
+                    $unprefixedKey = preg_replace('/^'.preg_quote($prefix, '/').'/', '', $key);
                     Cache::forget($unprefixedKey);
                 }
             }

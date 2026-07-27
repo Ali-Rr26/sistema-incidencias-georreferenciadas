@@ -11,6 +11,7 @@ use App\Storage\Models\Image;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Backfills the polymorphic `images` table (WU2) from the three legacy
@@ -52,7 +53,7 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('incidents', 'images')) {
+        if (! Schema::hasColumn('incidents', 'images')) {
             return [
                 'source_count' => 0,
                 'created_count' => 0,
@@ -139,7 +140,7 @@ class ImageBackfiller
         $createdCount = 0;
         $legacyUrlRows = [];
 
-        if (!\Illuminate\Support\Facades\Schema::hasTable('comment_images')) {
+        if (! Schema::hasTable('comment_images')) {
             return [
                 'source_count' => 0,
                 'created_count' => 0,
@@ -197,7 +198,7 @@ class ImageBackfiller
         $sourceCount = 0;
         $createdCount = 0;
 
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'profile_image_path')) {
+        if (! Schema::hasColumn('users', 'profile_image_path')) {
             return [
                 'source_count' => 0,
                 'created_count' => 0,

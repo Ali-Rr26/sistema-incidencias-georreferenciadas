@@ -10,6 +10,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -25,6 +26,7 @@ class IncidentResolutionAuditTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Incident $incident;
 
     protected function setUp(): void
@@ -35,7 +37,7 @@ class IncidentResolutionAuditTest extends TestCase
         $this->seed(RoleSeeder::class);
         $this->seed(RolePermissionSeeder::class);
 
-        $this->withoutMiddleware(\App\Domains\Sessions\Http\Middleware\JwtAuthenticate::class);
+        $this->withoutMiddleware(JwtAuthenticate::class);
 
         foreach (Permission::all() as $permission) {
             $slug = "{$permission->resource}.{$permission->action}";
