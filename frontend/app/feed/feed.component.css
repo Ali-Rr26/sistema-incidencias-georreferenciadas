@@ -648,6 +648,7 @@ body.feed-view {
 
 @media (max-width: 576px) {
   .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
 
