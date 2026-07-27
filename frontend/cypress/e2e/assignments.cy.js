@@ -7,7 +7,7 @@ describe('Incident Assignments', () => {
             cy.login('admin.gad-municipal-del-canton-quito@organizacion.com', 'Admin123!');
             cy.visit(`/#/incidencias/${id}`);
 
-            cy.get('select[name*="assignment"], #detalle-asignaciones-select').select('2', { force: true });
+            cy.get('select[name*="assignment"], #detalle-asignaciones-select').select('5', { force: true });
             cy.get('input[value="responsable"], #detalle-asignaciones-rol-responsable').check({ force: true });
             cy.get('button:contains("Asignar"), #detalle-asignaciones-submit').click();
 
@@ -24,14 +24,14 @@ describe('Incident Assignments', () => {
         cy.fixture('incidents').then(data => {
           cy.createIncidentViaAPI(citizenToken, data.minimal).then(id => {
             // First assign
-            cy.assignIncident(id, 2, 'responsable', adminToken);
+            cy.assignIncident(id, 5, 'responsable', adminToken);
 
             // Try assign same user again
             cy.request({
               method: 'POST',
               url: `${Cypress.env('API_BASE')}/incidents/${id}/assignments`,
               headers: { Authorization: `Bearer ${adminToken}` },
-              body: { user_id: 2, assignment_role: 'responsable' },
+              body: { user_id: 5, assignment_role: 'responsable' },
               failOnStatusCode: false,
             }).then(res => {
               expect(res.status).to.be.oneOf([409, 422]);

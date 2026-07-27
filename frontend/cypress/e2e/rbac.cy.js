@@ -1,11 +1,20 @@
 describe('Role-Based Access Control (RBAC)', () => {
-  it('CT-19: Citizen can only see own incidents', () => {
+  it('CT-19: Citizen cannot access the staff incidents list', () => {
+    // Citizens browse via the public feed, not the staff /incidencias list —
+    // they lack incidents.view, so the API and the route guard both block it.
+    cy.getAuthToken('usuario@test.com', 'Usuario123!').then(token => {
+      cy.request({
+        url: `${Cypress.env('API_BASE')}/incidents`,
+        headers: { Authorization: `Bearer ${token}` },
+        failOnStatusCode: false,
+      }).then(res => {
+        expect(res.status).to.eq(403);
+      });
+    });
+
     cy.login('usuario@test.com', 'Usuario123!');
     cy.visit('/#/incidencias');
-
-    cy.get('table tbody tr, [data-testid*="incident-row"]').each($row => {
-      cy.wrap($row).should('contain', 'usuario@test.com');
-    });
+    cy.url().should('include', '/#/not-found');
   });
 
   it('CT-20: Operator sees own organization incidents', () => {

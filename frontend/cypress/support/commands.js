@@ -1,9 +1,18 @@
+// Mirrors frontend/app/utils/role.js#homeRouteForUser — each role lands on
+// a different post-login route, so the shared login helper can't assert a
+// single hardcoded path.
+function homeRouteForEmail(email) {
+  if (email.startsWith('usuario')) return '/#/feed';
+  if (email.startsWith('operador.')) return '/#/operator/dashboard';
+  return '/#/dashboard';
+}
+
 Cypress.Commands.add('login', (email, password) => {
   cy.visit('/#/login');
   cy.get('#email').type(email);
   cy.get('#password').type(password);
   cy.get('#login-form button[type="submit"]').click();
-  cy.url().should('include', '/#/dashboard');
+  cy.url().should('include', homeRouteForEmail(email));
 });
 
 Cypress.Commands.add('createIncidentViaAPI', (token, payload) => {
@@ -35,7 +44,7 @@ Cypress.Commands.add('assignIncident', (incidentId, userId, role, token) => {
 Cypress.Commands.add('changeIncidentStatus', (incidentId, newStatus, token) => {
   return cy.request({
     method: 'PUT',
-    url: `${Cypress.env('API_BASE')}/incidents/${incidentId}/status`,
+    url: `${Cypress.env('API_BASE')}/incidents/${incidentId}/estado`,
     headers: { Authorization: `Bearer ${token}` },
     body: { status: newStatus },
   });
