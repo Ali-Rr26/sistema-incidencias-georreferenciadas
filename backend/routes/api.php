@@ -5,6 +5,7 @@ use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Auth\Local\Http\Controllers\ForgotPasswordController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
 use App\Domains\Auth\Local\Http\Controllers\ResetPasswordController;
+use App\Domains\Auth\Local\Http\Controllers\VerificationController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -46,12 +47,23 @@ Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
+// Email verification — story sc-117 (OTP code verification)
+Route::post('/email/verify-otp', [VerificationController::class, 'verifyOtp'])
+    ->middleware('throttle:5,1');
+Route::post('/email/resend', [VerificationController::class, 'resend'])
+    ->middleware('throttle:5,1');
+
 Route::middleware('jwt')->group(function () {
 
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Email verification — status + reenvío autenticados.
+    Route::post('/email/resend', [VerificationController::class, 'resend'])
+        ->middleware('throttle:email-verify');
+    Route::get('/email/notice', [VerificationController::class, 'notice']);
 
     // Avatar handling is owned by PUT /users/{user} now (avatar file or
     // `_delete_avatar` flag in the same FormData/JSON payload) — see

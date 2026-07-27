@@ -17,10 +17,14 @@ class RegisterController
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $this->registerService->register($request->validated());
+        $user = $this->registerService->register($request->validated());
 
         return response()->json(
-            ['message' => 'Usuario creado correctamente'],
+            [
+                'message' => 'Usuario creado correctamente',
+                'requires_verification' => true,
+                'email' => $user->email,
+            ],
             Response::HTTP_CREATED,
         );
     }

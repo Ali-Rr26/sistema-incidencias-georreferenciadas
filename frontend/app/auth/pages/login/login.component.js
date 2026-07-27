@@ -284,6 +284,16 @@ export default {
         router.setCurrentUserRole(classifiedRole);
         router.navigate(homeRouteForUser(user));
       } catch (err) {
+        // Story sc-117 — 403 con `code: 'email_not_verified'`: redirigir
+        // al usuario a la pantalla de verificación con un query param
+        // para que el componente sepa que llegó del flujo de login.
+        if (err?.status === 403 && err?.code === 'email_not_verified') {
+          router.navigate(
+            `/verify-email?source=login&email=${encodeURIComponent(emailInput.value.trim())}`,
+          );
+          return;
+        }
+
         errorAlert.textContent =
           err.message || 'Error al iniciar sesión. Verificá tus credenciales.';
         errorAlert.classList.remove('d-none');
@@ -331,9 +341,20 @@ export default {
 
     auth
       .register(wirePayload)
-      .then(() => {
-        // 201 path — banner + switch to login form so the user types
-        // credentials immediately. No redirect, no token storage.
+      .then((res) => {
+        // Story sc-117 — 201 con `requires_verification: true` significa
+        // que el correo del usuario todavía no fue verificado. Redirigimos
+        // a la pantalla "Verifica tu correo" para que abra el mail
+        // que le acabamos de mandar y, opcionalmente, pueda reenviarlo.
+        if (res && res.requires_verification === true) {
+          router.navigate(
+            `/verify-email?source=register&email=${encodeURIComponent(wirePayload.email)}`,
+          );
+          return;
+        }
+
+        // Fallback (registro sin verificación): banner + switch to login
+        // form so the user types credentials immediately.
         registerBanner.classList.remove('d-none');
         registerForm.reset();
         setMode('login');

@@ -190,6 +190,19 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        // /email/resend (story sc-117) — throttle por usuario. La URL
+        // firmada en sí ya es inválida tras 60 minutos (expiración) y
+        // se valida por `signed` middleware, así que la única superficie
+        // abusable es pedir muchos reenvíos. 6/hora por usuario bloquea
+        // el abuso sin molestar al usuario que se equivoca de pestaña.
+        RateLimiter::for('email-verify', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perHour(6)->by(
+                $user !== null ? 'email-verify:user:'.$user->getAuthIdentifier() : 'email-verify:ip:'.$request->ip(),
+            );
+        });
+
         // Admins bypass all gate/policy checks
         Gate::before(function (User $user, string $ability): ?bool {
             return $user->isAdmin() ? true : null;
