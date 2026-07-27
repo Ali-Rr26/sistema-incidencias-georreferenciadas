@@ -78,11 +78,11 @@ class IncidentWeeklyStatsController extends Controller
     private function buildDailySeries(array $validated): array
     {
         if (! empty($validated['inicio']) && ! empty($validated['fin'])) {
-            $startDate = Carbon::createFromFormat('Y-m-d', $validated['inicio']);
-            $endDate = Carbon::createFromFormat('Y-m-d', $validated['fin']);
+            $startDate = Carbon::createFromFormat('Y-m-d', $validated['inicio'])->startOfDay();
+            $endDate = Carbon::createFromFormat('Y-m-d', $validated['fin'])->endOfDay();
         } else {
-            $endDate = now();
-            $startDate = now()->subDays(9);
+            $endDate = now()->endOfDay();
+            $startDate = now()->subDays(9)->startOfDay();
         }
 
         $received = $this->fetchDailyCounts('created_at', $startDate, $endDate, $validated);
