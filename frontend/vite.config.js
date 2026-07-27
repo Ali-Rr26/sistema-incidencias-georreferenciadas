@@ -17,7 +17,7 @@ export default defineConfig({
   // no con import estático, así que Vite no puede rastrearlos.
   publicDir: 'public',
   server: {
-    port: 5173,
+    port: 3000,
     proxy: {
       // Proxy /api requests to the Laravel backend during development.
       // This is required for Playwright E2E tests that need to authenticate
