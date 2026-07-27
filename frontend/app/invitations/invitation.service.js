@@ -72,6 +72,82 @@ export function validateAcceptPayload(payload) {
 }
 
 /**
+ * Live password-rule snapshot — used by the activation form's
+ * "rules checklist" UI as the user types. Returns a plain object of
+ * booleans; the component renders each row as ok/failing. This is a
+ * UX feedback layer only: the backend regex stays the source of
+ * truth and `validateAcceptPayload` is what actually blocks submit.
+ *
+ * Mirrors InvitationAcceptRequest rules exactly:
+ *   - minLength: password length >= 8
+ *   - hasUpper:  at least one A-Z
+ *   - hasLower:  at least one a-z
+ *   - hasDigit:  at least one 0-9
+ *   - matches:   passwordConfirmation has a value AND equals password
+ *               (matches is FALSE when confirm is empty — we don't
+ *                tell the user 'no coinciden' before they've typed
+ *                anything in the confirm field)
+ *
+ * @param {{ password?: string, passwordConfirmation?: string }} payload
+ * @returns {{
+ *   minLength: boolean,
+ *   hasUpper: boolean,
+ *   hasLower: boolean,
+ *   hasDigit: boolean,
+ *   matches: boolean,
+ * }}
+ */
+export function livePasswordRules(payload) {
+  const password = payload.password || '';
+  const confirmation = payload.passwordConfirmation;
+
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /[0-9]/.test(password);
+
+  return {
+    minLength: password.length >= 8,
+    hasUpper,
+    hasLower,
+    hasDigit,
+    matches:
+      typeof confirmation === 'string' &&
+      confirmation.length > 0 &&
+      confirmation === password,
+  };
+}
+
+/**
+ * Password strength score (0..4) for the activation form's strength
+ * meter. Mirrors the backend regex rules — UX feedback only, the
+ * backend is the source of truth on submit.
+ *
+ *   0 = empty / no input
+ *   1 = meets minimum length only (>=8 chars)
+ *   2 = meets 2 of {upper, lower, digit} character classes
+ *   3 = meets all 3 character classes (and length >= 8 implicitly)
+ *   4 = length >= 12 AND all 3 character classes
+ *
+ * @param {string} password
+ * @returns {0 | 1 | 2 | 3 | 4}
+ */
+export function scorePassword(password) {
+  const pw = password || '';
+  if (pw.length === 0) return 0;
+
+  const classes =
+    (/[A-Z]/.test(pw) ? 1 : 0) +
+    (/[a-z]/.test(pw) ? 1 : 0) +
+    (/[0-9]/.test(pw) ? 1 : 0);
+
+  if (pw.length >= 12 && classes === 3) return 4;
+  if (classes === 3) return 3;
+  if (classes >= 2) return 2;
+  if (pw.length >= 8) return 1;
+  return 0;
+}
+
+/**
  * Accept an invitation with the given plaintext token, setting the user's
  * password and marking T&C as accepted.
  *
