@@ -112,7 +112,7 @@ function renderCard(inc) {
     `;
   }
 
-  const commentCount = inc.comments_count ?? 0;
+  const commentCount = inc.comment_count ?? inc.comments_count ?? 0;
   const meTooCount = inc.me_too_count ?? 0;
   const followersCount = inc.followers_count ?? 0;
   const viewerHasMeToo = Boolean(inc.viewer_has_me_too);
