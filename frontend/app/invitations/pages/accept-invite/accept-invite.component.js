@@ -481,7 +481,14 @@ export default {
           termsVersion,
         );
 
-        // Success — show banner and stop the countdown ticker.
+        // Success — stop the countdown ticker, show the banner with
+        // an explicit "Ir a iniciar sesión" CTA. We never auto-redirect:
+        // a user who just activated an account may want to read the
+        // success state, screenshot the URL, or take a moment before
+        // continuing. The CTA href is a hash route so it works whether
+        // the app is served as a SPA root or under a sub-path; the
+        // click handler also pushes the route via the router so the
+        // back-button history stays consistent.
         if (countdownHandle !== null) {
           clearInterval(countdownHandle);
           cancelAnimationFrame(countdownHandle);
@@ -489,9 +496,22 @@ export default {
         }
         successAlert.classList.remove('d-none');
         form.classList.add('d-none');
-        setTimeout(() => {
-          router.navigate('/login?accepted=1');
-        }, 1500);
+        successAlert.innerHTML = `
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+          <span>Cuenta activada</span>
+          <a
+            class="gr-accept-invite__success-cta"
+            href="/#/login?accepted=1"
+            id="accept-invite-success-cta"
+          >Ir a iniciar sesión</a>
+        `;
+        const cta = document.getElementById('accept-invite-success-cta');
+        if (cta) {
+          cta.addEventListener('click', (event) => {
+            event.preventDefault();
+            router.navigate('/login?accepted=1');
+          });
+        }
       } catch (err) {
         if (err instanceof InvitationGoneError) {
           errorAlert.textContent =
