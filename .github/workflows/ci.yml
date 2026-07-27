@@ -169,6 +169,7 @@ jobs:
           APP_URL: http://localhost:8000
           JWT_ACCESS_SECRET: ci-e2e-test-access-secret-not-for-production-use
           JWT_REFRESH_SECRET: ci-e2e-test-refresh-secret-not-for-production-use
+          LOGIN_RATE_LIMIT_PER_MIN: 100
         run: |
           (cd ../backend && php artisan serve --port=8000) &
           npm run dev &
