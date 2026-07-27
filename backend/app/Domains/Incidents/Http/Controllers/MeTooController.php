@@ -160,6 +160,7 @@ class MeTooController extends Controller
                         'me_too_count',
                         $delta,
                     );
+                    \App\Domains\Incidents\Jobs\SyncIncidentToRedisJob::dispatch($incidentId);
                 } catch (\Throwable $e) {
                     Log::warning('me_too.redis_increment_failed', [
                         'incident_id' => $incidentId,

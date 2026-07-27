@@ -163,7 +163,6 @@ function renderCard(inc) {
             style="font-size:13px"
             data-incident-id="${inc.id}"
             data-action="follow"
-            onclick="event.stopPropagation(); window.__feed_toggleFollow && window.__feed_toggleFollow(${inc.id}, this);"
             ${isAuthed ? '' : 'disabled title="Inicia sesión para seguir"'}
             aria-pressed="${viewerIsFollowing}"
           >
@@ -175,7 +174,6 @@ function renderCard(inc) {
             style="font-size:13px"
             data-incident-id="${inc.id}"
             data-action="me-too"
-            onclick="event.stopPropagation(); window.__feed_toggleMeToo && window.__feed_toggleMeToo(${inc.id}, this);"
             ${isAuthed ? '' : 'disabled title="Inicia sesión para reportar"'}
             aria-pressed="${viewerHasMeToo}"
           >
@@ -304,6 +302,18 @@ export default {
     }
 
     feedList.addEventListener('click', (e) => {
+      const meTooBtn = e.target.closest('[data-action="me-too"]');
+      if (meTooBtn) {
+        e.stopPropagation();
+        toggleMeToo(meTooBtn.dataset.incidentId, meTooBtn);
+        return;
+      }
+      const followBtn = e.target.closest('[data-action="follow"]');
+      if (followBtn) {
+        e.stopPropagation();
+        toggleFollow(followBtn.dataset.incidentId, followBtn);
+        return;
+      }
       const target = e.target.closest('[data-route]');
       if (!target) return;
       navigateFromTarget(target, e);
@@ -554,7 +564,7 @@ export default {
       btn.innerHTML = `<i class="fa-regular ${iconClass} me-1"></i>${label} (${count})`;
     }
 
-    window.__feed_toggleMeToo = async function (incidentId, btn) {
+    async function toggleMeToo(incidentId, btn) {
       if (!auth.isAuthenticated()) {
         auth.requireLogin?.() ?? router.navigate('/login');
         return;
@@ -575,9 +585,9 @@ export default {
       } finally {
         btn.disabled = false;
       }
-    };
+    }
 
-    window.__feed_toggleFollow = async function (incidentId, btn) {
+    async function toggleFollow(incidentId, btn) {
       if (!auth.isAuthenticated()) {
         auth.requireLogin?.() ?? router.navigate('/login');
         return;
@@ -598,7 +608,7 @@ export default {
       } finally {
         btn.disabled = false;
       }
-    };
+    }
 
     // ── First load ──
     await fetchIncidencias(1, false);

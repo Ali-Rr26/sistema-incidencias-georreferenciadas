@@ -838,7 +838,11 @@ function setupDuplicateModal(incidentId) {
         const json = await http.get(url);
         const candidates = numeric
           ? [json.data ?? json]
-          : (json.data ?? []).filter((inc) => String(inc.id) !== String(incidentId));
+          : (json.data ?? [])
+              .filter((inc) => String(inc.id) !== String(incidentId))
+              .filter((inc) =>
+                (inc.title ?? '').toLowerCase().includes(q.toLowerCase()),
+              );
 
         if (!suggestions) return;
         suggestions.replaceChildren(
@@ -860,7 +864,10 @@ function setupDuplicateModal(incidentId) {
         }
       } catch (e) {
         if (suggestions) {
-          suggestions.replaceChildren();
+          const empty = document.createElement('div');
+          empty.className = 'text-muted small px-2 py-1';
+          empty.textContent = 'Sin coincidencias.';
+          suggestions.replaceChildren(empty);
         }
       }
     }, 250);
@@ -869,12 +876,12 @@ function setupDuplicateModal(incidentId) {
   confirmBtn.addEventListener('click', async () => {
     errorEl?.classList.add('d-none');
     if (!pickedId) {
-      errorEl.textContent = 'Selecciona una incidencia de la lista.';
+      if (errorEl) errorEl.textContent = 'Selecciona una incidencia de la lista.';
       errorEl?.classList.remove('d-none');
       return;
     }
     if (Number(pickedId) === Number(incidentId)) {
-      errorEl.textContent = 'Una incidencia no puede ser duplicada de sí misma.';
+      if (errorEl) errorEl.textContent = 'Una incidencia no puede ser duplicada de sí misma.';
       errorEl?.classList.remove('d-none');
       return;
     }
@@ -887,7 +894,7 @@ function setupDuplicateModal(incidentId) {
       // Recarga la página para que el banner "is_duplicate" aparezca.
       window.location.reload();
     } catch (e) {
-      errorEl.textContent = e.message || 'No se pudo marcar como duplicada.';
+      if (errorEl) errorEl.textContent = e.message || 'No se pudo marcar como duplicada.';
       errorEl?.classList.remove('d-none');
       confirmBtn.disabled = false;
     }

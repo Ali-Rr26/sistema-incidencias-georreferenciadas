@@ -157,8 +157,17 @@ it('dispatches a notification to followers when a comment is posted', function (
         ])
         ->assertStatus(201);
 
-    Queue::assertPushed(\App\Domains\Notifications\Jobs\SendIncidentNotificationJob::class, function ($job) use ($commenter): bool {
-        // $this->user and $this->otherUser are followers; the commenter is NOT.
-        return (int) $job->userId !== (int) $commenter->id;
+    Queue::assertPushed(\App\Domains\Notifications\Jobs\SendIncidentNotificationJob::class, 2);
+
+    Queue::assertPushed(\App\Domains\Notifications\Jobs\SendIncidentNotificationJob::class, function ($job): bool {
+        return (int) $job->userId === (int) $this->user->id;
+    });
+
+    Queue::assertPushed(\App\Domains\Notifications\Jobs\SendIncidentNotificationJob::class, function ($job): bool {
+        return (int) $job->userId === (int) $this->otherUser->id;
+    });
+
+    Queue::assertNotPushed(\App\Domains\Notifications\Jobs\SendIncidentNotificationJob::class, function ($job) use ($commenter): bool {
+        return (int) $job->userId === (int) $commenter->id;
     });
 });
