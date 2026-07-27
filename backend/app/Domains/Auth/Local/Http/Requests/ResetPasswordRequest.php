@@ -8,6 +8,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ResetPasswordRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => strtolower(trim((string) $this->input('email'))),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
