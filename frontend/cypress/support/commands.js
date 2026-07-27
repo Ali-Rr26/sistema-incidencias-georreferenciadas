@@ -8,6 +8,8 @@ function homeRouteForEmail(email) {
 }
 
 Cypress.Commands.add('login', (email, password) => {
+  cy.clearAllCookies();
+  cy.clearAllSessionStorage();
   cy.visit('/#/login');
   cy.get('#email').type(email);
   cy.get('#password').type(password);
