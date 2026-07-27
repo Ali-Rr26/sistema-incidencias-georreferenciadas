@@ -63,7 +63,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "php artisan serve"
+            "PHP_CLI_SERVER_WORKERS=4 php artisan serve"
         ],
         "lint": [
             "./vendor/bin/pint --test"
