@@ -64,6 +64,14 @@ describe('Incident Management (CRUD)', () => {
     // surfaces a useful timeout if validation still hasn't passed.
     cy.get('#ici-submit').should('not.have.class', 'd-none', { timeout: 20000 });
     cy.get('#ici-submit').click();
+    // _handleSubmit synchronously flips the form into "submitting"
+    // state (loading spinner on, button off) as the first thing
+    // after preventDefault. If we see that state on, the JS-driven
+    // path is engaged — the old HTML-default GET fallback would
+    // route us back to /feed/crear with `?lat=&lng=` appended
+    // instead, so this is the most reliable signal that the
+    // early-bound listener fired at all.
+    cy.get('#ici-submit-loading').should('not.have.class', 'd-none', { timeout: 10000 });
 
     // The form's submit handler POSTs /api/incidents and 2s later
     // navigates to /incidencias/{id}; a citizen is short-circuited back
