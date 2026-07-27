@@ -129,12 +129,6 @@ router.addRoute(
   'admin',
 );
 router.addRoute('/roles', rolesIndexComponent, [permissionGuard], 'admin');
-router.addRoute(
-  '/roles/crear',
-  rolesDetailComponent,
-  [permissionGuard],
-  'admin',
-);
 router.addRoute('/roles/:id', rolesDetailComponent, [permissionGuard], 'admin');
 router.addRoute('/not-found', notFoundComponent, [authGuard], 'both');
 
