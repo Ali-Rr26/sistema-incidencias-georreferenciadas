@@ -12,4 +12,5 @@ enum NotificationType: string
     case Assigned = 'assigned';
     case Comment = 'comment';
     case Legacy = 'legacy';
+    case IncidenciaAtendidaParaAprobacion = 'incidencia_atendida_para_aprobacion';
 }
