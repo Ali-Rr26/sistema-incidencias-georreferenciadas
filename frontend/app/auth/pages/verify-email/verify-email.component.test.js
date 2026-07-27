@@ -112,29 +112,32 @@ describe('verify-email component — story sc-117', () => {
     const btn = document.getElementById('btn-reenviar');
     btn.click();
 
-    // Esperar al async del handler.
     await vi.waitFor(() => {
       expect(httpMock.post).toHaveBeenCalledTimes(1);
     });
-    expect(httpMock.post).toHaveBeenCalledWith('/email/resend');
+    expect(httpMock.post).toHaveBeenCalledWith('/email/resend', { email: '' });
 
     const reenvioBanner = document.getElementById('estado-reenvio');
     expect(reenvioBanner.classList.contains('d-none')).toBe(false);
   });
 
-  it('keeps the initial banner visible on 401 from /email/resend (post-register flow without auth)', async () => {
-    const err = Object.assign(new Error('Unauthenticated'), { status: 401 });
-    httpMock.post.mockRejectedValueOnce(err);
+  it('submits 6-digit OTP code to POST /email/verify-otp on form submit', async () => {
+    httpMock.post.mockResolvedValueOnce({ message: 'Tu correo fue verificado correctamente.', verified: true });
 
-    await mountComponent({ query: new URLSearchParams() });
+    await mountComponent({ query: new URLSearchParams('email=user@example.com') });
 
-    document.getElementById('btn-reenviar').click();
+    document.getElementById('otp-input').value = '123456';
+    document.getElementById('form-otp').dispatchEvent(new Event('submit', { cancelable: true }));
 
     await vi.waitFor(() => {
       expect(httpMock.post).toHaveBeenCalledTimes(1);
     });
+    expect(httpMock.post).toHaveBeenCalledWith('/email/verify-otp', {
+      email: 'user@example.com',
+      otp: '123456',
+    });
 
-    const inicial = document.getElementById('estado-inicial');
-    expect(inicial.classList.contains('d-none')).toBe(false);
+    const exitoBanner = document.getElementById('estado-exito');
+    expect(exitoBanner.classList.contains('d-none')).toBe(false);
   });
 });

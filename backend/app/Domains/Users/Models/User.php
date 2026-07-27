@@ -44,17 +44,21 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'organization_id',
         'email_verified_at',
+        'verification_otp',
+        'verification_otp_expires_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'verification_otp',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'verification_otp_expires_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -160,11 +164,52 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Send the email verification notification — story sc-117 / R8 del
-     * registro local.
+     * Genera un código OTP de 6 dígitos con expiración (15 minutos).
+     */
+    public function generateVerificationOtp(int $expiresInMinutes = 15): string
+    {
+        $otp = sprintf('%06d', random_int(0, 999999));
+
+        $this->forceFill([
+            'verification_otp' => hash('sha256', $otp),
+            'verification_otp_expires_at' => now()->addMinutes($expiresInMinutes),
+        ])->save();
+
+        return $otp;
+    }
+
+    /**
+     * Valida el código OTP de 6 dígitos ingresado por el usuario.
+     */
+    public function verifyOtp(string $otp): bool
+    {
+        if ($this->verification_otp === null || $this->verification_otp_expires_at === null) {
+            return false;
+        }
+
+        if (now()->greaterThan($this->verification_otp_expires_at)) {
+            return false;
+        }
+
+        if (! hash_equals($this->verification_otp, hash('sha256', trim($otp)))) {
+            return false;
+        }
+
+        $this->forceFill([
+            'email_verified_at' => now(),
+            'verification_otp' => null,
+            'verification_otp_expires_at' => null,
+        ])->save();
+
+        return true;
+    }
+
+    /**
+     * Send the email verification notification with 6-digit OTP code — story sc-117 / R8.
      */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new VerifyEmailMail);
+        $otp = $this->generateVerificationOtp(15);
+        $this->notify(new VerifyEmailMail($otp));
     }
 }

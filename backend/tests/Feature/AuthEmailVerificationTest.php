@@ -398,3 +398,44 @@ it('R14: POST /api/login works when email_verified_at is set', function (): void
     $response->assertOk()
         ->assertJsonStructure(['access_token', 'token_type', 'expires_in', 'user']);
 });
+
+// ─── OTP Tests ────────────────────────────────────────────────────────
+
+it('verifies email using valid 6-digit OTP code via POST /api/email/verify-otp', function (): void {
+    $user = User::factory()->create([
+        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
+        'email_verified_at' => null,
+    ]);
+
+    $otp = $user->generateVerificationOtp(15);
+    expect($user->fresh()->email_verified_at)->toBeNull();
+
+    $response = $this->postJson('/api/email/verify-otp', [
+        'email' => $user->email,
+        'otp' => $otp,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('verified', true);
+
+    expect($user->fresh()->email_verified_at)->not->toBeNull();
+});
+
+it('rejects invalid or expired 6-digit OTP via POST /api/email/verify-otp', function (): void {
+    $user = User::factory()->create([
+        'role_id' => Role::where('name', UserRole::Usuario->value)->value('id'),
+        'email_verified_at' => null,
+    ]);
+
+    $user->generateVerificationOtp(15);
+
+    $response = $this->postJson('/api/email/verify-otp', [
+        'email' => $user->email,
+        'otp' => '000000',
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonPath('code', 'otp_invalid');
+
+    expect($user->fresh()->email_verified_at)->toBeNull();
+});

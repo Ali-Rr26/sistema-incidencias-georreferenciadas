@@ -47,14 +47,14 @@ Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
 
-// Email verification — story sc-117 (registro local exige correo verificado
-// antes de login). El `verify` es público y firmado (signed middleware
-// valida `expires` + `signature`); `resend` y `notice` viven adentro del
-// grupo `jwt` porque requieren un usuario autenticado para evitar
-// enumeración de correos ajenos.
+// Email verification — story sc-117
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
     ->name('verification.verify')
     ->middleware('signed');
+Route::post('/email/verify-otp', [VerificationController::class, 'verifyOtp'])
+    ->middleware('throttle:5,1');
+Route::post('/email/resend', [VerificationController::class, 'resend'])
+    ->middleware('throttle:5,1');
 
 Route::middleware('jwt')->group(function () {
 

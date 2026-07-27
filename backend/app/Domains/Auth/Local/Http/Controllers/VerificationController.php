@@ -72,17 +72,56 @@ class VerificationController
     }
 
     /**
+     * POST /api/email/verify-otp
+     *
+     * Permite verificar el correo ingresando un código OTP de 6 dígitos.
+     */
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+
+        /** @var User|null $user */
+        $user = User::where('email', strtolower($validated['email']))->first();
+
+        if ($user === null) {
+            return $this->verificationFailed('user_not_found', 'El correo ingresado no está registrado.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->verificationSucceeded($user);
+        }
+
+        if (! $user->verifyOtp($validated['otp'])) {
+            return response()->json([
+                'message' => 'El código OTP es inválido o ha expirado.',
+                'code' => 'otp_invalid',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        Log::info('auth.email_verified_otp', [
+            'user_id' => $user->id,
+            'email_hash' => hash('sha256', (string) $user->email),
+        ]);
+
+        return $this->verificationSucceeded($user);
+    }
+
+    /**
      * POST /api/email/resend
      */
     public function resend(Request $request): JsonResponse
     {
+        $email = $request->input('email');
         /** @var User|null $user */
-        $user = $request->user();
+        $user = $request->user() ?? ($email ? User::where('email', strtolower((string) $email))->first() : null);
 
         if ($user === null) {
             return response()->json([
-                'message' => __('messages.unauthenticated'),
-            ], Response::HTTP_UNAUTHORIZED);
+                'message' => __('messages.verification_sent'),
+            ], Response::HTTP_ACCEPTED);
         }
 
         if ($user->hasVerifiedEmail()) {
@@ -91,9 +130,6 @@ class VerificationController
             ], Response::HTTP_OK);
         }
 
-        // `sendEmailVerificationNotification` no requiere parámetros
-        // adicionales — `VerifyEmailMail` resuelve `notifiable` desde
-        // `$user` en `via()` y `toMail()`.
         $user->sendEmailVerificationNotification();
 
         return response()->json([

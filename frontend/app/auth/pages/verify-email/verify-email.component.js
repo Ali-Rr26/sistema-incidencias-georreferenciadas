@@ -1,21 +1,11 @@
 /**
  * Verify-email landing page — story sc-117.
  *
- * Esta pantalla hace dos cosas, según desde dónde se llegue:
- *
- *   1. **Landing con enlace**: si la URL trae `?id=...&hash=...&expires=...&signature=...`,
- *      se llama a `GET /api/email/verify/{id}/{hash}` con los query params intactos
- *      (la firma ya se validó al armar el enlace en backend). En 200, mostramos
- *      éxito y dejamos un botón para ir al login; en 4xx, mostramos el error
- *      recibido del backend.
- *
- *   2. **Landing sin token** (post-201 del registro o 403 desde el login): el
- *      usuario aún no verificó. Mostramos el banner inicial + el botón
- *      "Reenviar" que pega contra `POST /api/email/resend`. El botón tiene un
- *      cooldown de 60s para no spammear al backend.
- *
- * i18n: spec es primary, mensajes hard-codeados siguiendo el patrón del
- * resto de las pantallas de auth (forgot-password / reset-password).
+ * Soporta dos vías de verificación:
+ *   1. **Ingreso de código OTP de 6 dígitos**: el usuario ingresa el código
+ *      recibido en su correo y presiona "Verificar código" (POST /api/email/verify-otp).
+ *   2. **Landing con enlace firmado**: si la URL contiene params firmados,
+ *      se llama a GET /api/email/verify/{id}/{hash}.
  */
 import template from './verify-email.component.html?raw';
 import style from '../login/login.component.css?raw';
@@ -29,17 +19,28 @@ export default {
   style,
 
   async onInit({ query } = {}) {
-    const btn = document.getElementById('btn-reenviar');
+    const emailInput = document.getElementById('otp-email');
+    const otpInput = document.getElementById('otp-input');
+    const formOtp = document.getElementById('form-otp');
+    const btnVerificar = document.getElementById('btn-verificar');
+    const btnVerificarTexto = document.getElementById('btn-verificar-texto');
+    const btnVerificarLoading = document.getElementById('btn-verificar-loading');
+
+    const btnResend = document.getElementById('btn-reenviar');
     const btnText = document.getElementById('btn-texto');
     const btnLoading = document.getElementById('btn-loading');
     const btnCountdown = document.getElementById('btn-countdown');
+
+    const initialEmail = query?.get('email') || '';
+    if (emailInput && initialEmail) {
+      emailInput.value = initialEmail;
+    }
 
     const hideAllStates = () => {
       document.getElementById('estado-cargando')?.classList.add('d-none');
       document.getElementById('estado-exito')?.classList.add('d-none');
       document.getElementById('estado-error')?.classList.add('d-none');
       document.getElementById('estado-reenvio')?.classList.add('d-none');
-      document.getElementById('estado-inicial')?.classList.add('d-none');
     };
 
     const showLoading = () => {
@@ -61,14 +62,9 @@ export default {
       document.getElementById('estado-error')?.classList.remove('d-none');
     };
 
-    /**
-     * Apply a 60s countdown to the resend button. Counts down 60→0 then
-     * re-enables. The button is still clickable while in cooldown but
-     * disabled — countdown updates the label like "Reenviar (45s)".
-     */
     const startResendCooldown = () => {
-      if (!btn) return;
-      btn.disabled = true;
+      if (!btnResend) return;
+      btnResend.disabled = true;
       btnText?.classList.add('d-none');
       btnLoading?.classList.add('d-none');
       btnCountdown?.classList.remove('d-none');
@@ -79,7 +75,7 @@ export default {
           if (btnCountdown) btnCountdown.textContent = '';
           btnCountdown?.classList.add('d-none');
           btnText?.classList.remove('d-none');
-          btn.disabled = false;
+          btnResend.disabled = false;
           return;
         }
         if (btnCountdown) {
@@ -91,51 +87,71 @@ export default {
       tick();
     };
 
-    // Resend handler — POST /api/email/resend expects auth (jwt middleware).
-    // En el flujo post-registro el usuario no está autenticado, así que
-    // mostramos el mensaje informativo y NO pegamos al endpoint (caería 401).
-    // Sólo enviamos si el usuario llegó autenticado desde el dashboard.
     const handleResend = async () => {
+      const email = emailInput?.value?.trim() || initialEmail;
       hideAllStates();
       btnLoading?.classList.remove('d-none');
       btnText?.classList.add('d-none');
       btnCountdown?.classList.add('d-none');
-      btn.disabled = true;
+      btnResend.disabled = true;
 
       try {
-        await http.post('/email/resend');
+        await http.post('/email/resend', { email });
         const txt = document.getElementById('reenvio-texto');
         if (txt) {
-          txt.textContent = 'Te hemos enviado un nuevo correo de verificación.';
+          txt.textContent = 'Te hemos enviado un nuevo código de verificación.';
         }
-        hideAllStates();
         document.getElementById('estado-reenvio')?.classList.remove('d-none');
         startResendCooldown();
       } catch (err) {
-        // 401 — usuario no autenticado (caso post-registro): mantenemos
-        // el banner inicial y dejamos que el usuario abra el correo
-        // que ya recibió, sin resend.
-        if (err?.status === 401) {
-          hideAllStates();
-          document.getElementById('estado-inicial')?.classList.remove('d-none');
-        } else if (err?.status === 429) {
+        if (err?.status === 429) {
           showError('Has realizado demasiadas solicitudes. Esperá unos minutos e intentá de nuevo.');
         } else {
           showError(err?.message || 'No pudimos reenviar el correo. Intentalo de nuevo.');
         }
       } finally {
         btnLoading?.classList.add('d-none');
-        if (!btn.disabled) {
+        if (!btnResend.disabled) {
           btnText?.classList.remove('d-none');
         }
       }
     };
 
-    if (btn) {
-      btn.addEventListener('click', handleResend);
+    if (btnResend) {
+      btnResend.addEventListener('click', handleResend);
     }
 
-    // ─── Path 1 — landing con token firmado ─────────────────────────────
+    if (formOtp) {
+      formOtp.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput?.value?.trim();
+        const otp = otpInput?.value?.trim();
+
+        if (!email || !otp) {
+          showError('Ingresá tu correo y el código OTP de 6 dígitos.');
+          return;
+        }
+
+        hideAllStates();
+        btnVerificar.disabled = true;
+        btnVerificarTexto?.classList.add('d-none');
+        btnVerificarLoading?.classList.remove('d-none');
+
+        try {
+          const data = await http.post('/email/verify-otp', { email, otp });
+          showSuccess(data?.message || 'Tu correo fue verificado correctamente.');
+          setTimeout(() => router.navigate('/login'), 2500);
+        } catch (err) {
+          showError(err?.message || 'El código OTP es inválido o ha expirado.');
+        } finally {
+          btnVerificar.disabled = false;
+          btnVerificarTexto?.classList.remove('d-none');
+          btnVerificarLoading?.classList.add('d-none');
+        }
+      });
+    }
+
+    // ─── Path alternativo — landing con token firmado ─────────────────────
     const id = query?.get('id');
     const hash = query?.get('hash');
     const expires = query?.get('expires');
@@ -145,34 +161,21 @@ export default {
       showLoading();
 
       try {
-        // Construimos la URL firmada al backend pasando los params tal
-        // cual vinieron (la firma los preserva — están firmados con
-        // APP_KEY en backend al armar el URL firmada).
         const path = `/email/verify/${encodeURIComponent(id)}/${encodeURIComponent(hash)}`;
         const sep = path.includes('?') ? '&' : '?';
         const verifyUrl = `${path}${sep}expires=${encodeURIComponent(expires)}&signature=${encodeURIComponent(signature)}`;
 
         const data = await http.get(verifyUrl);
         showSuccess(data?.message || 'Tu correo fue verificado correctamente.');
-        // Tras el éxito, en 3 segundos redirigimos al login para que
-        // el usuario tipee sus credenciales.
-        setTimeout(() => router.navigate('/login'), 3000);
+        setTimeout(() => router.navigate('/login'), 2500);
       } catch (err) {
         if (err?.status === 403 && err?.code === 'verification_expired') {
-          showError('El enlace de verificación expiró. Solicitá uno nuevo.');
+          showError('El enlace de verificación expiró. Solicitá un nuevo código.');
         } else {
           showError(err?.message || 'No pudimos verificar tu correo. El enlace puede haber expirado o ya fue utilizado.');
         }
       }
-
-      return;
     }
-
-    // ─── Path 2 — landing sin token (post-registro o tras 403) ─────────
-    // Por defecto dejamos el banner inicial visible; el usuario decide
-    // si quiere reenviar el correo (si está logueado) o abrir el que
-    // ya le llegó al mail (caso post-201).
-    document.getElementById('estado-inicial')?.classList.remove('d-none');
   },
 
   onDestroy() {},
