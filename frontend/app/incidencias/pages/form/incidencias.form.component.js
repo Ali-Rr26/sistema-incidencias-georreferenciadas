@@ -544,6 +544,18 @@ export default {
     // on demand via getChildren. This replaces the old /locations/tree call.
     let locationSelection = null; // { provinceId, cityId, neighborhoodId } for boundary
 
+    // Pin the location-select DOM references here, BEFORE the awaits below.
+    // renderReviewSummary() runs from the click handler bound way up at
+    // the bootstrap block on line ~158, so by the time the user reaches
+    // step 4 we may still be paused in the very awaits this opens.
+    // Declaring these `const`s up here means the review summary can read
+    // them safely without hitting a temporal-dead-zone ReferenceError.
+    const provinceSelect = document.getElementById('ici-location-province');
+    const citySelect = document.getElementById('ici-location-city');
+    const neighborhoodSelect = document.getElementById(
+      'ici-location-neighborhood',
+    );
+
     try {
       const catResp = await http.get('/incident-categories/tree');
       categoryTree = catResp.data ?? catResp ?? [];
@@ -579,18 +591,6 @@ export default {
       populateSubcategories(this.value);
       resetFieldError(P + 'error-category');
     });
-
-    // ── Location cascade: Provincia → Cantón → Parroquia ──
-    // Mirrors the category/subcategory cascade above. Province roots are loaded
-    // via locationService.getRoots; city and parish are fetched progressively via
-    // locationService.getChildren. Parroquia stays optional: the submitted
-    // location_id is the deepest level actually chosen (neighborhood if picked,
-    // else city, else null).
-    const provinceSelect = document.getElementById('ici-location-province');
-    const citySelect = document.getElementById('ici-location-city');
-    const neighborhoodSelect = document.getElementById(
-      'ici-location-neighborhood',
-    );
 
     // Stale-request guard — incremented before each async call; stale
     // responses are discarded when generation mismatches.
