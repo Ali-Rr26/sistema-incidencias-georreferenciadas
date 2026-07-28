@@ -18,21 +18,20 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
-        foreach (self::ROLES as $role) {
-            // `DB::table()->updateOrInsert()`, not `Role::query()->updateOrCreate()`:
-            // `Role::$fillable = ['name']` excludes `id`, so the Eloquent
-            // mass-assignment path silently dropped the explicit id on
-            // create and let auto-increment assign whatever the sequence
-            // happened to be at — wrong for these FK-target rows.
-            // Surfaced by the SQLite → PostgreSQL test migration
-            // (backend-tests-postgres-migration, issue #197): Postgres
-            // SERIAL sequences persist across rolled-back transactions,
-            // so the "first insert lands on id=N" coincidence that masked
-            // this on SQLite no longer holds.
-            DB::table('roles')->updateOrInsert(
-                ['id' => $role['id'], 'name' => $role['name']],
-            );
+        // `DB::table()->upsert()` with explicit id handling:
+        // `Role::$fillable = ['name']` excludes `id`, so Eloquent's mass-assignment
+        // path silently dropped explicit ids — wrong for these FK-target rows.
+        // Surfaced by SQLite → PostgreSQL test migration (backend-tests-postgres-migration, #197):
+        // Postgres SERIAL sequences persist across rolled-back transactions.
+        // `upsert()` generates atomic `INSERT ... ON CONFLICT (id) DO UPDATE`,
+        // safe for parallel test runs with multiple processes.
+        DB::table('roles')->upsert(
+            self::ROLES,
+            ['id'],  // unique key constraint
+            ['name'],  // columns to update if conflict
+        );
 
+        foreach (self::ROLES as $role) {
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
         }
 
