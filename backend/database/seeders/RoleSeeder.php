@@ -30,8 +30,8 @@ class RoleSeeder extends Seeder
             // so the "first insert lands on id=N" coincidence that masked
             // this on SQLite no longer holds.
             DB::table('roles')->updateOrInsert(
-                ['name' => $role['name']],
                 ['id' => $role['id']],
+                ['name' => $role['name']],
             );
 
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
