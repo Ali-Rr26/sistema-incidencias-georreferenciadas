@@ -20,8 +20,8 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // Seed roles and permissions (skip IncidentSeeder — requires PostGIS).
     //
-    // Direct DB::insert with a pinned id, not Role::firstOrCreate(): the
-    // role_permission grant below hardcodes role_id=1 for admin_sistema.
+    // insertOrIgnore with pinned ids to ensure consistent FK targets.
+    // Fetch admin_sistema ID by name (lines 38-39) to resolve dynamically.
     // `Role::firstOrCreate()` relies on nextval(), which does NOT reliably land
     // on 1 — PostgreSQL sequences are not rolled back between tests, so
     // an earlier test in the same parallel worker database can leave the

@@ -32,6 +32,7 @@ use App\Storage\ImageStorageService;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,9 +43,10 @@ beforeEach(function (): void {
     // `Gate::before` bypass (`$user->isAdmin()`), so a single admin actor
     // is authorized across incidents, comments, and users without needing
     // to seed the permissions table for this cross-domain contract suite.
-    Role::firstOrCreate(['name' => 'admin_sistema']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
 
-    $this->admin = User::factory()->create();
+    $this->admin = User::factory()->create(['role_id' => $adminRoleId]);
     $this->withoutMiddleware(JwtAuthenticate::class);
     Storage::fake('s3');
 

@@ -23,12 +23,11 @@ uses(RefreshDatabase::class);
 // check needed.
 
 beforeEach(function (): void {
-    // Direct DB::insert, not Role::firstOrCreate(): Role's $fillable = ['name']
-    // excludes `id`, so the Eloquent mass-assignment path silently drops
-    // the explicit id and lets auto-increment assign whatever the
-    // sequence happens to be at (see RoleSeederTest / the same
-    // convention documented in AssignmentPolicyTest.php).
-    Role::firstOrCreate(['name' => 'Admin']);
+    // insertOrIgnore with pinned id to ensure consistent FK target.
+    // Role::firstOrCreate() relies on nextval(), which does NOT reliably land
+    // on 1 — PostgreSQL sequences are not rolled back between tests (see
+    // RoleSeederTest / backend-tests-postgres-migration, issue #197).
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Test Category']);

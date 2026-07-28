@@ -6,6 +6,7 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Auth\Middleware\Authorize;
@@ -17,12 +18,18 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // ── Setup roles ───────────────────────────────────────────
     DB::table('roles')->insertOrIgnore([
-        ['id' => 1, 'name' => 'Admin'],
-        ['id' => 2, 'name' => 'admin_sistema'],
+        ['id' => 1, 'name' => 'admin_sistema'],
+        ['id' => 2, 'name' => 'operador_sistema'],
         ['id' => 3, 'name' => 'admin_organizacion'],
         ['id' => 4, 'name' => 'operador_organizacion'],
         ['id' => 5, 'name' => 'usuario'],
     ]);
+
+    // Fetch role IDs by name for dynamic reference
+    $this->adminSistemaRoleId = Role::where('name', 'admin_sistema')->first()->id;
+    $this->adminOrgRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+    $this->operadorOrgRoleId = Role::where('name', 'operador_organizacion')->first()->id;
+    $this->usuarioRoleId = Role::where('name', 'usuario')->first()->id;
 
     // ── Locations ─────────────────────────────────────────────
     $location1 = Location::create(['name' => 'City A', 'level' => 'city']);
@@ -94,7 +101,7 @@ beforeEach(function (): void {
 // ──────────────────────────────────────────────────────────────
 
 it('SuperAdmin sees all incidents across all organizations', function (): void {
-    $superAdmin = User::factory()->create(['role_id' => 2]); // admin_sistema
+    $superAdmin = User::factory()->create(['role_id' => $this->adminSistemaRoleId]);
     $this->actingAs($superAdmin);
 
     $response = $this->getJson('/api/incidents');
@@ -109,7 +116,7 @@ it('SuperAdmin sees all incidents across all organizations', function (): void {
 
 it('AdminOrganización sees only incidents from their own organization', function (): void {
     $adminOrg = User::factory()->create([
-        'role_id' => 3, // admin_organizacion
+        'role_id' => $this->adminOrgRoleId,
         'organization_id' => $this->orgA->id,
     ]);
     $this->actingAs($adminOrg);
@@ -129,7 +136,7 @@ it('AdminOrganización sees only incidents from their own organization', functio
 
 it('OperadorOrg sees only incidents from their own organization', function (): void {
     $operator = User::factory()->create([
-        'role_id' => 4, // operador_organizacion
+        'role_id' => $this->operadorOrgRoleId,
         'organization_id' => $this->orgB->id,
     ]);
 
@@ -168,7 +175,7 @@ it('OperadorOrg sees only incidents from their own organization', function (): v
 
 it('Usuario sees zero incidents in index', function (): void {
     $usuario = User::factory()->create([
-        'role_id' => 5, // usuario
+        'role_id' => $this->usuarioRoleId,
     ]);
     $this->actingAs($usuario);
 
