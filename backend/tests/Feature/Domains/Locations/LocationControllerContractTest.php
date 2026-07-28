@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
@@ -28,7 +29,7 @@ beforeEach(function (): void {
     DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $this->admin = User::factory()->create(['role_id' => 1]);
+    $this->admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 });
 
 // -----------------------------------------------------------------

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Comments\Jobs\SyncCommentToRedisJob;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
@@ -17,8 +18,8 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
-    $user = User::factory()->create(['id' => 3, 'role_id' => 1]);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $user = User::factory()->create(['id' => 3, 'role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);

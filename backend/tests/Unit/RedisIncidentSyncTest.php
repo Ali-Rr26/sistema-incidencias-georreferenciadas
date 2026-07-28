@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Jobs\SyncIncidentToRedisJob;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\ReadModels\IncidentFeedSerializer;
@@ -21,7 +22,7 @@ beforeEach(function (): void {
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 
-    $user = User::factory()->create(['role_id' => 1]);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);

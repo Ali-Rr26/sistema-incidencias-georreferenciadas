@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Users\Models\User;
@@ -27,7 +28,7 @@ beforeEach(function (): void {
     // the explicit id and lets auto-increment assign whatever the
     // sequence happens to be at (see RoleSeederTest / the same
     // convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
+    Role::firstOrCreate(['name' => 'Admin']);
 
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Test Category']);

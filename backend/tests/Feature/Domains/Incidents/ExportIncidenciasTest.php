@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Reports\CsvExporter;
 use App\Domains\Incidents\Reports\PdfExporter;
@@ -32,7 +33,7 @@ use Illuminate\Support\Facades\Log;
  * triggered a router-matching glitch in the test environment we couldn't
  * isolate in time; the Spanish verb dodges it.
  *
- * Seeding pattern: raw `DB::table('roles')->insertOrIgnore(...)` + `User::factory()->create(['role_id' => 1])`
+ * Seeding pattern: raw `DB::table('roles')->insertOrIgnore(...)` + `User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id])`
  * mirrors `IncidentStatsControllerTest`. Going through the Eloquent `Role`
  * model in `beforeEach()` triggered the same routing glitch.
  */
@@ -46,7 +47,7 @@ beforeEach(function (): void {
         ['id' => 5, 'name' => UserRole::Usuario->value, 'created_at' => now(), 'updated_at' => now()],
     ]);
 
-    $this->admin = User::factory()->create(['role_id' => 1]);
+    $this->admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $this->location = Location::create(['name' => 'Ciudad de prueba', 'level' => 'city']);
     $this->otherLocation = Location::create(['name' => 'Otra ciudad', 'level' => 'city']);

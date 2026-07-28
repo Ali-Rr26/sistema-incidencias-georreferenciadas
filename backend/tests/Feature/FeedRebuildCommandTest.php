@@ -17,7 +17,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Seed role for UserFactory
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
+    Role::firstOrCreate(['name' => 'Admin']);
     $adminRoleId = Role::where('name', 'Admin')->first()->id;
 
     $user = User::factory()->create(['role_id' => $adminRoleId]);
