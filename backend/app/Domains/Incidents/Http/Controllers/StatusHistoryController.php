@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\StatusHistory\Interfaces;
+namespace App\Domains\Incidents\Http\Controllers;
 
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;

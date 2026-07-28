@@ -27,7 +27,7 @@ use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\OperatorDashboardController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
-use App\StatusHistory\Interfaces\StatusHistoryController;
+use App\Domains\Incidents\Http\Controllers\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public
