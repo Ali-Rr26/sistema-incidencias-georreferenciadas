@@ -885,3 +885,160 @@ it('applies both date range and location cascade together', function () {
     $response->assertOk()
         ->assertJsonPath('total', 2);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WU7 — pending_approval stat card
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The dashboard's "Pendientes de aprobación" card counts the number of
+// incidents currently waiting on an admin to approve or reject them —
+// i.e. status = 'resolved' (per IncidentApprovalService: the operator
+// marks the work done, then the admin has the final say). The field
+// MUST be scoped by the same `applyOrgScope` as `total` so an
+// admin_organizacion user only sees their own org's pending approvals.
+
+it('exposes pending_approval as an integer in the stats payload', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
+
+    $response->assertOk()
+        ->assertJsonStructure(['pending_approval']);
+
+    $pending = $response->json('pending_approval');
+    expect($pending)->toBeInt();
+});
+
+it('counts resolved incidents as pending_approval and ignores other statuses', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'HQ', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    // Two resolved → both are pending approval.
+    Incident::create([
+        'title' => 'Resuelta 1',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+    Incident::create([
+        'title' => 'Resuelta 2',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+
+    // One in_progress, one pending, one closed → none count.
+    Incident::create([
+        'title' => 'En progreso',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::InProgress,
+        'priority' => 'medium',
+    ]);
+    Incident::create([
+        'title' => 'Pendiente',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+    ]);
+    Incident::create([
+        'title' => 'Cerrada',
+        'incident_category_id' => $category->id,
+        'user_id' => $admin->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Closed,
+        'priority' => 'medium',
+    ]);
+
+    $response = $this->actingAs($admin)->getJson('/api/incidents/stats');
+
+    $response->assertOk()
+        ->assertJsonPath('pending_approval', 2);
+});
+
+it('scopes pending_approval to the user\'s organization for non-system admins', function () {
+    $this->withoutMiddleware(JwtAuthenticate::class);
+
+    DB::table('roles')->updateOrInsert(['id' => 1], ['name' => 'admin_sistema', 'updated_at' => now()]);
+    DB::table('roles')->updateOrInsert(['id' => 3], ['name' => 'admin_organizacion', 'updated_at' => now()]);
+
+    DB::table('permissions')->updateOrInsert(
+        ['resource' => 'dashboard', 'action' => 'view'],
+        ['name' => 'dashboard.view', 'description' => 'Ver estadísticas del dashboard', 'updated_at' => now()]
+    );
+    $permId = DB::table('permissions')
+        ->where('resource', 'dashboard')->where('action', 'view')
+        ->value('permission_id');
+    Gate::define('dashboard.view', fn (User $user) => $user->hasPermission('dashboard.view'));
+    DB::table('role_permission')->updateOrInsert(
+        ['role_id' => 3, 'permission_id' => $permId]
+    );
+
+    $location1 = Location::create(['name' => 'City1', 'level' => 'city']);
+    $location2 = Location::create(['name' => 'City2', 'level' => 'city']);
+    $org1 = Organization::create(['name' => 'Org1', 'location_id' => $location1->id]);
+    $org2 = Organization::create(['name' => 'Org2', 'location_id' => $location2->id]);
+
+    $operator1 = User::factory()->create(['role_id' => 3, 'organization_id' => $org1->id]);
+    $admin = User::factory()->create(['role_id' => 1]);
+
+    $cat1 = IncidentCategory::create(['name' => 'General', 'organization_id' => $org1->id]);
+    $cat2 = IncidentCategory::create(['name' => 'General', 'organization_id' => $org2->id]);
+
+    // Org1 has 2 resolved waiting approval.
+    Incident::create([
+        'title' => 'Org1 Resolved A',
+        'incident_category_id' => $cat1->id,
+        'user_id' => $admin->id,
+        'location_id' => $location1->id,
+        'organization_id' => $org1->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+    Incident::create([
+        'title' => 'Org1 Resolved B',
+        'incident_category_id' => $cat1->id,
+        'user_id' => $admin->id,
+        'location_id' => $location1->id,
+        'organization_id' => $org1->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+
+    // Org2 has 1 resolved waiting approval — must NOT leak into Org1's view.
+    Incident::create([
+        'title' => 'Org2 Resolved',
+        'incident_category_id' => $cat2->id,
+        'user_id' => $admin->id,
+        'location_id' => $location2->id,
+        'organization_id' => $org2->id,
+        'status' => IncidentStatus::Resolved,
+        'priority' => 'medium',
+    ]);
+
+    $response = $this->actingAs($operator1)->getJson('/api/incidents/stats');
+
+    $response->assertOk()
+        ->assertJsonPath('pending_approval', 2);
+});

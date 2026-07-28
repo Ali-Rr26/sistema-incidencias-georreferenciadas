@@ -152,6 +152,15 @@ class IncidentStatsController extends Controller
                 ->when($validated['provincia_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'provincia_id', $validated['provincia_id']))
                 ->when($validated['pais_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'pais_id', $validated['pais_id']))
                 ->count(),
+            'pending_approval' => $this->applyOrgScope(Incident::query())
+                ->where('status', IncidentStatus::Resolved->value)
+                ->when($validated['inicio'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '>=', $validated['inicio']))
+                ->when($validated['fin'] ?? null, fn (Builder $q) => $q->whereDate('created_at', '<=', $validated['fin']))
+                ->when($validated['tipo_id'] ?? null, fn (Builder $q) => $q->where('incident_category_id', $validated['tipo_id']))
+                ->when($validated['ciudad_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'ciudad_id', $validated['ciudad_id']))
+                ->when($validated['provincia_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'provincia_id', $validated['provincia_id']))
+                ->when($validated['pais_id'] ?? null, fn (Builder $q) => $this->applyLocationFilterEloquent($q, 'pais_id', $validated['pais_id']))
+                ->count(),
             'by_status' => $this->groupCounts('status', IncidentStatus::values(), $validated),
             'by_priority' => $this->groupCounts('priority', IncidentPriority::values(), $validated),
             'recent_count' => $this->applyOrgScope(
