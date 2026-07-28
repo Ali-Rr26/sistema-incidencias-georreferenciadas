@@ -1,14 +1,19 @@
 import template from './notificaciones-index.component.html?raw';
+import style from './notificaciones-index.component.css?raw';
 import { notificationService } from '../../../shared/notification.service.js';
 import { mostrarToast } from '../../../utils/ui.js';
 import { router } from '../../../core/router.js';
 import { timeAgo } from '../../../utils/format.js';
 
 const APPROVAL_TYPE = 'incidencia_atendida_para_aprobacion';
-// Per-page cap for the admin approval queue. 200 is large enough for the
+// Per-page cap for the notification queue. 200 is large enough for the
 // realistic worst case (one admin × many pending approvals in a busy org)
 // while still bounding response size. Per-CodeRabbit feedback on PR #227.
 const QUEUE_PAGE_SIZE = 200;
+// Default filter is 'all' (no type filter applied). The header counter
+// surfaces how many of those are pending approval so admins land on the
+// page knowing the workload without being limited to that subset.
+const DEFAULT_FILTER = '';
 
 /**
  * Build one notification <article> using DOM APIs (textContent /
@@ -229,8 +234,9 @@ function buildEmpty(message, modifier = 'muted') {
 
 export default {
   template,
+  style,
   async onInit() {
-    const state = { notifications: [], filter: APPROVAL_TYPE };
+    const state = { notifications: [], filter: DEFAULT_FILTER };
     const list = document.getElementById('notificaciones-lista');
     const filter = document.getElementById('notificaciones-filtro');
     const pendingValue = document.getElementById('notificaciones-pending-value');

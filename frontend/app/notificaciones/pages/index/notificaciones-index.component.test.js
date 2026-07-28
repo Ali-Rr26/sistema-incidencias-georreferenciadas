@@ -55,8 +55,8 @@ async function mount() {
       </div>
       <div class="gr-card gr-filters">
         <select id="notificaciones-filtro" class="gr-select">
-          <option value="${APPROVAL_TYPE}">Aprobación</option>
           <option value="">Todas</option>
+          <option value="${APPROVAL_TYPE}">Aprobación</option>
         </select>
       </div>
       <div class="gr-card" id="notificaciones-lista" aria-live="polite">
@@ -180,6 +180,36 @@ describe('notificaciones-index — WU-1 row context', () => {
     const { pendingValue } = await mount();
     expect(pendingValue.textContent).toBe('0');
     expect(pendingValue.dataset.empty).toBe('true');
+  });
+
+  it('component exposes `style` so the router injects the scoped CSS (regression guard)', async () => {
+    mockService.list.mockResolvedValue({ data: [], meta: null });
+    const { default: component } = await import(
+      './notificaciones-index.component.js'
+    );
+    // Without `style`, the router would skip injecting the component CSS
+    // entirely — see router.js:_mountPage. The page would render with
+    // zero component-scoped styles, looking like "sin estilo".
+    expect(typeof component.style).toBe('string');
+    expect(component.style.length).toBeGreaterThan(0);
+    expect(component.style).toMatch(/\.notification-row/);
+    expect(component.style).toMatch(/\.gr-status/);
+  });
+
+  it('default filter loads ALL notification types, not just approvals (regression guard)', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        makeApproval({ id: 1 }),
+        { ...makeApproval({ id: 2, incidentTitle: 'Reclamo de vecino' }), type: 'claim' },
+        { ...makeApproval({ id: 3, incidentTitle: 'Cambio de estado' }), type: 'status_change' },
+      ],
+      meta: null,
+    });
+    const { list, pendingValue } = await mount();
+    // All three rows render regardless of type — the default filter is
+    // "all". The header counter still tracks only the approval subset.
+    expect(list.querySelectorAll('.notification-row')).toHaveLength(3);
+    expect(pendingValue.textContent).toBe('1');
   });
 });
 
