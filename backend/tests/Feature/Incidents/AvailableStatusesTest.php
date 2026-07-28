@@ -17,10 +17,11 @@ it('returns available statuses from IncidentStatus enum as plain array', functio
         ->and($data)->not->toHaveKey('data');
 
     // Should contain defined statuses
-    expect(count($data))->toBe(3);
+    expect(count($data))->toBe(4);
 
     // Verify structure and values
     expect($data[0])->toMatchArray(['id' => 1, 'nombre' => 'Pendiente', 'valor' => 'pending']);
     expect($data[1])->toMatchArray(['id' => 2, 'nombre' => 'En proceso', 'valor' => 'in_progress']);
     expect($data[2])->toMatchArray(['id' => 3, 'nombre' => 'Resuelto', 'valor' => 'resolved']);
+    expect($data[3])->toMatchArray(['id' => 4, 'nombre' => 'Cerrado', 'valor' => 'closed']);
 });

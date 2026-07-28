@@ -9,6 +9,7 @@ enum IncidentStatus: string
     case Pending = 'pending';
     case InProgress = 'in_progress';
     case Resolved = 'resolved';
+    case Closed = 'closed';
 
     /**
      * Backing string values for every case.
@@ -50,6 +51,7 @@ enum IncidentStatus: string
             self::Pending => 'Pendiente',
             self::InProgress => 'En proceso',
             self::Resolved => 'Resuelto',
+            self::Closed => 'Cerrado',
         };
     }
 

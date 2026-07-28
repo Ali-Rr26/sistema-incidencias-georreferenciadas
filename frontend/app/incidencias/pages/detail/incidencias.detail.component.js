@@ -25,7 +25,7 @@ const VALID_TRANSITIONS = {
   resolved: [],
 };
 
-// CP-02-01-F: todos los estados visibles en dropdown (Cerrado sin soporte backend)
+// CP-02-01-F: todos los estados visibles en dropdown
 const DROPDOWN_STATUSES = [
   { value: 'pending', label: 'Pendiente' },
   { value: 'in_progress', label: 'En Proceso' },

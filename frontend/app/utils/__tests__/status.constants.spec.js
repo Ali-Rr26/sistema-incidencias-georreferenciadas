@@ -11,12 +11,14 @@ describe('status.constants.js (codegen determinism)', () => {
     expect(STATUS_LABEL).toHaveProperty('pending');
     expect(STATUS_LABEL).toHaveProperty('in_progress');
     expect(STATUS_LABEL).toHaveProperty('resolved');
+    expect(STATUS_LABEL).toHaveProperty('closed');
   });
 
   it('maps each status to a Spanish display label', () => {
     expect(STATUS_LABEL.pending).toBe('Pendiente');
     expect(STATUS_LABEL.in_progress).toBe('En proceso');
     expect(STATUS_LABEL.resolved).toBe('Resuelto');
+    expect(STATUS_LABEL.closed).toBe('Cerrado');
   });
 
   it('is frozen (immutable) to prevent accidental mutation', () => {

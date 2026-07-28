@@ -86,6 +86,7 @@ export const STATUS_COLOR = Object.freeze({
   pending: 'secondary',
   in_progress: 'primary',
   resolved: 'success',
+  closed: '#6c757d',
   pending_operator: 'warning',
 });
 

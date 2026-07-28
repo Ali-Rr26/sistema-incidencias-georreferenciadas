@@ -3,6 +3,7 @@
 
 /** Map from incident status keys (string) to their canonical Spanish display label. */
 export const STATUS_LABEL = Object.freeze({
+  "closed": "Cerrado",
   "in_progress": "En proceso",
   "pending": "Pendiente",
   "resolved": "Resuelto",

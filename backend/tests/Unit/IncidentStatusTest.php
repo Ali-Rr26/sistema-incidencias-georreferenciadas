@@ -25,6 +25,7 @@ it('returns the canonical Spanish label for every case', function (IncidentStatu
     'pending' => [IncidentStatus::Pending, 'Pendiente'],
     'in_progress' => [IncidentStatus::InProgress, 'En proceso'],
     'resolved' => [IncidentStatus::Resolved, 'Resuelto'],
+    'closed' => [IncidentStatus::Closed, 'Cerrado'],
 ]);
 
 it('keeps every case represented exactly once', function (): void {
@@ -42,5 +43,6 @@ it('uses every case in the label map roundtrip', function (): void {
         'pending' => 'Pendiente',
         'in_progress' => 'En proceso',
         'resolved' => 'Resuelto',
+        'closed' => 'Cerrado',
     ]);
 });
