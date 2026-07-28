@@ -16,6 +16,12 @@ class PermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'create', 'name' => 'Crear Incidencias',           'description' => 'Registrar nuevas incidencias'],
         ['resource' => 'incidents',           'action' => 'update', 'name' => 'Actualizar Incidencias',      'description' => 'Modificar incidencias existentes'],
         ['resource' => 'incidents',           'action' => 'delete', 'name' => 'Eliminar Incidencias',        'description' => 'Eliminar incidencias'],
+            // Aprobar/rechazar la transición resolved → closed/in_progress.
+            // WU6 del change incident-approval-workflow: el detail page
+            // muestra los botones Aprobar/Rechazar sólo si el usuario tiene
+            // este permiso y la incidencia está en `resolved`. Admin_sistema
+            // y admin_organizacion lo reciben vía RolePermissionSeeder.
+            ['resource' => 'incidents',           'action' => 'approve', 'name' => 'Aprobar/Rechazar Incidencias', 'description' => 'Aprobar (→closed) o rechazar (→in_progress) incidencias resueltas'],
         // Comments
         ['resource' => 'comments',            'action' => 'view',   'name' => 'Ver Comentarios',             'description' => 'Ver comentarios de incidencias'],
         ['resource' => 'comments',            'action' => 'create', 'name' => 'Agregar Comentarios',         'description' => 'Comentar en incidencias'],
