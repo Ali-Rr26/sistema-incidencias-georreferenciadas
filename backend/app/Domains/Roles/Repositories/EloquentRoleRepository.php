@@ -51,16 +51,8 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
             ->wherePivotNull('deleted_at')
             ->pluck('role_permission.permission_id')
             ->toArray();
-        $toAdd = array_diff($permissionIds, $current);
+$toAdd = array_diff($permissionIds, $current);
         $toRemove = array_diff($current, $permissionIds);
-
-        \Log::info('SyncPermissions debug', [
-            'roleId' => $roleId,
-            'requested' => $permissionIds,
-            'current' => $current,
-            'toAdd' => $toAdd,
-            'toRemove' => $toRemove,
-        ]);
 
         // Soft delete permisos que no están en la nueva lista
         if (! empty($toRemove)) {
@@ -76,8 +68,6 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
                 ->whereNotNull('deleted_at')
                 ->pluck('permission_id')
                 ->toArray();
-
-            \Log::info('Reasigned identified', ['roleId' => $roleId, 'toAdd' => $toAdd, 'reasigned' => $reasigned]);
 
             // Force delete registros soft-deleted que van a ser reasignados
             if (! empty($reasigned)) {
