@@ -257,4 +257,40 @@ describe('permissionGuard', () => {
     expect(result).toBe(false);
     expect(window.location.hash).toBe('#/not-found');
   });
+
+  // ─── sc-123 / #150: /notificaciones has no menu entry but is reachable
+  //     via the bell "Ver todas" footer. The guard must allow admin users
+  //     who hold notifications.update, and deny anyone else (citizens,
+  //     operadores without the grant).
+
+  it('allows /notificaciones when user holds notifications.update and route is not in menu (sc-123 / #150)', async () => {
+    window.location.hash = '#/notificaciones';
+    mockMenuService.getMyMenu.mockResolvedValue([
+      // Admin's menu — note: no /notificaciones entry (MenuSeeder removed
+      // it; the bell dropdown is the entry point instead).
+      { id: 1, name: 'Dashboard', route: '/dashboard', children: [] },
+      { id: 2, name: 'Usuarios', route: '/usuarios', children: [] },
+    ]);
+    mockPermissionService.getMyPermissions.mockResolvedValue(
+      new Set(['notifications.update']),
+    );
+
+    const result = await permissionGuard.canActivate({});
+
+    expect(result).toBe(true);
+    expect(window.location.hash).toBe('#/notificaciones');
+  });
+
+  it('blocks /notificaciones when user lacks notifications.update (sc-123 / #150)', async () => {
+    window.location.hash = '#/notificaciones';
+    mockMenuService.getMyMenu.mockResolvedValue([]);
+    mockPermissionService.getMyPermissions.mockResolvedValue(
+      new Set(['incidents.view']), // operador_organizacion-shaped grant
+    );
+
+    const result = await permissionGuard.canActivate({});
+
+    expect(result).toBe(false);
+    expect(window.location.hash).toBe('#/not-found');
+  });
 });

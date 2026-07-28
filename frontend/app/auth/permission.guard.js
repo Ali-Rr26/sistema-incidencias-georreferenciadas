@@ -51,6 +51,14 @@ const CHILD_ROUTE_PERMISSIONS = {
   // permission system instead of a hardcoded role name.
   '/roles/crear': 'roles.create',
   '/roles/:id': 'roles.update',
+  // sc-123 / #150: /notificaciones has no menu entry (MenuSeeder.php:24-26
+  // removed it; the admin bell dropdown is the entry point instead). The
+  // permissionGuard reads the menu tree as its source of truth, so without
+  // an explicit entry here every admin — even admin_sistema — would be
+  // bounced to /not-found when clicking the bell's "Ver todas" link.
+  // Gated by the raw `notifications.update` grant, which both
+  // admin_sistema and admin_organizacion hold (RolePermissionSeeder).
+  '/notificaciones': 'notifications.update',
 };
 
 /**
