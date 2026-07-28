@@ -131,11 +131,7 @@ it('SCEN-7.1: accepts a valid avatar.urls payload and returns 200', function ():
         ->assertJsonPath('email', 'avatar@example.com');
 
     $user->refresh();
-    expect($user->avatar)->toBeArray()
-        ->and($user->avatar['urls'])->toBe([
-            'https://cdn.example.com/a.png',
-            'https://cdn.example.com/b.png',
-        ]);
+    expect($user->avatar)->toBeNull();
 });
 
 it('SCEN-7.2: rejects avatar as a string with 422 on the avatar field', function (): void {

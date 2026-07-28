@@ -37,4 +37,29 @@ class InvitationAcceptController
 
         return response()->json(['message' => __('messages.account_activated')], JsonResponse::HTTP_OK);
     }
+
+    /**
+     * Preview de los metadatos de una invitación SIN consumirla.
+     *
+     * GET /api/invitations/{token}/preview
+     *
+     * Pensado para que el frontend de /accept-invite muestre org,
+     * invitador, rol y expiración ANTES de pedirle al usuario que
+     * tipee su contraseña. Read-only: el token queda intacto y puede
+     * ser consumido por `accept` luego.
+     *
+     * Estado HTTP:
+     *   200 → payload con org/invitador/role/expiración (token pendiente)
+     *   404 → token desconocido (InvitationNotFoundException)
+     *   410 → token expirado o ya consumido (InvitationGoneException)
+     *
+     * @throws InvitationNotFoundException cuando el token no existe (404)
+     * @throws InvitationGoneException cuando el token está expirado o consumido (410)
+     */
+    public function preview(string $token): JsonResponse
+    {
+        $resource = $this->invitationService->previewInvitation($token);
+
+        return response()->json($resource->resolve());
+    }
 }

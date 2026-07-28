@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Users\Models\User;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -25,7 +26,7 @@ it('produces the generated file when run with no flags', function (): void {
     // AUTO-GENERATED banner is the contract.
     expect($contents)
         ->toContain('AUTO-GENERATED')
-        ->toContain('AVATAR_MAX_KB = 800')
+        ->toContain('AVATAR_MAX_KB = '.User::AVATAR_MAX_KB)
         ->toContain('ACCEPTED_MIME_TYPES = Object.freeze')
         ->toContain('"image/jpeg"')
         ->toContain('"image/png"')

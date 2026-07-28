@@ -65,13 +65,7 @@ class HttpService {
       options.body = body instanceof FormData ? body : JSON.stringify(body);
     }
 
-    // Convert relative URLs to absolute for jsdom test environment
-    let fullUrl = `${this.baseUrl}${path}`;
-    if (!fullUrl.startsWith('http')) {
-      fullUrl = `http://localhost:8000${fullUrl}`;
-    }
-
-    const res = await fetch(fullUrl, options);
+    const res = await fetch(`${this.baseUrl}${path}`, options);
 
     // 401 → token inválido/expirado, intentar refresh
     if (res.status === 401) {
@@ -120,6 +114,11 @@ class HttpService {
     if (!res.ok) {
       const err = new Error(data.message || 'Error en la solicitud');
       err.status = res.status;
+      // `code` opcional para errores estructurados por el backend
+      // (ej: `email_not_verified` del flujo de verificación de
+      // correo — story sc-117). Permite al frontend dispatchar
+      // flujos diferenciados sin parsear el `message` (i18n-fragile).
+      if (data.code) err.code = data.code;
       err.errors = data.errors;
       throw err;
     }
@@ -176,13 +175,7 @@ class HttpService {
   }
 
   async doRefresh() {
-    // Convert relative URLs to absolute for jsdom test environment
-    let fullUrl = `${this.baseUrl}/auth/refresh`;
-    if (!fullUrl.startsWith('http')) {
-      fullUrl = `http://localhost:8000${fullUrl}`;
-    }
-
-    const res = await fetch(fullUrl, {
+    const res = await fetch(`${this.baseUrl}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });

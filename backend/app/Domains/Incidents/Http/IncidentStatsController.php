@@ -219,17 +219,22 @@ class IncidentStatsController extends Controller
     private function calculateTrends(array $validated): array
     {
         // Determine current period
-        if (! empty($validated['inicio']) && ! empty($validated['fin'])) {
-            $currentStart = Carbon::createFromFormat('Y-m-d', $validated['inicio']);
-            $currentEnd = Carbon::createFromFormat('Y-m-d', $validated['fin']);
+        if (! empty($validated['inicio']) || ! empty($validated['fin'])) {
+            $currentStart = ! empty($validated['inicio'])
+                ? Carbon::createFromFormat('Y-m-d', $validated['inicio'])->startOfDay()
+                : Carbon::createFromFormat('Y-m-d', $validated['fin'])->subDays(30)->startOfDay();
+
+            $currentEnd = ! empty($validated['fin'])
+                ? Carbon::createFromFormat('Y-m-d', $validated['fin'])->endOfDay()
+                : now();
         } else {
             $currentStart = now()->startOfMonth();
             $currentEnd = now();
         }
 
-        $daysInPeriod = $currentStart->diffInDays($currentEnd) + 1;
+        $daysInPeriod = max(1, (int) $currentStart->diffInDays($currentEnd) + 1);
         $previousStart = $currentStart->copy()->subDays($daysInPeriod);
-        $previousEnd = $currentStart->copy()->subDay();
+        $previousEnd = $currentStart->copy()->subSecond();
 
         // Fetch current period totals
         $pendingStatus = IncidentStatus::Pending->value;
@@ -250,9 +255,9 @@ class IncidentStatsController extends Controller
             )
             ->first();
 
-        $currentTotal = $current->total ?? 0;
-        $currentPendientes = $current->pendientes ?? 0;
-        $currentResueltas = $current->resueltas ?? 0;
+        $currentTotal = (int) ($current->total ?? 0);
+        $currentPendientes = (int) ($current->pendientes ?? 0);
+        $currentResueltas = (int) ($current->resueltas ?? 0);
 
         // Fetch previous period totals (same filters)
         $previous = $this->applyOrgScope(
@@ -266,17 +271,24 @@ class IncidentStatsController extends Controller
             ->selectRaw("COUNT(*) as total, SUM(CASE WHEN status = '{$pendingStatus}' THEN 1 ELSE 0 END) as pendientes")
             ->first();
 
-        $previousTotal = $previous->total ?? 0;
-        $previousPendientes = $previous->pendientes ?? 0;
+        $previousTotal = (int) ($previous->total ?? 0);
+        $previousPendientes = (int) ($previous->pendientes ?? 0);
 
         // Calculate percentages
-        $totalPct = null;
-        $pendientesPct = null;
         if ($previousTotal > 0) {
             $totalPct = round((($currentTotal - $previousTotal) / $previousTotal) * 100, 2);
+        } elseif ($currentTotal > 0) {
+            $totalPct = 100.0;
+        } else {
+            $totalPct = 0.0;
         }
+
         if ($previousPendientes > 0) {
             $pendientesPct = round((($currentPendientes - $previousPendientes) / $previousPendientes) * 100, 2);
+        } elseif ($currentPendientes > 0) {
+            $pendientesPct = 100.0;
+        } else {
+            $pendientesPct = 0.0;
         }
 
         $resolutionRatePct = $currentTotal > 0 ? (int) round(($currentResueltas / $currentTotal) * 100) : null;

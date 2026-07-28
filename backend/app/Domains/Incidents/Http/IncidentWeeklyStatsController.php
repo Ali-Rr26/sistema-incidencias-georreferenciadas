@@ -8,10 +8,12 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Concerns\ScopesIncidentQueries;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Users\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +26,8 @@ use Illuminate\Support\Facades\DB;
 class IncidentWeeklyStatsController extends Controller
 {
     use ScopesIncidentQueries;
+
+    private const int CACHE_TTL_SECONDS = 3600;
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -49,23 +53,41 @@ class IncidentWeeklyStatsController extends Controller
             }
         }
 
-        // Determine date range
+        $cacheKey = $this->buildCacheKey($request->user(), $validated);
+        $days = Cache::tags(['incident-stats'])->remember(
+            $cacheKey,
+            self::CACHE_TTL_SECONDS,
+            fn (): array => $this->buildDailySeries($validated),
+        );
+
+        return response()->json(['days' => $days]);
+    }
+
+    private function buildCacheKey(?User $user, array $validated): string
+    {
+        $scope = match (true) {
+            $user === null => 'anonymous',
+            $user->isSystemAdmin() => 'system',
+            $user->isOrganizationAdmin(), $user->isOperator() => 'org:'.$user->organization_id,
+            default => 'user:'.$user->id,
+        };
+
+        return 'incident-weekly-stats:'.$scope.':'.hash('xxh3', serialize($validated));
+    }
+
+    private function buildDailySeries(array $validated): array
+    {
         if (! empty($validated['inicio']) && ! empty($validated['fin'])) {
-            $startDate = Carbon::createFromFormat('Y-m-d', $validated['inicio']);
-            $endDate = Carbon::createFromFormat('Y-m-d', $validated['fin']);
+            $startDate = Carbon::createFromFormat('Y-m-d', $validated['inicio'])->startOfDay();
+            $endDate = Carbon::createFromFormat('Y-m-d', $validated['fin'])->endOfDay();
         } else {
-            // Default: last 10 days
-            $endDate = now();
-            $startDate = now()->subDays(9);
+            $endDate = now()->endOfDay();
+            $startDate = now()->subDays(9)->startOfDay();
         }
 
-        // Fetch received incidents (grouped by created_at date)
         $received = $this->fetchDailyCounts('created_at', $startDate, $endDate, $validated);
-
-        // Fetch resolved incidents (grouped by resolution_date date)
         $resolved = $this->fetchDailyCounts('resolution_date', $startDate, $endDate, $validated, IncidentStatus::Resolved->value);
 
-        // Build 7-day series (or custom range)
         $days = [];
         $current = $startDate->copy();
         while ($current->lte($endDate)) {
@@ -82,7 +104,7 @@ class IncidentWeeklyStatsController extends Controller
             $current->addDay();
         }
 
-        return response()->json(['days' => $days]);
+        return $days;
     }
 
     /**
