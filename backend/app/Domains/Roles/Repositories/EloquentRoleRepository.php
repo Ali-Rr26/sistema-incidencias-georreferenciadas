@@ -51,7 +51,7 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
             ->wherePivotNull('deleted_at')
             ->pluck('role_permission.permission_id')
             ->toArray();
-$toAdd = array_diff($permissionIds, $current);
+        $toAdd = array_diff($permissionIds, $current);
         $toRemove = array_diff($current, $permissionIds);
 
         // Soft delete permisos que no están en la nueva lista
