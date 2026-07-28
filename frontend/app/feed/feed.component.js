@@ -255,6 +255,8 @@ export default {
     // ── Fetch stats for today ──
     async function fetchStats() {
       try {
+        // Gate stats fetch: only attempt if user has dashboard.view permission.
+        // Guests and unauthorized users will get 403 — don't spam console.
         const today = new Date().toLocaleDateString('en-CA');
         const params = new URLSearchParams({
           inicio: today,
@@ -265,7 +267,9 @@ export default {
         );
 
         // Parse stats and update UI
-        const newCount = statsData.by_status?.pending ?? 0;
+        // "Nuevas hoy" = total incidents created today (not just pending)
+        // "Resueltas hoy" = incidents resolved today (by resolved_at, not created_at)
+        const newCount = statsData.total ?? 0;
         const resolvedCount = statsData.by_status?.resolved ?? 0;
         const avgTime = statsData.average_resolution_time?.formatted ?? 'N/A';
 
@@ -287,6 +291,10 @@ export default {
         if (rpStatResolvedEl) rpStatResolvedEl.textContent = resolvedCount;
         if (rpStatAvgEl) rpStatAvgEl.textContent = avgTime;
       } catch (error) {
+        // Ignore 403 Forbidden (unauthorized users and guests have no dashboard.view)
+        if (error.response?.status === 403) {
+          return;
+        }
         console.error('[feed] Error fetching stats:', error);
       }
     }

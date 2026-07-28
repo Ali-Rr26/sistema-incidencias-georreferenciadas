@@ -18,11 +18,16 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
+    // insertOrIgnore with pinned id and assert the role exists after setup.
+    // Fail setup if the expected role is missing (better than silent test pass
+    // with wrong permissions).
     DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
+    $adminRole = Role::where('name', 'admin_sistema')->first();
+    expect($adminRole)->not->toBeNull();
 
-    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+    $user = User::factory()->create(['role_id' => $adminRole->id]);
     $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
     $organization = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Test Category', 'organization_id' => $organization->id]);

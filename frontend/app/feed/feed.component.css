@@ -204,7 +204,7 @@
 @media (min-width: 992px) {
   .feed-scroll-region {
     max-height: calc(100dvh - 240px);
-    overflow: hidden !important;
+    overflow-x: hidden;
     overflow-y: auto;
   }
   @supports not (height: 100dvh) {
@@ -574,9 +574,10 @@ body.feed-view {
   pointer-events: none;
 }
 
-.feed-filter-content:not(.d-none) {
+.feed-filter-content:not(.feed-filter-collapsed) {
   max-height: 500px;
   opacity: 1;
+  visibility: visible;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════

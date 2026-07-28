@@ -37,7 +37,7 @@ const FEED_TEMPLATE = `
         <div class="fw-bold">Filtrar feed</div>
         <i class="fa-solid fa-chevron-down feed-filter-chevron"></i>
       </div>
-      <div id="feed-filter-content" class="feed-filter-content d-none">
+      <div id="feed-filter-content" class="feed-filter-content feed-filter-collapsed">
         <div class="feed-filters d-flex flex-wrap gap-2 mt-3" id="feed-filters">
           <button class="feed-chip active btn btn-outline-primary btn-sm" data-status="">Todo</button>
           <button class="feed-chip btn btn-outline-primary btn-sm" data-status="pending">Pendientes</button>
