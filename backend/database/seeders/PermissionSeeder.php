@@ -58,6 +58,9 @@ class PermissionSeeder extends Seeder
         ['resource' => 'roles',               'action' => 'delete', 'name' => 'Eliminar Roles',              'description' => 'Eliminar roles'],
         // Incidents: back-office create/manage (distinto de incidents.create, que es ciudadano)
         ['resource' => 'incidents',           'action' => 'manage', 'name' => 'Gestionar Incidencias (Back-office)', 'description' => 'Crear/gestionar incidencias desde el back-office'],
+        // Aprobación de resoluciones: separado de incidents.update a propósito,
+        // porque quien resuelve (operador_organizacion) no puede auto-aprobarse.
+        ['resource' => 'incidents',           'action' => 'approve', 'name' => 'Aprobar Resoluciones',            'description' => 'Aprobar o rechazar la resolución de una incidencia'],
         // Feed ciudadano (Inicio + Reportar)
         ['resource' => 'feed',                'action' => 'view',   'name' => 'Ver Feed',                   'description' => 'Acceso al feed ciudadano de incidencias'],
         // Detalle de incidencia desde el feed ciudadano

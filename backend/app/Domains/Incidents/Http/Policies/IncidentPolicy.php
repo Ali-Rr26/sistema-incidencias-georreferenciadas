@@ -98,6 +98,39 @@ class IncidentPolicy extends PermissionPolicy
     }
 
     /**
+     * Decidir (aprobar/rechazar) la resolución de una incidencia.
+     *
+     * Exige `incidents.approve` — permiso propio, no `incidents.update`:
+     * operador_organizacion tiene update y es justamente quien resuelve la
+     * incidencia, así que reusarlo lo dejaría auto-aprobarse.
+     *
+     * Sólo responde *quién*. El estado de la incidencia (resuelta, sin
+     * decisión previa) lo valida IncidentApprovalService, fuera del
+     * alcance de `Gate::before`.
+     *
+     * Usa `hasPermission()` y no `can()` como sus vecinos: `can()` resuelve
+     * contra los gates que AppServiceProvider define en boot a partir de
+     * `Permission::all()`, así que un permiso agregado después del boot
+     * (caso típico en tests que siembran permisos en setUp) nunca tiene
+     * gate y devuelve false. `hasPermission()` consulta role_permission
+     * directo. El bypass de admin sigue vivo: ocurre antes, en
+     * `Gate::before`.
+     */
+    public function approve(User $user, Incident $incident): bool
+    {
+        if (! $user->hasPermission('incidents.approve')) {
+            return false;
+        }
+
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        return $incident->organization_id !== null
+            && $incident->organization_id === $user->organization_id;
+    }
+
+    /**
      * Cambiar el estado exige, además del permiso de update, estar asignado
      * como `responsable` de la incidencia — sin importar el rol. Un request
      * que repite el estado actual es un no-op y no exige responsable.
