@@ -27,7 +27,7 @@ class RoleSeeder extends Seeder
         // Guarantees FK visibility in same transaction for RolePermissionSeeder.
         foreach (self::ROLES as $role) {
             DB::statement(
-                'INSERT INTO roles (id, name) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name',
+                'INSERT INTO roles (id, name) VALUES (?, ?) ON CONFLICT (name) DO UPDATE SET id = EXCLUDED.id',
                 [$role['id'], $role['name']],
             );
 
