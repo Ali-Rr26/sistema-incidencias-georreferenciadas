@@ -257,7 +257,7 @@ it('staff feed respects per_page and paginates', function (): void {
 
 it('staff feed requires incidents.view permission', function (): void {
     // Create a throwaway role with NO permissions at all.
-    $noPermRole = Role::create(['name' => 'sin_permisos']);
+    $noPermRole = Role::firstOrCreate(['name' => 'sin_permisos']);
     $user = User::factory()->create(['role_id' => $noPermRole->id]);
 
     $response = $this->actingAs($user)->getJson('/api/incidents/feed');

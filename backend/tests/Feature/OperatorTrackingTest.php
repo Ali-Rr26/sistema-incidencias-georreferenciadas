@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -18,6 +19,11 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $this->seed(RoleSeeder::class);
     $this->seed(RolePermissionSeeder::class);
+
+    // Fetch role IDs by name to avoid hardcoding
+    $this->adminSistemaRoleId = Role::where('name', 'admin_sistema')->first()->id;
+    $this->adminOrganizacionRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+    $this->operadorOrganizacionRoleId = Role::where('name', 'operador_organizacion')->first()->id;
 
     // Create a base location
     $this->location = Location::create([
@@ -40,21 +46,21 @@ beforeEach(function (): void {
 
     // Create Operators
     $this->operatorA1 = User::factory()->create([
-        'role_id' => 4, // operador_organizacion
+        'role_id' => $this->operadorOrganizacionRoleId,
         'organization_id' => $this->orgA->id,
         'first_name' => 'Operator',
         'last_name' => 'A1',
     ]);
 
     $this->operatorA2 = User::factory()->create([
-        'role_id' => 4, // operador_organizacion
+        'role_id' => $this->operadorOrganizacionRoleId,
         'organization_id' => $this->orgA->id,
         'first_name' => 'Operator',
         'last_name' => 'A2',
     ]);
 
     $this->operatorB1 = User::factory()->create([
-        'role_id' => 4, // operador_organizacion
+        'role_id' => $this->operadorOrganizacionRoleId,
         'organization_id' => $this->orgB->id,
         'first_name' => 'Operator',
         'last_name' => 'B1',
@@ -62,13 +68,13 @@ beforeEach(function (): void {
 
     // AdminOrganizacion for Org A
     $this->adminA = User::factory()->create([
-        'role_id' => 3, // admin_organizacion
+        'role_id' => $this->adminOrganizacionRoleId,
         'organization_id' => $this->orgA->id,
     ]);
 
     // SystemAdmin
     $this->systemAdmin = User::factory()->create([
-        'role_id' => 1, // admin_sistema
+        'role_id' => $this->adminSistemaRoleId,
         'organization_id' => null,
     ]);
 });

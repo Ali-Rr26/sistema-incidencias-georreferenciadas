@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Seed role for UserFactory (role_id=1)
+    // Seed role for UserFactory
     DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
+    $adminRoleId = Role::where('name', 'Admin')->first()->id;
 
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role_id' => $adminRoleId]);
     $category = IncidentCategory::create(['name' => 'Test']);
     $location = Location::create(['name' => 'Test Loc', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

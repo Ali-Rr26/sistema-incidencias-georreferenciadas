@@ -75,7 +75,7 @@ describe('CRUD — admin_sistema bypass', function (): void {
 
     it('update — modifies a role name', function (): void {
         $admin = User::factory()->create(['role_id' => 1]);
-        $role = Role::create(['name' => 'old_name']);
+        $role = Role::firstOrCreate(['name' => 'old_name']);
 
         $response = $this->actingAs($admin)->putJson("/api/roles/{$role->id}", [
             'name' => 'new_name',
@@ -87,7 +87,7 @@ describe('CRUD — admin_sistema bypass', function (): void {
 
     it('destroy — soft-deletes a role', function (): void {
         $admin = User::factory()->create(['role_id' => 1]);
-        $role = Role::create(['name' => 'temporal']);
+        $role = Role::firstOrCreate(['name' => 'temporal']);
 
         $response = $this->actingAs($admin)->deleteJson("/api/roles/{$role->id}");
 
@@ -101,7 +101,7 @@ describe('syncPermissions', function (): void {
 
     it('syncs permissions to a role', function (): void {
         $admin = User::factory()->create(['role_id' => 1]);
-        $role = Role::create(['name' => 'rol_con_permisos']);
+        $role = Role::firstOrCreate(['name' => 'rol_con_permisos']);
         $permIds = Permission::where('resource', 'users')
             ->pluck('permission_id')
             ->values()
@@ -117,7 +117,7 @@ describe('syncPermissions', function (): void {
 
     it('forbids non-admin from syncing permissions', function (): void {
         $operator = User::factory()->create(['role_id' => 2]);
-        $role = Role::create(['name' => 'rol_protegido']);
+        $role = Role::firstOrCreate(['name' => 'rol_protegido']);
 
         $response = $this->actingAs($operator)->putJson("/api/roles/{$role->id}/permissions", [
             'permissions' => [],
@@ -129,7 +129,7 @@ describe('syncPermissions', function (): void {
 
     it('validates permissions array with existing permission ids', function (): void {
         $admin = User::factory()->create(['role_id' => 1]);
-        $role = Role::create(['name' => 'rol_validacion']);
+        $role = Role::firstOrCreate(['name' => 'rol_validacion']);
 
         $response = $this->actingAs($admin)->putJson("/api/roles/{$role->id}/permissions", [
             'permissions' => [99999],
@@ -187,7 +187,7 @@ describe('myPermissions', function (): void {
 describe('authorization — denied without correct permission', function (): void {
 
     it('denies index without roles.view', function (): void {
-        $role = Role::create(['name' => 'sin_permisos']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/roles');
@@ -196,7 +196,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies store without roles.create', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_v2']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_v2']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->postJson('/api/roles', [
@@ -207,7 +207,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies show without roles.view', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_v3']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_v3']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/roles/3');
@@ -216,7 +216,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies update without roles.update', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_v4']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_v4']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->putJson('/api/roles/3', [
@@ -227,7 +227,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies destroy without roles.delete', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_v5']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_v5']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->deleteJson('/api/roles/3');
@@ -252,7 +252,7 @@ describe('validation', function (): void {
 
     it('rejects duplicate role name on update', function (): void {
         $admin = User::factory()->create(['role_id' => 1]);
-        $role = Role::create(['name' => 'nuevo_rol']);
+        $role = Role::firstOrCreate(['name' => 'nuevo_rol']);
 
         $response = $this->actingAs($admin)->putJson("/api/roles/{$role->id}", [
             'name' => 'usuario',

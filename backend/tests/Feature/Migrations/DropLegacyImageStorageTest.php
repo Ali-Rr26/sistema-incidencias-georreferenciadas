@@ -46,7 +46,7 @@ if (! function_exists('seedLegacyIncidentImages')) {
 }
 
 beforeEach(function (): void {
-    Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 
     $this->user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);

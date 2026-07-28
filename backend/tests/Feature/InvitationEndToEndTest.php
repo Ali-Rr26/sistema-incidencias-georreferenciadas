@@ -10,16 +10,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use App\Domains\Roles\Models\Role;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $this->adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
 it('full invitation flow: admin creates user → invitation sent → token accepted → user can login', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminRoleId]);
     $this->actingAs($admin);
 
     // ── Step 1: Admin creates user → user.password=null, invitation created, mail sent ──
@@ -27,7 +29,7 @@ it('full invitation flow: admin creates user → invitation sent → token accep
 
     $createResponse = $this->postJson('/api/users', [
         'email' => 'invitado@example.com',
-        'role_id' => 1,
+        'role_id' => $this->adminRoleId,
         'first_name' => 'Invitado',
         'last_name' => 'Usuario',
     ]);

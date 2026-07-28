@@ -8,6 +8,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
@@ -27,6 +28,9 @@ beforeEach(function (): void {
     $this->seed(RoleSeeder::class);
     $this->seed(RolePermissionSeeder::class);
 
+    // Fetch admin_sistema role ID
+    $adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
+
     foreach (Permission::all() as $permission) {
         $slug = "{$permission->resource}.{$permission->action}";
         Gate::define($slug, fn (User $user) => $user->hasPermission($slug));
@@ -37,7 +41,7 @@ beforeEach(function (): void {
             ->get() as $perm
     ) {
         DB::table('role_permission')->insertOrIgnore([
-            'role_id' => 1,
+            'role_id' => $adminRoleId,
             'permission_id' => $perm->permission_id,
             'created_at' => now(),
             'updated_at' => now(),

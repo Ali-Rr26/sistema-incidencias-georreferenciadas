@@ -58,7 +58,7 @@ beforeEach(function (): void {
 
 it('R-19 denies access to status history for user without incident view permission', function (): void {
     // Fresh non-admin role bypasses Gate::before and has no incidents.view.
-    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $noPermsRole = Role::firstOrCreate(['name' => 'rol_test_sin_permisos']);
     $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
     $this->actingAs($stranger);
 

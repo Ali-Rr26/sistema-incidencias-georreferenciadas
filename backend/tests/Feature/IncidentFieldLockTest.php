@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -21,6 +22,10 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $this->seed(RoleSeeder::class);
     $this->seed(RolePermissionSeeder::class);
+
+    // Fetch role IDs by name
+    $this->usuarioRoleId = Role::where('name', 'usuario')->first()->id;
+    $this->operadorOrganizacionRoleId = Role::where('name', 'operador_organizacion')->first()->id;
 
     foreach (Permission::all() as $permission) {
         $slug = "{$permission->resource}.{$permission->action}";
@@ -41,13 +46,13 @@ beforeEach(function (): void {
 
     // Usuario (regular user)
     $this->regularUser = User::factory()->create([
-        'role_id' => 5, // usuario
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => null,
     ]);
 
     // OperadorOrganizacion
     $this->operator = User::factory()->create([
-        'role_id' => 4, // operador_organizacion
+        'role_id' => $this->operadorOrganizacionRoleId,
         'organization_id' => $this->org->id,
     ]);
 

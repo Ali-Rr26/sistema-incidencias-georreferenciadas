@@ -294,7 +294,7 @@ describe('formData', function (): void {
     });
 
     it('denies access without users.view permission', function (): void {
-        $role = Role::create(['name' => 'sin_permisos']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/users/form-data');
@@ -320,7 +320,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies index without users.view', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_idx']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_idx']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/users');
@@ -347,7 +347,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies destroy without users.delete', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_del']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_del']);
         $user = User::factory()->create(['role_id' => $role->id]);
         // A real, existing target user — route-model binding must resolve
         // it before the policy denies, otherwise a stale hardcoded id

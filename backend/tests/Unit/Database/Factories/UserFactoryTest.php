@@ -41,7 +41,7 @@ it('creates a user via the bare factory without a pre-existing roles row (FK-saf
 });
 
 it('reuses an already-existing admin_sistema role instead of creating a conflicting duplicate', function (): void {
-    // Direct DB::insert, not Role::create(): Role's $fillable = ['name']
+    // Direct DB::insert, not Role::firstOrCreate(): Role's $fillable = ['name']
     // excludes `id`, so the Eloquent mass-assignment path would silently
     // drop the explicit id=1 this test needs to pin.
     DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
@@ -55,12 +55,12 @@ it('reuses an already-existing admin_sistema role instead of creating a conflict
 it('reuses admin_sistema even when it was created under a non-1 id (Postgres sequence drift)', function (): void {
     // Simulates the exact defect: some earlier test in the same worker
     // database already advanced the `roles` sequence past 1 before
-    // creating "admin_sistema" (e.g. via `Role::create(['name' => ...])`
+    // creating "admin_sistema" (e.g. via `Role::firstOrCreate(['name' => ...])`
     // with no explicit id). A hardcoded `firstOrCreate(['id' => 1], ...)`
     // would try to insert a second "admin_sistema" row and violate
     // `roles_name_unique`.
-    Role::create(['name' => 'placeholder-to-advance-the-sequence']);
-    $admin = Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'placeholder-to-advance-the-sequence']);
+    $admin = Role::firstOrCreate(['name' => 'admin_sistema']);
 
     expect($admin->id)->not->toBe(1);
 

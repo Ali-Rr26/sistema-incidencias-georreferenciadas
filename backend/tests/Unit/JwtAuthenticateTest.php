@@ -17,7 +17,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'Admin']);
+    Role::firstOrCreate(['name' => 'Admin']);
 });
 
 function makeJwtRequest(?string $token = null): Request

@@ -14,16 +14,17 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $this->adminRoleId = DB::table('roles')->where('name', 'admin_sistema')->first()->id;
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
 it('returns 422 when admin sends password in payload', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminRoleId]);
 
     $response = $this->actingAs($admin)->postJson('/api/users', [
         'email' => 'new@example.com',
         'password' => 'SomePassword1', // prohibited field
-        'role_id' => 1,
+        'role_id' => $this->adminRoleId,
         'first_name' => 'Juan',
         'last_name' => 'Pérez',
     ]);
@@ -38,12 +39,12 @@ it('returns 422 when admin sends password in payload', function (): void {
 });
 
 it('returns 422 when admin sends password_confirmation in payload', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminRoleId]);
 
     $response = $this->actingAs($admin)->postJson('/api/users', [
         'email' => 'new@example.com',
         'password_confirmation' => 'SomePassword1', // prohibited helper field
-        'role_id' => 1,
+        'role_id' => $this->adminRoleId,
         'first_name' => 'Juan',
         'last_name' => 'Pérez',
     ]);
@@ -53,7 +54,7 @@ it('returns 422 when admin sends password_confirmation in payload', function ():
 });
 
 it('creates user without password and sends invitation mail', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminRoleId]);
 
     $this->actingAs($admin);
 
@@ -68,7 +69,7 @@ it('creates user without password and sends invitation mail', function (): void 
 
     $response = $this->postJson('/api/users', [
         'email' => 'new@example.com',
-        'role_id' => 1,
+        'role_id' => $this->adminRoleId,
         'first_name' => 'Juan',
         'last_name' => 'Pérez',
     ]);
@@ -86,13 +87,13 @@ it('creates user without password and sends invitation mail', function (): void 
 });
 
 it('user is created with null password and invitation record exists', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminRoleId]);
 
     $this->actingAs($admin);
 
     $response = $this->postJson('/api/users', [
         'email' => 'aftercommit@example.com',
-        'role_id' => 1,
+        'role_id' => $this->adminRoleId,
         'first_name' => 'Carlos',
         'last_name' => 'García',
     ]);

@@ -22,7 +22,7 @@ uses(RefreshDatabase::class);
 // check needed.
 
 beforeEach(function (): void {
-    // Direct DB::insert, not Role::create(): Role's $fillable = ['name']
+    // Direct DB::insert, not Role::firstOrCreate(): Role's $fillable = ['name']
     // excludes `id`, so the Eloquent mass-assignment path silently drops
     // the explicit id and lets auto-increment assign whatever the
     // sequence happens to be at (see RoleSeederTest / the same

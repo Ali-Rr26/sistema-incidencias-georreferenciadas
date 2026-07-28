@@ -19,6 +19,11 @@ beforeEach(function (): void {
     $this->seed(RoleSeeder::class);
     $this->seed(RolePermissionSeeder::class);
 
+    // Fetch role IDs by name
+    $this->adminSistemaRoleId = Role::where('name', 'admin_sistema')->first()->id;
+    $this->operadorOrganizacionRoleId = Role::where('name', 'operador_organizacion')->first()->id;
+    $this->adminOrganizacionRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+
     // Register dynamic gates from permissions table
     foreach (Permission::all() as $permission) {
         $slug = "{$permission->resource}.{$permission->action}";
@@ -31,11 +36,11 @@ beforeEach(function (): void {
 
 function makeTestRole(string $name = 'rol_test'): Role
 {
-    return Role::create(['name' => $name]);
+    return Role::firstOrCreate(['name' => $name]);
 }
 
 it('admin_sistema can sync permissions to a role', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminSistemaRoleId]);
     $this->actingAs($admin);
 
     $targetRole = makeTestRole();
@@ -50,7 +55,7 @@ it('admin_sistema can sync permissions to a role', function (): void {
 });
 
 it('sync replaces previous permissions (full sync, not append)', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminSistemaRoleId]);
     $this->actingAs($admin);
 
     $targetRole = makeTestRole();
@@ -68,7 +73,7 @@ it('sync replaces previous permissions (full sync, not append)', function (): vo
 });
 
 it('non-admin cannot sync permissions', function (): void {
-    $operador = User::factory()->create(['role_id' => 4]); // operador_organizacion
+    $operador = User::factory()->create(['role_id' => $this->operadorOrganizacionRoleId]);
     $this->actingAs($operador);
 
     $targetRole = makeTestRole();
@@ -81,7 +86,7 @@ it('non-admin cannot sync permissions', function (): void {
 });
 
 it('validates permission IDs must exist', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminSistemaRoleId]);
     $this->actingAs($admin);
 
     $targetRole = makeTestRole();
@@ -95,7 +100,7 @@ it('validates permission IDs must exist', function (): void {
 });
 
 it('returns 404 when role does not exist', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => $this->adminSistemaRoleId]);
     $this->actingAs($admin);
 
     // A real, existing permission id — must pass the `exists:permissions`
@@ -117,13 +122,13 @@ it('returns 404 when role does not exist', function (): void {
 // could enumerate the system's full permission catalog.
 
 it('denies availablePermissions for user without roles.view permission', function (): void {
-    // operador_organizacion (role 4) is NOT an admin and does NOT have
+    // operador_organizacion is NOT an admin and does NOT have
     // roles.view per RolePermissionSeeder, so the dynamic gate 'roles.view'
     // returns false and the authorize() call throws AuthorizationException.
-    // (admin_sistema role 1 would bypass via Gate::before in AppServiceProvider,
-    // which is why we cannot use role_id=1 here even though it lacks
+    // (admin_sistema would bypass via Gate::before in AppServiceProvider,
+    // which is why we cannot use admin_sistema role_id here even though it lacks
     // roles.view in pivot.)
-    $operador = User::factory()->create(['role_id' => 4]);
+    $operador = User::factory()->create(['role_id' => $this->operadorOrganizacionRoleId]);
     $this->actingAs($operador);
 
     $response = $this->getJson('/api/permissions');
@@ -132,7 +137,7 @@ it('denies availablePermissions for user without roles.view permission', functio
 });
 
 it('allows availablePermissions for user with roles.view permission', function (): void {
-    $orgAdmin = User::factory()->create(['role_id' => 3]);
+    $orgAdmin = User::factory()->create(['role_id' => $this->adminOrganizacionRoleId]);
     $rolesView = Permission::query()
         ->where('resource', 'roles')
         ->where('action', 'view')
