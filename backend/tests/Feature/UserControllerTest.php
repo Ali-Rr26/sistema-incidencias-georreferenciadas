@@ -194,7 +194,6 @@ it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -281,7 +280,8 @@ describe('formData', function (): void {
     it('filters system roles for non-system-admin', function (): void {
         $location = Location::create(['name' => 'Loc', 'level' => 'city']);
         $org = Organization::create(['name' => 'Mi Org', 'location_id' => $location->id]);
-        $adminOrg = User::factory()->create(['role_id' => 3, 'organization_id' => $org->id]);
+        $adminOrgRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+        $adminOrg = User::factory()->create(['role_id' => $adminOrgRoleId, 'organization_id' => $org->id]);
 
         $response = $this->actingAs($adminOrg)->getJson('/api/users/form-data');
 
@@ -317,6 +317,9 @@ describe('authorization — denied without correct permission', function (): voi
                 fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
             );
         }
+
+        // Fetch role ID for usuario role
+        $this->usuarioRoleId = Role::where('name', 'usuario')->first()->id;
     });
 
     it('denies index without users.view', function (): void {
@@ -329,8 +332,8 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies show for other user without users.view', function (): void {
-        $usuario = User::factory()->create(['role_id' => 5]);
-        $other = User::factory()->create(['role_id' => 5]);
+        $usuario = User::factory()->create(['role_id' => $this->usuarioRoleId]);
+        $other = User::factory()->create(['role_id' => $this->usuarioRoleId]);
 
         $response = $this->actingAs($usuario)->getJson("/api/users/{$other->id}");
 
@@ -338,7 +341,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('allows user to view their own profile without users.view', function (): void {
-        $usuario = User::factory()->create(['role_id' => 5]);
+        $usuario = User::factory()->create(['role_id' => $this->usuarioRoleId]);
 
         $response = $this->actingAs($usuario)->getJson("/api/users/{$usuario->id}");
 
