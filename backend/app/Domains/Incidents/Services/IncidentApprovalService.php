@@ -25,21 +25,45 @@ use Illuminate\Support\Facades\DB;
  * flujo end-to-end (ver proposal §"Descartar el refactor" y design §1
  * ADR-1).
  *
- * Mutaciones y contrato:
- *  - Toda mutación de status va por `EloquentIncidentRepository::update()`
- *    para que `bindAuditActor()` setee `app.current_user_id = $admin->id`
- *    antes de que el trigger de Postgres escriba `status_history`. Saltarse
- *    el repositorio (e.g. `Incident::query()->whereKey($id)->update(...)`)
- *    hace que el trigger caiga al fallback `incident.user_id` y el actor
- *    de auditoría quede como el ciudadano en lugar del admin — exactamente
- *    el bug que el refactor histórico quería evitar. Ver design §1 ADR-2.
- *  - El service es dueño único de las invariantes de estado: la policy
- *    responde *quién* (admin_sistema / admin_organizacion con org match);
- *    el service responde *qué* (status resuelto, sin decisión previa, no
- *    expirado). La separación es deliberada: `Gate::before` en
- *    `AppServiceProvider::boot()` deja pasar a `admin_sistema` por encima
- *    de cualquier policy, así que una invariante de estado ubicada en la
- *    policy sería salteable por un superusuario. Desde el service no lo es.
+ * ─── Contrato de mutación de status (CRÍTICO) ──────────────────────────────
+ *
+ * Toda mutación de status debe ir por `EloquentIncidentRepository::update()`
+ * (o `EloquentIncidentRepository::claim()`/`release()`). Esto es no-negociable:
+ * el repositorio envuelve su mutación en `DB::transaction` + `bindAuditActor()`
+ * que setea `app.current_user_id = Auth::id()` antes del UPDATE. El trigger
+ * de Postgres `trg_log_incident_status` lee esa variable y, si está vacía,
+ * cae al fallback `COALESCE(NEW.user_id, OLD.user_id)` — el ciudadano. Eso
+ * haría que `status_history.user_id` quedara como el ciudadano en lugar del
+ * admin decisor (escenario S13 de la propuesta), exactamente el bug que el
+ * refactor histórico quería evitar.
+ *
+ * Por este motivo:
+ *
+ *   ❌ NO usar `Incident::query()->whereKey($id)->update($payload)` directo
+ *      — bypassa el actor binding.
+ *   ❌ NO usar `$incident->update($payload)` (modelo cargado manualmente)
+ *      — el binding sólo aplica si la mutación pasa por el repositorio.
+ *   ✅ USAR `$this->repository->update($incidentId, $payload)` siempre.
+ *
+ * Ver design §1 ADR-2 para la justificación arquitectónica completa.
+ *
+ * ─── Quién vs Qué ─────────────────────────────────────────────────────────
+ *
+ * El service es dueño único de las invariantes de estado: la policy
+ * responde *quién* (admin_sistema / admin_organizacion con org match); el
+ * service responde *qué* (status resuelto, sin decisión previa, no
+ * expirado). La separación es deliberada: `Gate::before` en
+ * `AppServiceProvider::boot()` deja pasar a `admin_sistema` por encima de
+ * cualquier policy, así que una invariante de estado ubicada en la policy
+ * sería salteable por un superusuario. Desde el service no lo es.
+ *
+ * ─── Atomicidad ───────────────────────────────────────────────────────────
+ *
+ * Toda la operación está envuelta en una única `DB::transaction`. Si la
+ * notificación de destino falla, el rollback deja la incidencia intacta y la
+ * notificación origen con `processed_at IS NULL` — la UI puede reintentar.
+ * Si el mark-as-processed del origen falla, el rollback también cubre la
+ * transición de estado (no queda un estado inconsistente a medio aplicar).
  *
  * Códigos de error (semantic HTTP codes via RuntimeException code):
  *  - 404: la incidencia no existe.
