@@ -239,7 +239,9 @@ export default {
     const state = { notifications: [], filter: DEFAULT_FILTER };
     const list = document.getElementById('notificaciones-lista');
     const filter = document.getElementById('notificaciones-filtro');
-    const pendingValue = document.getElementById('notificaciones-pending-value');
+    const pendingValue = document.getElementById(
+      'notificaciones-pending-value',
+    );
 
     const renderPending = () => {
       const pending = state.notifications.filter(
@@ -274,7 +276,7 @@ export default {
         buildEmpty('No se pudieron cargar las notificaciones.', 'danger'),
       );
     }
-filter.addEventListener('change', () => {
+    filter.addEventListener('change', () => {
       state.filter = filter.value;
       render();
     });
@@ -310,9 +312,7 @@ filter.addEventListener('change', () => {
         : Math.max(currentIndex - 1, 0);
       const target = articles[nextIndex];
 
-      const focusable = target.querySelector(
-        'button.approve, button.reject',
-      );
+      const focusable = target.querySelector('button.approve, button.reject');
       if (focusable) focusable.focus();
     });
 
@@ -359,7 +359,10 @@ filter.addEventListener('change', () => {
           const textarea = form?.querySelector('textarea');
           const reason = textarea?.value?.trim() ?? '';
           if (reason.length < 3) {
-            mostrarToast('El motivo debe tener al menos 3 caracteres.', 'danger');
+            mostrarToast(
+              'El motivo debe tener al menos 3 caracteres.',
+              'danger',
+            );
             textarea?.focus();
             return;
           }
@@ -404,10 +407,11 @@ filter.addEventListener('change', () => {
       if (articles.length === 0) return;
 
       const previousIndex = articles.indexOf(article);
-      const nextArticle = articles
-        .slice(previousIndex + 1)
-        .find((row) => row.dataset.state !== 'decided')
-        ?? articles.find((row) => row.dataset.state !== 'decided');
+      const nextArticle =
+        articles
+          .slice(previousIndex + 1)
+          .find((row) => row.dataset.state !== 'decided') ??
+        articles.find((row) => row.dataset.state !== 'decided');
 
       const focusable = nextArticle?.querySelector(
         'button.approve, button.reject',

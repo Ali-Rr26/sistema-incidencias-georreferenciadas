@@ -30,18 +30,15 @@ vi.mock('../../../core/router.js', () => ({
 }));
 
 // Import after mocks so the component picks them up.
-const { APPROVAL_TYPE } = await import(
-  './notificaciones-index.component.js'
-);
+const { APPROVAL_TYPE } = await import('./notificaciones-index.component.js');
 
 /**
  * Mount the component by injecting its HTML and calling onInit. Returns
  * the DOM nodes the tests need plus a destroy hook.
  */
 async function mount() {
-  const { default: component } = await import(
-    './notificaciones-index.component.js'
-  );
+  const { default: component } =
+    await import('./notificaciones-index.component.js');
   // The component's template is registered via the `template` field on
   // its default export; for unit tests we simulate the rendered DOM by
   // placing the static part of the template inline.
@@ -159,7 +156,11 @@ describe('notificaciones-index — WU-1 row context', () => {
       data: [
         makeApproval({ id: 1 }),
         makeApproval({ id: 2 }),
-        makeApproval({ id: 3, decision: 'approved', decidedAt: new Date().toISOString() }),
+        makeApproval({
+          id: 3,
+          decision: 'approved',
+          decidedAt: new Date().toISOString(),
+        }),
       ],
       meta: null,
     });
@@ -172,8 +173,16 @@ describe('notificaciones-index — WU-1 row context', () => {
   it('marks the counter empty when no pending approvals remain', async () => {
     mockService.list.mockResolvedValue({
       data: [
-        makeApproval({ id: 1, decision: 'approved', decidedAt: new Date().toISOString() }),
-        makeApproval({ id: 2, decision: 'rejected', decidedAt: new Date().toISOString() }),
+        makeApproval({
+          id: 1,
+          decision: 'approved',
+          decidedAt: new Date().toISOString(),
+        }),
+        makeApproval({
+          id: 2,
+          decision: 'rejected',
+          decidedAt: new Date().toISOString(),
+        }),
       ],
       meta: null,
     });
@@ -184,9 +193,8 @@ describe('notificaciones-index — WU-1 row context', () => {
 
   it('component exposes `style` so the router injects the scoped CSS (regression guard)', async () => {
     mockService.list.mockResolvedValue({ data: [], meta: null });
-    const { default: component } = await import(
-      './notificaciones-index.component.js'
-    );
+    const { default: component } =
+      await import('./notificaciones-index.component.js');
     // Without `style`, the router would skip injecting the component CSS
     // entirely — see router.js:_mountPage. The page would render with
     // zero component-scoped styles, looking like "sin estilo".
@@ -200,8 +208,14 @@ describe('notificaciones-index — WU-1 row context', () => {
     mockService.list.mockResolvedValue({
       data: [
         makeApproval({ id: 1 }),
-        { ...makeApproval({ id: 2, incidentTitle: 'Reclamo de vecino' }), type: 'claim' },
-        { ...makeApproval({ id: 3, incidentTitle: 'Cambio de estado' }), type: 'status_change' },
+        {
+          ...makeApproval({ id: 2, incidentTitle: 'Reclamo de vecino' }),
+          type: 'claim',
+        },
+        {
+          ...makeApproval({ id: 3, incidentTitle: 'Cambio de estado' }),
+          type: 'status_change',
+        },
       ],
       meta: null,
     });
@@ -231,11 +245,16 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
     const { list } = await mount();
     const forms = list.querySelectorAll('[data-role="reject-form"]');
     expect(forms).toHaveLength(2);
-    forms.forEach((form) => expect(form.classList.contains('d-none')).toBe(true));
+    forms.forEach((form) =>
+      expect(form.classList.contains('d-none')).toBe(true),
+    );
   });
 
   it('clicking "Rechazar" transitions the row to state="rejecting" and focuses the textarea', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
     const rejectBtn = article.querySelector('.reject');
@@ -249,7 +268,10 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
   });
 
   it('clicking "Cancelar" returns the row to state="normal" and focuses the Rechazar button', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
     article.querySelector('.reject').click();
@@ -262,7 +284,10 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
   });
 
   it('Confirm button stays disabled until the reason has ≥3 characters', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
     article.querySelector('.reject').click();
@@ -279,7 +304,10 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
   });
 
   it('clicking Confirm calls notificationService.reject with the typed reason', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     mockService.reject.mockResolvedValue({});
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
@@ -291,16 +319,24 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
 
     // Click handler is async; the service call happens in a microtask.
     await flush();
-    expect(mockService.reject).toHaveBeenCalledWith(1, 'falta evidencia fotográfica');
+    expect(mockService.reject).toHaveBeenCalledWith(
+      1,
+      'falta evidencia fotográfica',
+    );
   });
 
   it('Escape inside the form cancels (matches keydown contract)', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
     article.querySelector('.reject').click();
     const form = article.querySelector('[data-role="reject-form"]');
-    form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    form.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
 
     expect(article.dataset.state).toBe('normal');
   });
@@ -317,7 +353,10 @@ describe('notificaciones-index — WU-3 decision opacity', () => {
   });
 
   it('renders a localized "Aprobada" badge after approval', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     mockService.approve.mockResolvedValue({});
     const { list } = await mount();
     list.querySelector('.approve').click();
@@ -331,7 +370,10 @@ describe('notificaciones-index — WU-3 decision opacity', () => {
   });
 
   it('renders a localized "Rechazada" badge with the rejection reason after rejection', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     mockService.reject.mockResolvedValue({});
     const { list } = await mount();
     let article = list.querySelector('.notification-row');
@@ -355,8 +397,11 @@ describe('notificaciones-index — WU-3 decision opacity', () => {
     expect(reasonEl.textContent).toContain('falta evidencia');
   });
 
-it('renders the decided-at timestamp as timeAgo after a decision', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+  it('renders the decided-at timestamp as timeAgo after a decision', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     mockService.approve.mockResolvedValue({});
     const { list } = await mount();
     list.querySelector('.approve').click();
@@ -379,21 +424,27 @@ describe('notificaciones-index — WU-4 keyboard nav + focus advance', () => {
     document.body.innerHTML = '';
   });
 
-  it('ArrowDown moves focus from one row\'s approve to the next row\'s approve', async () => {
+  it("ArrowDown moves focus from one row's approve to the next row's approve", async () => {
     mockService.list.mockResolvedValue({
-      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 }), makeApproval({ id: 3 })],
+      data: [
+        makeApproval({ id: 1 }),
+        makeApproval({ id: 2 }),
+        makeApproval({ id: 3 }),
+      ],
       meta: null,
     });
     const { list } = await mount();
     const approves = list.querySelectorAll('button.approve');
     approves[0].focus();
 
-    approves[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    approves[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
 
     expect(document.activeElement).toBe(approves[1]);
   });
 
-  it('ArrowUp moves focus from one row to the previous row\'s approve', async () => {
+  it("ArrowUp moves focus from one row to the previous row's approve", async () => {
     mockService.list.mockResolvedValue({
       data: [makeApproval({ id: 1 }), makeApproval({ id: 2 })],
       meta: null,
@@ -402,7 +453,9 @@ describe('notificaciones-index — WU-4 keyboard nav + focus advance', () => {
     const approves = list.querySelectorAll('button.approve');
     approves[1].focus();
 
-    approves[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    approves[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+    );
 
     expect(document.activeElement).toBe(approves[0]);
   });
@@ -416,22 +469,31 @@ describe('notificaciones-index — WU-4 keyboard nav + focus advance', () => {
     const approves = list.querySelectorAll('button.approve');
     approves[0].focus();
 
-    approves[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }));
+    approves[0].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'j', bubbles: true }),
+    );
     expect(document.activeElement).toBe(approves[1]);
 
-    approves[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
+    approves[1].dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'k', bubbles: true }),
+    );
     expect(document.activeElement).toBe(approves[0]);
   });
 
   it('keyboard nav does not hijack typing inside the rejection form textarea', async () => {
-    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
     const { list } = await mount();
     const article = list.querySelector('.notification-row');
     article.querySelector('.reject').click();
     const textarea = article.querySelector('textarea');
 
     // j/k typed in the textarea must NOT navigate away.
-    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }));
+    textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'j', bubbles: true }),
+    );
     expect(document.activeElement).toBe(textarea);
   });
 
@@ -456,7 +518,11 @@ describe('notificaciones-index — WU-4 keyboard nav + focus advance', () => {
     mockService.list.mockResolvedValue({
       data: [
         makeApproval({ id: 1 }),
-        makeApproval({ id: 2, decision: 'approved', decidedAt: new Date().toISOString() }),
+        makeApproval({
+          id: 2,
+          decision: 'approved',
+          decidedAt: new Date().toISOString(),
+        }),
         makeApproval({ id: 3 }),
       ],
       meta: null,

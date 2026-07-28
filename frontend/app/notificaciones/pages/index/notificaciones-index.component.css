@@ -161,7 +161,7 @@
   color: var(--color-primary);
   line-height: 1;
 }
-.gr-page__counter-value[data-empty="true"] {
+.gr-page__counter-value[data-empty='true'] {
   color: var(--text-muted);
 }
 .gr-page__counter-label {
