@@ -390,7 +390,7 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
     expect(document.activeElement?.classList.contains('reject')).toBe(true);
   });
 
-  it('Confirm button stays disabled until the reason has ≥3 characters', async () => {
+  it('Confirm button stays disabled until the reason has any non-whitespace character (required, not min-3)', async () => {
     mockService.list.mockResolvedValue({
       data: [makeApproval({ id: 1 })],
       meta: null,
@@ -401,13 +401,65 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
     const textarea = article.querySelector('textarea');
     const confirm = article.querySelector('.reject-confirm');
 
+    // Empty: disabled.
     expect(confirm.disabled).toBe(true);
-    textarea.value = 'no';
+    // Whitespace-only: still disabled (we trim before validating).
+    textarea.value = '   ';
     textarea.dispatchEvent(new Event('input'));
     expect(confirm.disabled).toBe(true);
-    textarea.value = 'falta evidencia';
+    // A single non-whitespace char is enough (the previous min-3 contract
+    // was overkill — the backend only enforces `required`, so the
+    // client-side gate must match it).
+    textarea.value = 'x';
     textarea.dispatchEvent(new Event('input'));
     expect(confirm.disabled).toBe(false);
+  });
+
+  it('clearing the textarea back to empty re-disables the Confirm button', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+    const confirm = article.querySelector('.reject-confirm');
+
+    textarea.value = 'algo';
+    textarea.dispatchEvent(new Event('input'));
+    expect(confirm.disabled).toBe(false);
+    textarea.value = '';
+    textarea.dispatchEvent(new Event('input'));
+    expect(confirm.disabled).toBe(true);
+  });
+
+  it('surfaces the server-side 422 errors.reason[0] in the inline form when the API rejects', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 })],
+      meta: null,
+    });
+    const serverError = new Error('Validation failed');
+    serverError.status = 422;
+    serverError.data = { errors: { reason: ['El motivo es obligatorio.'] } };
+    mockService.reject.mockRejectedValue(serverError);
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+    textarea.value = 'x';
+    textarea.dispatchEvent(new Event('input'));
+    article.querySelector('.reject-confirm').click();
+
+    await vi.waitUntil(() =>
+      article.querySelector('.notification-row__reject-error')?.textContent
+    ?.length > 0,
+    );
+
+    const errorSlot =
+      article.querySelector('.notification-row__reject-error');
+    expect(errorSlot).not.toBeNull();
+    expect(errorSlot.textContent).toContain('El motivo es obligatorio.');
   });
 
   it('clicking Confirm calls notificationService.reject with the typed reason', async () => {

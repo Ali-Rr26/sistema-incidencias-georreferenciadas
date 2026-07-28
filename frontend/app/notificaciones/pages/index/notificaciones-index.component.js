@@ -177,7 +177,7 @@ function buildRejectForm(item) {
   const label = document.createElement('label');
   label.className = 'notification-row__reject-label';
   label.setAttribute('for', `reject-reason-${item.id}`);
-  label.textContent = 'Motivo del rechazo (mínimo 3 caracteres)';
+  label.textContent = 'Motivo del rechazo';
 
   const textarea = document.createElement('textarea');
   textarea.className = 'gr-textarea notification-row__reject-textarea';
@@ -204,12 +204,23 @@ function buildRejectForm(item) {
   confirm.textContent = 'Confirmar rechazo';
   confirm.disabled = true;
 
-  toolbar.append(cancel, confirm);
-  form.append(label, textarea, toolbar);
+  // Inline error slot for 422 server-side validation. Hidden by default;
+  // the click handler reveals it when the API rejects with errors.reason.
+  const errorSlot = document.createElement('small');
+  errorSlot.className = 'notification-row__reject-error text-danger d-none';
+  errorSlot.dataset.role = 'reject-error';
 
-  // Live-validate: confirm enabled only when reason has ≥3 chars.
+  toolbar.append(cancel, confirm);
+  form.append(label, textarea, errorSlot, toolbar);
+
+  // Live-validate: confirm is enabled when the reason has any non-empty
+  // content after trim. Matches the backend's `reason: required` rule
+  // (NotificationController::reject — see S5 in the spec). The old
+  // `≥3 chars` gate was tighter than the server and rejected legitimate
+  // one/two-character reasons like "no" before the request even fired.
   textarea.addEventListener('input', () => {
-    confirm.disabled = textarea.value.trim().length < 3;
+    confirm.disabled = textarea.value.trim().length === 0;
+    errorSlot.classList.add('d-none');
   });
 
   // Esc cancels from anywhere in the form.
@@ -428,32 +439,55 @@ export default {
           return;
         }
 
-        if (button.classList.contains('reject-confirm')) {
-          const form = article.querySelector('.notification-row__reject-form');
-          const textarea = form?.querySelector('textarea');
-          const reason = textarea?.value?.trim() ?? '';
-          if (reason.length < 3) {
-            mostrarToast(
-              'El motivo debe tener al menos 3 caracteres.',
-              'danger',
-            );
-            textarea?.focus();
-            return;
-          }
-          await notificationService.reject(item.id, reason);
-          item.read = true;
-          item.data = item.data ?? {};
-          item.data.decision = 'rejected';
-          item.data.rejection_reason = reason;
-          // server stamps decided_at — capture the timestamp we'd compute
-          // locally so the post-decision render can show 'hace N' without
-          // waiting for a re-fetch. Slight skew vs server clock is fine.
-          item.data.decided_at = new Date().toISOString();
-          render();
-          mostrarToast('Notificación rechazada.', 'success');
-          focusNextDecisionButton(article);
-          return;
-        }
+            if (button.classList.contains('reject-confirm')) {
+              const form = article.querySelector('.notification-row__reject-form');
+              const textarea = form?.querySelector('textarea');
+              const errorEl = form?.querySelector(
+                '[data-role="reject-error"]',
+              );
+              const reason = textarea?.value?.trim() ?? '';
+              // Validation now matches the backend (`required`); the old
+              // min-3-chars guard lived only on the client and silently
+              // swallowed legitimate short motives like "no" with a toast.
+              if (errorEl) {
+                errorEl.classList.add('d-none');
+                errorEl.textContent = '';
+              }
+              try {
+                await notificationService.reject(item.id, reason);
+              } catch (err) {
+                // Surface the server's 422 reason error inline so the admin
+                // sees what the API actually rejected (e.g. when the
+                // textarea fails server-side validation rules the client
+                // doesn't mirror).
+                if (err?.status === 422 && errorEl) {
+                  const reasonError = err.data?.errors?.reason;
+                  if (Array.isArray(reasonError) && reasonError.length > 0) {
+                    errorEl.textContent = reasonError[0];
+                    errorEl.classList.remove('d-none');
+                    textarea?.focus();
+                    return;
+                  }
+                }
+                mostrarToast(
+                  'No se pudo actualizar la notificación.',
+                  'danger',
+                );
+                return;
+              }
+              item.read = true;
+              item.data = item.data ?? {};
+              item.data.decision = 'rejected';
+              item.data.rejection_reason = reason;
+              // server stamps decided_at — capture the timestamp we'd compute
+              // locally so the post-decision render can show 'hace N' without
+              // waiting for a re-fetch. Slight skew vs server clock is fine.
+              item.data.decided_at = new Date().toISOString();
+              render();
+              mostrarToast('Notificación rechazada.', 'success');
+              focusNextDecisionButton(article);
+              return;
+            }
 
         if (button.classList.contains('mark-read')) {
           await notificationService.markRead(item.id);
