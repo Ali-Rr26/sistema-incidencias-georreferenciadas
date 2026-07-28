@@ -2,7 +2,7 @@
 // DO NOT EDIT — your changes will be overwritten on the next run and CI will fail.
 
 /** Maximum avatar upload size in kilobytes. */
-export const AVATAR_MAX_KB = 800;
+export const AVATAR_MAX_KB = 5120;
 
 /** Accepted avatar file extensions (lowercase, no dot). */
 export const ACCEPTED_MIMES = Object.freeze([

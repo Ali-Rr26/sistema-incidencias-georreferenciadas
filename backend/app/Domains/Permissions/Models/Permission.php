@@ -26,7 +26,8 @@ class Permission extends Model
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_permission', 'permission_id', 'role_id')
-            ->using(RolePermission::class);
+            ->using(RolePermission::class)
+            ->withTimestamps();
     }
 
     public function menus(): BelongsToMany

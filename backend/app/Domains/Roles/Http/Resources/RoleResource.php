@@ -33,6 +33,9 @@ class RoleResource extends JsonResource
                 'id' => $permission->permission_id,
                 'resource' => $permission->resource,
                 'action' => $permission->action,
+                'created_at' => $permission->pivot->created_at,
+                'deleted_at' => $permission->pivot->deleted_at,
+                'reassigned_at' => $permission->pivot->reassigned_at,
             ])),
         ];
 

@@ -5,6 +5,7 @@ use App\Domains\Auth\Local\Http\Controllers\AuthController;
 use App\Domains\Auth\Local\Http\Controllers\ForgotPasswordController;
 use App\Domains\Auth\Local\Http\Controllers\RegisterController;
 use App\Domains\Auth\Local\Http\Controllers\ResetPasswordController;
+use App\Domains\Auth\Local\Http\Controllers\VerificationController;
 use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
@@ -45,6 +46,18 @@ Route::post('/reset-password', [ResetPasswordController::class, '__invoke'])
 // Invitation acceptance — public (no auth required), rate-limited
 Route::post('/invitations/accept', [InvitationAcceptController::class, 'accept'])
     ->middleware('throttle:invitations');
+// Preview of invitation metadata (org, inviter, role, expiry) without consuming it.
+// Public: the token is opaque until consumed, but the caller may want to show
+// the welcome context BEFORE the user types a password.
+Route::get('/invitations/{token}/preview', [InvitationAcceptController::class, 'preview'])
+    ->where('token', '[A-Za-z0-9_\-]+')
+    ->middleware('throttle:invitations');
+
+// Email verification — story sc-117 (OTP code verification)
+Route::post('/email/verify-otp', [VerificationController::class, 'verifyOtp'])
+    ->middleware('throttle:5,1');
+Route::post('/email/resend', [VerificationController::class, 'resend'])
+    ->middleware('throttle:5,1');
 
 Route::middleware('jwt')->group(function () {
 
@@ -52,6 +65,11 @@ Route::middleware('jwt')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+
+    // Email verification — status + reenvío autenticados.
+    Route::post('/email/resend', [VerificationController::class, 'resend'])
+        ->middleware('throttle:email-verify');
+    Route::get('/email/notice', [VerificationController::class, 'notice']);
 
     // Avatar handling is owned by PUT /users/{user} now (avatar file or
     // `_delete_avatar` flag in the same FormData/JSON payload) — see

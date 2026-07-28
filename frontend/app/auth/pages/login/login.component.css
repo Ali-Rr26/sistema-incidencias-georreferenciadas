@@ -159,82 +159,11 @@
   margin-bottom: 20px;
 }
 
-.gr-form-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: #5b6172;
-  margin-bottom: 8px;
-}
-
-@media (max-width: 480px) {
-  .gr-form-label {
-    font-size: 12px;
-    margin-bottom: 6px;
-  }
-}
-
-.gr-input-wrap {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 480px) {
-  .gr-input-wrap {
-    margin-bottom: 16px;
-  }
-}
-
-.gr-input-icon {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-light);
-  font-size: 15px;
-  pointer-events: none;
-}
-
-.gr-input {
-  width: 100%;
-  height: 50px;
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 0 16px 0 44px;
-  font-size: 14.5px;
-  font-family: var(--font-family);
-  color: #23283b;
-  box-sizing: border-box;
-  outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-/* REQ-MR-2: .gr-input retains 14.5px base — iOS auto-zoom guard.
-   Font-size is kept >=16px via global input floor in app.css. */
-
-.gr-input--pad-right {
-  padding-right: 44px;
-}
-
-.gr-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(106, 92, 243, 0.12);
-}
-
-.gr-input-eye {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-light);
-  cursor: pointer;
-  font-size: 15px;
-  padding: 0;
-}
+/* Shared form utilities (gr-form-label, gr-input-wrap, gr-input-icon,
+   gr-input, gr-input--pad-right, gr-input:focus, gr-input-eye,
+   gr-input-error) moved to frontend/public/css/app.css — used by
+   register, forgot-password, accept-invite, reset-password, and
+   verify-email too. */
 
 .gr-login__options {
   display: flex;
@@ -380,19 +309,8 @@
 
 /* ─── R11: field-level validation errors ─────────────────────────── */
 
-.gr-input-error {
-  color: #c0394f;
-  font-size: 12.5px;
-  font-weight: 500;
-  margin: -12px 0 16px;
-  padding-left: 4px;
-}
-
-/* Tighten the margin between the last field above an error so the
-   layout doesn't breathe awkwardly. */
-.gr-input-wrap + .gr-input-error {
-  margin-top: -12px;
-}
+/* .gr-input-error + .gr-input-wrap + .gr-input-error combinator moved
+   to frontend/public/css/app.css (shared form utilities). */
 
 /* ─── R12: divider + Google sign-in button ────────────────────────── */
 
@@ -466,5 +384,116 @@
 
   .gr-btn-google i {
     font-size: 16px;
+  }
+}
+
+/* ─── R-sc-117: OTP cells (verify-email) ───────────────────────────── */
+/*
+ * Six contiguous cells replace the single OTP input with letter-spacing.
+ * Same border/radius/focus-ring vocabulary as .gr-input — no new tokens.
+ */
+
+.gr-otp {
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+@media (max-width: 480px) {
+  .gr-otp {
+    margin-bottom: 16px;
+  }
+}
+
+.gr-otp__cells {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .gr-otp__cells {
+    gap: 4px;
+  }
+}
+
+.gr-otp__cell {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 64px;
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: clamp(1.5rem, 1.2rem + 0.6vw, 1.875rem);
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+  padding: 0;
+  outline: none;
+  box-sizing: border-box;
+  caret-color: var(--color-primary);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+  /* Belt-and-suspenders against native number-input styling. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.gr-otp__cell::-webkit-outer-spin-button,
+.gr-otp__cell::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.gr-otp__cell:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(106, 92, 243, 0.12);
+}
+
+.gr-otp__cell--error {
+  border-color: var(--priority-high-text);
+  background-color: var(--priority-high-bg);
+}
+
+.gr-otp__cell--error:focus {
+  box-shadow: 0 0 0 3px rgba(160, 24, 58, 0.12);
+}
+
+@media (max-width: 480px) {
+  .gr-otp__cell {
+    height: 56px;
+    font-size: 1.5rem;
+  }
+}
+
+/* Shake: 150ms total (per spec). Subtle 2-jolt pattern — exponential
+   ease-out from a clean rest position. Replayed by toggling the class
+   with a forced reflow between calls. */
+@keyframes gr-otp__shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  60% {
+    transform: translateX(5px);
+  }
+}
+
+.gr-otp__cells--shake {
+  animation: gr-otp__shake 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-otp__cells--shake,
+  .gr-otp__cell {
+    animation: none;
+    transition: none;
   }
 }

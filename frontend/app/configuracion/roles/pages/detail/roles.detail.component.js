@@ -184,13 +184,13 @@ export default {
   `,
   async onInit({ params, query } = {}) {
     const id = params?.id;
+    const isCreateMode = id === 'create' || id === 'crear';
+    const isViewMode = query?.get('view') === 'true';
+
     if (!id) {
       router.navigate('/roles');
       return;
     }
-
-    const isViewMode = query?.get('view') === 'true';
-    const isCreateMode = id === 'crear';
 
     function mostrarError(msg) {
       document.getElementById('estado-cargando').classList.add('d-none');

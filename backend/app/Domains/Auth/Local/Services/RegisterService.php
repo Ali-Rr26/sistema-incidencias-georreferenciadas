@@ -38,6 +38,11 @@ class RegisterService
             'phone' => PhoneRules::normalize($data['phone'] ?? null),
         ]);
 
+        // Despacha la notificación de verificación de correo en cola
+        // (ShouldQueue). El mail NO bloquea la respuesta 201 a
+        // POST /api/register (story sc-117, R8).
+        $user->sendEmailVerificationNotification();
+
         Log::info('auth.register.success', [
             'user_id' => $user->id,
             'email_hash' => hash('sha256', (string) $user->email),
