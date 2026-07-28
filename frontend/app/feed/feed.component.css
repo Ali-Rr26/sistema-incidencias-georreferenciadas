@@ -197,14 +197,14 @@
 
 /* --- Scrollable incidents region (vertical scroll only) --- */
 .feed-scroll-region {
-  overflow: visible !important;
+  overflow-x: hidden;
 }
 
 /* Desktop only: cap height for constrained scroll */
 @media (min-width: 992px) {
   .feed-scroll-region {
     max-height: calc(100dvh - 240px);
-    overflow: hidden;
+    overflow: hidden !important;
     overflow-y: auto;
   }
   @supports not (height: 100dvh) {
