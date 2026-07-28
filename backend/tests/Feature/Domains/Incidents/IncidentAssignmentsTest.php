@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 4, 'name' => 'operador_organizacion'],
     ]);
@@ -58,7 +58,7 @@ it('has assignments table with correct schema', function (): void {
 });
 
 it('has unique constraint on incident_id and user_id', function (): void {
-    DB::table('assignments')->insertOrIgnore([
+    DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user1->id,
         'assignment_role' => 'responsable',
@@ -66,7 +66,7 @@ it('has unique constraint on incident_id and user_id', function (): void {
         'updated_at' => now(),
     ]);
 
-    expect(fn () => DB::table('assignments')->insertOrIgnore([
+    expect(fn () => DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user1->id,
         'assignment_role' => 'apoyo',
@@ -76,7 +76,7 @@ it('has unique constraint on incident_id and user_id', function (): void {
 });
 
 it('has check constraint on assignment_role', function (): void {
-    DB::table('assignments')->insertOrIgnore([
+    DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user1->id,
         'assignment_role' => 'responsable',
@@ -84,7 +84,7 @@ it('has check constraint on assignment_role', function (): void {
         'updated_at' => now(),
     ]);
 
-    DB::table('assignments')->insertOrIgnore([
+    DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $this->user2->id,
         'assignment_role' => 'apoyo',
@@ -93,7 +93,7 @@ it('has check constraint on assignment_role', function (): void {
     ]);
 
     $user3 = User::factory()->create();
-    expect(fn () => DB::table('assignments')->insertOrIgnore([
+    expect(fn () => DB::table('assignments')->insert([
         'incident_id' => $this->incident->id,
         'user_id' => $user3->id,
         'assignment_role' => 'invalid_role',

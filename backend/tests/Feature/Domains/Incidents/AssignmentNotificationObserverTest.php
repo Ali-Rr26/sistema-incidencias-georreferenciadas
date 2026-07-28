@@ -21,7 +21,7 @@ beforeEach(function (): void {
     // Seed mínimo: roles + estructura jerárquica (location → org → category)
     // + 2 operadores (uno principal, uno secundario para tests de
     // reasignación).
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'operador_organizacion'],
     ]);

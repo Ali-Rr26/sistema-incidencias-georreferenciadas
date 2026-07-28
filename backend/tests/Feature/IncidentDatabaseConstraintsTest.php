@@ -39,7 +39,7 @@ it('validates location table normalization without redundancy', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('prevents assigning parent category to incident (trigger validation)', function () {
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);
@@ -82,7 +82,7 @@ it('prevents assigning parent category to incident (trigger validation)', functi
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('calculates average resolution time correctly (CP-08-06-BD)', function () {
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);
@@ -95,7 +95,7 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
     $createdAt1 = now()->subDays(5);
     $resolutionDate1 = $createdAt1->copy()->addDays(2); // 2 days
 
-    DB::table('incidents')->insertOrIgnore([
+    DB::table('incidents')->insert([
         'title' => 'Incident 1',
         'incident_category_id' => $category->id,
         'user_id' => $user->id,
@@ -111,7 +111,7 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
     $createdAt2 = now()->subDays(3);
     $resolutionDate2 = $createdAt2->copy()->addDays(2); // 2 days
 
-    DB::table('incidents')->insertOrIgnore([
+    DB::table('incidents')->insert([
         'title' => 'Incident 2',
         'incident_category_id' => $category->id,
         'user_id' => $user->id,
@@ -144,7 +144,7 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('trigger automatically logs status changes to history (CP-02-06-BD)', function () {
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);

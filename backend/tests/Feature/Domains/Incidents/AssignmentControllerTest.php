@@ -51,7 +51,7 @@ beforeEach(function (): void {
     // path silently drops the explicit id and lets auto-increment assign
     // whatever the sequence happens to be at (see RoleSeederTest / the
     // same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => UserRole::AdminSistema->value]);
+    DB::table('roles')->insert(['id' => 1, 'name' => UserRole::AdminSistema->value]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);

@@ -28,7 +28,7 @@ beforeEach(function (): void {
         $this->markTestSkipped('Redis extension is required for this test.');
     }
 
-    DB::table('roles')->insertOrIgnore(['id' => 5, 'name' => 'usuario']);
+    DB::table('roles')->insert(['id' => 5, 'name' => 'usuario']);
     $this->citizen = User::factory()->create(['role_id' => 5]);
 
     // Seed the permissions catalog so policy lookups work, then grant
@@ -37,7 +37,7 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $permId = Permission::where('resource', 'feed')
         ->where('action', 'view')->value('permission_id');
-    DB::table('role_permission')->insertOrIgnore([
+    DB::table('role_permission')->insert([
         'role_id' => 5,
         'permission_id' => $permId,
         'created_at' => now(),

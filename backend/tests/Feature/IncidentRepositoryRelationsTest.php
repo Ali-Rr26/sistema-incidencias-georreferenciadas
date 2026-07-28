@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // admin_sistema is bypassed by the repository's applyFilters, so it can
     // stand in here to avoid the tenant-scoping whereRaw.
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
 
     $this->systemAdmin = User::factory()->create([
         'role_id' => 1,

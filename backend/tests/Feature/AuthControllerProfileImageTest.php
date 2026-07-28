@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
     Storage::fake('s3');
     $this->withoutMiddleware(JwtAuthenticate::class);
 });

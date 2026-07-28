@@ -26,7 +26,7 @@ beforeEach(function (): void {
     // an earlier test in the same parallel worker database can leave the
     // sequence past 1 by the time this one runs (see RoleSeederTest /
     // the same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'operador_sistema'],
         ['id' => 3, 'name' => 'admin_organizacion'],
@@ -45,7 +45,7 @@ beforeEach(function (): void {
 
     // Role-permission grants for admin_sistema (role_id = 1)
     foreach (Permission::all() as $perm) {
-        DB::table('role_permission')->insertOrIgnore([
+        DB::table('role_permission')->insert([
             'role_id' => 1,
             'permission_id' => $perm->permission_id,
             'created_at' => now(),

@@ -44,7 +44,7 @@ it('reuses an already-existing admin_sistema role instead of creating a conflict
     // Direct DB::insert, not Role::create(): Role's $fillable = ['name']
     // excludes `id`, so the Eloquent mass-assignment path would silently
     // drop the explicit id=1 this test needs to pin.
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
 
     $user = User::factory()->create();
 

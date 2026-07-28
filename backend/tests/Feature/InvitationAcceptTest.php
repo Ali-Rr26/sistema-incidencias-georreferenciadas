@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
 });
 
 // NOTE: Tests that require password=null (pending WU-3 migration) are marked

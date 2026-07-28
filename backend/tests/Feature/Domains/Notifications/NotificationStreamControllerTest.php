@@ -68,7 +68,7 @@ function stubRedisFactory(): MockInterface
 beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insertOrIgnore([['id' => 1, 'name' => 'admin_sistema']]);
+    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
     $this->user = User::factory()->create(['role_id' => 1]);
     $this->otherUser = User::factory()->create(['role_id' => 1, 'email' => 'other@example.com']);
 

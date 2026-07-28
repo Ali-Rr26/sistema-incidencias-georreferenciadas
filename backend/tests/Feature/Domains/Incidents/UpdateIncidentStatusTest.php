@@ -63,7 +63,7 @@ beforeEach(function (): void {
         'priority' => 'medium',
     ]);
 
-    DB::table('assignments')->insertOrIgnore([
+    DB::table('assignments')->insert([
         [
             'incident_id' => $this->incident->id,
             'user_id' => $this->responsable->id,

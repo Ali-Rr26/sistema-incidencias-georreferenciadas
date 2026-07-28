@@ -38,7 +38,7 @@ beforeEach(function (): void {
     ]);
 
     // ── Roles ───────────────────────────────────────────────
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'admin_organizacion'],
         ['id' => 3, 'name' => 'operador_organizacion'],
@@ -224,7 +224,7 @@ it('SCEN-1.3: bbox composes with multitenant scoping', function (): void {
         'role_id' => 3, // operador_organizacion
         'organization_id' => $this->orgA->id,
     ]);
-    DB::table('assignments')->insertOrIgnore([
+    DB::table('assignments')->insert([
         'incident_id' => $orgAIncident->id,
         'user_id' => $operatorA->id,
         'assignment_role' => 'responsable',

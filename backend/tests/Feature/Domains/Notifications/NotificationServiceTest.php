@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 

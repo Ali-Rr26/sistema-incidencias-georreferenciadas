@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // User factory references role_id; seed a placeholder role.
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
 
     // Ensure the 'exceptions' channel exists in config even if config/logging.php
     // does not yet define it. The reporter must always have a channel to write to.

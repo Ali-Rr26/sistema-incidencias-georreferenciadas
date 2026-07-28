@@ -52,7 +52,7 @@ it('pgsql: reproduces and closes the manually-reported bug — Santa Elena/La Li
     }
 
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insertOrIgnore([['id' => 1, 'name' => 'admin_sistema']]);
+    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
     $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();
@@ -87,7 +87,7 @@ it('pgsql: a pin actually inside La Libertad (SantaElenaIncidentSeeder\'s own co
     }
 
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insertOrIgnore([['id' => 1, 'name' => 'admin_sistema']]);
+    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
     $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();
@@ -126,7 +126,7 @@ it('pgsql: rejects Santa Elena/La Libertad + Quito pin via HTTP when geom is sen
     // bug was a 500, not a missing validation, so the rule's semantic
     // hasn't changed.
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insertOrIgnore([['id' => 1, 'name' => 'admin_sistema']]);
+    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
     $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();

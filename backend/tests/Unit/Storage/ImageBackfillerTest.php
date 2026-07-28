@@ -119,7 +119,7 @@ it('is idempotent for incidents: running backfillIncidents twice creates no dupl
 });
 
 it('backfills a normal bare-key comment_images row, preserving caption and sort_order', function (): void {
-    DB::table('comment_images')->insertOrIgnore([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => 'a nice photo',
@@ -145,7 +145,7 @@ it('backfills a normal bare-key comment_images row, preserving caption and sort_
 it('copies a legacy absolute-URL comment_images row verbatim into storage_path and reports it, never guessing a bare key', function (): void {
     $legacyUrl = 'https://old-cdn.example.com/legacy/comment-photo.jpg';
 
-    DB::table('comment_images')->insertOrIgnore([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => $legacyUrl,
         'caption' => null,
@@ -168,7 +168,7 @@ it('copies a legacy absolute-URL comment_images row verbatim into storage_path a
 });
 
 it('is idempotent for comments: running backfillComments twice creates no duplicate rows', function (): void {
-    DB::table('comment_images')->insertOrIgnore([
+    DB::table('comment_images')->insert([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => null,

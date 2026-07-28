@@ -13,7 +13,7 @@ use Mockery\MockInterface;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
 });
 
 it('sends UserInvitedMail with correct accept URL when creating invitation', function (): void {

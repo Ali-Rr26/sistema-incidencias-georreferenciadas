@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // ── Setup roles ───────────────────────────────────────────
-    DB::table('roles')->insertOrIgnore([
+    DB::table('roles')->insert([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'admin_sistema'],
         ['id' => 3, 'name' => 'admin_organizacion'],
@@ -138,7 +138,7 @@ it('OperadorOrg sees only incidents from their own organization', function (): v
     // filter — operators only see incidents they're formally assigned to,
     // not every org incident. Assign the operator to all 3 Org B incidents
     // so the assertion (total=3) still verifies org-scoping end-to-end.
-    DB::table('assignments')->insertOrIgnore(
+    DB::table('assignments')->insert(
         Incident::where('organization_id', $this->orgB->id)
             ->get(['id'])
             ->map(fn ($incident) => [
