@@ -111,13 +111,29 @@ class IncidentNotificationObserver
         $incidentId = (int) $incident->id;
         $actorUserId = (int) ($incident->claimed_by ?: $incident->user_id);
 
-        DB::afterCommit(function () use ($organizationId, $incidentId, $actorUserId): void {
+        // Pre-resolve the actor's full name in the moment of the transition
+        // so the resource can read it back without an N+1 query per row
+        // (IncidentNotificationObserver is the single funnel for these
+        // notifications; either it fires or no row is created). Doing this
+        // here also means the snapshot in `data.actor_name` stays stable
+        // even if the user later changes their name.
+        $actorName = $this->resolveActorFullName($actorUserId);
+
+        DB::afterCommit(function () use ($organizationId, $incidentId, $actorUserId, $actorName): void {
+            // Hybrid admin_sistema scope (incident-approval-workflow/design.md §1 ADR-6):
+            //   - admin_sistema with organization_id = X → only that org.
+            //   - admin_sistema without organization_id  → global (cross-org).
+            //   - admin_organizacion                      → only its own org.
             $admins = User::query()
                 ->where(function ($query) use ($organizationId): void {
-                    $query->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminSistema->value))
-                        ->orWhere(function ($organizationQuery) use ($organizationId): void {
-                            $organizationQuery->where('organization_id', $organizationId)
-                                ->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminOrganizacion->value));
+                    $query
+                        ->where(function ($adminSistema) use ($organizationId): void {
+                            $adminSistema->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminSistema->value))
+                                ->where(fn ($orgFilter) => $orgFilter->whereNull('organization_id')->orWhere('organization_id', $organizationId));
+                        })
+                        ->orWhere(function ($adminOrg) use ($organizationId): void {
+                            $adminOrg->whereHas('role', fn ($role) => $role->where('name', UserRole::AdminOrganizacion->value))
+                                ->where('organization_id', $organizationId);
                         });
                 })
                 ->get();
@@ -132,6 +148,7 @@ class IncidentNotificationObserver
                     data: [
                         'incident_id' => $incidentId,
                         'actor_user_id' => $actorUserId,
+                        'actor_name' => $actorName,
                         'decision' => null,
                         'rejection_reason' => null,
                         'expires_at' => now()->addDays(7)->toIso8601String(),
@@ -140,6 +157,24 @@ class IncidentNotificationObserver
                 );
             }
         });
+    }
+
+    /**
+     * Resolve a user's display name (first + last, trimmed) for snapshotting
+     * into `data.actor_name`. Returns `null` for unknown / soft-deleted users
+     * so the caller can persist `null` and the resource falls through to its
+     * legacy `User::find()` path without a follow-up query.
+     */
+    private function resolveActorFullName(int $userId): ?string
+    {
+        $user = User::find($userId);
+        if ($user === null) {
+            return null;
+        }
+
+        $name = trim((string) ($user->first_name ?? '').' '.(string) ($user->last_name ?? ''));
+
+        return $name !== '' ? $name : null;
     }
 
     private function queueNotification(
