@@ -22,7 +22,7 @@ it('sends password reset link for existing user', function (): void {
 
     $user = User::factory()->create([
         'email' => 'user@example.com',
-        'role_id' => 1,
+        'role_id' => $adminRoleId,
     ]);
 
     $response = $this->postJson('/api/forgot-password', [
@@ -60,7 +60,7 @@ it('validates email field in forgot-password endpoint', function (): void {
 it('resets password successfully with valid token', function (): void {
     $user = User::factory()->create([
         'email' => 'user@example.com',
-        'role_id' => 1,
+        'role_id' => $adminRoleId,
     ]);
 
     $token = Password::createToken($user);
@@ -79,7 +79,7 @@ it('resets password successfully with valid token', function (): void {
 it('fails to reset password with invalid token', function (): void {
     $user = User::factory()->create([
         'email' => 'user@example.com',
-        'role_id' => 1,
+        'role_id' => $adminRoleId,
     ]);
 
     $response = $this->postJson('/api/reset-password', [

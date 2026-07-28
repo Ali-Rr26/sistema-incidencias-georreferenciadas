@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Invitations\Models\UserInvitation;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Mail\Services\MailSenderInterface;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
@@ -13,8 +14,7 @@ use Mockery\MockInterface;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
-    $this->adminRoleId = DB::table('roles')->where('name', 'admin_sistema')->first()->id;
+    $this->adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 

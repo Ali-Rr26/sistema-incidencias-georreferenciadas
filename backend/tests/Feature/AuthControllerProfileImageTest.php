@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
 use App\Storage\Models\Image;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
     Storage::fake('s3');
     $this->withoutMiddleware(JwtAuthenticate::class);
 });

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Shared\Services\AuthService;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,7 +14,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // User factory references role_id; seed a placeholder role.
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 });
 
 it('logs in and returns access tokens plus the user payload', function (): void {

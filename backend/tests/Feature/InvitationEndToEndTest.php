@@ -15,7 +15,7 @@ use App\Domains\Roles\Models\Role;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
     $this->adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
