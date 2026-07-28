@@ -63,21 +63,7 @@ describe('roleGuard', () => {
     expect(window.location.hash).toBe('#/feed');
   });
 
-  // ──────────────────────────────────────────────────────────────
-  // Publicador can access pendientes route
-  // ──────────────────────────────────────────────────────────────
-
-  it('allows publicador role for pendientes route', async () => {
-    mockAuth.isAuthenticated.mockReturnValue(true);
-    mockAuth.getUser.mockReturnValue({ role: { id: 5, name: 'publicador' } });
-
-    const guard = roleGuard(['publicador']);
-    const result = await guard.canActivate();
-
-    expect(result).toBe(true);
-  });
-
-  // ──────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
   // Fetches user via me() when not cached
   // ──────────────────────────────────────────────────────────────
 

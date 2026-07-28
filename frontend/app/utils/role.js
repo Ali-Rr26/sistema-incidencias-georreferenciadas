@@ -38,7 +38,6 @@ export const ROLE_LABELS = Object.freeze({
   admin_sistema: 'Super Administrador',
   admin_organizacion: 'Administrador de Organización',
   operador_organizacion: 'Operador de Organización',
-  publicador: 'Publicador',
   usuario: 'Usuario',
   operador_sistema: 'Operador de Sistema',
 });
@@ -61,5 +60,4 @@ export const OPERATIONAL_ROLES = Object.freeze([
   'admin_organizacion',
   'operador_sistema',
   'operador_organizacion',
-  'publicador',
 ]);

@@ -338,33 +338,33 @@ async function refreshDashboard() {
   try {
     const [stats, weekly] = await Promise.all([loadStats(), loadWeeklyStats()]);
 
-        const byStatus = stats.by_status ?? {};
-        const total = stats.total ?? 0;
-        const pendientes = byStatus.pending ?? 0;
-        const en_proceso = byStatus.in_progress ?? 0;
-        const resueltas = byStatus.resolved ?? 0;
-        const ubicaciones = stats.locations_count ?? 0;
-        const tiempoResolucion = stats.average_resolution_time ?? null;
-        const trends = stats.trends ?? {};
-        const topCategories = stats.top_categories ?? [];
-        // WU7: the "Pendientes de aprobación" stat card. Counts incidents
-        // currently waiting for an admin to approve or reject them (i.e.
-        // status === 'resolved'). The backend returns 0 when the
-        // controller doesn't know the field (older /api/incidents/stats
-        // shapes pre-WU7); the `?? 0` here keeps the card rendering
-        // without a hard dependency on the field's presence.
-        const pendingApproval = stats.pending_approval ?? 0;
+    const byStatus = stats.by_status ?? {};
+    const total = stats.total ?? 0;
+    const pendientes = byStatus.pending ?? 0;
+    const en_proceso = byStatus.in_progress ?? 0;
+    const resueltas = byStatus.resolved ?? 0;
+    const ubicaciones = stats.locations_count ?? 0;
+    const tiempoResolucion = stats.average_resolution_time ?? null;
+    const trends = stats.trends ?? {};
+    const topCategories = stats.top_categories ?? [];
+    // WU7: the "Pendientes de aprobación" stat card. Counts incidents
+    // currently waiting for an admin to approve or reject them (i.e.
+    // status === 'resolved'). The backend returns 0 when the
+    // controller doesn't know the field (older /api/incidents/stats
+    // shapes pre-WU7); the `?? 0` here keeps the card rendering
+    // without a hard dependency on the field's presence.
+    const pendingApproval = stats.pending_approval ?? 0;
 
-        // Re-animar counters
-        animateCounter(document.getElementById('stat-incidencias'), total);
-        animateCounter(document.getElementById('stat-pendientes'), pendientes);
-        animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
-        animateCounter(document.getElementById('stat-resueltas'), resueltas);
-        animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
-        animateCounter(
-          document.getElementById('stat-pendientes-aprobacion-value'),
-          pendingApproval,
-        );
+    // Re-animar counters
+    animateCounter(document.getElementById('stat-incidencias'), total);
+    animateCounter(document.getElementById('stat-pendientes'), pendientes);
+    animateCounter(document.getElementById('stat-en-proceso'), en_proceso);
+    animateCounter(document.getElementById('stat-resueltas'), resueltas);
+    animateCounter(document.getElementById('stat-ubicaciones'), ubicaciones);
+    animateCounter(
+      document.getElementById('stat-pendientes-aprobacion-value'),
+      pendingApproval,
+    );
 
     // Tiempo promedio
     const resolucionEl = document.getElementById('stat-tiempo-resolucion');

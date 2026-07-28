@@ -287,48 +287,48 @@ describe('dashboard — progressive location filter (WU-2 migration)', () => {
     expect(provinciaSelect.disabled).toBe(true);
   });
 
-      it('loads provinces when country is selected via locationService.getChildren', async () => {
-        await component.onInit();
+  it('loads provinces when country is selected via locationService.getChildren', async () => {
+    await component.onInit();
 
-        // Select Ecuador (country)
-        const paisSelect = document.getElementById('filter-pais');
-        paisSelect.value = '1';
-        paisSelect.dispatchEvent(new Event('change'));
+    // Select Ecuador (country)
+    const paisSelect = document.getElementById('filter-pais');
+    paisSelect.value = '1';
+    paisSelect.dispatchEvent(new Event('change'));
 
-        // Wait for the async province load
-        await new Promise(setImmediate);
+    // Wait for the async province load
+    await new Promise(setImmediate);
 
-        expect(mockLocationService.getChildren).toHaveBeenCalledWith({
-          parentId: 1,
-        });
-      });
+    expect(mockLocationService.getChildren).toHaveBeenCalledWith({
+      parentId: 1,
     });
+  });
+});
 
-    /**
-     * dashboard — WU7 "Pendientes de aprobación" stat card.
-     *
-     * GET /api/incidents/stats now returns `pending_approval` (the number of
-     * incidents in `status=resolved` waiting for an admin to approve or
-     * reject them). The dashboard renders it into
-     * `<article id="stat-pendientes-aprobacion">` inside `.gr-stats-row` and
-     * animates the value with the same `animateCounter()` used for the
-     * other stat cards. Mirrors the rest of the row: `.gr-stat-card`
-     * outer, label/value pair, and a label string of "Pendientes de
-     * aprobación" so the user-facing copy matches spec S12 verbatim.
-     */
-    describe('dashboard — WU7 pendientes de aprobación stat card', () => {
-      let component;
+/**
+ * dashboard — WU7 "Pendientes de aprobación" stat card.
+ *
+ * GET /api/incidents/stats now returns `pending_approval` (the number of
+ * incidents in `status=resolved` waiting for an admin to approve or
+ * reject them). The dashboard renders it into
+ * `<article id="stat-pendientes-aprobacion">` inside `.gr-stats-row` and
+ * animates the value with the same `animateCounter()` used for the
+ * other stat cards. Mirrors the rest of the row: `.gr-stat-card`
+ * outer, label/value pair, and a label string of "Pendientes de
+ * aprobación" so the user-facing copy matches spec S12 verbatim.
+ */
+describe('dashboard — WU7 pendientes de aprobación stat card', () => {
+  let component;
 
-      beforeAll(async () => {
-        const mod = await import('./dashboard.component.js');
-        component = mod.default;
-      });
+  beforeAll(async () => {
+    const mod = await import('./dashboard.component.js');
+    component = mod.default;
+  });
 
-      beforeEach(() => {
-        vi.clearAllMocks();
-        window.c3 = {};
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.c3 = {};
 
-        document.body.innerHTML = `
+    document.body.innerHTML = `
           <div class="gr-stats-row">
             <div class="gr-stat-card gr-stat-card--orange" data-stat-card id="stat-pendientes-aprobacion">
               <div class="gr-stat-card__left">
@@ -357,88 +357,78 @@ describe('dashboard — progressive location filter (WU-2 migration)', () => {
           </div>
         `;
 
-        mockHttp.get.mockImplementation((path) => {
-          if (path === '/incidents/stats') {
-            return Promise.resolve({ total: 0, by_status: {} });
-          }
-          if (path === '/incidents?per_page=5') {
-            return Promise.resolve({ data: [] });
-          }
-          return Promise.resolve({ data: [] });
-        });
-      });
-
-      afterEach(() => {
-        delete window.c3;
-      });
-
-      it('renders the count from stats.pending_approval into the new card', async () => {
-        let statsCallCount = 0;
-        mockHttp.get.mockImplementation((path) => {
-          // Match both the bare and query-stringed path. `filterState`
-          // is module-level and can leak from a previous test (e.g. the
-          // country picker in the "progressive location filter" block),
-          // so the dashboard may append `?pais_id=…` to /incidents/stats.
-          if (
-            path === '/incidents/stats' ||
-            path.startsWith('/incidents/stats?')
-          ) {
-            statsCallCount += 1;
-            return Promise.resolve({
-              total: 12,
-              by_status: { pending: 5, in_progress: 4, resolved: 3, closed: 0 },
-              pending_approval: 3,
-            });
-          }
-          return Promise.resolve({ data: [] });
-        });
-
-        await component.onInit();
-
-        expect(statsCallCount).toBeGreaterThan(0);
-
-        const card = document.getElementById('stat-pendientes-aprobacion');
-        expect(card).not.toBeNull();
-        // The label is fixed by the template; pin it to keep the user-facing
-        // copy locked to the spec ("Pendientes de aprobación" — S12).
-        const label = card.querySelector('.gr-stat-card__label');
-        expect(label?.textContent).toBe('Pendientes de aprobación');
-        // animateCounter() writes to the inner counter element over a few
-        // requestAnimationFrame frames. In jsdom rAF fires on the next
-        // macrotask, so we yield a few ticks via setTimeout to let the
-        // animation settle on the target value before reading the
-        // textContent. The duration is 900ms; we yield 1100ms to be safe.
-        await new Promise((r) => setTimeout(r, 1100));
-        const counter = document.getElementById(
-          'stat-pendientes-aprobacion-value',
-        );
-        expect(counter.textContent.trim()).toBe('3');
-      });
-
-      it('falls back to 0 when the backend omits the pending_approval field', async () => {
-        mockHttp.get.mockImplementation((path) => {
-          if (
-            path === '/incidents/stats' ||
-            path.startsWith('/incidents/stats?')
-          ) {
-            // Same shape the controller returned before WU7 — no
-            // pending_approval key. The component should still render
-            // the card and show 0 rather than crashing.
-            return Promise.resolve({ total: 0, by_status: {} });
-          }
-          return Promise.resolve({ data: [] });
-        });
-
-        await component.onInit();
-
-        const card = document.getElementById('stat-pendientes-aprobacion');
-        expect(card).not.toBeNull();
-        // 0 must be rendered as the empty-state message ("Sin datos en
-        // este período"), not as a numeric counter — same convention as
-        // the other stat cards when their value is 0.
-        await vi.waitUntil(
-          () => card.textContent.includes('Sin datos'),
-        );
-        expect(card.textContent).toContain('Sin datos');
-      });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/stats') {
+        return Promise.resolve({ total: 0, by_status: {} });
+      }
+      if (path === '/incidents?per_page=5') {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
     });
+  });
+
+  afterEach(() => {
+    delete window.c3;
+  });
+
+  it('renders the count from stats.pending_approval into the new card', async () => {
+    let statsCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      // Match both the bare and query-stringed path. `filterState`
+      // is module-level and can leak from a previous test (e.g. the
+      // country picker in the "progressive location filter" block),
+      // so the dashboard may append `?pais_id=…` to /incidents/stats.
+      if (path === '/incidents/stats' || path.startsWith('/incidents/stats?')) {
+        statsCallCount += 1;
+        return Promise.resolve({
+          total: 12,
+          by_status: { pending: 5, in_progress: 4, resolved: 3, closed: 0 },
+          pending_approval: 3,
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit();
+
+    expect(statsCallCount).toBeGreaterThan(0);
+
+    const card = document.getElementById('stat-pendientes-aprobacion');
+    expect(card).not.toBeNull();
+    // The label is fixed by the template; pin it to keep the user-facing
+    // copy locked to the spec ("Pendientes de aprobación" — S12).
+    const label = card.querySelector('.gr-stat-card__label');
+    expect(label?.textContent).toBe('Pendientes de aprobación');
+    // animateCounter() writes to the inner counter element over a few
+    // requestAnimationFrame frames. In jsdom rAF fires on the next
+    // macrotask, so we yield a few ticks via setTimeout to let the
+    // animation settle on the target value before reading the
+    // textContent. The duration is 900ms; we yield 1100ms to be safe.
+    await new Promise((r) => setTimeout(r, 1100));
+    const counter = document.getElementById('stat-pendientes-aprobacion-value');
+    expect(counter.textContent.trim()).toBe('3');
+  });
+
+  it('falls back to 0 when the backend omits the pending_approval field', async () => {
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/stats' || path.startsWith('/incidents/stats?')) {
+        // Same shape the controller returned before WU7 — no
+        // pending_approval key. The component should still render
+        // the card and show 0 rather than crashing.
+        return Promise.resolve({ total: 0, by_status: {} });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit();
+
+    const card = document.getElementById('stat-pendientes-aprobacion');
+    expect(card).not.toBeNull();
+    // 0 must be rendered as the empty-state message ("Sin datos en
+    // este período"), not as a numeric counter — same convention as
+    // the other stat cards when their value is 0.
+    await vi.waitUntil(() => card.textContent.includes('Sin datos'));
+    expect(card.textContent).toContain('Sin datos');
+  });
+});

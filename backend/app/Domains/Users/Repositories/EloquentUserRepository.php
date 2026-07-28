@@ -57,7 +57,7 @@ class EloquentUserRepository extends EloquentRepository implements UserRepositor
             if ($user->isOrganizationAdmin() || $user->isOperator()) {
                 $query->where('organization_id', $user->organization_id);
             } else {
-                $query->whereRaw('1 = 0'); // Usuarios comunes o publicadores no listan usuarios
+                $query->whereRaw('1 = 0'); // Usuarios comunes no listan usuarios
             }
         }
 

@@ -52,14 +52,13 @@ describe('homeRouteForUser', () => {
 });
 
 describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
-  it('exposes every role name surfaced by the UserResource', () => {
+it('exposes every role name surfaced by the UserResource', () => {
     expect(Object.keys(ROLE_LABELS).sort()).toEqual(
       [
         'admin_organizacion',
         'admin_sistema',
         'operador_organizacion',
         'operador_sistema',
-        'publicador',
         'usuario',
       ].sort(),
     );
@@ -72,7 +71,6 @@ describe('ROLE_LABELS (SCEN-8.1 consolidation)', () => {
     );
     expect(ROLE_LABELS.operador_organizacion).toBe('Operador de Organización');
     expect(ROLE_LABELS.operador_sistema).toBe('Operador de Sistema');
-    expect(ROLE_LABELS.publicador).toBe('Publicador');
     expect(ROLE_LABELS.usuario).toBe('Usuario');
   });
 
@@ -103,19 +101,18 @@ describe('role utils — guard integration (SCEN-8.2)', () => {
  *
  * Design Decision 6 (frontend): classifyRole() in app-shell.component.js
  * must read this constant instead of duplicating the role → bucket
- * mapping. Five operational roles share the admin shell chrome:
+ * mapping. Four operational roles share the admin shell chrome:
  * admin_sistema, admin_organizacion, operador_sistema,
- * operador_organizacion, publicador. `usuario` is the citizen bucket.
+ * operador_organizacion. `usuario` is the citizen bucket.
  */
 describe('OPERATIONAL_ROLES (T-2.1 menu-server-driven)', () => {
-  it('exports the five operational role names that share the admin bucket', () => {
+  it('exports the four operational role names that share the admin bucket', () => {
     expect([...OPERATIONAL_ROLES].sort()).toEqual(
       [
         'admin_sistema',
         'admin_organizacion',
         'operador_sistema',
         'operador_organizacion',
-        'publicador',
       ].sort(),
     );
   });

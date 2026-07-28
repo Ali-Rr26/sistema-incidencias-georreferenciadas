@@ -451,13 +451,13 @@ describe('notificaciones-index — WU-2 inline rejection form', () => {
     textarea.dispatchEvent(new Event('input'));
     article.querySelector('.reject-confirm').click();
 
-    await vi.waitUntil(() =>
-      article.querySelector('.notification-row__reject-error')?.textContent
-    ?.length > 0,
+    await vi.waitUntil(
+      () =>
+        article.querySelector('.notification-row__reject-error')?.textContent
+          ?.length > 0,
     );
 
-    const errorSlot =
-      article.querySelector('.notification-row__reject-error');
+    const errorSlot = article.querySelector('.notification-row__reject-error');
     expect(errorSlot).not.toBeNull();
     expect(errorSlot.textContent).toContain('El motivo es obligatorio.');
   });

@@ -805,258 +805,254 @@ describe('incidencias.detail — assignments', () => {
     const vacioEl = document.getElementById('detalle-asignaciones-vacio');
     expect(vacioEl.classList.contains('d-none')).toBe(false);
     expect(vacioEl.textContent).toBe('Error al cargar asignaciones.');
-        expect(document.getElementById('detalle-asignaciones-list').innerHTML).toBe(
-          '',
-        );
-      });
+    expect(document.getElementById('detalle-asignaciones-list').innerHTML).toBe(
+      '',
+    );
+  });
+});
+
+/**
+ * incidencias.detail — WU6 approve / reject buttons.
+ *
+ * The operator detail view gained admin-approval controls: Aprobar /
+ * Rechazar buttons are visible ONLY when both
+ *   (a) the loaded incident has status === 'resolved' AND
+ *   (b) the authenticated user has the `incidents.approve` permission.
+ *
+ * Both buttons route through the already-wired `notificationService`
+ * (not raw `http.post`) so the existing decision pipeline (audit
+ * actor binding, side-effect notifications, 422 reason validation)
+ * stays in one place. After clicking either button the page re-fetches
+ * the incident via `cargarIncidencia(id)` so the status badge and the
+ * action buttons re-render without a full page reload.
+ */
+describe('incidencias.detail — WU6 approval buttons', () => {
+  let component;
+
+  function resolvedIncidentFixture(overrides = {}) {
+    return {
+      id: 42,
+      title: 'Bache resuelto',
+      description: 'Bache profundo',
+      status: 'resolved',
+      priority: 'medium',
+      created_at: '2026-07-01T10:00:00Z',
+      category: { name: 'Infraestructura' },
+      location: { name: 'Centro' },
+      user: { first_name: 'Juan', last_name: 'Perez' },
+      organization: { id: 9, name: 'Org X' },
+      images: [],
+      status_history: [],
+      comments: [],
+      assignments: [],
+      ...overrides,
+    };
+  }
+
+  async function mountWithStatus(status, permissions = new Set()) {
+    const fixture = resolvedIncidentFixture({ status });
+    let incidentsCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        incidentsCallCount += 1;
+        if (incidentsCallCount === 1) {
+          return Promise.resolve({ data: fixture });
+        }
+        // Reload after decision — return the next status so the
+        // status badge re-paints and the buttons re-evaluate.
+        const next = { ...fixture, status: 'in_progress' };
+        return Promise.resolve({ data: next });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    mockPermissionService.getMyPermissions.mockResolvedValue(permissions);
+    await component.onInit({ params: { id: 42 } });
+    // setupActionButtons runs as part of onInit; let the
+    // permissionService.getMyPermissions promise resolve.
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  beforeAll(async () => {
+    const mod = await import('./incidencias.detail.component.js');
+    component = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.getUser.mockReturnValue({
+      id: 99,
+      role: { name: 'admin_organizacion' },
+    });
+    buildDetailDom();
+  });
+
+  afterEach(() => {
+    component.onDestroy?.();
+  });
+
+  it('renders Aprobar / Rechazar when status=resolved AND user has incidents.approve', async () => {
+    // Buttons only mount when a matching open approval notification
+    // exists in the user's queue — the helper looks the notification up
+    // via notificationService.list so it can call the right
+    // /notifications/{id}/{approve,reject} endpoint. We seed the queue
+    // here so the test exercises the happy path end-to-end.
+    mockNotificationService.list.mockResolvedValue({
+      data: [
+        {
+          id: 11,
+          type: 'incidencia_atendida_para_aprobacion',
+          data: { incident_id: 42, decision: null },
+          read: false,
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
     });
 
-    /**
-     * incidencias.detail — WU6 approve / reject buttons.
-     *
-     * The operator detail view gained admin-approval controls: Aprobar /
-     * Rechazar buttons are visible ONLY when both
-     *   (a) the loaded incident has status === 'resolved' AND
-     *   (b) the authenticated user has the `incidents.approve` permission.
-     *
-     * Both buttons route through the already-wired `notificationService`
-     * (not raw `http.post`) so the existing decision pipeline (audit
-     * actor binding, side-effect notifications, 422 reason validation)
-     * stays in one place. After clicking either button the page re-fetches
-     * the incident via `cargarIncidencia(id)` so the status badge and the
-     * action buttons re-render without a full page reload.
-     */
-    describe('incidencias.detail — WU6 approval buttons', () => {
-      let component;
+    await mountWithStatus('resolved', new Set(['incidents.approve']));
 
-      function resolvedIncidentFixture(overrides = {}) {
-        return {
-          id: 42,
-          title: 'Bache resuelto',
-          description: 'Bache profundo',
-          status: 'resolved',
-          priority: 'medium',
-          created_at: '2026-07-01T10:00:00Z',
-          category: { name: 'Infraestructura' },
-          location: { name: 'Centro' },
-          user: { first_name: 'Juan', last_name: 'Perez' },
-          organization: { id: 9, name: 'Org X' },
-          images: [],
-          status_history: [],
-          comments: [],
-          assignments: [],
-          ...overrides,
-        };
-      }
+    const approvalActions = document.getElementById('detalle-approval-actions');
+    expect(approvalActions.classList.contains('d-none')).toBe(false);
+    expect(document.getElementById('btn-aprobar')).not.toBeNull();
+    expect(document.getElementById('btn-rechazar')).not.toBeNull();
+  });
 
-      async function mountWithStatus(status, permissions = new Set()) {
-        const fixture = resolvedIncidentFixture({ status });
-        let incidentsCallCount = 0;
-        mockHttp.get.mockImplementation((path) => {
-          if (path === '/incidents/42') {
-            incidentsCallCount += 1;
-            if (incidentsCallCount === 1) {
-              return Promise.resolve({ data: fixture });
-            }
-            // Reload after decision — return the next status so the
-            // status badge re-paints and the buttons re-evaluate.
-            const next = { ...fixture, status: 'in_progress' };
-            return Promise.resolve({ data: next });
-          }
-          return Promise.resolve({ data: [] });
-        });
-        mockPermissionService.getMyPermissions.mockResolvedValue(permissions);
-        await component.onInit({ params: { id: 42 } });
-        // setupActionButtons runs as part of onInit; let the
-        // permissionService.getMyPermissions promise resolve.
-        await new Promise((r) => setTimeout(r, 0));
-        await new Promise((r) => setTimeout(r, 0));
-      }
+  it('does NOT render approval buttons when status is in_progress', async () => {
+    await mountWithStatus('in_progress', new Set(['incidents.approve']));
 
-      beforeAll(async () => {
-        const mod = await import('./incidencias.detail.component.js');
-        component = mod.default;
-      });
+    const approvalActions = document.getElementById('detalle-approval-actions');
+    expect(approvalActions.classList.contains('d-none')).toBe(true);
+  });
 
-      beforeEach(() => {
-        vi.clearAllMocks();
-        mockAuth.getUser.mockReturnValue({
-          id: 99,
-          role: { name: 'admin_organizacion' },
-        });
-        buildDetailDom();
-      });
+  it('does NOT render approval buttons when status is pending', async () => {
+    await mountWithStatus('pending', new Set(['incidents.approve']));
 
-      afterEach(() => {
-        component.onDestroy?.();
-      });
+    const approvalActions = document.getElementById('detalle-approval-actions');
+    expect(approvalActions.classList.contains('d-none')).toBe(true);
+  });
 
-      it('renders Aprobar / Rechazar when status=resolved AND user has incidents.approve', async () => {
-        // Buttons only mount when a matching open approval notification
-        // exists in the user's queue — the helper looks the notification up
-        // via notificationService.list so it can call the right
-        // /notifications/{id}/{approve,reject} endpoint. We seed the queue
-        // here so the test exercises the happy path end-to-end.
-        mockNotificationService.list.mockResolvedValue({
-          data: [
-            {
-              id: 11,
-              type: 'incidencia_atendida_para_aprobacion',
-              data: { incident_id: 42, decision: null },
-              read: false,
-            },
-          ],
-          meta: null,
-          unreadCount: 1,
-        });
+  it('does NOT render approval buttons when the user lacks incidents.approve', async () => {
+    await mountWithStatus('resolved', new Set(['incidents.view']));
 
-        await mountWithStatus('resolved', new Set(['incidents.approve']));
+    const approvalActions = document.getElementById('detalle-approval-actions');
+    expect(approvalActions.classList.contains('d-none')).toBe(true);
+  });
 
-        const approvalActions = document.getElementById(
-          'detalle-approval-actions',
-        );
-        expect(approvalActions.classList.contains('d-none')).toBe(false);
-        expect(document.getElementById('btn-aprobar')).not.toBeNull();
-        expect(document.getElementById('btn-rechazar')).not.toBeNull();
-      });
-
-      it('does NOT render approval buttons when status is in_progress', async () => {
-        await mountWithStatus('in_progress', new Set(['incidents.approve']));
-
-        const approvalActions = document.getElementById(
-          'detalle-approval-actions',
-        );
-        expect(approvalActions.classList.contains('d-none')).toBe(true);
-      });
-
-      it('does NOT render approval buttons when status is pending', async () => {
-        await mountWithStatus('pending', new Set(['incidents.approve']));
-
-        const approvalActions = document.getElementById(
-          'detalle-approval-actions',
-        );
-        expect(approvalActions.classList.contains('d-none')).toBe(true);
-      });
-
-      it('does NOT render approval buttons when the user lacks incidents.approve', async () => {
-        await mountWithStatus('resolved', new Set(['incidents.view']));
-
-        const approvalActions = document.getElementById(
-          'detalle-approval-actions',
-        );
-        expect(approvalActions.classList.contains('d-none')).toBe(true);
-      });
-
-      it('clicking Aprobar calls notificationService.approve with the notification id and reloads the incident', async () => {
-        // The detail page finds the approval notification via the user's
-        // notification queue (or the embedded data fixture). The simplest
-        // way for the test to pin the id is to populate the notification
-        // list with a single approval row that references this incident.
-        mockNotificationService.list.mockResolvedValue({
-          data: [
-            {
-              id: 7,
-              type: 'incidencia_atendida_para_aprobacion',
-              data: { incident_id: 42, decision: null },
-              read: false,
-            },
-          ],
-          meta: null,
-          unreadCount: 1,
-        });
-
-        await mountWithStatus('resolved', new Set(['incidents.approve']));
-
-        document.getElementById('btn-aprobar').click();
-
-        await vi.waitUntil(() => mockNotificationService.approve.mock.calls.length > 0);
-        expect(mockNotificationService.approve).toHaveBeenCalledWith(7);
-
-        // The page must refetch the incident so the status badge reflects
-        // the new 'closed' state and the buttons disappear (scenario S10).
-        await vi.waitUntil(
-          () => mockHttp.get.mock.calls.filter((c) => c[0] === '/incidents/42').length >= 2,
-        );
-      });
-
-      it('clicking Rechazar opens the inline reject form; Confirming calls notificationService.reject with the reason and reloads', async () => {
-        mockNotificationService.list.mockResolvedValue({
-          data: [
-            {
-              id: 8,
-              type: 'incidencia_atendida_para_aprobacion',
-              data: { incident_id: 42, decision: null },
-              read: false,
-            },
-          ],
-          meta: null,
-          unreadCount: 1,
-        });
-
-        await mountWithStatus('resolved', new Set(['incidents.approve']));
-
-        document.getElementById('btn-rechazar').click();
-
-        const form = document.getElementById('detalle-approval-form');
-        expect(form.classList.contains('d-none')).toBe(false);
-        const textarea = document.getElementById('detalle-reject-reason');
-        textarea.value = 'falta evidencia fotográfica';
-        textarea.dispatchEvent(new Event('input'));
-
-        document.getElementById('btn-reject-confirm').click();
-
-        await vi.waitUntil(
-          () => mockNotificationService.reject.mock.calls.length > 0,
-        );
-        expect(mockNotificationService.reject).toHaveBeenCalledWith(
-          8,
-          'falta evidencia fotográfica',
-        );
-
-        // After the decision, the page re-fetches the incident so the
-        // status flips from 'resolved' to 'in_progress' and the approval
-        // buttons disappear (S4 / S10).
-        await vi.waitUntil(
-          () =>
-            mockHttp.get.mock.calls.filter((c) => c[0] === '/incidents/42')
-              .length >= 2,
-        );
-      });
-
-      it('surfaces the server-side 422 errors.reason[0] when the API rejects the rejection', async () => {
-        mockNotificationService.list.mockResolvedValue({
-          data: [
-            {
-              id: 9,
-              type: 'incidencia_atendida_para_aprobacion',
-              data: { incident_id: 42, decision: null },
-              read: false,
-            },
-          ],
-          meta: null,
-          unreadCount: 1,
-        });
-        const serverError = new Error('Validation failed');
-        serverError.status = 422;
-        serverError.data = {
-          errors: { reason: ['El motivo es obligatorio.'] },
-        };
-        mockNotificationService.reject.mockRejectedValueOnce(serverError);
-
-        await mountWithStatus('resolved', new Set(['incidents.approve']));
-        document.getElementById('btn-rechazar').click();
-        const textarea = document.getElementById('detalle-reject-reason');
-        textarea.value = 'x';
-        textarea.dispatchEvent(new Event('input'));
-        document.getElementById('btn-reject-confirm').click();
-
-        await vi.waitUntil(() =>
-          document
-            .getElementById('detalle-reject-error')
-            ?.textContent?.length > 0,
-        );
-        expect(
-          document.getElementById('detalle-reject-error').textContent,
-        ).toContain('El motivo es obligatorio.');
-      });
+  it('clicking Aprobar calls notificationService.approve with the notification id and reloads the incident', async () => {
+    // The detail page finds the approval notification via the user's
+    // notification queue (or the embedded data fixture). The simplest
+    // way for the test to pin the id is to populate the notification
+    // list with a single approval row that references this incident.
+    mockNotificationService.list.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          type: 'incidencia_atendida_para_aprobacion',
+          data: { incident_id: 42, decision: null },
+          read: false,
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
     });
+
+    await mountWithStatus('resolved', new Set(['incidents.approve']));
+
+    document.getElementById('btn-aprobar').click();
+
+    await vi.waitUntil(
+      () => mockNotificationService.approve.mock.calls.length > 0,
+    );
+    expect(mockNotificationService.approve).toHaveBeenCalledWith(7);
+
+    // The page must refetch the incident so the status badge reflects
+    // the new 'closed' state and the buttons disappear (scenario S10).
+    await vi.waitUntil(
+      () =>
+        mockHttp.get.mock.calls.filter((c) => c[0] === '/incidents/42')
+          .length >= 2,
+    );
+  });
+
+  it('clicking Rechazar opens the inline reject form; Confirming calls notificationService.reject with the reason and reloads', async () => {
+    mockNotificationService.list.mockResolvedValue({
+      data: [
+        {
+          id: 8,
+          type: 'incidencia_atendida_para_aprobacion',
+          data: { incident_id: 42, decision: null },
+          read: false,
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
+    });
+
+    await mountWithStatus('resolved', new Set(['incidents.approve']));
+
+    document.getElementById('btn-rechazar').click();
+
+    const form = document.getElementById('detalle-approval-form');
+    expect(form.classList.contains('d-none')).toBe(false);
+    const textarea = document.getElementById('detalle-reject-reason');
+    textarea.value = 'falta evidencia fotográfica';
+    textarea.dispatchEvent(new Event('input'));
+
+    document.getElementById('btn-reject-confirm').click();
+
+    await vi.waitUntil(
+      () => mockNotificationService.reject.mock.calls.length > 0,
+    );
+    expect(mockNotificationService.reject).toHaveBeenCalledWith(
+      8,
+      'falta evidencia fotográfica',
+    );
+
+    // After the decision, the page re-fetches the incident so the
+    // status flips from 'resolved' to 'in_progress' and the approval
+    // buttons disappear (S4 / S10).
+    await vi.waitUntil(
+      () =>
+        mockHttp.get.mock.calls.filter((c) => c[0] === '/incidents/42')
+          .length >= 2,
+    );
+  });
+
+  it('surfaces the server-side 422 errors.reason[0] when the API rejects the rejection', async () => {
+    mockNotificationService.list.mockResolvedValue({
+      data: [
+        {
+          id: 9,
+          type: 'incidencia_atendida_para_aprobacion',
+          data: { incident_id: 42, decision: null },
+          read: false,
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
+    });
+    const serverError = new Error('Validation failed');
+    serverError.status = 422;
+    serverError.data = {
+      errors: { reason: ['El motivo es obligatorio.'] },
+    };
+    mockNotificationService.reject.mockRejectedValueOnce(serverError);
+
+    await mountWithStatus('resolved', new Set(['incidents.approve']));
+    document.getElementById('btn-rechazar').click();
+    const textarea = document.getElementById('detalle-reject-reason');
+    textarea.value = 'x';
+    textarea.dispatchEvent(new Event('input'));
+    document.getElementById('btn-reject-confirm').click();
+
+    await vi.waitUntil(
+      () =>
+        document.getElementById('detalle-reject-error')?.textContent?.length >
+        0,
+    );
+    expect(
+      document.getElementById('detalle-reject-error').textContent,
+    ).toContain('El motivo es obligatorio.');
+  });
+});

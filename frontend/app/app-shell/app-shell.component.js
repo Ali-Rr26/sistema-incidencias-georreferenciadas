@@ -70,8 +70,8 @@ let _notifStream = null;
  * Classify a user object into one of the three shell role buckets.
  * Public for tests + future role-guard helpers.
  *
- * Operational roles (admin_sistema, admin_organizacion, operador_sistema,
- * operador_organizacion, publicador) share the back-office chrome and
+* Operational roles (admin_sistema, admin_organizacion, operador_sistema,
+ * operador_organizacion) share the back-office chrome and
  * therefore collapse into the `admin` bucket. `usuario` keeps the
  * citizen shell. Anything else — null/undefined user, malformed role,
  * future roles not yet listed in OPERATIONAL_ROLES — falls into `guest`

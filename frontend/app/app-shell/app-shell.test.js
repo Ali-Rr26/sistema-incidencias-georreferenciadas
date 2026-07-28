@@ -1207,12 +1207,11 @@ describe('appShell — classifyRole (T-2.3 menu-server-driven)', () => {
     classifyRole = mod.classifyRole;
   });
 
-  it.each([
+it.each([
     ['admin_sistema', 'admin'],
     ['admin_organizacion', 'admin'],
     ['operador_sistema', 'admin'],
     ['operador_organizacion', 'admin'],
-    ['publicador', 'admin'],
   ])('classifies %s as %s', (roleName, expected) => {
     expect(classifyRole({ role: { id: 0, name: roleName } })).toBe(expected);
   });

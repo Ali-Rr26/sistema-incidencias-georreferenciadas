@@ -669,9 +669,8 @@ function setupActionButtons(incidentId, inc) {
   const roleName = resolveRoleName(user);
   if (!roleName) return;
 
-  const actionsEl = document.getElementById('detalle-acciones');
+const actionsEl = document.getElementById('detalle-acciones');
   const claimActionsEl = document.getElementById('detalle-claim-actions');
-  const confirmActionsEl = document.getElementById('detalle-confirm-actions');
   const loadingEl = document.getElementById('detalle-acciones-loading');
   const errorEl = document.getElementById('detalle-acciones-error');
   const errorMsgEl = document.getElementById('detalle-acciones-msg');
@@ -737,233 +736,205 @@ function setupActionButtons(incidentId, inc) {
         });
       }
     }
+}
+
+  // ── Admin: Aprobar / Rechazar ──
+  // WU6: visible only when status === 'resolved' AND the user has
+  // the `incidents.approve` permission. The actual side-effects
+  // (status transition, notifications, audit actor) live in the
+  // backend; the frontend is a thin wrapper around
+  // `notificationService.approve` / `notificationService.reject`.
+  // Decision flow (S10): after a decision we re-fetch the incident so
+  // the status badge and the buttons re-render without a full reload.
+  if (inc.status === 'resolved') {
+    permissionService
+      .getMyPermissions()
+      .then((permisos) => {
+        if (permisos?.has('incidents.approve')) {
+          setupApprovalButtons(incidentId, actionsEl);
+        }
+      })
+      .catch(() => {
+        /* no permissions → no approval buttons; keep the page usable */
+      });
+  }
+}
+
+/**
+ * WU6: wire the Aprobar / Rechazar buttons (rendered in
+ * `#detalle-approval-actions`) and the inline rejection form
+ * (`#detalle-approval-form`) for a `resolved` incident.
+ *
+ * Looks up the matching `incidencia_atendida_para_aprobacion`
+ * notification for the incident via `notificationService.list` so the
+ * buttons drive the right backend endpoint (`/notifications/{id}/approve`
+ * or `/reject`, not `/incidents/{id}/...`). The page does NOT need to
+ * know how the backend stores notifications — it just maps the
+ * decision button to a notification id.
+ *
+ * The same permission-gated, status-gated contract as
+ * `IncidentPolicy::approve` is enforced on the backend; the client-side
+ * check is a UX hint (admins in role orgs with `incidents.approve` see
+ * the buttons; others don't) and matches the spec's S10 scenario.
+ */
+async function setupApprovalButtons(incidentId, actionsEl) {
+  const approvalActionsEl = document.getElementById('detalle-approval-actions');
+  const formEl = document.getElementById('detalle-approval-form');
+  const btnAprobar = document.getElementById('btn-aprobar');
+  const btnRechazar = document.getElementById('btn-rechazar');
+  const btnRejectCancel = document.getElementById('btn-reject-cancel');
+  const btnRejectConfirm = document.getElementById('btn-reject-confirm');
+  const textarea = document.getElementById('detalle-reject-reason');
+  const errorEl = document.getElementById('detalle-reject-error');
+  const loadingEl = document.getElementById('detalle-acciones-loading');
+
+  if (
+    !approvalActionsEl ||
+    !btnAprobar ||
+    !btnRechazar ||
+    !formEl ||
+    !textarea
+  ) {
+    return;
   }
 
-      // ── Publicador: Confirmar ──
-      if (roleName === 'publicador') {
-        const incOrgId = inc.organization?.id || inc.organization_id;
+  actionsEl?.classList.remove('d-none');
+  approvalActionsEl.classList.remove('d-none');
 
-        // Solo si la incidencia NO tiene organización asignada
-        if (!incOrgId) {
-          actionsEl.classList.remove('d-none');
-          confirmActionsEl.classList.remove('d-none');
-
-          btnConfirmar?.addEventListener('click', async () => {
-            setLoading(true);
-            try {
-              await http.post(`/incidents/${incidentId}/confirmar`);
-              window.location.reload();
-            } catch (err) {
-              showError(
-                err.message ||
-                  'No se pudo confirmar la incidencia. Puede que ya haya sido asignada.',
-              );
-            } finally {
-              setLoading(false);
-            }
-          });
-        }
-      }
-
-      // ── Admin: Aprobar / Rechazar ──
-      // WU6: visible only when status === 'resolved' AND the user has
-      // the `incidents.approve` permission. The actual side-effects
-      // (status transition, notifications, audit actor) live in the
-      // backend; the frontend is a thin wrapper around
-      // `notificationService.approve` / `notificationService.reject`.
-      // Decision flow (S10): after a decision we re-fetch the incident so
-      // the status badge and the buttons re-render without a full reload.
-      if (inc.status === 'resolved') {
-        permissionService
-          .getMyPermissions()
-          .then((permisos) => {
-            if (permisos?.has('incidents.approve')) {
-              setupApprovalButtons(incidentId, actionsEl);
-            }
-          })
-          .catch(() => {
-            /* no permissions → no approval buttons; keep the page usable */
-          });
-      }
-    }
-
-    /**
-     * WU6: wire the Aprobar / Rechazar buttons (rendered in
-     * `#detalle-approval-actions`) and the inline rejection form
-     * (`#detalle-approval-form`) for a `resolved` incident.
-     *
-     * Looks up the matching `incidencia_atendida_para_aprobacion`
-     * notification for the incident via `notificationService.list` so the
-     * buttons drive the right backend endpoint (`/notifications/{id}/approve`
-     * or `/reject`, not `/incidents/{id}/...`). The page does NOT need to
-     * know how the backend stores notifications — it just maps the
-     * decision button to a notification id.
-     *
-     * The same permission-gated, status-gated contract as
-     * `IncidentPolicy::approve` is enforced on the backend; the client-side
-     * check is a UX hint (admins in role orgs with `incidents.approve` see
-     * the buttons; others don't) and matches the spec's S10 scenario.
-     */
-    async function setupApprovalButtons(incidentId, actionsEl) {
-      const approvalActionsEl = document.getElementById(
-        'detalle-approval-actions',
-      );
-      const formEl = document.getElementById('detalle-approval-form');
-      const btnAprobar = document.getElementById('btn-aprobar');
-      const btnRechazar = document.getElementById('btn-rechazar');
-      const btnRejectCancel = document.getElementById('btn-reject-cancel');
-      const btnRejectConfirm = document.getElementById('btn-reject-confirm');
-      const textarea = document.getElementById('detalle-reject-reason');
-      const errorEl = document.getElementById('detalle-reject-error');
-      const loadingEl = document.getElementById('detalle-acciones-loading');
-
-      if (
-        !approvalActionsEl ||
-        !btnAprobar ||
-        !btnRechazar ||
-        !formEl ||
-        !textarea
-      ) {
-        return;
-      }
-
-      actionsEl?.classList.remove('d-none');
-      approvalActionsEl.classList.remove('d-none');
-
-      // Find the matching open approval notification for this incident.
-      // The page does not pre-load it; we fetch on demand. We tolerate an
-      // empty queue (no notification, or already decided) by hiding the
-      // buttons — admins can still decide via /notificaciones.
-      let notificationId = null;
-      try {
-        const result = await notificationService.list({ perPage: 200 });
-        const match = (result?.data ?? []).find(
-          (n) =>
-            n.type === 'incidencia_atendida_para_aprobacion' &&
-            n.data?.incident_id === incidentId &&
-            !n.data?.decision,
-        );
-        notificationId = match?.id ?? null;
-      } catch {
-        /* network blip — leave the buttons hidden rather than wire a
+  // Find the matching open approval notification for this incident.
+  // The page does not pre-load it; we fetch on demand. We tolerate an
+  // empty queue (no notification, or already decided) by hiding the
+  // buttons — admins can still decide via /notificaciones.
+  let notificationId = null;
+  try {
+    const result = await notificationService.list({ perPage: 200 });
+    const match = (result?.data ?? []).find(
+      (n) =>
+        n.type === 'incidencia_atendida_para_aprobacion' &&
+        n.data?.incident_id === incidentId &&
+        !n.data?.decision,
+    );
+    notificationId = match?.id ?? null;
+  } catch {
+    /* network blip — leave the buttons hidden rather than wire a
            call that would 404 on the backend. */
-        return;
-      }
+    return;
+  }
 
-      if (!notificationId) {
-        approvalActionsEl.classList.add('d-none');
-        return;
-      }
+  if (!notificationId) {
+    approvalActionsEl.classList.add('d-none');
+    return;
+  }
 
-      function showRejectError(msg) {
-        if (!errorEl) return;
-        errorEl.textContent = msg;
-        errorEl.classList.remove('d-none');
-      }
+  function showRejectError(msg) {
+    if (!errorEl) return;
+    errorEl.textContent = msg;
+    errorEl.classList.remove('d-none');
+  }
 
-      function clearRejectError() {
-        if (!errorEl) return;
-        errorEl.textContent = '';
-        errorEl.classList.add('d-none');
-      }
+  function clearRejectError() {
+    if (!errorEl) return;
+    errorEl.textContent = '';
+    errorEl.classList.add('d-none');
+  }
 
-      function setApprovalLoading(on) {
-        if (loadingEl) loadingEl.classList.toggle('d-none', !on);
-        btnAprobar.disabled = on;
-        btnRechazar.disabled = on;
-        if (btnRejectConfirm) btnRejectConfirm.disabled = on;
-        if (btnRejectCancel) btnRejectCancel.disabled = on;
-      }
+  function setApprovalLoading(on) {
+    if (loadingEl) loadingEl.classList.toggle('d-none', !on);
+    btnAprobar.disabled = on;
+    btnRechazar.disabled = on;
+    if (btnRejectConfirm) btnRejectConfirm.disabled = on;
+    if (btnRejectCancel) btnRejectCancel.disabled = on;
+  }
 
-      function exitRejecting() {
-        formEl.classList.add('d-none');
-        approvalActionsEl.classList.remove('d-none');
-        textarea.value = '';
-        clearRejectError();
-      }
+  function exitRejecting() {
+    formEl.classList.add('d-none');
+    approvalActionsEl.classList.remove('d-none');
+    textarea.value = '';
+    clearRejectError();
+  }
 
-      function enterRejecting() {
-        formEl.classList.remove('d-none');
-        approvalActionsEl.classList.add('d-none');
-        textarea.value = '';
-        clearRejectError();
-        textarea.focus();
-      }
+  function enterRejecting() {
+    formEl.classList.remove('d-none');
+    approvalActionsEl.classList.add('d-none');
+    textarea.value = '';
+    clearRejectError();
+    textarea.focus();
+  }
 
-      // Confirm is gated client-side to mirror the backend's
-      // `reason: required` (see S5 + WU5). The disabled state syncs with
-      // the textarea so admins see immediate feedback as they type.
-      const refreshConfirmState = () => {
-        if (btnRejectConfirm) {
-          btnRejectConfirm.disabled = textarea.value.trim().length === 0;
-        }
-        clearRejectError();
-      };
-      textarea.addEventListener('input', refreshConfirmState);
-      refreshConfirmState();
+  // Confirm is gated client-side to mirror the backend's
+  // `reason: required` (see S5 + WU5). The disabled state syncs with
+  // the textarea so admins see immediate feedback as they type.
+  const refreshConfirmState = () => {
+    if (btnRejectConfirm) {
+      btnRejectConfirm.disabled = textarea.value.trim().length === 0;
+    }
+    clearRejectError();
+  };
+  textarea.addEventListener('input', refreshConfirmState);
+  refreshConfirmState();
 
-      btnAprobar.addEventListener('click', async () => {
-        setApprovalLoading(true);
-        try {
-          await notificationService.approve(notificationId);
-          // Reload so the status badge flips to 'closed' and the buttons
-          // disappear (S10). The page already has `cargarIncidencia(id)`
-          // for this; reuse it for the SPA-friendly refresh path.
-          await cargarIncidencia(incidentId).then((updated) => {
-            renderizarIncidencia(updated);
-            setupActionButtons(incidentId, updated);
-          });
-        } catch (err) {
-          showRejectError(err.message || 'No se pudo aprobar la incidencia.');
-        } finally {
-          setApprovalLoading(false);
-        }
+  btnAprobar.addEventListener('click', async () => {
+    setApprovalLoading(true);
+    try {
+      await notificationService.approve(notificationId);
+      // Reload so the status badge flips to 'closed' and the buttons
+      // disappear (S10). The page already has `cargarIncidencia(id)`
+      // for this; reuse it for the SPA-friendly refresh path.
+      await cargarIncidencia(incidentId).then((updated) => {
+        renderizarIncidencia(updated);
+        setupActionButtons(incidentId, updated);
       });
+    } catch (err) {
+      showRejectError(err.message || 'No se pudo aprobar la incidencia.');
+    } finally {
+      setApprovalLoading(false);
+    }
+  });
 
-      btnRechazar.addEventListener('click', enterRejecting);
-      btnRejectCancel?.addEventListener('click', exitRejecting);
+  btnRechazar.addEventListener('click', enterRejecting);
+  btnRejectCancel?.addEventListener('click', exitRejecting);
 
-      if (btnRejectConfirm) {
-        btnRejectConfirm.addEventListener('click', async () => {
-          const reason = textarea.value.trim();
-          if (reason.length === 0) {
-            showRejectError('El motivo es obligatorio.');
+  if (btnRejectConfirm) {
+    btnRejectConfirm.addEventListener('click', async () => {
+      const reason = textarea.value.trim();
+      if (reason.length === 0) {
+        showRejectError('El motivo es obligatorio.');
+        textarea.focus();
+        return;
+      }
+      setApprovalLoading(true);
+      try {
+        await notificationService.reject(notificationId, reason);
+        await cargarIncidencia(incidentId).then((updated) => {
+          renderizarIncidencia(updated);
+          setupActionButtons(incidentId, updated);
+        });
+      } catch (err) {
+        // Surface the backend's 422 `errors.reason[0]` inline so the
+        // admin sees the real reason the API rejected (S5).
+        if (err?.status === 422 && errorEl) {
+          const reasonError = err.data?.errors?.reason;
+          if (Array.isArray(reasonError) && reasonError.length > 0) {
+            showRejectError(reasonError[0]);
             textarea.focus();
             return;
           }
-          setApprovalLoading(true);
-          try {
-            await notificationService.reject(notificationId, reason);
-            await cargarIncidencia(incidentId).then((updated) => {
-              renderizarIncidencia(updated);
-              setupActionButtons(incidentId, updated);
-            });
-          } catch (err) {
-            // Surface the backend's 422 `errors.reason[0]` inline so the
-            // admin sees the real reason the API rejected (S5).
-            if (err?.status === 422 && errorEl) {
-              const reasonError = err.data?.errors?.reason;
-              if (Array.isArray(reasonError) && reasonError.length > 0) {
-                showRejectError(reasonError[0]);
-                textarea.focus();
-                return;
-              }
-            }
-            showRejectError(err.message || 'No se pudo rechazar la incidencia.');
-          } finally {
-            setApprovalLoading(false);
-          }
-        });
-      }
-
-      // Esc cancels from the inline reject form.
-      formEl.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          exitRejecting();
         }
-      });
+        showRejectError(err.message || 'No se pudo rechazar la incidencia.');
+      } finally {
+        setApprovalLoading(false);
+      }
+    });
+  }
+
+  // Esc cancels from the inline reject form.
+  formEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      exitRejecting();
     }
+  });
+}
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
 

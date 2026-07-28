@@ -439,55 +439,50 @@ export default {
           return;
         }
 
-            if (button.classList.contains('reject-confirm')) {
-              const form = article.querySelector('.notification-row__reject-form');
-              const textarea = form?.querySelector('textarea');
-              const errorEl = form?.querySelector(
-                '[data-role="reject-error"]',
-              );
-              const reason = textarea?.value?.trim() ?? '';
-              // Validation now matches the backend (`required`); the old
-              // min-3-chars guard lived only on the client and silently
-              // swallowed legitimate short motives like "no" with a toast.
-              if (errorEl) {
-                errorEl.classList.add('d-none');
-                errorEl.textContent = '';
-              }
-              try {
-                await notificationService.reject(item.id, reason);
-              } catch (err) {
-                // Surface the server's 422 reason error inline so the admin
-                // sees what the API actually rejected (e.g. when the
-                // textarea fails server-side validation rules the client
-                // doesn't mirror).
-                if (err?.status === 422 && errorEl) {
-                  const reasonError = err.data?.errors?.reason;
-                  if (Array.isArray(reasonError) && reasonError.length > 0) {
-                    errorEl.textContent = reasonError[0];
-                    errorEl.classList.remove('d-none');
-                    textarea?.focus();
-                    return;
-                  }
-                }
-                mostrarToast(
-                  'No se pudo actualizar la notificación.',
-                  'danger',
-                );
+        if (button.classList.contains('reject-confirm')) {
+          const form = article.querySelector('.notification-row__reject-form');
+          const textarea = form?.querySelector('textarea');
+          const errorEl = form?.querySelector('[data-role="reject-error"]');
+          const reason = textarea?.value?.trim() ?? '';
+          // Validation now matches the backend (`required`); the old
+          // min-3-chars guard lived only on the client and silently
+          // swallowed legitimate short motives like "no" with a toast.
+          if (errorEl) {
+            errorEl.classList.add('d-none');
+            errorEl.textContent = '';
+          }
+          try {
+            await notificationService.reject(item.id, reason);
+          } catch (err) {
+            // Surface the server's 422 reason error inline so the admin
+            // sees what the API actually rejected (e.g. when the
+            // textarea fails server-side validation rules the client
+            // doesn't mirror).
+            if (err?.status === 422 && errorEl) {
+              const reasonError = err.data?.errors?.reason;
+              if (Array.isArray(reasonError) && reasonError.length > 0) {
+                errorEl.textContent = reasonError[0];
+                errorEl.classList.remove('d-none');
+                textarea?.focus();
                 return;
               }
-              item.read = true;
-              item.data = item.data ?? {};
-              item.data.decision = 'rejected';
-              item.data.rejection_reason = reason;
-              // server stamps decided_at — capture the timestamp we'd compute
-              // locally so the post-decision render can show 'hace N' without
-              // waiting for a re-fetch. Slight skew vs server clock is fine.
-              item.data.decided_at = new Date().toISOString();
-              render();
-              mostrarToast('Notificación rechazada.', 'success');
-              focusNextDecisionButton(article);
-              return;
             }
+            mostrarToast('No se pudo actualizar la notificación.', 'danger');
+            return;
+          }
+          item.read = true;
+          item.data = item.data ?? {};
+          item.data.decision = 'rejected';
+          item.data.rejection_reason = reason;
+          // server stamps decided_at — capture the timestamp we'd compute
+          // locally so the post-decision render can show 'hace N' without
+          // waiting for a re-fetch. Slight skew vs server clock is fine.
+          item.data.decided_at = new Date().toISOString();
+          render();
+          mostrarToast('Notificación rechazada.', 'success');
+          focusNextDecisionButton(article);
+          return;
+        }
 
         if (button.classList.contains('mark-read')) {
           await notificationService.markRead(item.id);
