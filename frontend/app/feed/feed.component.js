@@ -250,7 +250,7 @@ export default {
     // ── Fetch stats for today ──
     async function fetchStats() {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA');
         const params = new URLSearchParams({
           inicio: today,
           fin: today,
