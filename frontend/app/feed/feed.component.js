@@ -455,6 +455,15 @@ export default {
             c.dataset.status === chip.dataset.status,
           );
         });
+
+      // Sync zone-tabs with chip selection
+      document.querySelectorAll('.zone-tab').forEach((t) => {
+        const isActive =
+          t.dataset.zone === chip.dataset.status ||
+          (t.dataset.zone === 'all' && chip.dataset.status === '');
+        t.classList.toggle('active', isActive);
+      });
+
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
       if (observer) observer.disconnect();
