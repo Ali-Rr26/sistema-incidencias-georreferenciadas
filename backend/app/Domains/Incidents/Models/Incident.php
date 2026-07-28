@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MatanYadaev\EloquentSpatial\Objects\Point;
@@ -166,17 +165,5 @@ class Incident extends Model
     public function resolutions(): HasMany
     {
         return $this->hasMany(ResolutionAudit::class)->orderBy('resolved_at', 'desc');
-    }
-
-    /**
-     * Decisión del admin sobre la resolución de esta incidencia.
-     *
-     * `HasOne` y no `HasMany` porque `incident_approvals` tiene un unique
-     * index sobre `incident_id`: la decisión es única e inmutable.
-     * `null` mientras la incidencia esté pendiente de revisión.
-     */
-    public function approval(): HasOne
-    {
-        return $this->hasOne(IncidentApproval::class);
     }
 }
