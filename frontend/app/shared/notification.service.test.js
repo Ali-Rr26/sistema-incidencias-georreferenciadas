@@ -102,4 +102,124 @@ describe('notificationService', () => {
     expect(cached).toBe(7);
     expect(http.get).toHaveBeenCalledTimes(2);
   });
+
+  // ─── approve ─────────────────────────────────────────────────────────────────
+
+  it('approve calls POST and returns payload', async () => {
+    const payload = { id: 123, status: 'approved' };
+    http.post.mockResolvedValue({ data: payload });
+
+    const result = await notificationService.approve(123);
+
+    expect(http.post).toHaveBeenCalledWith('/notifications/123/approve');
+    expect(result).toEqual(payload);
+  });
+
+  it('approve propagates 4xx', async () => {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    http.post.mockRejectedValue(err);
+
+    await expect(notificationService.approve(123)).rejects.toThrow('Forbidden');
+  });
+
+  it('approve propagates 5xx', async () => {
+    const err = new Error('Internal Server Error');
+    err.status = 500;
+    http.post.mockRejectedValue(err);
+
+    await expect(notificationService.approve(123)).rejects.toThrow('Internal Server Error');
+  });
+
+  // ─── reject ──────────────────────────────────────────────────────────────────
+
+  it('reject sends reason in body', async () => {
+    const payload = { id: 123, status: 'rejected', reason: 'motivo válido 123' };
+    http.post.mockResolvedValue({ data: payload });
+
+    const result = await notificationService.reject(123, 'motivo válido 123');
+
+    expect(http.post).toHaveBeenCalledWith('/notifications/123/reject', {
+      reason: 'motivo válido 123',
+    });
+    expect(result).toEqual(payload);
+  });
+
+  it('reject throws when reason too short', async () => {
+    await expect(
+      notificationService.reject(123, 'corto'),
+    ).rejects.toThrow('Reason must be a string between 10 and 500 characters.');
+  });
+
+  it('reject throws when reason too long', async () => {
+    await expect(
+      notificationService.reject(123, 'x'.repeat(501)),
+    ).rejects.toThrow('Reason must be a string between 10 and 500 characters.');
+  });
+
+  it('reject throws when reason not string', async () => {
+    await expect(
+      notificationService.reject(123, null),
+    ).rejects.toThrow('Reason must be a string between 10 and 500 characters.');
+  });
+
+  it('reject propagates 4xx', async () => {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    http.post.mockRejectedValue(err);
+
+    await expect(
+      notificationService.reject(123, 'motivo válido 123'),
+    ).rejects.toThrow('Forbidden');
+  });
+
+  it('reject propagates 5xx', async () => {
+    const err = new Error('Internal Server Error');
+    err.status = 500;
+    http.post.mockRejectedValue(err);
+
+    await expect(
+      notificationService.reject(123, 'motivo válido 123'),
+    ).rejects.toThrow('Internal Server Error');
+  });
+
+  // ─── getPendingApprovals ─────────────────────────────────────────────────────
+
+  it('getPendingApprovals constructs URL with all params', async () => {
+    http.get.mockResolvedValue({ data: [] });
+
+    await notificationService.getPendingApprovals({ page: 2, perPage: 10 });
+
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('page=2'),
+    );
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('per_page=10'),
+    );
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('type=incident_pending_approval'),
+    );
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('unread_only=1'),
+    );
+  });
+
+  it('getPendingApprovals with organizationId sets the param', async () => {
+    http.get.mockResolvedValue({ data: [] });
+
+    await notificationService.getPendingApprovals({ organizationId: 5 });
+
+    expect(http.get).toHaveBeenCalledWith(
+      expect.stringContaining('organization_id=5'),
+    );
+  });
+
+  it('getPendingApprovals with unreadOnly=false omits the param', async () => {
+    http.get.mockResolvedValue({ data: [] });
+
+    await notificationService.getPendingApprovals({ unreadOnly: false });
+
+    const callUrl = http.get.mock.calls[0][0];
+    expect(callUrl).not.toContain('unread_only');
+  });
 });
