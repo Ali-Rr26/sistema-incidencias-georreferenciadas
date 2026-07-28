@@ -18,17 +18,23 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
-        // `DB::table()->upsert()` with explicit id handling:
+        // Raw SQL with `ON CONFLICT DO NOTHING`:
         // `Role::$fillable = ['name']` excludes `id`, so Eloquent's mass-assignment
         // path silently dropped explicit ids — wrong for these FK-target rows.
         // Surfaced by SQLite → PostgreSQL test migration (backend-tests-postgres-migration, #197):
         // Postgres SERIAL sequences persist across rolled-back transactions.
-        // `upsert()` generates atomic `INSERT ... ON CONFLICT (id) DO UPDATE`,
-        // safe for parallel test runs with multiple processes.
-        DB::table('roles')->upsert(
-            self::ROLES,
-            ['id'],  // unique key constraint
-            ['name'],  // columns to update if conflict
+        // `ON CONFLICT DO NOTHING` handles both unique constraints (id + name) atomically.
+        // Safe for parallel test runs without coordination between processes.
+        $placeholders = implode(',', array_map(fn ($role) => '(?, ?)', self::ROLES));
+        $values = [];
+        foreach (self::ROLES as $role) {
+            $values[] = $role['id'];
+            $values[] = $role['name'];
+        }
+
+        DB::statement(
+            "INSERT INTO roles (id, name) VALUES {$placeholders} ON CONFLICT DO NOTHING",
+            $values,
         );
 
         foreach (self::ROLES as $role) {
