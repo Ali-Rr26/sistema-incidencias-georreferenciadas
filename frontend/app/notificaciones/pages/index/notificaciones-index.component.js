@@ -273,6 +273,43 @@ filter.addEventListener('change', () => {
       render();
     });
 
+    /**
+     * Keyboard nav — j/k or arrow down/up move focus between rows'
+     * primary action. Triage queue UX: admins holding down the keyboard
+     * can fly through 200 decisions without touching the mouse.
+     *
+     * Only fires when the active element is inside the row (so we don't
+     * hijack global keys when the admin is typing the rejection reason
+     * inside the inline form).
+     */
+    list.addEventListener('keydown', (event) => {
+      // Don't hijack typing inside the form's textarea.
+      if (event.target instanceof HTMLTextAreaElement) return;
+
+      const key = event.key;
+      const isDown = key === 'j' || key === 'ArrowDown';
+      const isUp = key === 'k' || key === 'ArrowUp';
+      if (!isDown && !isUp) return;
+
+      event.preventDefault();
+      const articles = Array.from(list.querySelectorAll('.notification-row'));
+      if (articles.length === 0) return;
+
+      const currentArticle = event.target.closest('.notification-row');
+      const currentIndex = currentArticle
+        ? articles.indexOf(currentArticle)
+        : -1;
+      const nextIndex = isDown
+        ? Math.min(currentIndex + 1, articles.length - 1)
+        : Math.max(currentIndex - 1, 0);
+      const target = articles[nextIndex];
+
+      const focusable = target.querySelector(
+        'button.approve, button.reject',
+      );
+      if (focusable) focusable.focus();
+    });
+
     list.addEventListener('click', async (event) => {
       const button = event.target.closest('button');
       if (!button) return;
@@ -294,6 +331,7 @@ filter.addEventListener('change', () => {
           item.data.decided_at = new Date().toISOString();
           render();
           mostrarToast('Notificación aprobada.', 'success');
+          focusNextDecisionButton(article);
           return;
         }
 
@@ -330,6 +368,7 @@ filter.addEventListener('change', () => {
           item.data.decided_at = new Date().toISOString();
           render();
           mostrarToast('Notificación rechazada.', 'success');
+          focusNextDecisionButton(article);
           return;
         }
 
@@ -344,6 +383,31 @@ filter.addEventListener('change', () => {
         mostrarToast('No se pudo actualizar la notificación.', 'danger');
       }
     });
+
+    /**
+     * After a decision (approve or reject-confirm) move keyboard focus
+     * to the next undecided row's primary action button — or to the
+     * first such row if there is no current-row successor.
+     *
+     * Replaces the previous behaviour where render() rebuilt the list
+     * and focus fell to <body>, forcing the admin to Tab from the top.
+     * Triage 200 items now needs zero mouse movement.
+     */
+    function focusNextDecisionButton(article) {
+      const articles = Array.from(list.querySelectorAll('.notification-row'));
+      if (articles.length === 0) return;
+
+      const previousIndex = articles.indexOf(article);
+      const nextArticle = articles
+        .slice(previousIndex + 1)
+        .find((row) => row.dataset.state !== 'decided')
+        ?? articles.find((row) => row.dataset.state !== 'decided');
+
+      const focusable = nextArticle?.querySelector(
+        'button.approve, button.reject',
+      );
+      if (focusable) focusable.focus();
+    }
 
     /**
      * Transition a row into 'rejecting' state: hide the action buttons

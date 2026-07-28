@@ -325,16 +325,122 @@ describe('notificaciones-index — WU-3 decision opacity', () => {
     expect(reasonEl.textContent).toContain('falta evidencia');
   });
 
-  it('renders the decided-at timestamp as timeAgo after a decision', async () => {
+it('renders the decided-at timestamp as timeAgo after a decision', async () => {
     mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
     mockService.approve.mockResolvedValue({});
     const { list } = await mount();
     list.querySelector('.approve').click();
-    await flush();
+    await new Promise((r) => setTimeout(r, 0));
 
     const decidedAt = list.querySelector('.notification-row__decided-at');
     expect(decidedAt).not.toBeNull();
     expect(decidedAt.tagName).toBe('TIME');
     expect(decidedAt.textContent.length).toBeGreaterThan(0);
+  });
+});
+
+describe('notificaciones-index — WU-4 keyboard nav + focus advance', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('ArrowDown moves focus from one row\'s approve to the next row\'s approve', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 }), makeApproval({ id: 3 })],
+      meta: null,
+    });
+    const { list } = await mount();
+    const approves = list.querySelectorAll('button.approve');
+    approves[0].focus();
+
+    approves[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+
+    expect(document.activeElement).toBe(approves[1]);
+  });
+
+  it('ArrowUp moves focus from one row to the previous row\'s approve', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 })],
+      meta: null,
+    });
+    const { list } = await mount();
+    const approves = list.querySelectorAll('button.approve');
+    approves[1].focus();
+
+    approves[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+
+    expect(document.activeElement).toBe(approves[0]);
+  });
+
+  it('j and k mirror ArrowDown and ArrowUp (vim-style nav)', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 })],
+      meta: null,
+    });
+    const { list } = await mount();
+    const approves = list.querySelectorAll('button.approve');
+    approves[0].focus();
+
+    approves[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }));
+    expect(document.activeElement).toBe(approves[1]);
+
+    approves[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'k', bubbles: true }));
+    expect(document.activeElement).toBe(approves[0]);
+  });
+
+  it('keyboard nav does not hijack typing inside the rejection form textarea', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+
+    // j/k typed in the textarea must NOT navigate away.
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'j', bubbles: true }));
+    expect(document.activeElement).toBe(textarea);
+  });
+
+  it('after approving a row, focus advances to the next undecided row', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 })],
+      meta: null,
+    });
+    mockService.approve.mockResolvedValue({});
+    const { list } = await mount();
+    const approves = list.querySelectorAll('button.approve');
+    approves[0].focus();
+    approves[0].click();
+    await flush();
+
+    const newArticles = list.querySelectorAll('.notification-row');
+    const nextApprove = newArticles[1].querySelector('button.approve');
+    expect(document.activeElement).toBe(nextApprove);
+  });
+
+  it('after approving the LAST undecided row, focus wraps to the first undecided row', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        makeApproval({ id: 1 }),
+        makeApproval({ id: 2, decision: 'approved', decidedAt: new Date().toISOString() }),
+        makeApproval({ id: 3 }),
+      ],
+      meta: null,
+    });
+    mockService.approve.mockResolvedValue({});
+    const { list } = await mount();
+    // The first undecided row is id=1.
+    const articles = list.querySelectorAll('.notification-row');
+    articles[0].querySelector('button.approve').click();
+    await flush();
+
+    // After approving id=1, the next undecided is id=3 (index 2).
+    const newArticles = list.querySelectorAll('.notification-row');
+    const nextApprove = newArticles[2].querySelector('button.approve');
+    expect(document.activeElement).toBe(nextApprove);
   });
 });
