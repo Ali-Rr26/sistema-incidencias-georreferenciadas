@@ -10,14 +10,13 @@ declare(strict_types=1);
  * `avatarImage()` relation instead (D6, same bare storage-key shape).
  */
 
-use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Roles\Models\Role;
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;

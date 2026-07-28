@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

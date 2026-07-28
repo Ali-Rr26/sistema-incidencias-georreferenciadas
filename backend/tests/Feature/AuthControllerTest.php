@@ -7,7 +7,6 @@ use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);

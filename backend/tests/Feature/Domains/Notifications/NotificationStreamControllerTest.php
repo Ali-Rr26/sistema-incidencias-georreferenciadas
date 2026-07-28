@@ -32,17 +32,16 @@ declare(strict_types=1);
  */
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Support\RedisSubscriber;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Mockery\MockInterface;
 

@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use App\Domains\Incidents\Http\Policies\AssignmentPolicy;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

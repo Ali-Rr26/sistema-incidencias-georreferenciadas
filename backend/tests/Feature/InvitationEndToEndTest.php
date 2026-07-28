@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 use App\Domains\Invitations\Models\UserInvitation;
 use App\Domains\Mail\Messages\UserInvitedMail;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
-use App\Domains\Roles\Models\Role;
 
 uses(RefreshDatabase::class);
 

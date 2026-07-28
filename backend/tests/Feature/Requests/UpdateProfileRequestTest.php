@@ -8,7 +8,6 @@ use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 

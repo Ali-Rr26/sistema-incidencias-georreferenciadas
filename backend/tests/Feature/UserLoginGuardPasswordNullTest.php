@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Auth\Shared\Services\AuthService;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 

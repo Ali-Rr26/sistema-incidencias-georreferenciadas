@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Domains\Users\Models\User;
 use App\Domains\Roles\Models\Role;
+use App\Domains\Users\Models\User;
 use App\Domains\Users\Services\ProfileImageService;
 use App\Storage\ImageStorageService;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);

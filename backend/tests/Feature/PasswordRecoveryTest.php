@@ -8,7 +8,6 @@ use App\Domains\Auth\Local\Notifications\PasswordResetMail;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 

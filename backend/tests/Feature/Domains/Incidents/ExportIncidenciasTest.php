@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Reports\CsvExporter;
 use App\Domains\Incidents\Reports\PdfExporter;
@@ -13,6 +12,7 @@ use App\Domains\Incidents\Services\IncidenciasReportService;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

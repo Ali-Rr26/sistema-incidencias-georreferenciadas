@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 use App\Domains\Invitations\Models\UserInvitation;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Invitations\Services\InvitationTokenGenerator;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 

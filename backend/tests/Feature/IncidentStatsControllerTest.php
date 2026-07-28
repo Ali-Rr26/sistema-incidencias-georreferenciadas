@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Enums\IncidentPriority;
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;

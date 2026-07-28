@@ -2,17 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Domains\IncidentCategories\Models\IncidentCategory;
-use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
-use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\MultiPolygon;
@@ -87,10 +84,7 @@ beforeEach(function (): void {
 
     Storage::fake('s3');
 
-    Role::firstOrCreate(['name' => 'admin_sistema']);,
-    ]));
-
-    $response->assertCreated();
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 });
 
 it('pgsql: a point inside the selected location\'s polygon passes', function (): void {
