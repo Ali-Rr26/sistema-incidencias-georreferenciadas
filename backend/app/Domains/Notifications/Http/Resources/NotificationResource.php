@@ -22,6 +22,7 @@ class NotificationResource extends JsonResource
                 'rejection_reason' => null,
                 'expires_at' => null,
                 'organization_id' => null,
+                'decided_at' => null,
             ], $this->data ?? []),
             'read' => (bool) $this->read,
             'created_at' => $this->created_at?->toIso8601String(),

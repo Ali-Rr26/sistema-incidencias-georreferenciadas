@@ -83,6 +83,7 @@ class NotificationController extends Controller
         $newData = array_merge($notification->data ?? [], [
             'decision' => 'approved',
             'rejection_reason' => null,
+            'decided_at' => now()->toIso8601String(),
         ]);
 
         $updated = Notification::query()
@@ -113,6 +114,7 @@ class NotificationController extends Controller
         $newData = array_merge($notification->data ?? [], [
             'decision' => 'rejected',
             'rejection_reason' => $reason,
+            'decided_at' => now()->toIso8601String(),
         ]);
 
         // Atomic re-check: same rationale as approve(). See note above.
