@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\Comments\Models\Comment;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Enums\ApprovalDecision;
 use App\Domains\Incidents\Enums\IncidentStatus;
@@ -267,7 +268,7 @@ it('notifies the citizen when approving', function (): void {
 
     $citizenNotif = Notification::query()
         ->where('user_id', $this->citizen->id)
-        ->where('type', NotificationType::StatusChange->value)
+        ->where('type', NotificationType::ResolucionAprobada->value)
         ->where('incident_id', $this->resolved->id)
         ->first();
 
@@ -288,7 +289,7 @@ it('notifies the operator when rejecting and includes the reason', function (): 
 
     $operatorNotif = Notification::query()
         ->where('user_id', $this->operatorOrg->id)
-        ->where('type', NotificationType::StatusChange->value)
+        ->where('type', NotificationType::ResolucionRechazada->value)
         ->where('incident_id', $this->resolved->id)
         ->first();
 
@@ -357,4 +358,150 @@ it('returns 410 when the source notification has expired (S6)', function (): voi
     }
 
     expect($this->resolved->fresh()->status)->toBe(IncidentStatus::Resolved);
+});
+
+// ─── Review fixes (blockers 1–4) ──────────────────────────────────────────────
+
+it('records the rejection reason as a comment on the incident thread', function (): void {
+    $this->actingAs($this->adminOrg);
+
+    $reason = 'La foto no muestra el arreglo terminado.';
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Rejected,
+        $reason,
+    );
+
+    $comment = Comment::query()
+        ->where('incident_id', $this->resolved->id)
+        ->latest('id')
+        ->first();
+
+    expect($comment)->not->toBeNull()
+        // The admin signs the comment — the thread must show who bounced it.
+        ->and($comment->user_id)->toBe($this->adminOrg->id)
+        ->and($comment->message)->toContain($reason);
+});
+
+it('does not comment on the thread when the decision is approve', function (): void {
+    $this->actingAs($this->adminOrg);
+
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Approved,
+        null,
+    );
+
+    expect(Comment::query()->where('incident_id', $this->resolved->id)->count())->toBe(0);
+});
+
+it('notifies both the citizen and the operator on approve', function (): void {
+    $this->actingAs($this->adminOrg);
+
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Approved,
+        null,
+    );
+
+    $citizenNotified = Notification::query()
+        ->where('user_id', $this->citizen->id)
+        ->where('incident_id', $this->resolved->id)
+        ->where('type', NotificationType::ResolucionAprobada->value)
+        ->exists();
+
+    $operatorNotified = Notification::query()
+        ->where('user_id', $this->operatorOrg->id)
+        ->where('incident_id', $this->resolved->id)
+        ->where('type', NotificationType::ResolucionAprobada->value)
+        ->exists();
+
+    expect($citizenNotified)->toBeTrue()
+        ->and($operatorNotified)->toBeTrue();
+});
+
+it('reaches the citizen even when a status_change fired seconds earlier', function (): void {
+    // Regression: NotificationService::notify() dedups on user+type+incident
+    // within 60s and returns null silently. The observer already emits
+    // StatusChange to the citizen when the incident turns `resolved`, so
+    // reusing StatusChange here made the approval notice vanish whenever the
+    // admin decided quickly — the happy path for an admin watching the bell.
+    Notification::create([
+        'user_id' => $this->citizen->id,
+        'incident_id' => $this->resolved->id,
+        'type' => NotificationType::StatusChange->value,
+        'message' => 'Tu incidencia cambió de estado.',
+        'data' => ['incident_id' => $this->resolved->id],
+        'read' => false,
+    ]);
+
+    $this->actingAs($this->adminOrg);
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Approved,
+        null,
+    );
+
+    expect(Notification::query()
+        ->where('user_id', $this->citizen->id)
+        ->where('incident_id', $this->resolved->id)
+        ->where('type', NotificationType::ResolucionAprobada->value)
+        ->exists())->toBeTrue();
+});
+
+it('notifies the operator with the rejection type and reason', function (): void {
+    $this->actingAs($this->adminOrg);
+
+    $reason = 'Falta la evidencia fotográfica.';
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Rejected,
+        $reason,
+    );
+
+    $notification = Notification::query()
+        ->where('user_id', $this->operatorOrg->id)
+        ->where('incident_id', $this->resolved->id)
+        ->where('type', NotificationType::ResolucionRechazada->value)
+        ->first();
+
+    expect($notification)->not->toBeNull()
+        ->and($notification->data['rejection_reason'])->toBe($reason);
+});
+
+it('returns an unclaimed incident to pending instead of in_progress', function (): void {
+    // An incident with no `claimed_by` sent to `in_progress` is orphaned:
+    // no operator holds it and it never shows up in the `pending` claim
+    // queue. It must go back to `pending` so someone can pick it up.
+    $this->resolved->forceFill(['claimed_by' => null, 'claimed_at' => null])->save();
+
+    $this->actingAs($this->adminOrg);
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Rejected,
+        'Sin operador asignado.',
+    );
+
+    expect($this->resolved->fresh()->status)->toBe(IncidentStatus::Pending);
+});
+
+it('keeps a claimed incident in in_progress on reject', function (): void {
+    $this->actingAs($this->adminOrg);
+
+    $this->service->decide(
+        $this->resolved->id,
+        $this->adminOrg,
+        ApprovalDecision::Rejected,
+        'Rehacer el trabajo.',
+    );
+
+    $incident = $this->resolved->fresh();
+    expect($incident->status)->toBe(IncidentStatus::InProgress)
+        ->and($incident->claimed_by)->toBe($this->operatorOrg->id);
 });

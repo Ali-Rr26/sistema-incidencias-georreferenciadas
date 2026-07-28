@@ -245,6 +245,8 @@ function buildRejectForm(item) {
  *   - status_change → "Estado: {resolved|pending|...}"
  *   - comment → "Comentario de {actor}"
  *   - incidencia_atendida_para_aprobacion → "Resuelta por {actor}"
+ *   - resolucion_aprobada → "Resolución aprobada"
+ *   - resolucion_rechazada → "Resolución rechazada: {motivo}"
  *   - legacy → null (no useful context)
  */
 function buildMetaLine(item) {
@@ -266,6 +268,11 @@ function buildMetaLine(item) {
     label = `Comentario de ${actorName}`;
   } else if (type === 'incidencia_atendida_para_aprobacion') {
     label = `Resuelta por ${actorName}`;
+  } else if (type === 'resolucion_aprobada') {
+    label = 'Resolución aprobada';
+  } else if (type === 'resolucion_rechazada') {
+    const reason = data.rejection_reason;
+    label = reason ? `Resolución rechazada: ${reason}` : 'Resolución rechazada';
   }
 
   if (!label) return null;
@@ -282,6 +289,10 @@ function typeClass(type) {
   if (type === 'status_change') return 'status';
   if (type === 'comment') return 'comment';
   if (type === 'incidencia_atendida_para_aprobacion') return 'approval';
+  // Decision outcomes reuse the status palette — they are, in substance,
+  // the incident moving to `closed` or back to `in_progress`/`pending`.
+  if (type === 'resolucion_aprobada') return 'status';
+  if (type === 'resolucion_rechazada') return 'status';
   return 'legacy';
 }
 

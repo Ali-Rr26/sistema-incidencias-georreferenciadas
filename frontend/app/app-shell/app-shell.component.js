@@ -862,7 +862,8 @@ function createBellPanel({
    * matches the FreeDash template's colored btn-circle pattern.
    *
    * NotificationType: claim | assignment | status_change | assigned |
-   *                   comment | legacy
+   *                   comment | resolucion_aprobada | resolucion_rechazada |
+   *                   legacy
    */
   const _NOTIF_META = {
     claim: { icon: 'fa-flag', color: 'btn-danger' },
@@ -870,6 +871,8 @@ function createBellPanel({
     assigned: { icon: 'fa-user-check', color: 'btn-info' },
     status_change: { icon: 'fa-exchange-alt', color: 'btn-success' },
     comment: { icon: 'fa-comment', color: 'btn-primary' },
+    resolucion_aprobada: { icon: 'fa-circle-check', color: 'btn-success' },
+    resolucion_rechazada: { icon: 'fa-rotate-left', color: 'btn-warning' },
     legacy: { icon: 'fa-bell', color: 'btn-secondary' },
   };
   function notifIconMeta(type) {

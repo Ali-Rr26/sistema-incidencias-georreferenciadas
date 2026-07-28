@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Incidents\Services;
 
+use App\Domains\Comments\Models\Comment;
 use App\Domains\Incidents\Enums\ApprovalDecision;
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
@@ -129,8 +130,21 @@ class IncidentApprovalService
             // (design §1 ADR-2). El repositorio envuelve su propio
             // `DB::transaction` + `bindAuditActor()` que setea
             // `app.current_user_id = Auth::id()` antes del UPDATE.
+            // Captured before the update: `payloadFor()` clears `claimed_by`
+            // on approve, so the post-update model can no longer tell us who
+            // was holding the incident.
+            $operatorId = $incident->claimed_by;
+
             $payload = $this->payloadFor($incident, $decision);
             $incident = $this->repository->update($incidentId, $payload);
+
+            // Rejection reason goes on the incident thread, where the
+            // operator actually looks — not only inside the notification
+            // payload (issue #150, comment 1). Same transaction: if the
+            // comment fails, the status transition rolls back with it.
+            if ($decision === ApprovalDecision::Rejected) {
+                $this->recordRejectionComment($incident, $admin, (string) $reason);
+            }
 
             // Source notification: marcar como procesada.
             $source = Notification::query()
@@ -154,7 +168,7 @@ class IncidentApprovalService
             // como procesado: si la notificación falla, la transacción
             // hace rollback y el origen queda `processed_at IS NULL` — la
             // UI puede reintentar (design §2 notas clave).
-            $this->emitDestinationNotification($incident, $decision, $reason);
+            $this->emitDestinationNotification($incident, $decision, $reason, $operatorId);
 
             // Marca el origen. `forceFill` evita que un futuro cambio en
             // `$fillable` haga fallar silenciosamente el guardado.
@@ -191,25 +205,65 @@ class IncidentApprovalService
             ];
         }
 
-        // Reject: status back to in_progress, claim preserved.
+        // Reject with an operator still holding the claim: back to
+        // `in_progress`, claim preserved — they own the rework.
+        if ($incident->claimed_by !== null) {
+            return [
+                'status' => IncidentStatus::InProgress->value,
+            ];
+        }
+
+        // Reject with no operator on record: `in_progress` would orphan the
+        // incident — nobody holds it and it never surfaces in the `pending`
+        // claim queue. Send it back to `pending` so it can be picked up.
         return [
-            'status' => IncidentStatus::InProgress->value,
+            'status' => IncidentStatus::Pending->value,
         ];
     }
 
     /**
-     * Send the destination notification to the citizen (approve) or the
-     * prior operator (reject). Failures bubble up and roll back the
-     * transaction.
+     * Write the rejection reason as a comment on the incident thread.
+     *
+     * Signed by the deciding admin so the thread shows who bounced it back.
+     * Runs inside the caller's transaction — a failure here rolls back the
+     * status transition too, so the incident never ends up in `in_progress`
+     * with no explanation attached.
+     */
+    private function recordRejectionComment(Incident $incident, User $admin, string $reason): void
+    {
+        Comment::create([
+            'incident_id' => $incident->id,
+            'user_id' => $admin->id,
+            'message' => "Resolución rechazada: {$reason}",
+        ]);
+    }
+
+    /**
+     * Notify everyone involved in the decision. Failures bubble up and roll
+     * back the transaction.
+     *
+     * Approve reaches BOTH the citizen and the operator who resolved it
+     * (issue #150, comment 1: "Notifica al operador y a los ciudadanos
+     * involucrados"). Reject reaches the operator, who owns the rework.
+     *
+     * `$operatorId` is captured before the update because `payloadFor()`
+     * clears `claimed_by` on approve.
      */
     private function emitDestinationNotification(
         Incident $incident,
         ApprovalDecision $decision,
         ?string $reason,
+        ?int $operatorId,
     ): void {
+        // Resolved via `User::query()->find()` rather than
+        // `$incident->user()->find()`: the `BelongsTo` relation already has
+        // `where('id', '=', $incident->user_id)` baked in, and `->find()`
+        // ANDs onto it — which would silently return null for any
+        // `$operatorId` that differs from `user_id`.
+        $operator = $operatorId !== null ? User::query()->find($operatorId) : null;
+        $citizen = $incident->user;
+
         if ($decision === ApprovalDecision::Approved) {
-            // Notify the citizen (the reporter of the incident).
-            $citizen = $incident->user;
             if ($citizen === null) {
                 // Defensive: every incident has a user_id, but if the row
                 // is somehow orphaned we still want a clear failure rather
@@ -220,40 +274,39 @@ class IncidentApprovalService
                 );
             }
 
+            $payload = [
+                'incident_id' => $incident->id,
+                'decision' => 'approved',
+                'new_status' => IncidentStatus::Closed->value,
+            ];
+
             $this->notifications->notify(
                 $citizen,
-                NotificationType::StatusChange,
+                NotificationType::ResolucionAprobada,
                 "Tu incidencia \"{$incident->title}\" fue cerrada por el admin.",
                 $incident->id,
-                [
-                    'incident_id' => $incident->id,
-                    'decision' => 'approved',
-                    'new_status' => IncidentStatus::Closed->value,
-                ],
+                $payload,
             );
+
+            // The operator who resolved it also gets told. Skipped when the
+            // operator IS the citizen — one notice is enough.
+            if ($operator !== null && $operator->id !== $citizen->id) {
+                $this->notifications->notify(
+                    $operator,
+                    NotificationType::ResolucionAprobada,
+                    "Tu resolución de \"{$incident->title}\" fue aprobada.",
+                    $incident->id,
+                    $payload,
+                );
+            }
 
             return;
         }
 
-        // Reject: notify the operator who was holding the claim. `claimed_by`
-        // is preserved on reject (design §1 ADR-3), so we read it from the
-        // fresh `$incident` returned by the repository.
-        //
-        // We resolve via `User::query()->find()` instead of
-        // `$incident->user()->find()`: the `BelongsTo` relation already has
-        // `where('id', '=', $incident->user_id)` baked in, and `->find()`
-        // ANDs onto it — which would silently return null for any
-        // `claimed_by` value that differs from `user_id`.
-        $operator = $incident->claimed_by !== null
-            ? User::query()->find($incident->claimed_by)
-            : null;
-
         if ($operator === null) {
             // No operator on record — fall back to notifying the citizen so
-            // they at least know the incident bounced back to in_progress.
-            // In practice every `resolved` incident in the workflow was
-            // claimed by an operator, so this is a defensive branch.
-            $operator = $incident->user;
+            // they at least know the incident bounced back.
+            $operator = $citizen;
         }
 
         if ($operator === null) {
@@ -266,14 +319,14 @@ class IncidentApprovalService
         $reasonText = $reason ?? '(sin motivo)';
         $this->notifications->notify(
             $operator,
-            NotificationType::StatusChange,
+            NotificationType::ResolucionRechazada,
             "Tu incidencia \"{$incident->title}\" fue devuelta por el admin. Motivo: {$reasonText}",
             $incident->id,
             [
                 'incident_id' => $incident->id,
                 'decision' => 'rejected',
                 'rejection_reason' => $reason,
-                'new_status' => IncidentStatus::InProgress->value,
+                'new_status' => $incident->status->value,
             ],
         );
     }

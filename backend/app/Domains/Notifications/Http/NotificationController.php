@@ -34,7 +34,11 @@ class NotificationController extends Controller
             return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
-        $perPage = min((int) $request->integer('per_page', 50), 200);
+        // Cap back at 50. The 200 cap existed so the page could count
+        // pending approvals client-side by fetching everything; that counter
+        // now comes from the dashboard stat endpoint (WU7), so the list has
+        // no reason to serve oversized pages.
+        $perPage = min((int) $request->integer('per_page', 50), 50);
         $page = max((int) $request->integer('page', 1), 1);
 
         $query = Notification::query()
@@ -84,9 +88,10 @@ class NotificationController extends Controller
     {
         $notification->loadMissing('incident');
         $this->authorize('approve', $notification);
+        $incidentId = $this->requireIncidentId($notification);
 
         $source = $this->approvalService->decide(
-            $notification->incident_id,
+            $incidentId,
             Auth::user(),
             ApprovalDecision::Approved,
             null,
@@ -107,19 +112,37 @@ class NotificationController extends Controller
     {
         $notification->loadMissing('incident');
         $this->authorize('reject', $notification);
+        $incidentId = $this->requireIncidentId($notification);
 
         $validated = $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
         $source = $this->approvalService->decide(
-            $notification->incident_id,
+            $incidentId,
             Auth::user(),
             ApprovalDecision::Rejected,
             $validated['reason'],
         );
 
         return (new NotificationResource($source->fresh('incident')))->response();
+    }
+
+    /**
+     * A decision only makes sense on a notification bound to an incident.
+     *
+     * Without this guard, a notification with a null `incident_id` reaches
+     * `IncidentApprovalService::decide(int $incidentId, ...)` and blows up
+     * with a TypeError (500). The policy filters by type, but `Gate::before`
+     * waves `admin_sistema` past it, so the check belongs here.
+     */
+    private function requireIncidentId(Notification $notification): int
+    {
+        if ($notification->incident_id === null) {
+            abort(422, __('messages.notification_without_incident'));
+        }
+
+        return (int) $notification->incident_id;
     }
 
     public function markAllRead(Request $request): JsonResponse

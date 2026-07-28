@@ -40,4 +40,5 @@ return [
     // sc-123: respuesta cuando una notificación de aprobación ya tiene decisión
     // registrada o está expirada (concurrencia entre dos admins o re-decide).
     'notification_already_decided' => 'Esta notificación ya tiene una decisión registrada o está expirada.',
+    'notification_without_incident' => 'Esta notificación no está asociada a una incidencia.',
 ];

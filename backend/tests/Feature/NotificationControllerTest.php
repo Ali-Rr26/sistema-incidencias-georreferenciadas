@@ -304,16 +304,19 @@ it('index defaults per_page to 50 when no per_page query param is sent', functio
     expect($response->json('meta.per_page'))->toBe(50);
 });
 
-it('index allows per_page up to 200', function (): void {
+it('index caps per_page at 50', function (): void {
+    // The 200 cap existed only so the page could tally pending approvals
+    // client-side. That counter now comes from the dashboard stat endpoint,
+    // so the list is back to serving 50 at most.
     $this->actingAs($this->reporter);
     $response = $this->getJson('/api/notifications?per_page=200');
     $response->assertOk();
-    expect($response->json('meta.per_page'))->toBe(200);
+    expect($response->json('meta.per_page'))->toBe(50);
 });
 
-it('index caps per_page above 200', function (): void {
+it('index caps an oversized per_page', function (): void {
     $this->actingAs($this->reporter);
     $response = $this->getJson('/api/notifications?per_page=500');
     $response->assertOk();
-    expect($response->json('meta.per_page'))->toBe(200);
+    expect($response->json('meta.per_page'))->toBe(50);
 });

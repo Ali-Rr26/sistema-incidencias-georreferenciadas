@@ -40,4 +40,5 @@ return [
     // sc-123: returned when an approval notification already has a decision
     // recorded or has expired (admin-vs-admin race or re-decide attempt).
     'notification_already_decided' => 'This notification already has a decision recorded or has expired.',
+    'notification_without_incident' => 'This notification is not linked to an incident.',
 ];
