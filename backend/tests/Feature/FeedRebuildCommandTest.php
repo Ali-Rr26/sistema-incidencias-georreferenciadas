@@ -17,7 +17,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Seed role for UserFactory (role_id=1)
-    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
 
     $user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test']);

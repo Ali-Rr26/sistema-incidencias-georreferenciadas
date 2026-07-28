@@ -86,7 +86,7 @@ beforeEach(function (): void {
 
     Storage::fake('s3');
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 

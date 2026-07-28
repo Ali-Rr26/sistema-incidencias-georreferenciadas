@@ -38,7 +38,7 @@ beforeEach(function (): void {
     ]);
 
     // ── Roles ───────────────────────────────────────────────
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'admin_organizacion'],
         ['id' => 3, 'name' => 'operador_organizacion'],

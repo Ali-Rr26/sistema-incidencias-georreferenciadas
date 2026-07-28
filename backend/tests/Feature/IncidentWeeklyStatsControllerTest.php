@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 it('returns weekly stats with correct structure', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $admin = User::factory()->create(['role_id' => 1]);
@@ -42,7 +42,7 @@ it('returns weekly stats with correct structure', function () {
 it('returns correct counts for incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $admin = User::factory()->create(['role_id' => 1]);
@@ -78,7 +78,7 @@ it('returns correct counts for incidents', function () {
 it('respects custom date range filter', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $admin = User::factory()->create(['role_id' => 1]);
@@ -128,7 +128,7 @@ it('respects custom date range filter', function () {
 it('separates received vs resolved incidents correctly', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $admin = User::factory()->create(['role_id' => 1]);
@@ -235,7 +235,7 @@ it('serves the same daily series from cache on the second request', function () 
 it('requires dashboard.view permission', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
         ['id' => 2, 'name' => 'user_regular', 'created_at' => now(), 'updated_at' => now()],
     ]);

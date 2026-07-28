@@ -18,7 +18,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // ── Setup ─────────────────────────────────────────────────
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 4, 'name' => 'operador_organizacion'],
     ]);
@@ -31,7 +31,7 @@ beforeEach(function (): void {
     // $user->can('incidents.update').
     $permId = Permission::where('resource', 'incidents')
         ->where('action', 'update')->value('permission_id');
-    DB::table('role_permission')->insert([
+    DB::table('role_permission')->insertOrIgnore([
         'role_id' => 4,
         'permission_id' => $permId,
         'created_at' => now(),

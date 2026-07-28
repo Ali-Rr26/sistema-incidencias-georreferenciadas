@@ -39,7 +39,7 @@ it('validates location table normalization without redundancy', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('prevents assigning parent category to incident (trigger validation)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);
@@ -82,7 +82,7 @@ it('prevents assigning parent category to incident (trigger validation)', functi
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('calculates average resolution time correctly (CP-08-06-BD)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);
@@ -144,7 +144,7 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('trigger automatically logs status changes to history (CP-02-06-BD)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $user = User::factory()->create(['role_id' => 1]);

@@ -22,7 +22,7 @@ beforeEach(function (): void {
     if (! class_exists('Redis')) {
         $this->markTestSkipped('Redis extension is required for this test.');
     }
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'admin_sistema'],
         ['id' => 5, 'name' => 'usuario'],
@@ -35,7 +35,7 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $permId = Permission::where('resource', 'feed')
         ->where('action', 'view')->value('permission_id');
-    DB::table('role_permission')->insert([
+    DB::table('role_permission')->insertOrIgnore([
         'role_id' => 5,
         'permission_id' => $permId,
         'created_at' => now(),

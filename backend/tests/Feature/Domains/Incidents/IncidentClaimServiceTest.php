@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // 1. Roles
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'Admin'],
         ['id' => 2, 'name' => 'operador_organizacion'],
     ]);

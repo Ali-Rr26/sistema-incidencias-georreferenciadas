@@ -47,7 +47,7 @@ beforeEach(function (): void {
     // the next free slot — wrong for FK targets in our tests. The
     // existing test suite uses this same approach (see
     // tests/Feature/Domains/Incidents/IncidentAssignmentsTest.php:17).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
         ['id' => 4, 'name' => UserRole::OperadorOrganizacion->value],
