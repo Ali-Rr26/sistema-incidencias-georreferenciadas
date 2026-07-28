@@ -1,6 +1,8 @@
 import template from './notificaciones-index.component.html?raw';
 import { notificationService } from '../../../shared/notification.service.js';
 import { mostrarToast } from '../../../utils/ui.js';
+import { router } from '../../../core/router.js';
+import { timeAgo } from '../../../utils/format.js';
 
 const APPROVAL_TYPE = 'incidencia_atendida_para_aprobacion';
 // Per-page cap for the admin approval queue. 200 is large enough for the
@@ -17,19 +19,48 @@ const QUEUE_PAGE_SIZE = 200;
  * `innerHTML` template literal, which is unsafe for any user-controlled
  * source — including the `message` field, which is derived from the
  * incident title authored by another user.
+ *
+ * The row now surfaces the linked incident title as a navigable link and
+ * the notification timestamp via `timeAgo()`, so admins can decide
+ * without opening the bell panel or the incident detail page.
  */
 function buildRow(item) {
   const article = document.createElement('article');
   article.className = `notification-row ${item.read ? 'is-read' : 'is-unread'}`;
   article.dataset.id = String(item.id);
+  // Stable selector for keyboard nav and focus management.
+  article.dataset.notificationId = String(item.id);
 
   const header = document.createElement('div');
-  const strong = document.createElement('strong');
-  strong.textContent = item.message ?? 'Notificación';
-  const small = document.createElement('small');
-  small.textContent = item.created_at ?? '';
-  header.append(strong, small);
-  article.append(header);
+  header.className = 'notification-row__body';
+
+  const titleText =
+    (item.incident?.title && String(item.incident.title).trim()) ||
+    item.message ||
+    'Notificación';
+
+  const title = document.createElement('a');
+  title.className = 'notification-row__title';
+  title.textContent = titleText;
+  if (item.incident?.id) {
+    title.href = `/incidencias/${item.incident.id}`;
+    title.dataset.navigate = '';
+    title.addEventListener('click', (event) => {
+      // Intercept in-app navigation so the SPA router takes over instead
+      // of a full page reload. Falls back to native href if router fails.
+      event.preventDefault();
+      router.navigate(title.href);
+    });
+  }
+  header.appendChild(title);
+
+  const time = document.createElement('time');
+  time.className = 'notification-row__time';
+  time.dateTime = item.created_at ?? '';
+  time.textContent = timeAgo(item.created_at);
+  header.appendChild(time);
+
+  article.appendChild(header);
 
   const actions = document.createElement('div');
   actions.className = 'notification-actions';
@@ -62,13 +93,25 @@ function buildRow(item) {
 
   if (decision) {
     const badge = document.createElement('span');
-    badge.className = 'badge bg-secondary';
-    badge.textContent = decision;
+    badge.className = `gr-status notification-row__decision ${decisionBadgeClass(decision)}`;
+    badge.textContent = decisionBadgeLabel(decision);
     actions.append(badge);
   }
 
   article.append(actions);
   return article;
+}
+
+function decisionBadgeClass(decision) {
+  if (decision === 'approved') return 'gr-status--approved';
+  if (decision === 'rejected') return 'gr-status--rejected';
+  return 'gr-status--legacy';
+}
+
+function decisionBadgeLabel(decision) {
+  if (decision === 'approved') return 'Aprobada';
+  if (decision === 'rejected') return 'Rechazada';
+  return decision;
 }
 
 function buildEmpty(message, modifier = 'muted') {
@@ -84,6 +127,17 @@ export default {
     const state = { notifications: [], filter: APPROVAL_TYPE };
     const list = document.getElementById('notificaciones-lista');
     const filter = document.getElementById('notificaciones-filtro');
+    const pendingValue = document.getElementById('notificaciones-pending-value');
+
+    const renderPending = () => {
+      const pending = state.notifications.filter(
+        (n) => n.type === APPROVAL_TYPE && !n.data?.decision,
+      ).length;
+      if (pendingValue) {
+        pendingValue.textContent = String(pending);
+        pendingValue.dataset.empty = pending === 0 ? 'true' : 'false';
+      }
+    };
 
     const render = () => {
       const rows = state.notifications.filter(
@@ -94,6 +148,7 @@ export default {
           ? rows.map(buildRow)
           : [buildEmpty('No hay notificaciones.')]),
       );
+      renderPending();
     };
 
     try {
