@@ -78,6 +78,16 @@ function quitoSquare(): MultiPolygon
     ]);
 }
 
+function locationGeomBasePayload(array $overrides = []): array
+{
+    return array_merge([
+        'title' => 'Fuga de agua',
+        'priority' => 'medium',
+        'incident_category_id' => test()->category->id,
+        'organization_id' => test()->organization->id,
+    ], $overrides);
+}
+
 beforeEach(function (): void {
     $this->withoutMiddleware([
         JwtAuthenticate::class,
