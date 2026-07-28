@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Invitations\Exceptions\InvitationGoneException;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Invitations\Exceptions\InvitationNotFoundException;
 use App\Domains\Invitations\Models\UserInvitation;
 use App\Domains\Invitations\Services\InvitationService;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 });
 
 // NOTE: Tests that require password=null (pending WU-3 migration) are marked

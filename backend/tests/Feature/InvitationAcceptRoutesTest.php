@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Invitations\Models\UserInvitation;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Invitations\Services\InvitationTokenGenerator;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 });
 
 it('accepts invitation via HTTP with valid token and payload', function (): void {

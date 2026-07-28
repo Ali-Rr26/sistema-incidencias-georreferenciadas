@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Shared\Services\AuthService;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,7 +14,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // User factory references role_id; seed a placeholder role.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 });
 
 it('logs in and returns access tokens plus the user payload', function (): void {
@@ -131,7 +132,11 @@ it('SCEN-7.1: accepts a valid avatar.urls payload and returns 200', function ():
         ->assertJsonPath('email', 'avatar@example.com');
 
     $user->refresh();
-    expect($user->avatar)->toBeNull();
+    expect($user->avatar)->toBeArray()
+        ->and($user->avatar['urls'])->toBe([
+            'https://cdn.example.com/a.png',
+            'https://cdn.example.com/b.png',
+        ]);
 });
 
 it('SCEN-7.2: rejects avatar as a string with 422 on the avatar field', function (): void {
