@@ -75,6 +75,16 @@ async function mount() {
   };
 }
 
+async function flush() {
+  // Allow chained microtasks (await chain inside the click handler) to
+  // settle. A single setTimeout(0) is not enough — vi.fn() resolves go
+  // through a microtask queue that needs several ticks.
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}
+
 function makeApproval({
   id = 1,
   decision = null,
@@ -170,5 +180,161 @@ describe('notificaciones-index — WU-1 row context', () => {
     const { pendingValue } = await mount();
     expect(pendingValue.textContent).toBe('0');
     expect(pendingValue.dataset.empty).toBe('true');
+  });
+});
+
+describe('notificaciones-index — WU-2 inline rejection form', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('renders a hidden inline rejection form on every approval row', async () => {
+    mockService.list.mockResolvedValue({
+      data: [makeApproval({ id: 1 }), makeApproval({ id: 2 })],
+      meta: null,
+    });
+    const { list } = await mount();
+    const forms = list.querySelectorAll('[data-role="reject-form"]');
+    expect(forms).toHaveLength(2);
+    forms.forEach((form) => expect(form.classList.contains('d-none')).toBe(true));
+  });
+
+  it('clicking "Rechazar" transitions the row to state="rejecting" and focuses the textarea', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    const rejectBtn = article.querySelector('.reject');
+
+    rejectBtn.click();
+
+    expect(article.dataset.state).toBe('rejecting');
+    const form = article.querySelector('[data-role="reject-form"]');
+    expect(form.classList.contains('d-none')).toBe(false);
+    expect(document.activeElement?.tagName).toBe('TEXTAREA');
+  });
+
+  it('clicking "Cancelar" returns the row to state="normal" and focuses the Rechazar button', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    article.querySelector('.reject-cancel').click();
+
+    expect(article.dataset.state).toBe('normal');
+    const form = article.querySelector('[data-role="reject-form"]');
+    expect(form.classList.contains('d-none')).toBe(true);
+    expect(document.activeElement?.classList.contains('reject')).toBe(true);
+  });
+
+  it('Confirm button stays disabled until the reason has ≥3 characters', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+    const confirm = article.querySelector('.reject-confirm');
+
+    expect(confirm.disabled).toBe(true);
+    textarea.value = 'no';
+    textarea.dispatchEvent(new Event('input'));
+    expect(confirm.disabled).toBe(true);
+    textarea.value = 'falta evidencia';
+    textarea.dispatchEvent(new Event('input'));
+    expect(confirm.disabled).toBe(false);
+  });
+
+  it('clicking Confirm calls notificationService.reject with the typed reason', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.reject.mockResolvedValue({});
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+    textarea.value = 'falta evidencia fotográfica';
+    textarea.dispatchEvent(new Event('input'));
+    article.querySelector('.reject-confirm').click();
+
+    // Click handler is async; the service call happens in a microtask.
+    await flush();
+    expect(mockService.reject).toHaveBeenCalledWith(1, 'falta evidencia fotográfica');
+  });
+
+  it('Escape inside the form cancels (matches keydown contract)', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    const { list } = await mount();
+    const article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const form = article.querySelector('[data-role="reject-form"]');
+    form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(article.dataset.state).toBe('normal');
+  });
+});
+
+describe('notificaciones-index — WU-3 decision opacity', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('renders a localized "Aprobada" badge after approval', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.approve.mockResolvedValue({});
+    const { list } = await mount();
+    list.querySelector('.approve').click();
+    await flush();
+
+    const article = list.querySelector('.notification-row');
+    expect(article.dataset.state).toBe('decided');
+    const badge = article.querySelector('.notification-row__decision');
+    expect(badge.textContent).toBe('Aprobada');
+    expect(badge.classList.contains('gr-status--approved')).toBe(true);
+  });
+
+  it('renders a localized "Rechazada" badge with the rejection reason after rejection', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.reject.mockResolvedValue({});
+    const { list } = await mount();
+    let article = list.querySelector('.notification-row');
+    article.querySelector('.reject').click();
+    const textarea = article.querySelector('textarea');
+    textarea.value = 'falta evidencia';
+    textarea.dispatchEvent(new Event('input'));
+    article.querySelector('.reject-confirm').click();
+    await flush();
+
+    // render() rebuilt the article — query the fresh DOM node.
+    article = list.querySelector('.notification-row');
+    expect(article.dataset.state).toBe('decided');
+    const badge = article.querySelector('.notification-row__decision');
+    expect(badge.textContent).toBe('Rechazada');
+    expect(badge.classList.contains('gr-status--rejected')).toBe(true);
+
+    // The reason must surface under the badge so next-shift admins see it.
+    const reasonEl = article.querySelector('.notification-row__reason');
+    expect(reasonEl).not.toBeNull();
+    expect(reasonEl.textContent).toContain('falta evidencia');
+  });
+
+  it('renders the decided-at timestamp as timeAgo after a decision', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval({ id: 1 })], meta: null });
+    mockService.approve.mockResolvedValue({});
+    const { list } = await mount();
+    list.querySelector('.approve').click();
+    await flush();
+
+    const decidedAt = list.querySelector('.notification-row__decided-at');
+    expect(decidedAt).not.toBeNull();
+    expect(decidedAt.tagName).toBe('TIME');
+    expect(decidedAt.textContent.length).toBeGreaterThan(0);
   });
 });

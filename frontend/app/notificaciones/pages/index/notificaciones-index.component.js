@@ -30,6 +30,9 @@ function buildRow(item) {
   article.dataset.id = String(item.id);
   // Stable selector for keyboard nav and focus management.
   article.dataset.notificationId = String(item.id);
+  // Three-state machine: 'normal' (default), 'rejecting' (inline form
+  // open), or 'decided' (terminal — badge replaces buttons).
+  article.dataset.state = item.data?.decision ? 'decided' : 'normal';
 
   const header = document.createElement('div');
   header.className = 'notification-row__body';
@@ -68,7 +71,7 @@ function buildRow(item) {
   const approval = item.type === APPROVAL_TYPE;
   const decision = item.data?.decision ?? null;
 
-  if (!item.read) {
+  if (!item.read && !decision) {
     const markRead = document.createElement('button');
     markRead.className = 'gr-btn-outline mark-read';
     markRead.dataset.id = String(item.id);
@@ -99,7 +102,110 @@ function buildRow(item) {
   }
 
   article.append(actions);
+
+  // Post-decision context: reason (if rejection) and decided_at. The
+  // .notification-row__body already holds the title + timeAgo of the
+  // notification; this adds a third line specific to the decision itself
+  // so next-shift admins can see *why* and *when* without an audit log.
+  if (decision) {
+    const decisionMeta = document.createElement('div');
+    decisionMeta.className = 'notification-row__decision-meta';
+
+    if (decision === 'rejected' && item.data?.rejection_reason) {
+      const reason = document.createElement('p');
+      reason.className = 'notification-row__reason';
+      reason.textContent = `Motivo: ${item.data.rejection_reason}`;
+      decisionMeta.appendChild(reason);
+    }
+
+    if (item.data?.decided_at) {
+      const decided = document.createElement('time');
+      decided.className = 'notification-row__decided-at';
+      decided.dateTime = item.data.decided_at;
+      decided.textContent = `Decidida ${timeAgo(item.data.decided_at)}`;
+      decisionMeta.appendChild(decided);
+    }
+
+    if (decisionMeta.childElementCount > 0) {
+      article.appendChild(decisionMeta);
+    }
+  }
+
+  // Inline rejection form — present in the DOM but hidden. When the
+  // admin clicks "Rechazar", the row transitions to state='rejecting',
+  // this form becomes visible, and focus moves to the textarea.
+  // Replaces the previous window.prompt() which had no validation, no
+  // accessibility hooks, no display back to the user, and silently
+  // no-op'd on empty Enter.
+  if (approval && !decision) {
+    const form = buildRejectForm(item);
+    article.appendChild(form);
+  }
+
   return article;
+}
+
+/**
+ * Build the inline rejection form for one notification row.
+ *
+ * The form is appended to the row but starts hidden (data-state="normal"
+ * on the article keeps it that way via CSS). The click handler on the
+ * parent list is responsible for transitioning the row into the
+ * 'rejecting' state.
+ */
+function buildRejectForm(item) {
+  const form = document.createElement('div');
+  form.className = 'notification-row__reject-form d-none';
+  form.dataset.role = 'reject-form';
+  form.dataset.id = String(item.id);
+
+  const label = document.createElement('label');
+  label.className = 'notification-row__reject-label';
+  label.setAttribute('for', `reject-reason-${item.id}`);
+  label.textContent = 'Motivo del rechazo (mínimo 3 caracteres)';
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'gr-textarea notification-row__reject-textarea';
+  textarea.id = `reject-reason-${item.id}`;
+  textarea.rows = 3;
+  textarea.placeholder = 'Describe brevemente por qué se rechaza…';
+  textarea.maxLength = 1000;
+  textarea.dataset.role = 'reject-textarea';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'notification-row__reject-toolbar';
+
+  const cancel = document.createElement('button');
+  cancel.className = 'gr-btn-outline reject-cancel';
+  cancel.type = 'button';
+  cancel.dataset.id = String(item.id);
+  cancel.textContent = 'Cancelar';
+
+  const confirm = document.createElement('button');
+  confirm.className = 'gr-btn-primary reject-confirm';
+  confirm.type = 'button';
+  confirm.dataset.id = String(item.id);
+  confirm.dataset.role = 'reject-confirm';
+  confirm.textContent = 'Confirmar rechazo';
+  confirm.disabled = true;
+
+  toolbar.append(cancel, confirm);
+  form.append(label, textarea, toolbar);
+
+  // Live-validate: confirm enabled only when reason has ≥3 chars.
+  textarea.addEventListener('input', () => {
+    confirm.disabled = textarea.value.trim().length < 3;
+  });
+
+  // Esc cancels from anywhere in the form.
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancel.click();
+    }
+  });
+
+  return form;
 }
 
 function decisionBadgeClass(decision) {
@@ -162,11 +268,11 @@ export default {
         buildEmpty('No se pudieron cargar las notificaciones.', 'danger'),
       );
     }
-
-    filter.addEventListener('change', () => {
+filter.addEventListener('change', () => {
       state.filter = filter.value;
       render();
     });
+
     list.addEventListener('click', async (event) => {
       const button = event.target.closest('button');
       if (!button) return;
@@ -174,32 +280,100 @@ export default {
         (notification) => String(notification.id) === button.dataset.id,
       );
       if (!item) return;
+      const article = button.closest('.notification-row');
+      if (!article) return;
+
       try {
-        if (button.classList.contains('approve'))
+        // Approve: atomic, server validates type/decision/expires_at,
+        // client updates local state and re-renders surgically.
+        if (button.classList.contains('approve')) {
           await notificationService.approve(item.id);
-        if (button.classList.contains('reject')) {
-          const reason = window.prompt('Motivo del rechazo');
-          if (!reason) return;
-          await notificationService.reject(item.id, reason);
-        }
-        if (button.classList.contains('mark-read'))
-          await notificationService.markRead(item.id);
-        item.read = true;
-        // Guard item.data before mutating it: the API update succeeded but
-        // the client-side cache may still hold a null data bag from older
-        // notifications created before this PR. Initialising here keeps
-        // the UI in sync without re-fetching.
-        item.data = item.data ?? {};
-        if (button.classList.contains('approve'))
+          item.read = true;
+          item.data = item.data ?? {};
           item.data.decision = 'approved';
-        if (button.classList.contains('reject'))
+          item.data.decided_at = new Date().toISOString();
+          render();
+          mostrarToast('Notificación aprobada.', 'success');
+          return;
+        }
+
+        // Reject: button toggles the row into 'rejecting' state and
+        // hands focus to the textarea. Confirm fires from a second
+        // click on the inline Confirm button.
+        if (button.classList.contains('reject')) {
+          enterRejecting(article, item);
+          return;
+        }
+
+        if (button.classList.contains('reject-cancel')) {
+          exitRejecting(article);
+          return;
+        }
+
+        if (button.classList.contains('reject-confirm')) {
+          const form = article.querySelector('.notification-row__reject-form');
+          const textarea = form?.querySelector('textarea');
+          const reason = textarea?.value?.trim() ?? '';
+          if (reason.length < 3) {
+            mostrarToast('El motivo debe tener al menos 3 caracteres.', 'danger');
+            textarea?.focus();
+            return;
+          }
+          await notificationService.reject(item.id, reason);
+          item.read = true;
+          item.data = item.data ?? {};
           item.data.decision = 'rejected';
-        render();
-        mostrarToast('Notificación actualizada.', 'success');
+          item.data.rejection_reason = reason;
+          // server stamps decided_at — capture the timestamp we'd compute
+          // locally so the post-decision render can show 'hace N' without
+          // waiting for a re-fetch. Slight skew vs server clock is fine.
+          item.data.decided_at = new Date().toISOString();
+          render();
+          mostrarToast('Notificación rechazada.', 'success');
+          return;
+        }
+
+        if (button.classList.contains('mark-read')) {
+          await notificationService.markRead(item.id);
+          item.read = true;
+          render();
+          mostrarToast('Notificación marcada como leída.', 'success');
+          return;
+        }
       } catch {
         mostrarToast('No se pudo actualizar la notificación.', 'danger');
       }
     });
+
+    /**
+     * Transition a row into 'rejecting' state: hide the action buttons
+     * and show the inline form, then hand focus to the textarea.
+     * Single source of truth for the state transition — both the
+     * keyboard nav (future WU) and the click handler use this.
+     */
+    function enterRejecting(article, _item) {
+      article.dataset.state = 'rejecting';
+      const form = article.querySelector('.notification-row__reject-form');
+      const actions = article.querySelector('.notification-actions');
+      if (form) form.classList.remove('d-none');
+      if (actions) actions.classList.add('d-none');
+      const textarea = form?.querySelector('textarea');
+      if (textarea) {
+        textarea.value = '';
+        textarea.focus();
+      }
+    }
+
+    function exitRejecting(article) {
+      article.dataset.state = 'normal';
+      const form = article.querySelector('.notification-row__reject-form');
+      const actions = article.querySelector('.notification-actions');
+      if (form) form.classList.add('d-none');
+      if (actions) actions.classList.remove('d-none');
+      // Return focus to the "Rechazar" button so keyboard nav keeps working.
+      const reject = article.querySelector('.reject');
+      if (reject) reject.focus();
+    }
   },
 };
 

@@ -72,6 +72,82 @@
   background: rgba(var(--color-primary-rgb), 0.08);
   color: var(--text-muted);
 }
+
+/* ─── Inline rejection form (replaces window.prompt) ───────────── */
+/*
+ * Each approval row carries a hidden <div data-role="reject-form">.
+ * When the row's data-state transitions to 'rejecting' (clicking the
+ * "Rechazar" button triggers this), the form becomes visible and the
+ * action buttons are hidden. Confirms go through the same list-level
+ * event delegation as every other button.
+ */
+.notification-row[data-state='rejecting'] .notification-actions {
+  display: none;
+}
+.notification-row[data-state='rejecting'] .notification-row__reject-form {
+  display: block;
+}
+.notification-row__reject-form {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(var(--color-primary-rgb), 0.04);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.18);
+  border-radius: 10px;
+}
+.notification-row__reject-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.notification-row__reject-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 70px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: #23283b;
+  box-sizing: border-box;
+}
+.notification-row__reject-textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+  border-color: var(--color-primary);
+}
+.notification-row__reject-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* ─── Post-decision context (WU-3) ────────────────────────────── */
+.notification-row__decision-meta {
+  flex: 1 1 100%;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.notification-row__reason {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #23283b;
+  background: rgba(var(--color-primary-rgb), 0.04);
+  border-left: 3px solid var(--priority-high-text);
+  padding: 6px 10px;
+  border-radius: 0 6px 6px 0;
+  word-break: break-word;
+}
+.notification-row__decided-at {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
 .gr-page__counter {
   margin: 0;
   display: flex;
