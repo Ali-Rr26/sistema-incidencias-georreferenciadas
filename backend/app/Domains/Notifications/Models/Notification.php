@@ -34,6 +34,11 @@ class Notification extends Model
         'data',
         'message',
         'read',
+        // WU2 (PR-1b): canonical marker for "an admin has decided this
+        // approval notification". `null` means pending. See migration
+        // 2026_07_28_011200_add_processed_at_to_notifications_table.php
+        // for the rationale.
+        'processed_at',
     ];
 
     protected function casts(): array
@@ -42,6 +47,7 @@ class Notification extends Model
             'type' => NotificationType::class,
             'data' => 'array',
             'read' => 'boolean',
+            'processed_at' => 'datetime',
         ];
     }
 
