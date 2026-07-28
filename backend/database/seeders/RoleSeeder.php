@@ -18,17 +18,17 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
-        // Loop with per-role INSERT ... ON CONFLICT DO UPDATE:
+        // Loop with per-role updateOrInsert:
         // `Role::$fillable = ['name']` excludes `id`, so Eloquent's mass-assignment
         // path silently dropped explicit ids — wrong for these FK-target rows.
         // Surfaced by SQLite → PostgreSQL test migration (backend-tests-postgres-migration, #197):
         // Postgres SERIAL sequences persist across rolled-back transactions.
-        // `DO UPDATE` ensures row always exists after execute (unlike DO NOTHING).
+        // updateOrInsert by name, insert id if new. Never changes existing id (preserves FKs).
         // Guarantees FK visibility in same transaction for RolePermissionSeeder.
         foreach (self::ROLES as $role) {
-            DB::statement(
-                'INSERT INTO roles (id, name) VALUES (?, ?) ON CONFLICT (name) DO UPDATE SET id = EXCLUDED.id',
-                [$role['id'], $role['name']],
+            DB::table('roles')->updateOrInsert(
+                ['name' => $role['name']],
+                ['id' => $role['id'], 'name' => $role['name']],
             );
 
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
