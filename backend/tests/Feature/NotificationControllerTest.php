@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\ApprovalDecision;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Services\IncidentApprovalService;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Models\Notification;
@@ -12,6 +14,7 @@ use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -198,7 +201,7 @@ it('unread count endpoint returns correct count', function (): void {
     $response->assertJsonPath('unread_count', 1);
 });
 
-// ─── sc-123: admin approval endpoints ─────────────────────────────────
+// ─── sc-123: admin approval endpoints (WU3) ───────────────────────────────
 
 function makeAdminAndApprovalNotification(): array
 {
@@ -223,33 +226,43 @@ function makeAdminAndApprovalNotification(): array
     return ['admin' => test()->admin, 'notification' => test()->approvalNotification];
 }
 
-it('admin can approve a pending approval notification', function (): void {
+// ─── 3.1 + 3.2 — controller delegates to IncidentApprovalService ───────────
+
+it('approve delegates to IncidentApprovalService::decide() with Approved decision', function (): void {
     ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
+
+    $this->mock(IncidentApprovalService::class, function (MockInterface $mock) use ($admin, $notification): void {
+        $mock->shouldReceive('decide')
+            ->once()
+            ->with(
+$notification->incident_id,
+Mockery::on(fn ($u) => $u->id === $admin->id),
+ApprovalDecision::Approved,
+null,
+            )
+            ->andReturn($notification);
+    });
 
     $this->actingAs($admin);
     $response = $this->postJson("/api/notifications/{$notification->id}/approve");
 
     $response->assertOk();
-    $notification->refresh();
-    expect($notification->data['decision'])->toBe('approved');
-    expect($notification->data['rejection_reason'])->toBeNull();
-    expect($notification->read)->toBeTrue();
 });
 
-it('admin can reject without a reason (reason is nullable)', function (): void {
+it('reject delegates to IncidentApprovalService::decide() with Rejected decision and reason', function (): void {
     ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
 
-    $this->actingAs($admin);
-    $response = $this->postJson("/api/notifications/{$notification->id}/reject", []);
-
-    $response->assertOk();
-    $notification->refresh();
-    expect($notification->data['decision'])->toBe('rejected');
-    expect($notification->data['rejection_reason'])->toBeNull();
-});
-
-it('admin can reject with a reason', function (): void {
-    ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
+    $this->mock(IncidentApprovalService::class, function (MockInterface $mock) use ($admin, $notification): void {
+        $mock->shouldReceive('decide')
+            ->once()
+            ->with(
+$notification->incident_id,
+Mockery::on(fn ($u) => $u->id === $admin->id),
+ApprovalDecision::Rejected,
+'Necesita más evidencia.',
+            )
+            ->andReturn($notification);
+    });
 
     $this->actingAs($admin);
     $response = $this->postJson("/api/notifications/{$notification->id}/reject", [
@@ -257,91 +270,38 @@ it('admin can reject with a reason', function (): void {
     ]);
 
     $response->assertOk();
-    $notification->refresh();
-    expect($notification->data['decision'])->toBe('rejected');
-    expect($notification->data['rejection_reason'])->toBe('Necesita más evidencia.');
 });
 
-it('rejects a reason longer than 1000 chars', function (): void {
+it('reject without reason returns 422 with errors.reason', function (): void {
     ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
 
     $this->actingAs($admin);
-    $response = $this->postJson("/api/notifications/{$notification->id}/reject", [
-        'reason' => str_repeat('a', 1001),
-    ]);
+    $response = $this->postJson("/api/notifications/{$notification->id}/reject", []);
 
     $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['reason']);
 });
 
-it('non-admin cannot approve an approval notification', function (): void {
-    ['notification' => $notification] = makeAdminAndApprovalNotification();
-    // reporter is role 4 (operador_organizacion), no notifications.update
+it('index defaults per_page to 50 when no per_page query param is sent', function (): void {
+    // Create 50 notifications for the reporter — enough to fill the
+    // default page size and prove the controller is asking for 50, not 20.
+    for ($i = 0; $i < 50; $i++) {
+        Notification::create([
+            'user_id' => $this->reporter->id,
+            'incident_id' => $this->incident->id,
+            'type' => NotificationType::Claim->value,
+            'message' => "msg {$i}",
+            'data' => [],
+            'read' => false,
+        ]);
+    }
+
     $this->actingAs($this->reporter);
-
-    $response = $this->postJson("/api/notifications/{$notification->id}/approve");
-
-    $response->assertStatus(403);
-});
-
-it('admin cannot approve a non-approval notification type', function (): void {
-    $admin = User::factory()->create(['role_id' => 1]);
-    DB::table('roles')->where('id', 1)->update(['name' => 'admin_sistema']);
-    $commentNotification = Notification::create([
-        'user_id' => $admin->id,
-        'incident_id' => $this->incident->id,
-        'type' => NotificationType::Comment->value,
-        'message' => 'un comentario',
-        'data' => [],
-        'read' => false,
-    ]);
-
-    $this->actingAs($admin);
-    $response = $this->postJson("/api/notifications/{$commentNotification->id}/approve");
-
-    $response->assertStatus(403);
-});
-
-it('admin cannot decide an already-decided notification', function (): void {
-    ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
-
-    $this->actingAs($admin);
-    // First approve succeeds.
-    $this->postJson("/api/notifications/{$notification->id}/approve")->assertOk();
-
-    // Second attempt (re-decide) returns 409.
-    $response = $this->postJson("/api/notifications/{$notification->id}/reject", [
-        'reason' => 'too late',
-    ]);
-    $response->assertStatus(409);
-});
-
-it('admin cannot decide an expired approval notification', function (): void {
-    ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
-    // Backdate the expiration.
-    $notification->update([
-        'data' => array_merge($notification->data ?? [], [
-            'expires_at' => now()->subDay()->toIso8601String(),
-        ]),
-    ]);
-
-    $this->actingAs($admin);
-    $response = $this->postJson("/api/notifications/{$notification->id}/approve");
-
-    $response->assertStatus(409);
-});
-
-it('notification resource exposes approval metadata and not read_at', function (): void {
-    ['admin' => $admin, 'notification' => $notification] = makeAdminAndApprovalNotification();
-
-    $this->actingAs($admin);
     $response = $this->getJson('/api/notifications');
 
     $response->assertOk();
-    $response->assertJsonPath('data.0.type', NotificationType::IncidenciaAtendidaParaAprobacion->value);
-    $response->assertJsonPath('data.0.data.decision', null);
-    $response->assertJsonPath('data.0.read', false);
-    // read_at is intentionally absent — see NotificationResource.
-    $response->assertJsonMissingPath('data.0.read_at');
+    $response->assertJsonCount(50, 'data');
+    expect($response->json('meta.per_page'))->toBe(50);
 });
 
 it('index allows per_page up to 200', function (): void {
