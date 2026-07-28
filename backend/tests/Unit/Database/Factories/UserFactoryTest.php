@@ -44,11 +44,11 @@ it('reuses an already-existing admin_sistema role instead of creating a conflict
     // Direct DB::insert, not Role::firstOrCreate(): Role's $fillable = ['name']
     // excludes `id`, so the Eloquent mass-assignment path would silently
     // drop the explicit id=1 this test needs to pin.
-    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $adminRole = Role::firstOrCreate(['name' => 'admin_sistema']);
 
     $user = User::factory()->create();
 
-    expect($user->role_id)->toBe(1);
+    expect($user->role_id)->toBe($adminRole->id);
     expect(Role::query()->count())->toBe(1);
 });
 

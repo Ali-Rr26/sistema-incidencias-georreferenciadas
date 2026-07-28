@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
@@ -84,7 +86,25 @@ beforeEach(function (): void {
 
     Storage::fake('s3');
 
-    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $adminRole = Role::firstOrCreate(['name' => 'admin_sistema']);
+    $adminRoleId = $adminRole->id;
+
+    // Create system admin user
+    $this->systemAdmin = User::factory()->create(['role_id' => $adminRoleId]);
+
+    // Create location and organization for tests
+    $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
+    $this->organization = Organization::create([
+        'name' => 'Test Org',
+        'location_id' => $location->id,
+        'max_active_claims' => 5,
+    ]);
+
+    // Create incident category
+    $this->category = IncidentCategory::create([
+        'name' => 'Test Category',
+        'organization_id' => $this->organization->id,
+    ]);
 });
 
 it('pgsql: a point inside the selected location\'s polygon passes', function (): void {

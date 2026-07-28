@@ -15,6 +15,7 @@ declare(strict_types=1);
  * sources `profile_image_path` from the `avatarImage()` relation instead.
  */
 
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
