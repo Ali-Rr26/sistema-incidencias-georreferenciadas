@@ -225,6 +225,113 @@ describe('notificaciones-index — WU-1 row context', () => {
     expect(list.querySelectorAll('.notification-row')).toHaveLength(3);
     expect(pendingValue.textContent).toBe('1');
   });
+
+  it('clicking the title link calls router.navigate with the PATH, not the absolute URL (regression guard)', async () => {
+    mockService.list.mockResolvedValue({ data: [makeApproval()], meta: null });
+    const { list } = await mount();
+    const link = list.querySelector('.notification-row__title');
+    // element.href is what the browser would resolve — absolute URL.
+    expect(link.href).toMatch(/^https?:\/\//);
+    // Our click handler must navigate with the raw path. Catching this
+    // bug: a previous build passed title.href (the absolute URL) to
+    // router.navigate, which concatenated onto window.location.hash and
+    // never matched /incidencias/:id — fell through to /not-found.
+    link.click();
+    expect(mockNavigate).toHaveBeenCalledWith('/incidencias/101');
+  });
+});
+
+describe('notificaciones-index — meta line per notification type', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('renders "Reclamada por {actor}" for claim notifications', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        {
+          ...makeApproval({ id: 1, incidentTitle: 'Bache en Av. Bolívar' }),
+          type: 'claim',
+          actor: { id: 5, name: 'Carlos', role: 'operador_organizacion' },
+        },
+      ],
+      meta: null,
+    });
+    const { list } = await mount();
+    const meta = list.querySelector('.notification-row__meta');
+    expect(meta).not.toBeNull();
+    expect(meta.textContent).toBe('Reclamada por Carlos');
+  });
+
+  it('renders "Liberada por {actor}" for assignment notifications', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        {
+          ...makeApproval({ id: 1, incidentTitle: 'Bache en Av. Bolívar' }),
+          type: 'assignment',
+          actor: { id: 5, name: 'María', role: 'operador_organizacion' },
+        },
+      ],
+      meta: null,
+    });
+    const { list } = await mount();
+    const meta = list.querySelector('.notification-row__meta');
+    expect(meta.textContent).toBe('Liberada por María');
+  });
+
+  it('renders "Estado: {human}" for status_change notifications (no actor needed)', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        {
+          ...makeApproval({ id: 1, incidentTitle: 'Bache en Av. Bolívar' }),
+          type: 'status_change',
+          actor: null,
+          data: { status: 'resolved' },
+        },
+      ],
+      meta: null,
+    });
+    const { list } = await mount();
+    const meta = list.querySelector('.notification-row__meta');
+    expect(meta.textContent).toBe('Estado: Resuelta');
+  });
+
+  it('renders "Resuelta por {actor}" for incidencia_atendida_para_aprobacion', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        {
+          ...makeApproval({ id: 1, incidentTitle: 'Bache en Av. Bolívar' }),
+          type: 'incidencia_atendida_para_aprobacion',
+          actor: { id: 5, name: 'Pedro', role: 'operador_organizacion' },
+        },
+      ],
+      meta: null,
+    });
+    const { list } = await mount();
+    const meta = list.querySelector('.notification-row__meta');
+    expect(meta.textContent).toBe('Resuelta por Pedro');
+  });
+
+  it('falls back to "Sistema" when the actor lookup returns null (deleted user, legacy row)', async () => {
+    mockService.list.mockResolvedValue({
+      data: [
+        {
+          ...makeApproval({ id: 1, incidentTitle: 'Bache en Av. Bolívar' }),
+          type: 'claim',
+          actor: null,
+        },
+      ],
+      meta: null,
+    });
+    const { list } = await mount();
+    const meta = list.querySelector('.notification-row__meta');
+    expect(meta.textContent).toBe('Reclamada por Sistema');
+  });
 });
 
 describe('notificaciones-index — WU-2 inline rejection form', () => {

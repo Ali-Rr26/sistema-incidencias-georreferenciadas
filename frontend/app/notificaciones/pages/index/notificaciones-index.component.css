@@ -37,6 +37,28 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+.notification-row__meta {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.notification-row__meta--approval {
+  color: var(--color-primary);
+}
+.notification-row__meta--claim {
+  color: var(--priority-high-text);
+}
+.notification-row__meta--assignment {
+  color: var(--status-progress-text);
+}
+.notification-row__meta--status {
+  color: var(--text-muted);
+}
+.notification-row__meta--comment {
+  color: var(--color-primary);
+}
 .notification-row__time {
   display: block;
   font-size: 0.75rem;

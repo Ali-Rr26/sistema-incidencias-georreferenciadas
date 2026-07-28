@@ -51,16 +51,26 @@ function buildRow(item) {
   title.className = 'notification-row__title';
   title.textContent = titleText;
   if (item.incident?.id) {
-    title.href = `/incidencias/${item.incident.id}`;
+    // Build the path ONCE and reuse it. `title.href` resolves to the
+    // absolute URL (e.g. "http://localhost:3000/incidencias/101"), which
+    // would silently break the router — navigate('/...') concatenates
+    // onto `window.location.hash` and the resulting hash never matches
+    // `/incidencias/:id`, falling through to /not-found. The fix: keep
+    // the raw path in a local and pass it directly to the router.
+    const incidentPath = `/incidencias/${item.incident.id}`;
+    title.href = incidentPath;
     title.dataset.navigate = '';
     title.addEventListener('click', (event) => {
-      // Intercept in-app navigation so the SPA router takes over instead
-      // of a full page reload. Falls back to native href if router fails.
       event.preventDefault();
-      router.navigate(title.href);
+      router.navigate(incidentPath);
     });
   }
   header.appendChild(title);
+
+  // Type-specific meta line: who acted and what state changed. Keeps
+  // each row's context answerable without opening the incident detail.
+  const meta = buildMetaLine(item);
+  if (meta) header.appendChild(meta);
 
   const time = document.createElement('time');
   time.className = 'notification-row__time';
@@ -211,6 +221,70 @@ function buildRejectForm(item) {
   });
 
   return form;
+}
+
+/**
+ * Build the type-specific meta line that sits between the title and
+ * the timestamp. Returns null when there's nothing useful to show, so
+ * the row layout doesn't reserve empty space.
+ *
+ * Mapping:
+ *   - claim → "Reclamada por {actor}" (whoever claimed it)
+ *   - assignment → "Liberada por {actor}" (whoever released it)
+ *   - status_change → "Estado: {resolved|pending|...}"
+ *   - comment → "Comentario de {actor}"
+ *   - incidencia_atendida_para_aprobacion → "Resuelta por {actor}"
+ *   - legacy → null (no useful context)
+ */
+function buildMetaLine(item) {
+  const actorName = item.actor?.name ?? 'Sistema';
+  const type = item.type;
+  const data = item.data ?? {};
+
+  let label = null;
+  if (type === 'claim') {
+    label = `Reclamada por ${actorName}`;
+  } else if (type === 'assignment') {
+    label = `Liberada por ${actorName}`;
+  } else if (type === 'status_change') {
+    const status = data.status ?? '';
+    if (status) {
+      label = `Estado: ${humanizeStatus(status)}`;
+    }
+  } else if (type === 'comment') {
+    label = `Comentario de ${actorName}`;
+  } else if (type === 'incidencia_atendida_para_aprobacion') {
+    label = `Resuelta por ${actorName}`;
+  }
+
+  if (!label) return null;
+
+  const span = document.createElement('span');
+  span.className = `notification-row__meta notification-row__meta--${typeClass(type)}`;
+  span.textContent = label;
+  return span;
+}
+
+function typeClass(type) {
+  if (type === 'claim') return 'claim';
+  if (type === 'assignment') return 'assignment';
+  if (type === 'status_change') return 'status';
+  if (type === 'comment') return 'comment';
+  if (type === 'incidencia_atendida_para_aprobacion') return 'approval';
+  return 'legacy';
+}
+
+function humanizeStatus(status) {
+  // Mirrors the project's STATUS_LABEL from utils/format.js without
+  // pulling the full module — keep the meta line tight and copy-local.
+  const map = {
+    pending: 'Pendiente',
+    in_progress: 'En progreso',
+    resolved: 'Resuelta',
+    closed: 'Cerrada',
+    rejected: 'Rechazada',
+  };
+  return map[status] ?? status;
 }
 
 function decisionBadgeClass(decision) {
