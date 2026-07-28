@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Enums\NotificationType;
@@ -22,7 +23,7 @@ beforeEach(function (): void {
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 
-    $this->user = User::factory()->create(['role_id' => 1]);
+    $this->user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

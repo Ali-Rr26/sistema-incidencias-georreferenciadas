@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Domains\Auth\Local\Notifications\PasswordResetMail;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Password;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 });
 
 it('sends password reset link for existing user', function (): void {

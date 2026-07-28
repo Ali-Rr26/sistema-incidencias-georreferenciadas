@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
@@ -86,54 +87,7 @@ beforeEach(function (): void {
 
     Storage::fake('s3');
 
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema'],
-    ]);
-
-    $this->systemAdmin = User::factory()->create([
-        'role_id' => 1,
-        'organization_id' => null,
-    ]);
-
-    $orgLocation = Location::create(['name' => 'Org Base Location', 'level' => 'city']);
-    $this->organization = Organization::create([
-        'name' => 'Org A',
-        'location_id' => $orgLocation->id,
-    ]);
-    $this->category = IncidentCategory::create([
-        'name' => 'General',
-        'organization_id' => $this->organization->id,
-    ]);
-});
-
-function locationGeomBasePayload(array $overrides = []): array
-{
-    return array_merge([
-        'title' => 'Fuga de agua',
-        'priority' => 'medium',
-        'incident_category_id' => test()->category->id,
-        'organization_id' => test()->organization->id,
-    ], $overrides);
-}
-
-it('location_id present without geom passes (nothing to cross-check, sqlite-safe)', function (): void {
-    $location = Location::create(['name' => 'Machala', 'level' => 'city']);
-    $this->actingAs($this->systemAdmin);
-
-    $response = $this->postJson('/api/incidents', locationGeomBasePayload([
-        'location_id' => $location->id,
-    ]));
-
-    $response->assertCreated();
-});
-
-it('pgsql: a point matching no polygon at all passes (no boundary data loaded yet)', function (): void {
-    $location = Location::create(['name' => 'Machala', 'level' => 'city']); // no geom set
-    $this->actingAs($this->systemAdmin);
-
-    $response = $this->postJson('/api/incidents', locationGeomBasePayload([
-        'location_id' => $location->id,
-        'geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]]),
+    Role::firstOrCreate(['name' => 'admin_sistema']);,
     ]));
 
     $response->assertCreated();

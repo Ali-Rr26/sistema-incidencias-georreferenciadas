@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Incidents\Http\Policies\AssignmentPolicy;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Permissions\Models\Permission;
@@ -151,7 +152,7 @@ it('bypasses authorization for system admin (admin_sistema) via Gate::before', f
     // does NOT need an explicit assignments.create grant — matches the
     // other policies in this codebase (UserPolicy, OrganizationPolicy).
     $systemAdmin = User::factory()->create([
-        'role_id' => 1, // admin_sistema — no DB-level assignments.create row needed
+        'role_id' => Role::where('name', 'admin_sistema')->first()->id, // admin_sistema — no DB-level assignments.create row needed
     ]);
 
     // Even with NO permissions attached, the gate short-circuits.

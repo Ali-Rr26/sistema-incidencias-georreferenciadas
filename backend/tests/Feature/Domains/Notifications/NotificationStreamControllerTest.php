@@ -32,6 +32,7 @@ declare(strict_types=1);
  */
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
@@ -68,9 +69,9 @@ function stubRedisFactory(): MockInterface
 beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
-    $this->user = User::factory()->create(['role_id' => 1]);
-    $this->otherUser = User::factory()->create(['role_id' => 1, 'email' => 'other@example.com']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $this->user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+    $this->otherUser = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id, 'email' => 'other@example.com']);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

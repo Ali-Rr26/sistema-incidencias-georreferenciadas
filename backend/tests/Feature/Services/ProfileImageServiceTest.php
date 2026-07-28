@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Users\Models\User;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Services\ProfileImageService;
 use App\Storage\ImageStorageService;
 use App\Storage\Models\Image;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
     Storage::fake('s3');
     $this->service = app(ProfileImageService::class);
 });

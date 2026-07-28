@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    Role::firstOrCreate(['name' => 'Admin']);
 
     $this->user = User::factory()->create();
     $this->category = IncidentCategory::create(['name' => 'Test Category']);

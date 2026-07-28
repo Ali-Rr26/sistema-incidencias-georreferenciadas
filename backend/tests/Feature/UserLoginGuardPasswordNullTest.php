@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Auth\Shared\Services\AuthService;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 
@@ -39,13 +40,9 @@ it('returns 401 with specific message when user password is null', function (): 
 it('returns 422 when password does not match for a valid user', function (): void {
     // LoginRequest validates credentials before reaching AuthService.
     // This is existing behavior; wrong password → 422 via ValidationException.
-    // Story sc-117 — EmailNotVerifiedException se chequea en AuthService.login,
-    // pero como en estos tests el foco es el password guard, marcamos
-    // email_verified_at para mantener la suite enfocada en su objetivo.
     $user = User::factory()->create([
         'email' => 'valid@example.com',
         'password' => 'CorrectPass1',
-        'email_verified_at' => now(),
     ]);
 
     $response = $this->postJson('/api/login', [
@@ -62,10 +59,6 @@ it('returns 200 when password matches for a valid user', function (): void {
     $user = User::factory()->create([
         'email' => 'valid@example.com',
         'password' => 'CorrectPass1',
-        // Story sc-117 — unverified email ahora bloquea login con 403;
-        // aqui seteamos verified para mantener la suite enfocada en el
-        // password guard.
-        'email_verified_at' => now(),
     ]);
 
     $response = $this->postJson('/api/login', [

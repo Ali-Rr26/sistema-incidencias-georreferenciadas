@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
