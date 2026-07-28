@@ -252,7 +252,9 @@ export default {
           inicio: today,
           fin: today,
         });
-        const statsData = await http.get(`/incidents/stats?${params.toString()}`);
+        const statsData = await http.get(
+          `/incidents/stats?${params.toString()}`,
+        );
 
         // Parse stats and update UI
         const newCount = statsData.by_status?.pending ?? 0;
