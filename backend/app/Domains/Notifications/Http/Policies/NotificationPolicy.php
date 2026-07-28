@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Notifications\Http\Policies;
 
-use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Users\Models\User;
 
@@ -15,6 +14,15 @@ use App\Domains\Users\Models\User;
  * deniegan por defecto (no hay gestión de notificaciones desde la API más
  * allá de las acciones del dueño). `markRead` se chequea por separado con
  * `markAsRead()`.
+ *
+ * WU3 (PR-1c): `approve` y `reject` delegan en `canDecide()`, que es
+ * estrictamente una policy `who` (¿quién puede decidir?). Las invariantes
+ * de estado (status `resolved`, sin decisión previa, no expirada, tipo
+ * correcto) viven en `IncidentApprovalService::decide()` desde PR-1b.
+ * Mover esos checks al service los hace bypass-proof: `Gate::before` en
+ * `AppServiceProvider` deja pasar a `admin_sistema` por encima de cualquier
+ * policy, pero el service no es saltable — el `DB::transaction` + el
+ * `lockForUpdate` en la fila del incidente es la barrera de defensa.
  */
 class NotificationPolicy
 {
@@ -54,53 +62,30 @@ class NotificationPolicy
     }
 
     /**
-     * Shared predicate for approve/reject authorization.
+     * Authorization predicate for approve/reject — `who` only.
      *
-     * Requires:
-     *  - the actor holds `notifications.update` permission (admin_sistema /
-     *    admin_organizacion, configured in the role permission seeder);
-     *  - the notification belongs to the actor (only the recipient decides);
-     *  - the notification is the approval type — admins MUST NOT be able to
-     *    approve unrelated types like `comment`, `claim`, etc.;
-     *  - there is no decision recorded yet — once approved/rejected, the
-     *    decision is immutable from the API surface;
-     *  - `expires_at` (when present) is still in the future.
+     * Admits the action iff the actor is one of:
+     *  - `admin_sistema` (covers the Gate::before bypass);
+     *  - `admin_organizacion` whose `organization_id` matches the
+     *    `incident->organization_id` (so an admin from org B cannot
+     *    decide on an incident that belongs to org A).
      *
-     * Without these checks an authorized admin could re-decide or decide
-     * notifications of unrelated types. The controller re-checks the same
-     * state atomically to prevent concurrent overwrite races.
+     * No type / decision / expiry checks here. Those are runtime
+     * invariants that belong to the service. The policy MUST stay
+     * bypassable by `admin_sistema` (that's the point of `Gate::before`)
+     * while the service MUST stay bypass-proof (it owns the transaction).
      */
     private function canDecide(User $user, Notification $notification): bool
     {
-        if (! $user->hasPermission('notifications.update')) {
-            return false;
+        if ($user->isSystemAdmin()) {
+            return true;
         }
 
-        if ($user->id !== $notification->user_id) {
-            return false;
+        if ($user->isOrganizationAdmin()) {
+            return $user->organization_id === $notification->incident?->organization_id;
         }
 
-        if ($notification->type !== NotificationType::IncidenciaAtendidaParaAprobacion) {
-            return false;
-        }
-
-        $data = $notification->data ?? [];
-        if (! empty($data['decision'])) {
-            return false;
-        }
-
-        $expiresAt = $data['expires_at'] ?? null;
-        if ($expiresAt !== null) {
-            try {
-                if (new \DateTimeImmutable($expiresAt) <= new \DateTimeImmutable) {
-                    return false;
-                }
-            } catch (\Throwable) {
-                return false;
-            }
-        }
-
-        return true;
+        return false;
     }
 
     /**
