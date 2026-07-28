@@ -171,7 +171,12 @@ function renderCard(inc) {
 
 async function initMiniMaps() {
   // Skip on mobile — minimaps hidden via d-none d-lg-block
-  if (!window.matchMedia('(min-width: 992px)').matches) return;
+  // Handle jsdom (test environment) where matchMedia is undefined
+  if (
+    typeof window.matchMedia !== 'function' ||
+    !window.matchMedia('(min-width: 992px)').matches
+  )
+    return;
 
   const containers = document.querySelectorAll(
     '.feed-minimap:not([data-map-init])',
