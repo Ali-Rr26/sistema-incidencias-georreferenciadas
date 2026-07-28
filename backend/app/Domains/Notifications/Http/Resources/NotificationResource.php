@@ -35,38 +35,79 @@ class NotificationResource extends JsonResource
             ] : null),
             // Actor: the user who triggered the notification (the operator
             // who claimed / released / resolved the incident, etc.).
-            // Looked up by the data->actor_user_id that the observer
-            // records when it queues the notification, with fallback to
-            // data->claimed_by and data->released_from (older observers
-            // only stored the operator ID under those keys). Returns
-            // null for legacy rows where the field was never set, or
-            // when the referenced user was deleted — the frontend
-            // renders a graceful "Sistema" fallback in that case.
             //
-            // Note: per-row User::find() is intentional here — the
-            // observer records these IDs inside the data jsonb (not as
-            // foreign keys), so eager-loading via with() is not
-            // available. The cost is N+1 over the page size; with the
-            // per-page cap of 200 and ~5ms per lookup, worst case is
-            // ~1s on cold cache. Acceptable for the queue use case.
+            // WU4 (PR-2): the observer snapshots `data.actor_name` (the
+            // user's full display name) at creation time, so the resource
+            // resolves the actor WITHOUT a per-row `User::find()`. A page
+            // of 50 notifications no longer costs 50 extra queries.
+            //
+            // Fallback chain:
+            //   1. data.actor_name present  → use it directly (no DB hit).
+            //   2. data.actor_user_id set but actor_name absent → legacy
+            //      path: `User::find()` to fetch the current first_name +
+            //      role. Covers rows written before the observer started
+            //      snapshotting actor_name.
+            //   3. otherwise (no actor at all) → null; frontend renders
+            //      a graceful "Sistema" fallback.
+            //
+            // id resolution also accepts the older `data->claimed_by` /
+            // `data->released_from` keys so notifications produced by the
+            // pre-S-3 observer layer still resolve to a user.
             'actor' => $this->resolveActor(
                 $data['actor_user_id'] ?? null,
+                $data['actor_name'] ?? null,
+                $data['actor_role'] ?? null,
                 $data['claimed_by'] ?? null,
                 $data['released_from'] ?? null,
             ),
         ];
     }
 
-    private function resolveActor(?int $actorId, ?int $claimedBy = null, ?int $releasedFrom = null): ?array
-    {
+private function resolveActor(
+        ?int $actorId,
+        ?string $actorName = null,
+        ?string $actorRole = null,
+        ?int $claimedBy = null,
+        ?int $releasedFrom = null,
+    ): ?array {
         $id = $actorId ?? $claimedBy ?? $releasedFrom;
         if ($id === null || $id <= 0) {
             return null;
         }
+
+        // Hot path: actor_name was snapshotted at creation time → skip
+        // the legacy `User::find()` lookup. actor_role is also snapshotted
+        // (see `IncidentNotificationObserver::resolveActorSnapshot`), so
+        // the resource renders a full actor block with zero DB hits.
+        // Rows that have actor_name but not actor_role (partial fix
+        // edge case) still avoid the name query but pay one `User::find`
+        // for the role — same cost as before, just shifted.
+        if ($actorName !== null && $actorName !== '') {
+            if ($actorRole !== null && $actorRole !== '') {
+                return [
+            'id' => $id,
+            'name' => $actorName,
+            'role' => $actorRole,
+                ];
+            }
+
+            $actor = User::find($id);
+
+            return [
+                'id' => $id,
+                'name' => $actorName,
+                'role' => $actor?->role?->name,
+            ];
+        }
+
+        // Legacy path: row written before the observer started snapshotting
+        // actor_name — keep the previous `first_name` shape so the
+        // frontend continues to render correctly until the row is purged.
         $actor = User::find($id);
         if ($actor === null) {
             return null;
         }
+
         return [
             'id' => $actor->id,
             'name' => $actor->first_name,

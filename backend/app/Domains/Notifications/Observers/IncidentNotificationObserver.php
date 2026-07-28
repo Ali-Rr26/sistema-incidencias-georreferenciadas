@@ -111,15 +111,16 @@ class IncidentNotificationObserver
         $incidentId = (int) $incident->id;
         $actorUserId = (int) ($incident->claimed_by ?: $incident->user_id);
 
-        // Pre-resolve the actor's full name in the moment of the transition
-        // so the resource can read it back without an N+1 query per row
-        // (IncidentNotificationObserver is the single funnel for these
-        // notifications; either it fires or no row is created). Doing this
-        // here also means the snapshot in `data.actor_name` stays stable
-        // even if the user later changes their name.
-        $actorName = $this->resolveActorFullName($actorUserId);
+// Pre-resolve the actor's full name AND role in the moment of the
+        // transition so the resource can read them back without an N+1
+        // query per row (IncidentNotificationObserver is the single funnel
+        // for these notifications; either it fires or no row is created).
+        // Doing this here also means the snapshot in `data.actor_name`
+        // and `data.actor_role` stays stable even if the user later
+        // changes their name or role assignment.
+        $actorSnapshot = $this->resolveActorSnapshot($actorUserId);
 
-        DB::afterCommit(function () use ($organizationId, $incidentId, $actorUserId, $actorName): void {
+        DB::afterCommit(function () use ($organizationId, $incidentId, $actorUserId, $actorSnapshot): void {
             // Hybrid admin_sistema scope (incident-approval-workflow/design.md §1 ADR-6):
             //   - admin_sistema with organization_id = X → only that org.
             //   - admin_sistema without organization_id  → global (cross-org).
@@ -146,9 +147,10 @@ class IncidentNotificationObserver
                     message: 'Una incidencia atendida requiere tu aprobación.',
                     incidentId: $incidentId,
                     data: [
-                        'incident_id' => $incidentId,
+'incident_id' => $incidentId,
                         'actor_user_id' => $actorUserId,
-                        'actor_name' => $actorName,
+                        'actor_name' => $actorSnapshot['name'],
+                        'actor_role' => $actorSnapshot['role'],
                         'decision' => null,
                         'rejection_reason' => null,
                         'expires_at' => now()->addDays(7)->toIso8601String(),
@@ -159,22 +161,29 @@ class IncidentNotificationObserver
         });
     }
 
-    /**
-     * Resolve a user's display name (first + last, trimmed) for snapshotting
-     * into `data.actor_name`. Returns `null` for unknown / soft-deleted users
-     * so the caller can persist `null` and the resource falls through to its
-     * legacy `User::find()` path without a follow-up query.
+/**
+     * Resolve a user's display name AND role for snapshotting into
+     * `data.actor_name` and `data.actor_role`. Returns null for both
+     * when the user is unknown or soft-deleted, so the caller persists
+     * null and the resource falls through to its legacy `User::find()`
+     * path without a follow-up query.
+     *
+     * @return array{name: ?string, role: ?string}
      */
-    private function resolveActorFullName(int $userId): ?string
+    private function resolveActorSnapshot(int $userId): array
     {
         $user = User::find($userId);
         if ($user === null) {
-            return null;
+            return ['name' => null, 'role' => null];
         }
 
         $name = trim((string) ($user->first_name ?? '').' '.(string) ($user->last_name ?? ''));
+        $role = $user->role?->name;
 
-        return $name !== '' ? $name : null;
+        return [
+            'name' => $name !== '' ? $name : null,
+            'role' => $role,
+        ];
     }
 
     private function queueNotification(
