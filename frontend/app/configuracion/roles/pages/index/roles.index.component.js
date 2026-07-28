@@ -13,7 +13,6 @@ export default {
       buildRow: (rol) => `
                 <tr>
                     <td class="fw-semibold">${rol.name}</td>
-                    <td class="text-center"><span class="badge bg-secondary">${rol.permissions_count ?? 0}</span></td>
                     <td class="text-center">
                         <table-actions id="ta-desktop-${rol.id}"></table-actions>
                     </td>
@@ -23,7 +22,7 @@ export default {
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="mb-0">${rol.name} <span class="badge bg-secondary ms-1">${rol.permissions_count ?? 0}</span></h6>
+                                <h6 class="mb-0">${rol.name}</h6>
                             </div>
                             <table-actions id="ta-mobile-${rol.id}"></table-actions>
                         </div>
@@ -39,7 +38,7 @@ export default {
     });
 
     document.getElementById('btn-nuevo-rol').addEventListener('click', () => {
-      router.navigate('/roles/crear');
+      router.navigate('/roles/create');
     });
 
     page.init();
