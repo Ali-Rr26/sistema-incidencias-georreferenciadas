@@ -779,6 +779,13 @@ function wireBellPanels() {
       badgeId: 'app-shell-bell-badge-admin',
       markAllId: 'app-shell-bell-markall-admin',
       detailRoute: '/incidencias',
+      // sc-123 / #150: admin only — full notifications page lives at
+      // /notificaciones, gated by `notifications.update`. The bell
+      // dropdown shows the latest 8; this footer link surfaces the rest
+      // (and, more importantly, the approve/reject actions that the
+      // dropdown itself does not expose).
+      viewAllId: 'app-shell-bell-viewall-admin',
+      viewAllRoute: '/notificaciones',
     },
     {
       btnId: 'app-shell-bell',
@@ -787,6 +794,7 @@ function wireBellPanels() {
       badgeId: 'app-shell-bell-badge',
       markAllId: 'app-shell-bell-markall',
       detailRoute: '/feed',
+      // Citizen has no /notificaciones access — no view-all footer.
     },
   ];
   configs.forEach((config) => {
@@ -820,6 +828,8 @@ function createBellPanel({
   badgeId,
   markAllId,
   detailRoute,
+  viewAllId,
+  viewAllRoute,
 }) {
   const btn = document.getElementById(btnId);
   const panel = document.getElementById(panelId);
@@ -828,6 +838,7 @@ function createBellPanel({
 
   const badge = badgeId ? document.getElementById(badgeId) : null;
   const markAllBtn = markAllId ? document.getElementById(markAllId) : null;
+  const viewAllLink = viewAllId ? document.getElementById(viewAllId) : null;
 
   let isOpen = false;
   let onDocClick = null;
@@ -929,6 +940,14 @@ function createBellPanel({
   }
 
   function renderItems(items) {
+    // The "Ver todas" footer link is meaningful only when there are items
+    // to scroll past. Hide it in the empty state so the panel collapses to
+    // just the empty message instead of dangling a redundant link.
+    if (viewAllLink) {
+      const hasItems = Array.isArray(items) && items.length > 0;
+      viewAllLink.classList.toggle('d-none', !hasItems);
+    }
+
     if (!items || items.length === 0) {
       list.replaceChildren(buildEmptyState());
       return;
@@ -1005,9 +1024,25 @@ function createBellPanel({
       );
   }
 
+  /**
+   * "Ver todas" footer link — closes the dropdown and routes to the
+   * full notifications page. The link is admin-only (the citizen bell
+   * config does not pass viewAllId). Router is responsible for the
+   * permissionGuard on /notificaciones, so a non-admin would 403 at
+   * the route — but in practice the link is only rendered for admins
+   * because the citizen panel has no viewAll element in the DOM.
+   */
+  function onViewAllClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    closePanel();
+    router.navigate(viewAllRoute);
+  }
+
   function init() {
     btn.addEventListener('click', onTriggerClick);
     markAllBtn?.addEventListener('click', onMarkAllClick);
+    viewAllLink?.addEventListener('click', onViewAllClick);
 
     onDocClick = (event) => {
       if (!isOpen) return;
@@ -1025,6 +1060,7 @@ function createBellPanel({
   function destroy() {
     btn.removeEventListener('click', onTriggerClick);
     markAllBtn?.removeEventListener('click', onMarkAllClick);
+    viewAllLink?.removeEventListener('click', onViewAllClick);
     if (onDocClick) {
       document.removeEventListener('click', onDocClick, true);
       onDocClick = null;

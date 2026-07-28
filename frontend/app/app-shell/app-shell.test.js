@@ -2328,3 +2328,161 @@ describe('appShell — populateHeader avatar rendering (C3)', () => {
     if (typeof unsub === 'function') unsub();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────
+// sc-123 / #150 — admin bell "Ver todas" footer link
+// ────────────────────────────────────────────────────────────────────
+//
+// The admin notification dropdown exposes a footer link to the full
+// /notificaciones page (the place where approve/reject decisions live).
+// The citizen bell has no equivalent because citizens don't have access
+// to /notificaciones.
+
+describe('admin bell "Ver todas" footer link (sc-123 / #150)', () => {
+  let listSpy;
+  let consoleErrorSpy;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), { id: 'shell-outlet' }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate(TEMPLATE_HTML_WITH_BELL));
+    delete window.EventSource;
+
+    vi.spyOn(auth, 'getUser').mockReturnValue({
+      id: 1,
+      first_name: 'Ana',
+      email: 'ana@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    });
+    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+    vi.spyOn(notificationService, 'unreadCount').mockResolvedValue(0);
+    listSpy = vi
+      .spyOn(notificationService, 'list')
+      .mockResolvedValue({ data: [], meta: null, unreadCount: 0 });
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('renders the "Ver todas" footer link in the admin bell panel', async () => {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    try {
+      const link = document.getElementById('app-shell-bell-viewall-admin');
+      expect(link).not.toBeNull();
+      expect(link.textContent.trim()).toBe('Ver todas');
+      // Citizen bell must NOT have this link.
+      expect(document.getElementById('app-shell-bell-viewall')).toBeNull();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('hides the "Ver todas" link when the bell list is empty', async () => {
+    listSpy.mockResolvedValue({ data: [], meta: null, unreadCount: 0 });
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    try {
+      const btn = document.getElementById('app-shell-bell-admin');
+      btn.click();
+      // Wait for the async list fetch to settle.
+      await new Promise((r) => setTimeout(r, 10));
+
+      const link = document.getElementById('app-shell-bell-viewall-admin');
+      expect(link.classList.contains('d-none')).toBe(true);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('shows the "Ver todas" link when the bell list has items', async () => {
+    listSpy.mockResolvedValue({
+      data: [
+        {
+          id: 42,
+          type: 'incidencia_atendida_para_aprobacion',
+          message: 'Una incidencia atendida requiere tu aprobación.',
+          read: false,
+          incident: { id: 7, title: 'Bache en Av. Bolívar' },
+          created_at: new Date().toISOString(),
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
+    });
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    try {
+      const btn = document.getElementById('app-shell-bell-admin');
+      btn.click();
+      await new Promise((r) => setTimeout(r, 10));
+
+      const link = document.getElementById('app-shell-bell-viewall-admin');
+      expect(link.classList.contains('d-none')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  it('closes the panel and routes to /notificaciones when "Ver todas" is clicked', async () => {
+    listSpy.mockResolvedValue({
+      data: [
+        {
+          id: 42,
+          type: 'incidencia_atendida_para_aprobacion',
+          message: 'Una incidencia atendida requiere tu aprobación.',
+          read: false,
+          incident: { id: 7, title: 'Bache' },
+          created_at: new Date().toISOString(),
+        },
+      ],
+      meta: null,
+      unreadCount: 1,
+    });
+
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    let navigated = null;
+    const navigateSpy = vi
+      .spyOn(
+        await import('../../app/core/router.js').then((m) => m.router),
+        'navigate',
+      )
+      .mockImplementation((path) => {
+        navigated = path;
+      });
+    try {
+      const btn = document.getElementById('app-shell-bell-admin');
+      btn.click();
+      await new Promise((r) => setTimeout(r, 10));
+
+      const link = document.getElementById('app-shell-bell-viewall-admin');
+      link.click();
+
+      expect(navigated).toBe('/notificaciones');
+      // Panel must close.
+      const panel = document.getElementById('app-shell-bell-panel-admin');
+      expect(panel.hidden).toBe(true);
+    } finally {
+      navigateSpy.mockRestore();
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+});

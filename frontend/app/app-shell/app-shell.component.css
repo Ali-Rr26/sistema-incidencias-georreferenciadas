@@ -407,6 +407,33 @@ body[data-role='guest']
   text-decoration: underline;
 }
 
+/* "Ver todas" — entry point to the full /notificaciones page (admin only).
+   Rendered after the list, only when the list has items (kept hidden via
+   .d-none in the empty state). Acts as the panel footer so it sits at
+   the bottom of the dropdown regardless of list length. */
+.app-shell-bell-panel__viewall {
+  display: block;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6a5cf3;
+  border-top: 1px solid #eef0f5;
+  background: #fafbff;
+  text-decoration: none;
+}
+
+.app-shell-bell-panel__viewall:hover {
+  background: #f0eefd;
+  text-decoration: none;
+  color: #5a4de0;
+}
+
+.app-shell-bell-panel__viewall:focus-visible {
+  outline: 2px solid #6a5cf3;
+  outline-offset: -2px;
+}
+
 .app-shell-bell-panel__list {
   list-style: none;
   margin: 0;
