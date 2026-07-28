@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // User factory references role_id; seed a placeholder role.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
 });
 
 it('logs in and returns access tokens plus the user payload', function (): void {

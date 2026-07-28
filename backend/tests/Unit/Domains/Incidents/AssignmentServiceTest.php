@@ -38,7 +38,7 @@ beforeEach(function (): void {
     // path silently drops the explicit id and lets auto-increment assign
     // whatever the sequence happens to be at (see RoleSeederTest / the
     // same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 5, 'name' => UserRole::Usuario->value],
     ]);

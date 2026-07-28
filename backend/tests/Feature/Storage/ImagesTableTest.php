@@ -29,7 +29,7 @@ it('creates the images table with the expected columns', function (): void {
 });
 
 it('rejects a second is_thumbnail=true row for the same owner', function (): void {
-    DB::table('images')->insert([
+    DB::table('images')->insertOrIgnore([
         'imageable_type' => 'incident',
         'imageable_id' => 1,
         'storage_path' => 'incidents/1/a.webp',
@@ -47,7 +47,7 @@ it('rejects a second is_thumbnail=true row for the same owner', function (): voi
     // assertion on the next line.
     expect(function (): void {
         DB::transaction(function (): void {
-            DB::table('images')->insert([
+            DB::table('images')->insertOrIgnore([
                 'imageable_type' => 'incident',
                 'imageable_id' => 1,
                 'storage_path' => 'incidents/1/b.webp',
@@ -63,7 +63,7 @@ it('rejects a second is_thumbnail=true row for the same owner', function (): voi
 });
 
 it('allows multiple is_thumbnail=false rows for the same owner', function (): void {
-    DB::table('images')->insert([
+    DB::table('images')->insertOrIgnore([
         'imageable_type' => 'incident',
         'imageable_id' => 2,
         'storage_path' => 'incidents/2/a.webp',
@@ -73,7 +73,7 @@ it('allows multiple is_thumbnail=false rows for the same owner', function (): vo
         'updated_at' => now(),
     ]);
 
-    DB::table('images')->insert([
+    DB::table('images')->insertOrIgnore([
         'imageable_type' => 'incident',
         'imageable_id' => 2,
         'storage_path' => 'incidents/2/b.webp',
@@ -87,7 +87,7 @@ it('allows multiple is_thumbnail=false rows for the same owner', function (): vo
 });
 
 it('allows the same owner id to have a thumbnail for different imageable types', function (): void {
-    DB::table('images')->insert([
+    DB::table('images')->insertOrIgnore([
         'imageable_type' => 'incident',
         'imageable_id' => 3,
         'storage_path' => 'incidents/3/a.webp',
@@ -97,7 +97,7 @@ it('allows the same owner id to have a thumbnail for different imageable types',
         'updated_at' => now(),
     ]);
 
-    DB::table('images')->insert([
+    DB::table('images')->insertOrIgnore([
         'imageable_type' => 'comment',
         'imageable_id' => 3,
         'storage_path' => 'comments/3/a.webp',

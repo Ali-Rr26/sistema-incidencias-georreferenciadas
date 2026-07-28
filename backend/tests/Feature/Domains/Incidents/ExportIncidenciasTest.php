@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Log;
  * triggered a router-matching glitch in the test environment we couldn't
  * isolate in time; the Spanish verb dodges it.
  *
- * Seeding pattern: raw `DB::table('roles')->insert(...)` + `User::factory()->create(['role_id' => 1])`
+ * Seeding pattern: raw `DB::table('roles')->insertOrIgnore(...)` + `User::factory()->create(['role_id' => 1])`
  * mirrors `IncidentStatsControllerTest`. Going through the Eloquent `Role`
  * model in `beforeEach()` triggered the same routing glitch.
  */
@@ -41,7 +41,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => UserRole::AdminSistema->value, 'created_at' => now(), 'updated_at' => now()],
         ['id' => 5, 'name' => UserRole::Usuario->value, 'created_at' => now(), 'updated_at' => now()],
     ]);

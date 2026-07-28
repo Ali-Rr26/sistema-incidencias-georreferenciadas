@@ -59,7 +59,7 @@ beforeEach(function (): void {
         'message' => 'Test comment',
     ]);
 
-    DB::table('comment_images')->insert([
+    DB::table('comment_images')->insertOrIgnore([
         'comment_id' => $this->comment->id,
         'url' => 'comments/'.$this->comment->id.'/x.webp',
         'caption' => null,
@@ -110,7 +110,7 @@ it('reports legacy absolute-URL comment rows in its output without crashing', fu
         'user_id' => $this->user->id,
         'message' => 'Second comment',
     ]);
-    DB::table('comment_images')->insert([
+    DB::table('comment_images')->insertOrIgnore([
         'comment_id' => $secondComment->id,
         'url' => $legacyUrl,
         'caption' => null,

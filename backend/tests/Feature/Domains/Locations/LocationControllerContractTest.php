@@ -25,7 +25,7 @@ beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
     // Ensure admin role exists
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
     $this->admin = User::factory()->create(['role_id' => 1]);

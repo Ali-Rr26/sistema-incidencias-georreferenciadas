@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Password;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
 });
 
 it('sends password reset link for existing user', function (): void {

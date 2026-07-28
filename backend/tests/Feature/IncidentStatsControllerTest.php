@@ -801,7 +801,7 @@ it('serves the same stats payload from cache on the second request', function ()
 
     $first = $this->actingAs($admin)->getJson('/api/incidents/stats')->assertOk();
 
-    DB::table('incidents')->insert([
+    DB::table('incidents')->insertOrIgnore([
         'title' => 'Inserted without invalidation',
         'description' => 'Cache sentinel',
         'incident_category_id' => $category->id,

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'Admin']);
 
     $this->user = User::factory()->create();
     $this->category = IncidentCategory::create(['name' => 'Test Category']);

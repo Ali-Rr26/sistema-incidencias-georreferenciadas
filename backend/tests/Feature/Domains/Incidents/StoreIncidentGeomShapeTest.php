@@ -22,7 +22,7 @@ beforeEach(function (): void {
 
     app()->setLocale('es');
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 

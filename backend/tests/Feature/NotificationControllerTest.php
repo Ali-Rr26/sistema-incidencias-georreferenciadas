@@ -24,7 +24,7 @@ beforeEach(function (): void {
     //
     // Note: Role's $fillable does not include `id`, so we insert via the
     // query builder to keep the explicit ID.
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
         ['id' => 4, 'name' => 'operador_organizacion', 'created_at' => now(), 'updated_at' => now()],
     ]);

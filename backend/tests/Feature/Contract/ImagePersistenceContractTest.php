@@ -42,7 +42,7 @@ beforeEach(function (): void {
     // `Gate::before` bypass (`$user->isAdmin()`), so a single admin actor
     // is authorized across incidents, comments, and users without needing
     // to seed the permissions table for this cross-domain contract suite.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
 
     $this->admin = User::factory()->create();
     $this->withoutMiddleware(JwtAuthenticate::class);
