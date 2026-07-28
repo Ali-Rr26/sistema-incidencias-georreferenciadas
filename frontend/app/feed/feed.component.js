@@ -529,7 +529,7 @@ export default {
         const isExpanded =
           feedFilterToggle.getAttribute('aria-expanded') === 'true';
         feedFilterToggle.setAttribute('aria-expanded', !isExpanded);
-        feedFilterContent.classList.toggle('d-none');
+        feedFilterContent.classList.toggle('feed-filter-collapsed');
       }
 
       feedFilterToggle.addEventListener('click', toggleFeedFilterPanel);

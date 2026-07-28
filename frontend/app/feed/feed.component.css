@@ -566,9 +566,10 @@ body.feed-view {
   overflow: hidden;
 }
 
-.feed-filter-content.d-none {
+.feed-filter-content.feed-filter-collapsed {
   max-height: 0;
   opacity: 0;
+  visibility: hidden;
   display: block !important;
   pointer-events: none;
 }
