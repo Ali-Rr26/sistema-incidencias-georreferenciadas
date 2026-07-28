@@ -18,7 +18,7 @@ export const notificationService = {
   /**
    * Devuelve la lista paginada de notificaciones del usuario autenticado.
    */
-  async list({ page = 1, perPage = 20, unreadOnly = false } = {}) {
+  async list({ page = 1, perPage = 50, unreadOnly = false } = {}) {
     const params = new URLSearchParams({
       page: String(page),
       per_page: String(perPage),

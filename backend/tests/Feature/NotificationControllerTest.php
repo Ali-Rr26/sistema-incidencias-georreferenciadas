@@ -235,10 +235,10 @@ it('approve delegates to IncidentApprovalService::decide() with Approved decisio
         $mock->shouldReceive('decide')
             ->once()
             ->with(
-$notification->incident_id,
-Mockery::on(fn ($u) => $u->id === $admin->id),
-ApprovalDecision::Approved,
-null,
+                $notification->incident_id,
+                Mockery::on(fn ($u) => $u->id === $admin->id),
+                ApprovalDecision::Approved,
+                null,
             )
             ->andReturn($notification);
     });
@@ -256,10 +256,10 @@ it('reject delegates to IncidentApprovalService::decide() with Rejected decision
         $mock->shouldReceive('decide')
             ->once()
             ->with(
-$notification->incident_id,
-Mockery::on(fn ($u) => $u->id === $admin->id),
-ApprovalDecision::Rejected,
-'Necesita más evidencia.',
+                $notification->incident_id,
+                Mockery::on(fn ($u) => $u->id === $admin->id),
+                ApprovalDecision::Rejected,
+                'Necesita más evidencia.',
             )
             ->andReturn($notification);
     });
