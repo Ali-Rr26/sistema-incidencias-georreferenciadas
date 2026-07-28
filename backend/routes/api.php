@@ -10,6 +10,7 @@ use App\Domains\Comments\Http\CommentController;
 use App\Domains\Comments\Http\CommentImageController;
 use App\Domains\IncidentCategories\Http\IncidentCategoryController;
 use App\Domains\Incidents\Http\Controllers\AssignmentController;
+use App\Domains\Incidents\Http\Controllers\StatusHistoryController;
 use App\Domains\Incidents\Http\ExportIncidenciasController;
 use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Http\IncidentController;
@@ -27,7 +28,6 @@ use App\Domains\Roles\Http\RoleController;
 use App\Domains\Users\Http\OperatorDashboardController;
 use App\Domains\Users\Http\OperatorLocationController;
 use App\Domains\Users\Http\UserController;
-use App\Domains\Incidents\Http\Controllers\StatusHistoryController;
 use Illuminate\Support\Facades\Route;
 
 // Public

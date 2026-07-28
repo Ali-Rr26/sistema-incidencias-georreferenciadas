@@ -63,69 +63,69 @@ class NotificationResource extends JsonResource
         ];
     }
 
-private function resolveActor(
-            ?int $actorId,
-            ?string $actorName = null,
-            ?string $actorRole = null,
-            ?int $claimedBy = null,
-            ?int $releasedFrom = null,
-        ): ?array {
-            $id = $actorId ?? $claimedBy ?? $releasedFrom;
-            if ($id === null || $id <= 0) {
-                return null;
+    private function resolveActor(
+        ?int $actorId,
+        ?string $actorName = null,
+        ?string $actorRole = null,
+        ?int $claimedBy = null,
+        ?int $releasedFrom = null,
+    ): ?array {
+        $id = $actorId ?? $claimedBy ?? $releasedFrom;
+        if ($id === null || $id <= 0) {
+            return null;
+        }
+
+        // Hot path: actor_name was snapshotted at creation time → skip
+        // the legacy `User::find()` lookup. actor_role is also snapshotted
+        // (see `IncidentNotificationObserver::resolveActorSnapshot`), so
+        // the resource renders a full actor block with zero DB hits.
+        // Rows that have actor_name but not actor_role (partial fix
+        // edge case) still avoid the name query but pay one `User::find`
+        // for the role — same cost as before, just shifted.
+        if ($actorName !== null && $actorName !== '') {
+            if ($actorRole !== null && $actorRole !== '') {
+                return $this->buildActorArray($id, $actorName, $actorRole);
             }
 
-            // Hot path: actor_name was snapshotted at creation time → skip
-            // the legacy `User::find()` lookup. actor_role is also snapshotted
-            // (see `IncidentNotificationObserver::resolveActorSnapshot`), so
-            // the resource renders a full actor block with zero DB hits.
-            // Rows that have actor_name but not actor_role (partial fix
-            // edge case) still avoid the name query but pay one `User::find`
-            // for the role — same cost as before, just shifted.
-            if ($actorName !== null && $actorName !== '') {
-                if ($actorRole !== null && $actorRole !== '') {
-                    return $this->buildActorArray($id, $actorName, $actorRole);
-                }
-
-                $actor = User::find($id);
-
-                return $this->buildActorArray(
-                    $id,
-                    $actorName,
-                    $actor?->role?->name,
-                );
-            }
-
-            // Legacy path: row written before the observer started snapshotting
-            // actor_name — keep the previous `first_name` shape so the
-            // frontend continues to render correctly until the row is purged.
             $actor = User::find($id);
-            if ($actor === null) {
-                return null;
-            }
 
             return $this->buildActorArray(
-                $actor->id,
-                $actor->first_name,
-                $actor->role?->name,
+                $id,
+                $actorName,
+                $actor?->role?->name,
             );
         }
 
-        /**
-         * Build the actor array from already-resolved primitives. Centralises
-         * the shape so all three resolution paths (modern snapshot, partial
-         * snapshot, legacy User::find) emit identical JSON.
-         */
-        private function buildActorArray(int $id, ?string $name, ?string $role): ?array
-        {
-            if ($name === null || $name === '') {
-                return null;
-            }
-
-            return [
-                'id' => $id,
-                'name' => $name,
-                'role' => $role,
-            ];
+        // Legacy path: row written before the observer started snapshotting
+        // actor_name — keep the previous `first_name` shape so the
+        // frontend continues to render correctly until the row is purged.
+        $actor = User::find($id);
+        if ($actor === null) {
+            return null;
         }
+
+        return $this->buildActorArray(
+            $actor->id,
+            $actor->first_name,
+            $actor->role?->name,
+        );
+    }
+
+    /**
+     * Build the actor array from already-resolved primitives. Centralises
+     * the shape so all three resolution paths (modern snapshot, partial
+     * snapshot, legacy User::find) emit identical JSON.
+     */
+    private function buildActorArray(int $id, ?string $name, ?string $role): ?array
+    {
+        if ($name === null || $name === '') {
+            return null;
+        }
+
+        return [
+            'id' => $id,
+            'name' => $name,
+            'role' => $role,
+        ];
+    }
 }

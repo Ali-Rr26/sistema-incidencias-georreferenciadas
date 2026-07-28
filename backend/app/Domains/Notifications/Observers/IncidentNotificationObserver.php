@@ -111,7 +111,7 @@ class IncidentNotificationObserver
         $incidentId = (int) $incident->id;
         $actorUserId = (int) ($incident->claimed_by ?: $incident->user_id);
 
-// Pre-resolve the actor's full name AND role in the moment of the
+        // Pre-resolve the actor's full name AND role in the moment of the
         // transition so the resource can read them back without an N+1
         // query per row (IncidentNotificationObserver is the single funnel
         // for these notifications; either it fires or no row is created).
@@ -147,7 +147,7 @@ class IncidentNotificationObserver
                     message: 'Una incidencia atendida requiere tu aprobación.',
                     incidentId: $incidentId,
                     data: [
-'incident_id' => $incidentId,
+                        'incident_id' => $incidentId,
                         'actor_user_id' => $actorUserId,
                         'actor_name' => $actorSnapshot['name'],
                         'actor_role' => $actorSnapshot['role'],
@@ -161,7 +161,7 @@ class IncidentNotificationObserver
         });
     }
 
-/**
+    /**
      * Resolve a user's display name AND role for snapshotting into
      * `data.actor_name` and `data.actor_role`. Returns null for both
      * when the user is unknown or soft-deleted, so the caller persists

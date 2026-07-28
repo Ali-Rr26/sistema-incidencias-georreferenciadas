@@ -62,7 +62,7 @@ it('avoids N+1 queries to users when actor_name is snapshotted on each row', fun
 
     $notifications = collect();
     for ($i = 0; $i < 10; $i++) {
-$notifications->push(Notification::create([
+        $notifications->push(Notification::create([
             'user_id' => $user->id,
             'incident_id' => $this->incident->id,
             'type' => 'incidencia_atendida_para_aprobacion',
@@ -101,7 +101,7 @@ it('falls back to a single User::find for legacy rows without actor_name', funct
     $user = User::factory()->create(['role_id' => 5, 'first_name' => 'Leo', 'last_name' => 'Legacy']);
 
     // Two modern rows (snapshotted) + one legacy row missing actor_name.
-$modern1 = Notification::create([
+    $modern1 = Notification::create([
         'user_id' => $user->id,
         'incident_id' => $this->incident->id,
         'type' => 'incidencia_atendida_para_aprobacion',

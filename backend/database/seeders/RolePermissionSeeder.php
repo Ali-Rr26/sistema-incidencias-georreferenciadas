@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'update'],
         ['resource' => 'incidents',           'action' => 'delete'],
-['resource' => 'incidents',           'action' => 'manage'],
+        ['resource' => 'incidents',           'action' => 'manage'],
         // WU6 del change incident-approval-workflow: el detail page muestra
         // los botones Aprobar/Rechazar sólo si el usuario tiene este
         // permiso y la incidencia está en `resolved`. Sólo admin_sistema
@@ -78,7 +78,7 @@ class RolePermissionSeeder extends Seeder
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'update'],
-['resource' => 'incidents',           'action' => 'delete'],
+        ['resource' => 'incidents',           'action' => 'delete'],
         ['resource' => 'incidents',           'action' => 'manage'],
         // WU6 del change incident-approval-workflow: idem admin_sistema.
         // Sólo admin roles aprueban; operadores resuelven, no cierran.

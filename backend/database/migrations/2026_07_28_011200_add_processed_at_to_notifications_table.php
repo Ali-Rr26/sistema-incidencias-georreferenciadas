@@ -61,10 +61,18 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Intentionally irreversible (see docblock). The matching test
-        // (DropLegacyImageStorageTest) only rolls back migrations that came
-        // before this one and never asks for a real `down()` here; if a
-        // future rollback does, it must drop the column AND the index in a
-        // single statement.
+        // Symmetric rollback for the verify contract. Drops the index
+        // first (FK to a column that disappears next) then the column.
+        // Already-decided notifications lose their processed_at timestamp
+        // on rollback — the `data->decision` JSON column remains, so the
+        // historical decision is recoverable through the legacy path.
+        Schema::table('notifications', function (Blueprint $table): void {
+            $table->dropIndex('notifications_processed_at_index');
+        });
+        if (Schema::hasColumn('notifications', 'processed_at')) {
+            Schema::table('notifications', function (Blueprint $table): void {
+                $table->dropColumn('processed_at');
+            });
+        }
     }
 };
