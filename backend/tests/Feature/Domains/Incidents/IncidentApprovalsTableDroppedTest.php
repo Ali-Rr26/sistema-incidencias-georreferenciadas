@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 
@@ -32,7 +33,7 @@ it('drops the incident_approvals table when it exists', function (): void {
     // Simulate the legacy state where 86a4d45a already ran in production:
     // recreate the table verbatim from the reverted migration so we can
     // assert the drop migration actually deletes it.
-    Schema::create('incident_approvals', function (\Illuminate\Database\Schema\Blueprint $table): void {
+    Schema::create('incident_approvals', function (Blueprint $table): void {
         $table->id();
         $table->foreignId('incident_id')->constrained('incidents')->cascadeOnDelete();
         $table->foreignId('decided_by')->constrained('users')->cascadeOnDelete();

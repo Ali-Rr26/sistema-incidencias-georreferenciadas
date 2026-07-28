@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Users\Models\User;
+use Illuminate\Database\Eloquent\RelationNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -60,5 +61,5 @@ it('does not load approval via with() at the query level', function (): void {
     // against. Laravel throws `RelationNotFoundException` when a relation
     // name doesn't resolve to anything on the model.
     expect(fn () => Incident::query()->with('approval')->find($this->incident->id))
-        ->toThrow(Illuminate\Database\Eloquent\RelationNotFoundException::class);
+        ->toThrow(RelationNotFoundException::class);
 });
