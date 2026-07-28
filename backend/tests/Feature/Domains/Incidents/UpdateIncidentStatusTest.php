@@ -112,7 +112,7 @@ it('allows a same-status request from a non-responsable (no-op)', function (): v
 it('rejects an invalid status value', function (): void {
     $this->actingAs($this->responsable)
         ->putJson("/api/incidents/{$this->incident->id}/estado", [
-            'status' => 'closed',
+            'status' => 'foo',
         ])
         ->assertStatus(422);
 });
