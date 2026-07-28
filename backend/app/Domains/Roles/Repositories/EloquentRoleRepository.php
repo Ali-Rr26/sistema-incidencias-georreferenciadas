@@ -63,13 +63,13 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
         ]);
 
         // Soft delete permisos que no están en la nueva lista
-        if (!empty($toRemove)) {
+        if (! empty($toRemove)) {
             $role->permissions()->detach($toRemove);
         }
 
         // Identificar permisos reasignados (que fueron deletrados y ahora se vuelven a agregar)
         $reasigned = [];
-        if (!empty($toAdd)) {
+        if (! empty($toAdd)) {
             $reasigned = RolePermission::withTrashed()
                 ->where('role_id', $roleId)
                 ->whereIn('permission_id', $toAdd)
@@ -80,7 +80,7 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
             \Log::info('Reasigned identified', ['roleId' => $roleId, 'toAdd' => $toAdd, 'reasigned' => $reasigned]);
 
             // Force delete registros soft-deleted que van a ser reasignados
-            if (!empty($reasigned)) {
+            if (! empty($reasigned)) {
                 RolePermission::withTrashed()
                     ->where('role_id', $roleId)
                     ->whereIn('permission_id', $reasigned)
@@ -90,7 +90,7 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
         }
 
         // Agregar nuevos permisos (solo reassigned_at si es reasignado, NULL si es nuevo)
-        if (!empty($toAdd)) {
+        if (! empty($toAdd)) {
             $rows = collect($toAdd)
                 ->map(fn ($permissionId) => [
                     'role_id' => $roleId,
@@ -106,7 +106,7 @@ class EloquentRoleRepository extends EloquentRepository implements RoleRepositor
 
         // Actualizar updated_at de permisos que se mantienen (no se modifican)
         $toKeep = array_intersect($current, $permissionIds);
-        if (!empty($toKeep)) {
+        if (! empty($toKeep)) {
             DB::table('role_permission')
                 ->where('role_id', $roleId)
                 ->whereIn('permission_id', $toKeep)
