@@ -18,26 +18,19 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
-        // Raw SQL with `ON CONFLICT DO NOTHING`:
+        // Loop with per-role INSERT ... ON CONFLICT DO UPDATE:
         // `Role::$fillable = ['name']` excludes `id`, so Eloquent's mass-assignment
         // path silently dropped explicit ids — wrong for these FK-target rows.
         // Surfaced by SQLite → PostgreSQL test migration (backend-tests-postgres-migration, #197):
         // Postgres SERIAL sequences persist across rolled-back transactions.
-        // `ON CONFLICT DO NOTHING` handles both unique constraints (id + name) atomically.
-        // Safe for parallel test runs without coordination between processes.
-        $placeholders = implode(',', array_map(fn ($role) => '(?, ?)', self::ROLES));
-        $values = [];
+        // `DO UPDATE` ensures row always exists after execute (unlike DO NOTHING).
+        // Guarantees FK visibility in same transaction for RolePermissionSeeder.
         foreach (self::ROLES as $role) {
-            $values[] = $role['id'];
-            $values[] = $role['name'];
-        }
+            DB::statement(
+                'INSERT INTO roles (id, name) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name',
+                [$role['id'], $role['name']],
+            );
 
-        DB::statement(
-            "INSERT INTO roles (id, name) VALUES {$placeholders} ON CONFLICT DO NOTHING",
-            $values,
-        );
-
-        foreach (self::ROLES as $role) {
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
         }
 
