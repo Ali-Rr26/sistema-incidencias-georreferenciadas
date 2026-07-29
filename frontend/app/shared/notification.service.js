@@ -56,4 +56,38 @@ export const notificationService = {
   async markAllRead() {
     return await http.patch('/notifications/read-all');
   },
+
+  /**
+   * Devuelve las notificaciones pendientes de aprobación (tipo incident_pending_approval).
+   * Solo para roles admin (admin_sistema, admin_organizacion).
+   */
+  async getPendingApprovals({ page = 1, perPage = 20, organizationId = null } = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (organizationId) params.set('organization_id', String(organizationId));
+
+    const resp = await http.get('/notifications/pending-approvals?' + params.toString());
+    return {
+      data: resp.data ?? [],
+      meta: resp.meta ?? null,
+    };
+  },
+
+  /**
+   * Aprueba una incidencia pendiente (marca la notificación como aprobada).
+   */
+  async approve(id) {
+    const resp = await http.post(`/notifications/${id}/approve`);
+    return resp.data ?? resp ?? null;
+  },
+
+  /**
+   * Rechaza una incidencia pendiente con motivo.
+   */
+  async reject(id, reason) {
+    const resp = await http.post(`/notifications/${id}/reject`, { reason });
+    return resp.data ?? resp ?? null;
+  },
 };

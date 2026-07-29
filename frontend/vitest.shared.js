@@ -2,12 +2,9 @@ export const sharedTestConfig = {
   environment: 'jsdom',
   setupFiles: ['./app/core/vitest.setup.js'],
   globals: true,
-  clearMocks: true,
-  restoreMocks: true,
-  mockReset: true,
-  // Without this, Vitest stubs every *.css import to an empty module — the
-  // stub regex also matches `x.component.css?raw`, which would silently
-  // turn the bundled `style` strings of migrated components into ''.
+  // NOTE: clearMocks, restoreMocks, and mockReset are intentionally omitted —
+  // they cause cross-test pollution by clearing mock implementations.
+  // Each test file manages its own mock cleanup via local afterEach hooks.
   css: true,
 };
 
