@@ -1059,11 +1059,25 @@ select,
   font-size: max(16px, 1rem) !important;
 }
 
-/* ─── Shared form utilities (sc-130 fix) ─────────────────────────
+/* ─── Shared form utilities (sc-130 fix, sc-143 parity) ──────────
    These classes were scoped inside login.component.css but used by
    login, register, forgot-password, accept-invite, reset-password,
    and verify-email. Moving them here is the correct location so every
    auth/identity page picks them up automatically.
+
+   SC-143 DECISION: Password field parity is enforced by shared base classes
+   (.gr-input, .gr-input-wrap, .gr-input-icon, .gr-input-eye, .gr-input-error).
+   Both /login (register mode) and /accept-invite render pixel-identical base
+   inputs. /accept-invite intentionally has *extra* UX (strength meter +
+   rules checklist) that /login doesn't have—this divergence is documented
+   and covered by Cypress visual regression tests.
+
+   CI Rule: These classes MUST NOT be redefined in any .component.css file
+   (enforced by .github/workflows/ci.yml "Check form utility class scope").
+   Any future CSS changes to these classes affect ALL auth pages automatically.
+
+   Refs: https://github.com/Ali-Rr26/sistema-incidencias-georreferenciadas/issues/229
+         frontend/cypress/e2e/password-field-parity.cy.js
    ──────────────────────────────────────────────────────────────── */
 
 .gr-form-label {
