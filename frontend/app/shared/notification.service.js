@@ -11,6 +11,7 @@ import { http } from '../core/http.service.js';
  *  - PATCH  /api/notifications/read-all              → marcar todas como leídas
  *  - POST   /api/notifications/{id}/approve          → aprobar resolución pendiente
  *  - POST   /api/notifications/{id}/reject           → rechazar resolución pendiente (con reason)
+ *  - GET    /api/notifications/{id}                  → detalle de una notificación
  *
  * No cachea el unread count — siempre pide fresco al backend.
  * La latencia típica (~5ms en LAN) es irrelevante para un badge y
