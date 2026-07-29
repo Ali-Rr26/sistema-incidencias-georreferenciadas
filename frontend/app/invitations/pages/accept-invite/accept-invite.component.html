@@ -75,7 +75,7 @@
 
         <label class="gr-form-label" for="invite-password">Contraseña</label>
         <div class="gr-input-wrap">
-          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <i class="fa-solid fa-lock gr-input-icon" data-testid="password-icon"></i>
           <input
             type="password"
             id="invite-password"
@@ -91,6 +91,7 @@
             data-eye-for="invite-password"
             aria-label="Mostrar contraseña"
             aria-pressed="false"
+            data-testid="password-toggle"
           >
             <i class="fa-regular fa-eye"></i>
           </button>
@@ -135,6 +136,7 @@
           id="invite-password-rules"
           class="gr-accept-invite__rules"
           aria-label="Reglas de la contraseña"
+          data-testid="password-rules-checklist"
         >
           <li
             class="gr-accept-invite__rule"
@@ -199,6 +201,7 @@
           aria-valuemax="4"
           aria-valuenow="0"
           aria-label="Seguridad de la contraseña"
+          data-testid="password-strength-meter"
         >
           <div class="gr-accept-invite__meter-segments">
             <span class="gr-accept-invite__meter-segment"></span>
