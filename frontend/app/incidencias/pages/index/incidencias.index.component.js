@@ -9,6 +9,9 @@ import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { notificationService } from '../../../shared/notification.service.js';
+import { auth } from '../../../auth/auth.service.js';
+import { resolveRoleName } from '../../../utils/role.js';
 import {
   initSelect,
   clearSelect,
@@ -16,6 +19,9 @@ import {
 } from '../../../shared/select-search.js';
 import { hydrateKebabActions } from '../../../shared/kebab-actions.js';
 import { isDesktop, mostrarEstado, mostrarToast } from '../../../utils/ui.js';
+// Side-effect import: registers <incidencia-auditar-modal> custom element.
+// The modal is mounted lazily on first audit action — see _openAuditModal.
+import '../../../incidencias/components/incidencia-auditar-modal/incidencia-auditar-modal.component.js';
 
 const POR_PAGINA = 10;
 
@@ -27,7 +33,7 @@ export default {
     let totalPaginas = 1;
     let idEliminar = null;
 
-    function renderTabla(datos, total) {
+    async function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
@@ -44,7 +50,7 @@ export default {
             const categoria = inc.category?.name || '—';
             const ubicacion = inc.location?.name || '—';
             const titulo = inc.title || 'Sin título';
-            return `<tr data-id="${inc.id}" style="cursor:pointer;" class="lista-row">
+            return `<tr data-id="${inc.id}" data-status="${inc.status}" style="cursor:pointer;" class="lista-row">
             <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
             <td>
               <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
@@ -63,7 +69,8 @@ export default {
           })
           .join('');
 
-        hydrateKebabActions(tbody, datos, {
+        // Wait for kebab hydration so .dropdown-menu exists for audit injection.
+        await hydrateKebabActions(tbody, datos, {
           slugs: { update: 'incidents.update', delete: 'incidents.delete' },
           showView: false,
           itemTitle: (inc) => inc.title || 'Sin título',
@@ -79,7 +86,7 @@ export default {
             const ubicacion = inc.location?.name || '—';
             const titulo = inc.title || 'Sin título';
             return `
-            <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" style="cursor:pointer;">
+            <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" data-status="${inc.status}" style="cursor:pointer;">
               <div class="card-body p-1" style="padding:0.75rem !important;">
                 <!-- Título y categoría -->
                 <div class="mb-1">
@@ -116,12 +123,39 @@ export default {
           })
           .join('');
 
-        // Mount table-actions on each mobile card (async — does not block DOM insertion)
-        hydrateKebabActions(cards, datos, {
+        // Wait for kebab hydration so .dropdown-menu exists for audit injection.
+        await hydrateKebabActions(cards, datos, {
           slugs: { update: 'incidents.update', delete: 'incidents.delete' },
           showView: false,
           itemTitle: (inc) => inc.title || 'Sin título',
         });
+      }
+
+      // WU-11 (PR-9): inject "Auditar" into kebab of resolved incidents
+      // when the user is admin_sistema/admin_organizacion AND holds
+      // notifications.update. Both gates are required (R7: operadores
+      // may have the permission but must NOT see this option).
+      if (auditEligible) {
+        const auditRows = [
+          ...tbody.querySelectorAll('tr[data-id]'),
+          ...cards.querySelectorAll('.lista-card[data-id]'),
+        ];
+        for (const row of auditRows) {
+          if (row.dataset.status !== 'resolved') continue;
+          const kebabMenu = row.querySelector('.dropdown-menu');
+          if (!kebabMenu) continue;
+          if (kebabMenu.querySelector('[data-action="audit"]')) continue;
+          const safeId = String(row.dataset.id ?? '').replace(/"/g, '&quot;');
+          const li = document.createElement('li');
+          li.className = 'table-actions-audit-item';
+          li.innerHTML = `
+            <a class="dropdown-item table-actions-audit" href="#"
+               data-action="audit" data-id="${safeId}"
+               aria-label="Auditar">
+              <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Auditar
+            </a>`;
+          kebabMenu.insertBefore(li, kebabMenu.firstChild);
+        }
       }
 
       const desde = (paginaActual - 1) * POR_PAGINA + 1;
@@ -162,8 +196,8 @@ export default {
       }
     }
 
-    // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
-    function manejarAcciones(e) {
+    // Delegated click handler for kebab actions ([data-action="view|edit|delete|audit"])
+    async function manejarAcciones(e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
       const { id, titulo, action } = target.dataset;
@@ -180,6 +214,50 @@ export default {
         idEliminar = id;
         document.getElementById('modal-eliminar-titulo').textContent = titulo;
         new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+        return;
+      }
+      if (action === 'audit') {
+        await _openAuditModal(id);
+      }
+    }
+
+    /**
+     * Opens the incidencia-auditar-modal for the given incident.
+     * Resolves the pending-approval notification that matches the
+     * incident id (read+unread gate, scoped to the admin's orgs by
+     * backend), then mounts the modal lazily if it isn't in the DOM yet.
+     */
+    async function _openAuditModal(incidentId) {
+      try {
+        const resp = await notificationService.getPendingApprovals({
+          page: 1,
+          perPage: 100,
+          unreadOnly: true,
+        });
+        const notifications = resp.data || [];
+        const notif = notifications.find((n) => {
+          const nid = n?.data?.incident_id ?? n?.incident_id;
+          return Number(nid) === Number(incidentId);
+        });
+        if (!notif) {
+          mostrarToast(
+            'No hay notificación pendiente para esta incidencia.',
+            'warning',
+          );
+          return;
+        }
+
+        let modal = document.getElementById('incidencia-auditar-modal');
+        if (!modal) {
+          modal = document.createElement('incidencia-auditar-modal');
+          modal.id = 'incidencia-auditar-modal';
+          document.body.appendChild(modal);
+          // Yield once so connectedCallback + _render can finish before show().
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        await modal.show(notif.id);
+      } catch {
+        mostrarToast('No se pudo abrir el detalle de auditoría.', 'danger');
       }
     }
 
@@ -271,7 +349,25 @@ export default {
         ?.classList.remove('d-none');
     }
 
-    cargarIncidencias(1);
+    // WU-11 (PR-9): determine if the current user can see the "Auditar"
+    // kebab action on resolved incidents. Both gates are required:
+    //   - role ∈ { admin_sistema, admin_organizacion }
+    //   - perm notifications.update present
+    // R7 (MED): operador_organizacion typically has notifications.update
+    // but MUST NOT see this option. Fail closed if anything is unknown.
+    let auditEligible = false;
+    try {
+      const me = await auth.me();
+      const roleName = resolveRoleName(me);
+      const isAdminRole =
+        roleName === 'admin_sistema' || roleName === 'admin_organizacion';
+      const hasAuditPerm = permisos.has('notifications.update');
+      auditEligible = isAdminRole && hasAuditPerm;
+    } catch {
+      auditEligible = false;
+    }
+
+    await cargarIncidencias(1);
   },
 
   onDestroy() {

@@ -58,6 +58,73 @@ vi.mock('../../../shared/select-search.js', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mocked external services — auth (used by WU-11 audit-gate)
+// IMPORTANT: vi.mock factories capture variables by reference at the time
+// they execute. To reconfigure per-test we MUTATE these mock fns
+// (mockReset + mockResolvedValue), never reassign them.
+// ---------------------------------------------------------------------------
+const authMeMock = vi.fn().mockResolvedValue(null); // default: no user → not eligible
+const authLogoutSpy = vi.fn().mockResolvedValue();
+vi.mock('../../../auth/auth.service.js', () => ({
+  auth: {
+    me: authMeMock,
+    logout: authLogoutSpy,
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// Mocked external service — notificationService (used by WU-11 audit flow)
+// Same pattern: mutate, don't reassign.
+// ---------------------------------------------------------------------------
+const getPendingApprovalsMock = vi
+  .fn()
+  .mockResolvedValue({ data: [], meta: { total: 0 } });
+vi.mock('../../../shared/notification.service.js', () => ({
+  notificationService: {
+    list: vi.fn().mockResolvedValue({ data: [], meta: { total: 0 } }),
+    unreadCount: vi.fn().mockResolvedValue(0),
+    markRead: vi.fn().mockResolvedValue(null),
+    markAllRead: vi.fn().mockResolvedValue(null),
+    approve: vi.fn().mockResolvedValue(null),
+    reject: vi.fn().mockResolvedValue(null),
+    getById: vi.fn().mockResolvedValue(null),
+    getPendingApprovals: getPendingApprovalsMock,
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// Mocked external component — incidencia-auditar-modal
+// Records every show(notificationId) call so tests can assert which
+// notification the page requested to audit.
+// ---------------------------------------------------------------------------
+const modalShowCalls = [];
+const modalInstances = [];
+class MockAuditarModal extends HTMLElement {
+  connectedCallback() {
+    // Render a minimal stub so renderTabla has a sane connected element
+    this.innerHTML = `
+      <div class="modal">
+        <div class="incident-auditar-loading d-none"></div>
+        <div class="incident-auditar-error d-none"></div>
+        <div class="incident-auditar-content d-none"></div>
+      </div>`;
+    modalInstances.push(this);
+  }
+  async show(notificationId) {
+    modalShowCalls.push(notificationId);
+  }
+}
+if (!customElements.get('incidencia-auditar-modal')) {
+  customElements.define('incidencia-auditar-modal', MockAuditarModal);
+}
+vi.mock(
+  '../../../incidencias/components/incidencia-auditar-modal/incidencia-auditar-modal.component.js',
+  () => ({
+    default: MockAuditarModal,
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Mocked external service — permissionService
 // ---------------------------------------------------------------------------
 import { permissionService } from '../../../shared/permission.service.js';
@@ -368,6 +435,15 @@ beforeEach(async () => {
 
   tableActionsInstances.length = 0;
   shownModalEl = null;
+
+  // WU-11 (PR-9): reset mock behaviour without reassigning the references
+  // captured by the vi.mock factories above.
+  authMeMock.mockReset();
+  authMeMock.mockResolvedValue(null);
+  getPendingApprovalsMock.mockReset();
+  getPendingApprovalsMock.mockResolvedValue({ data: [], meta: { total: 0 } });
+  modalShowCalls.length = 0;
+  modalInstances.length = 0;
 
   // Reset permissionService state
   permissionService.invalidateMyPermissions();
@@ -799,5 +875,314 @@ describe('Re-hydration — permission invalidation re-evaluates actions', () => 
     toggle = document.querySelector('#tabla-body .dropdown-toggle');
     expect(toggle.hasAttribute('disabled')).toBe(true);
     expect(toggle.getAttribute('title')).toBe('No tenés acciones disponibles');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WU-11 (PR-9) — "Auditar" kebab action on resolved incidents
+//
+// Gate: resolved status AND role ∈ { admin_sistema, admin_organizacion }
+//       AND permissions.has('notifications.update')
+// Click: resolves pending-approval notification for incidentId, opens modal.
+// ---------------------------------------------------------------------------
+
+const MOCK_INCIDENCIAS_WITH_RESOLVED = [
+  {
+    id: '1',
+    title: 'Bache en Rivadavia',
+    category: { name: 'Infraestructura' },
+    location: { name: 'Centro' },
+    priority: 'high',
+    status: 'pending',
+    created_at: '2024-01-15T10:00:00Z',
+  },
+  {
+    id: '2',
+    title: 'Semáforo dañado',
+    category: { name: 'Tráfico' },
+    location: { name: 'Norte' },
+    priority: 'medium',
+    status: 'in_progress',
+    created_at: '2024-01-16T14:30:00Z',
+  },
+  {
+    id: '3',
+    title: 'Luminaria reparada',
+    category: { name: 'Alumbrado' },
+    location: { name: 'Sur' },
+    priority: 'low',
+    status: 'resolved',
+    created_at: '2024-01-17T09:00:00Z',
+  },
+  {
+    id: '4',
+    title: 'Residuos retirados',
+    category: { name: 'Limpieza' },
+    location: { name: 'Este' },
+    priority: 'medium',
+    status: 'closed',
+    created_at: '2024-01-18T11:30:00Z',
+  },
+];
+
+const MOCK_NOTIFICATIONS_BY_INCIDENT = {
+  1: {
+    id: 101,
+    type: 'incident_pending_approval',
+    data: { incident_id: 1, title: 'Bache en Rivadavia' },
+  },
+  3: {
+    id: 303,
+    type: 'incident_pending_approval',
+    data: { incident_id: 3, title: 'Luminaria reparada' },
+  },
+};
+
+// Helper: configure the page for a given role + perms combo, with the
+// 4-incident dataset that includes status='resolved'.
+async function renderIndexWithResolved(roleName, perms) {
+  authMeMock.mockReset();
+  authMeMock.mockResolvedValue({ role: roleName });
+  getMyPermissionsMock = vi.fn().mockResolvedValue(perms);
+  vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+    getMyPermissionsMock,
+  );
+  permissionService.invalidateMyPermissions();
+
+  const { http } = await import('../../../core/http.service.js');
+  http.get.mockResolvedValue({
+    data: MOCK_INCIDENCIAS_WITH_RESOLVED,
+    meta: { total: 4 },
+  });
+
+  await componentModule.default.onInit();
+}
+
+describe('WU-11 (PR-9) — Auditar kebab action visibility', () => {
+  it('shows Auditar option on resolved row when admin_sistema has notifications.update', async () => {
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['incidents.update', 'incidents.delete', 'notifications.update']),
+    );
+
+    const rows = document.querySelectorAll('#tabla-body tr');
+    expect(rows).toHaveLength(4);
+
+    // Row id=3 (status=resolved) should have the audit item in its kebab
+    const resolvedRow = document.querySelector('#tabla-body tr[data-id="3"]');
+    const auditLink = resolvedRow.querySelector(
+      '.dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLink).not.toBeNull();
+    expect(auditLink.textContent.trim()).toBe('Auditar');
+    expect(auditLink.getAttribute('data-id')).toBe('3');
+
+    // Other rows (pending/in_progress/closed) MUST NOT have the audit item
+    const pendingRow = document.querySelector('#tabla-body tr[data-id="1"]');
+    expect(
+      pendingRow.querySelector('.dropdown-menu [data-action="audit"]'),
+    ).toBeNull();
+
+    const inProgressRow = document.querySelector('#tabla-body tr[data-id="2"]');
+    expect(
+      inProgressRow.querySelector('.dropdown-menu [data-action="audit"]'),
+    ).toBeNull();
+
+    const closedRow = document.querySelector('#tabla-body tr[data-id="4"]');
+    expect(
+      closedRow.querySelector('.dropdown-menu [data-action="audit"]'),
+    ).toBeNull();
+  });
+
+  it('shows Auditar option for admin_organizacion with notifications.update', async () => {
+    await renderIndexWithResolved(
+      'admin_organizacion',
+      new Set(['notifications.update']),
+    );
+
+    const resolvedRow = document.querySelector('#tabla-body tr[data-id="3"]');
+    const auditLink = resolvedRow.querySelector(
+      '.dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLink).not.toBeNull();
+  });
+
+  it('hides Auditar option for non-resolved statuses (pending/in_progress/closed)', async () => {
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['notifications.update']),
+    );
+
+    const auditLinks = document.querySelectorAll(
+      '#tabla-body .dropdown-menu [data-action="audit"]',
+    );
+    // Only the resolved row (id=3) should expose Auditar
+    expect(auditLinks).toHaveLength(1);
+    expect(auditLinks[0].getAttribute('data-id')).toBe('3');
+  });
+
+  it('hides Auditar option for operador_organizacion even with notifications.update (R7 gate)', async () => {
+    await renderIndexWithResolved(
+      'operador_organizacion',
+      new Set(['notifications.update']),
+    );
+
+    const auditLinks = document.querySelectorAll(
+      '#tabla-body .dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLinks).toHaveLength(0);
+  });
+
+  it('hides Auditar option for citizen (usuario) role even with notifications.update', async () => {
+    await renderIndexWithResolved('usuario', new Set(['notifications.update']));
+
+    const auditLinks = document.querySelectorAll(
+      '#tabla-body .dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLinks).toHaveLength(0);
+  });
+
+  it('hides Auditar option for admin_sistema without notifications.update permission', async () => {
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['incidents.update', 'incidents.delete']),
+    );
+
+    const auditLinks = document.querySelectorAll(
+      '#tabla-body .dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLinks).toHaveLength(0);
+  });
+
+  it('hides Auditar option when auth.me() rejects (fail closed)', async () => {
+    authMeMock.mockReset();
+    authMeMock.mockRejectedValue(new Error('boom'));
+    getMyPermissionsMock = vi
+      .fn()
+      .mockResolvedValue(new Set(['notifications.update']));
+    vi.spyOn(permissionService, 'getMyPermissions').mockImplementation(
+      getMyPermissionsMock,
+    );
+    permissionService.invalidateMyPermissions();
+
+    const { http } = await import('../../../core/http.service.js');
+    http.get.mockResolvedValue({
+      data: MOCK_INCIDENCIAS_WITH_RESOLVED,
+      meta: { total: 4 },
+    });
+
+    await componentModule.default.onInit();
+
+    const auditLinks = document.querySelectorAll(
+      '#tabla-body .dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLinks).toHaveLength(0);
+  });
+});
+
+describe('WU-11 (PR-9) — Auditar click flow', () => {
+  it('clicking Auditar resolves the pending notification id and opens the modal', async () => {
+    // Mock the pending approvals response — backend returns only id=3
+    getPendingApprovalsMock.mockReset();
+    getPendingApprovalsMock.mockResolvedValue({
+      data: [MOCK_NOTIFICATIONS_BY_INCIDENT[3]],
+      meta: { total: 1 },
+    });
+
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['notifications.update']),
+    );
+
+    // Click the Auditar item on the resolved row
+    const resolvedRow = document.querySelector('#tabla-body tr[data-id="3"]');
+    const toggle = resolvedRow.querySelector('.dropdown-toggle');
+    toggle.click();
+    const auditLink = resolvedRow.querySelector(
+      '.dropdown-menu [data-action="audit"]',
+    );
+    expect(auditLink).not.toBeNull();
+    auditLink.click();
+
+    // Wait for the async flow (getPendingApprovals + show)
+    await vi.waitFor(() => {
+      if (modalShowCalls.length === 0)
+        throw new Error('modal.show not called yet');
+    });
+
+    // Service was queried with the right filter
+    expect(getPendingApprovalsMock).toHaveBeenCalledTimes(1);
+    expect(getPendingApprovalsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ unreadOnly: true }),
+    );
+
+    // Modal was opened with the matching notification id
+    expect(modalShowCalls).toEqual([303]);
+  });
+
+  it('shows a warning toast when there is no pending notification for the incident', async () => {
+    // Backend returns notifications for OTHER incidents only
+    getPendingApprovalsMock.mockReset();
+    getPendingApprovalsMock.mockResolvedValue({
+      data: [MOCK_NOTIFICATIONS_BY_INCIDENT[1]],
+      meta: { total: 1 },
+    });
+
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['notifications.update']),
+    );
+
+    const resolvedRow = document.querySelector('#tabla-body tr[data-id="3"]');
+    const toggle = resolvedRow.querySelector('.dropdown-toggle');
+    toggle.click();
+    const auditLink = resolvedRow.querySelector(
+      '.dropdown-menu [data-action="audit"]',
+    );
+    auditLink.click();
+
+    await vi.waitFor(() => {
+      if (getPendingApprovalsMock.mock.calls.length === 0)
+        throw new Error('not called');
+    });
+
+    // Give the async flow time to settle on the not-found branch
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(modalShowCalls).toEqual([]);
+    const toastEl = document.getElementById('toast-msg-texto');
+    expect(toastEl.textContent).toContain(
+      'No hay notificación pendiente para esta incidencia',
+    );
+  });
+
+  it('shows an error toast when getPendingApprovals rejects', async () => {
+    getPendingApprovalsMock.mockReset();
+    getPendingApprovalsMock.mockRejectedValue(new Error('boom'));
+
+    await renderIndexWithResolved(
+      'admin_sistema',
+      new Set(['notifications.update']),
+    );
+
+    const resolvedRow = document.querySelector('#tabla-body tr[data-id="3"]');
+    const toggle = resolvedRow.querySelector('.dropdown-toggle');
+    toggle.click();
+    const auditLink = resolvedRow.querySelector(
+      '.dropdown-menu [data-action="audit"]',
+    );
+    auditLink.click();
+
+    await vi.waitFor(() => {
+      if (getPendingApprovalsMock.mock.calls.length === 0)
+        throw new Error('not called');
+    });
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect(modalShowCalls).toEqual([]);
+    const toastEl = document.getElementById('toast-msg-texto');
+    expect(toastEl.textContent).toContain(
+      'No se pudo abrir el detalle de auditoría',
+    );
   });
 });
