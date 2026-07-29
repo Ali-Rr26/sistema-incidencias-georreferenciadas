@@ -213,3 +213,109 @@ it('verifies triggers are installed', function () {
         ->toContain('trg_log_incident_status')
         ->toContain('trg_auto_assign_location');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// sc-123 / PR-1: admin-approval-notifications — DB foundation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+it('allows closed status on incidents (CHECK constraint extended)', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('CHECK constraint only for PostgreSQL');
+    }
+
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $user = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'Test City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    // Must NOT throw SQLSTATE[23514]
+    $incident = Incident::create([
+        'title' => 'Closed Incident',
+        'incident_category_id' => $category->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Closed,
+        'priority' => 'medium',
+    ]);
+
+    expect($incident->id)->toBeInt()
+        ->and($incident->status)->toBe(IncidentStatus::Closed);
+});
+
+it('allows incident_pending_approval notification type (CHECK constraint extended)', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('CHECK constraint only for PostgreSQL');
+    }
+
+    DB::table('roles')->insert([
+        ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+    $user = User::factory()->create(['role_id' => 1]);
+
+    $location = Location::create(['name' => 'Test City', 'level' => 'city']);
+    $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
+    $category = IncidentCategory::create(['name' => 'General', 'organization_id' => $org->id]);
+
+    $incident = Incident::create([
+        'title' => 'Pending Approval',
+        'incident_category_id' => $category->id,
+        'user_id' => $user->id,
+        'location_id' => $location->id,
+        'organization_id' => $org->id,
+        'status' => IncidentStatus::Pending,
+        'priority' => 'medium',
+    ]);
+
+    // Must NOT throw SQLSTATE[23514]
+    DB::table('notifications')->insert([
+        'user_id' => $user->id,
+        'incident_id' => $incident->id,
+        'type' => 'incident_pending_approval',
+        'message' => 'Test notification',
+        'read' => false,
+        'data' => json_encode(['incident_id' => $incident->id]),
+        'created_at' => now(),
+    ]);
+
+    expect(DB::table('notifications')->where('type', 'incident_pending_approval')->count())->toBe(1);
+});
+
+it('has processed_at column on notifications', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('processed_at column check only for PostgreSQL');
+    }
+
+    $hasColumn = collect(
+        DB::select("
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'notifications' AND column_name = 'processed_at'
+        ")
+    )->isNotEmpty();
+
+    expect($hasColumn)->toBeTrue();
+});
+
+it('has decision audit columns on incidents', function () {
+    if (DB::connection()->getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('Decision columns check only for PostgreSQL');
+    }
+
+    $columns = ['approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason'];
+    foreach ($columns as $col) {
+        $hasColumn = collect(
+            DB::select("
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'incidents' AND column_name = '{$col}'
+            ")
+        )->isNotEmpty();
+
+        expect($hasColumn)->toBeTrue();
+    }
+});
