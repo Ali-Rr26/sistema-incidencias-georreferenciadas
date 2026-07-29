@@ -6,14 +6,22 @@ namespace App\Domains\Notifications\Observers;
 
 use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Incidents\Services\IncidentApprovalService;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
+use App\Domains\Notifications\Models\Notification;
+use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Users\Services\OperatorDashboardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class IncidentNotificationObserver
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly IncidentApprovalService $approvalService,
+    ) {}
+
     public function updated(Incident $incident): void
     {
         DB::afterCommit(fn () => OperatorDashboardService::clearCacheForIncident($incident));
@@ -22,6 +30,7 @@ class IncidentNotificationObserver
             $this->handleClaimChange($incident);
             $this->handleReleaseChange($incident);
             $this->handleConfirmChange($incident);
+            $this->handleResolvedPendingApproval($incident);
         } catch (\Throwable $e) {
             Log::warning('IncidentNotificationObserver failed', [
                 'incident_id' => $incident->id,
@@ -68,23 +77,82 @@ class IncidentNotificationObserver
         }
     }
 
-    private function handleConfirmChange(Incident $incident): void
+    public function handleConfirmChange(Incident $incident): void
     {
-        if (! $incident->wasChanged('status')) {
-            return;
+        try {
+            if (! $incident->wasChanged('status')) {
+                return;
+            }
+
+            $previous = (string) $incident->getRawOriginal('status');
+            $current = $incident->status;
+            $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
+
+            // Solo notifica al ciudadano cuando la incidencia pasa a 'closed' (no en 'resolved').
+            if ($previous !== IncidentStatus::Closed->value && $currentValue === IncidentStatus::Closed->value) {
+                $this->notifications->notify(
+                    $incident->user,
+                    NotificationType::StatusChange,
+                    "Tu incidencia \"{$incident->title}\" fue cerrada.",
+                    $incident->id,
+                    ['status' => 'closed'],
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('handleConfirmChange failed', ['incident_id' => $incident->id, 'error' => $e->getMessage()]);
         }
+    }
 
-        $previous = (string) $incident->getRawOriginal('status');
-        $current = $incident->status;
-        $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
+    /**
+     * Dispara notificaciones a admins in-scope cuando la incidencia pasa a estado resolved.
+     *
+     * Solo cuando: previous ≠ resolved AND current = resolved.
+     * Crea una notificacion por cada admin en pendingApprovalRecipients.
+     */
+    public function handleResolvedPendingApproval(Incident $incident): void
+    {
+        try {
+            if (! $incident->wasChanged('status')) {
+                return;
+            }
 
-        if ($previous !== IncidentStatus::Resolved->value && $currentValue === IncidentStatus::Resolved->value) {
-            $this->queueNotification(
-                $incident,
-                NotificationType::StatusChange,
-                "Tu incidencia \"{$incident->title}\" fue resuelta.",
-                ['status' => IncidentStatus::Resolved->value],
-            );
+            $previous = (string) $incident->getRawOriginal('status');
+            $current = $incident->status;
+            $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
+
+            // Dispara solo cuando pasa de cualquier estado distinto de resolved → resolved.
+            if ($previous === IncidentStatus::Resolved->value || $currentValue !== IncidentStatus::Resolved->value) {
+                return;
+            }
+
+            $recipients = $this->approvalService->pendingApprovalRecipients($incident);
+
+            foreach ($recipients as $recipient) {
+                // Dedupe: evita notificaciones duplicadas (user, incident, type) dentro de 60s.
+                $exists = Notification::query()
+                    ->where('user_id', $recipient->id)
+                    ->where('incident_id', $incident->id)
+                    ->where('type', NotificationType::IncidentPendingApproval->value)
+                    ->where('created_at', '>=', now()->subSeconds(60))
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $this->notifications->notify(
+                    $recipient,
+                    NotificationType::IncidentPendingApproval,
+                    "La incidencia \"{$incident->title}\" requiere tu aprobación.",
+                    $incident->id,
+                    [
+                        'status' => 'resolved',
+                        'incident_id' => $incident->id,
+                    ],
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('handleResolvedPendingApproval failed', ['incident_id' => $incident->id, 'error' => $e->getMessage()]);
         }
     }
 

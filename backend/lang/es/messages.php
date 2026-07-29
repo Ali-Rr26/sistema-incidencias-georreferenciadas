@@ -25,6 +25,10 @@ return [
 
     // sc-117: copia del email de verificación OTP + mensajes de error de endpoint.
     'verification_otp_user_not_found' => 'El correo ingresado no está registrado.',
+    'rejection_reason_required' => 'El motivo del rechazo es obligatorio.',
+    'rejection_reason_min' => 'El motivo debe tener al menos 10 caracteres.',
+    'rejection_reason_max' => 'El motivo no puede tener más de 500 caracteres.',
+    'rejection_reason_string' => 'El motivo debe ser texto.',
     'verification_otp_invalid' => 'El código OTP es inválido o ha expirado.',
     'verification_email_subject' => 'Código de verificación OTP - Sistema de Incidencias',
     'verification_email_greeting' => '¡Hola!',
