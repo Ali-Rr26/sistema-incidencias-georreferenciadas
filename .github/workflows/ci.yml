@@ -36,6 +36,29 @@ jobs:
       - name: Run frontend format check
         run: npm run format
 
+      - name: Check form utility class scope (SC-143)
+        run: |
+          ERRORS=0
+          FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-input-icon" ".gr-input-eye" ".gr-input-error" ".gr-input--pad-right")
+
+          for class in "${FORBIDDEN_CLASSES[@]}"; do
+            # Search for class definitions (not just references)
+            # Pattern: class name followed by { or , (indicating it's being defined)
+            if grep -r "${class}\s*[{,]" app/**/*.component.css 2>/dev/null | grep -v '^\s*/\*'; then
+              echo "ERROR: Shared form utility class '${class}' found defined in component CSS."
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "CONTEXT: These classes must be defined EXCLUSIVELY in frontend/public/css/app.css"
+            echo "REASON: SC-143 requires single source of truth for password field parity"
+            echo "FIX: Remove the class definition from .component.css and reference from app.css"
+            echo "SEE: https://github.com/Ali-Rr26/sistema-incidencias-georreferenciadas/issues/229"
+            exit 1
+          fi
+
   frontend-tests:
     name: Frontend tests (${{ matrix.suite }})
     runs-on: ubuntu-latest
