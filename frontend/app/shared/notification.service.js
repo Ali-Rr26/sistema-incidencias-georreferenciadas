@@ -56,4 +56,57 @@ export const notificationService = {
   async markAllRead() {
     return await http.patch('/notifications/read-all');
   },
+
+  /**
+   * Approve a pending incident resolution.
+   * @param {number|string} id - Notification id
+   * @returns {Promise<object>} Updated notification resource
+   */
+  async approve(id) {
+    const resp = await http.post(`/notifications/${id}/approve`);
+    return resp.data;
+  },
+
+  /**
+   * Reject a pending incident resolution with a mandatory reason.
+   * @param {number|string} id - Notification id
+   * @param {string} reason - Reason text (10..500 chars)
+   * @returns {Promise<object>} Updated notification resource
+   */
+  async reject(id, reason) {
+    if (typeof reason !== 'string' || reason.length < 10 || reason.length > 500) {
+      throw new Error('Reason must be a string between 10 and 500 characters.');
+    }
+    const resp = await http.post(`/notifications/${id}/reject`, { reason });
+    return resp.data;
+  },
+
+  /**
+   * List pending-approval notifications for the current admin scope.
+   * @param {object} [params]
+   * @param {number} [params.page=1]
+   * @param {number} [params.perPage=20]
+   * @param {number|null} [params.organizationId=null]
+   * @param {boolean} [params.unreadOnly=true]
+   * @returns {Promise<object>} { data: Notification[], meta: object }
+   */
+  async getPendingApprovals({
+    page = 1,
+    perPage = 20,
+    organizationId = null,
+    unreadOnly = true,
+  } = {}) {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('per_page', String(perPage));
+    params.set('type', 'incident_pending_approval');
+    if (organizationId !== null) {
+      params.set('organization_id', String(organizationId));
+    }
+    if (unreadOnly) {
+      params.set('unread_only', '1');
+    }
+    const resp = await http.get(`/notifications?${params.toString()}`);
+    return resp.data;
+  },
 };
