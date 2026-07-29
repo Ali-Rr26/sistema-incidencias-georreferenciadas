@@ -114,6 +114,10 @@ Route::middleware('jwt')->group(function () {
     Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('notifications/{notification}/approve', [NotificationController::class, 'approve'])
+        ->whereNumber('notification');
+    Route::post('notifications/{notification}/reject', [NotificationController::class, 'reject'])
+        ->whereNumber('notification');
     // SSE stream for the notification bell. The `jwt` middleware already
     // supports a cookie-based access_token fallback because native
     // EventSource cannot set custom request headers.
