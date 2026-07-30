@@ -56,4 +56,4 @@ it('throws RuntimeException when processing fails', function (): void {
     $fakeFile = UploadedFile::fake()->create('broken.pdf', 100);
 
     $service->processUploadedImage($fakeFile, 1);
-})->throws(RuntimeException::class);
+})->throws(RuntimeException::class)->skip(extension_loaded('gd') === false, 'GD extension not available');
