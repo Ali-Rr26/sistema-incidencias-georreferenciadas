@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -131,14 +133,30 @@ class RolePermissionSeeder extends Seeder
 
     public function run(): void
     {
-        // Limpiar relaciones previas para evitar duplicados
-        DB::table('role_permission')->whereIn('role_id', [1, 2, 3, 4, 5])->delete();
+        $rolePermissionMap = [
+            UserRole::AdminSistema->value => self::ADMIN_SISTEMA_PERMISSIONS,
+            UserRole::OperadorSistema->value => self::OPERADOR_SISTEMA_PERMISSIONS,
+            UserRole::AdminOrganizacion->value => self::ADMIN_ORGANIZACION_PERMISSIONS,
+            UserRole::OperadorOrganizacion->value => self::OPERADOR_ORGANIZACION_PERMISSIONS,
+            UserRole::Usuario->value => self::USUARIO_PERMISSIONS,
+        ];
 
-        $this->assignPermissions(1, self::ADMIN_SISTEMA_PERMISSIONS);
-        $this->assignPermissions(2, self::OPERADOR_SISTEMA_PERMISSIONS);
-        $this->assignPermissions(3, self::ADMIN_ORGANIZACION_PERMISSIONS);
-        $this->assignPermissions(4, self::OPERADOR_ORGANIZACION_PERMISSIONS);
-        $this->assignPermissions(5, self::USUARIO_PERMISSIONS);
+        $roleIds = Role::whereIn('name', array_keys($rolePermissionMap))
+            ->pluck('id')
+            ->toArray();
+
+        if (!empty($roleIds)) {
+            DB::table('role_permission')->whereIn('role_id', $roleIds)->delete();
+        }
+
+        foreach ($rolePermissionMap as $roleName => $permissions) {
+            $role = Role::where('name', $roleName)->first();
+            if ($role) {
+                $this->assignPermissions($role->id, $permissions);
+            } else {
+                $this->command?->warn("Rol '{$roleName}' no encontrado en la base de datos.");
+            }
+        }
 
         $this->command?->info('Permisos asignados a todos los roles exitosamente.');
     }
