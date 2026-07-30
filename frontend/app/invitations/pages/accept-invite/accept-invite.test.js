@@ -36,8 +36,6 @@ const invitationSvcMock = vi.hoisted(() => ({
   acceptInvitation: vi.fn(),
   validateAcceptPayload: vi.fn(),
   previewInvitation: vi.fn(),
-  livePasswordRules: vi.fn(),
-  scorePassword: vi.fn(),
   InvitationGoneError: class InvitationGoneError extends Error {
     constructor() {
       super('Esta invitación ya fue usada o expiró');
@@ -61,15 +59,24 @@ const authSvcMock = vi.hoisted(() => ({
 
 const routerNavigateMock = vi.hoisted(() => vi.fn());
 
+// Shared helper mock: rule-flip / meter logic lives in the shared
+// module (covered by its own test). Here we only verify that the
+// component hands the correct DOM elements to the mount function.
+const strengthMeterMock = vi.hoisted(() => ({
+  mountPasswordStrengthMeter: vi.fn(() => ({ destroy: vi.fn() })),
+}));
+
 vi.mock('../../invitation.service.js', () => ({
   invitationService: invitationSvcMock,
   validateAcceptPayload: invitationSvcMock.validateAcceptPayload,
   previewInvitation: invitationSvcMock.previewInvitation,
-  livePasswordRules: invitationSvcMock.livePasswordRules,
-  scorePassword: invitationSvcMock.scorePassword,
   InvitationGoneError: invitationSvcMock.InvitationGoneError,
   InvitationNotFoundError: invitationSvcMock.InvitationNotFoundError,
   acceptInvitation: invitationSvcMock.acceptInvitation,
+}));
+
+vi.mock('../../../shared/password-strength-meter.js', () => ({
+  mountPasswordStrengthMeter: strengthMeterMock.mountPasswordStrengthMeter,
 }));
 
 vi.mock('../../../auth/auth.service.js', () => ({
@@ -138,15 +145,6 @@ beforeEach(() => {
   invitationSvcMock.previewInvitation.mockImplementation(async () =>
     fakePreview(),
   );
-  // Default: all rules fail (so the checklist shows pending), score 0.
-  invitationSvcMock.livePasswordRules.mockReturnValue({
-    minLength: false,
-    hasUpper: false,
-    hasLower: false,
-    hasDigit: false,
-    matches: false,
-  });
-  invitationSvcMock.scorePassword.mockReturnValue(0);
 });
 
 describe('accept-invite — WU-4 + sc-130', () => {
@@ -486,159 +484,67 @@ describe('accept-invite — WU-4 + sc-130', () => {
     });
   });
 
-  // ─── sc-130: live password rules ─────────────────────────────────────
-  describe('sc-130: live password rules update on input', () => {
-    function readRuleStates() {
-      return Array.from(
-        document.querySelectorAll('.gr-accept-invite__rule'),
-      ).map((row) => ({
-        rule: row.getAttribute('data-rule'),
-        ok: row.classList.contains('gr-accept-invite__rule--ok'),
-      }));
-    }
-
-    it('flips each rule to ok as livePasswordRules returns true for it', async () => {
-      // Progressive truthy returns as the user types.
-      invitationSvcMock.livePasswordRules.mockImplementation(
-        ({ password }) => ({
-          minLength: password.length >= 8,
-          hasUpper: /[A-Z]/.test(password),
-          hasLower: /[a-z]/.test(password),
-          hasDigit: /[0-9]/.test(password),
-          matches: false,
-        }),
-      );
-
+  // ─── sc-143: shared password strength meter wiring ──────────────────
+  describe('sc-143: shared password strength meter wiring', () => {
+    it('mounts the shared strength meter with all expected DOM elements', async () => {
       await mountComponent('/accept-invite?token=t');
 
-      const input = document.getElementById('invite-password');
-      input.value = 'A';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const states = readRuleStates();
-        expect(states.find((s) => s.rule === 'minLength').ok).toBe(false);
-      });
-
-      input.value = 'ValidPass1';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const states = readRuleStates();
-        expect(states.find((s) => s.rule === 'minLength').ok).toBe(true);
-        expect(states.find((s) => s.rule === 'hasUpper').ok).toBe(true);
-        expect(states.find((s) => s.rule === 'hasLower').ok).toBe(true);
-        expect(states.find((s) => s.rule === 'hasDigit').ok).toBe(true);
-      });
-
-      expect(invitationSvcMock.livePasswordRules).toHaveBeenCalled();
+      expect(
+        strengthMeterMock.mountPasswordStrengthMeter,
+      ).toHaveBeenCalledTimes(1);
+      const opts =
+        strengthMeterMock.mountPasswordStrengthMeter.mock.calls[0][0];
+      expect(opts.passwordInput).toBe(
+        document.getElementById('invite-password'),
+      );
+      expect(opts.confirmInput).toBe(
+        document.getElementById('invite-password-confirm'),
+      );
+      expect(opts.rulesListEl).toBe(
+        document.querySelector('[data-testid="password-rules-checklist"]'),
+      );
+      expect(opts.meterEl).toBe(
+        document.getElementById('invite-password-meter'),
+      );
+      expect(opts.meterLabelEl).toBe(
+        document.getElementById('invite-password-meter-label'),
+      );
     });
 
-    it('only flips the matches rule when the confirmation field has a value', async () => {
-      invitationSvcMock.livePasswordRules.mockImplementation(
-        ({ password, passwordConfirmation }) => ({
-          minLength: true,
-          hasUpper: true,
-          hasLower: true,
-          hasDigit: true,
-          matches:
-            typeof passwordConfirmation === 'string' &&
-            passwordConfirmation.length > 0 &&
-            passwordConfirmation === password,
-        }),
-      );
-
+    it('renders the rules checklist + strength meter markup with the shared selectors', async () => {
       await mountComponent('/accept-invite?token=t');
 
-      const pw = document.getElementById('invite-password');
-      const confirm = document.getElementById('invite-password-confirm');
-      pw.value = 'ValidPass1';
-      confirm.value = '';
-      confirm.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const states = readRuleStates();
-        expect(states.find((s) => s.rule === 'matches').ok).toBe(false);
-      });
-
-      confirm.value = 'ValidPass1';
-      confirm.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const states = readRuleStates();
-        expect(states.find((s) => s.rule === 'matches').ok).toBe(true);
-      });
-    });
-  });
-
-  // ─── sc-130: strength meter ─────────────────────────────────────────
-  describe('sc-130: strength meter', () => {
-    it('renders 0 segments when scorePassword returns 0', async () => {
-      invitationSvcMock.scorePassword.mockReturnValue(0);
-
-      await mountComponent('/accept-invite?token=t');
-
-      const onSegments = document.querySelectorAll(
-        '.gr-accept-invite__meter-segment--on',
+      const checklist = document.querySelector(
+        '[data-testid="password-rules-checklist"]',
       );
-      expect(onSegments.length).toBe(0);
+      expect(checklist).not.toBeNull();
+      expect(checklist.classList.contains('gr-strength-rules')).toBe(true);
+
+      for (const key of [
+        'minLength',
+        'hasUpper',
+        'hasLower',
+        'hasDigit',
+        'matches',
+      ]) {
+        const row = checklist.querySelector(`[data-rule="${key}"]`);
+        expect(row).not.toBeNull();
+        expect(row.classList.contains('gr-strength-rule')).toBe(true);
+        expect(row.querySelector('.gr-strength-rule-icon')).not.toBeNull();
+        expect(row.querySelector('.gr-strength-rule-label')).not.toBeNull();
+      }
 
       const meter = document.getElementById('invite-password-meter');
+      expect(meter).not.toBeNull();
+      expect(meter.classList.contains('gr-strength-meter')).toBe(true);
+      expect(meter.getAttribute('role')).toBe('meter');
       expect(meter.getAttribute('aria-valuenow')).toBe('0');
-
-      const label = document.getElementById('invite-password-meter-label');
-      expect(label.textContent).toBe('—');
-    });
-
-    it('lights up the matching number of segments when scorePassword returns 3', async () => {
-      invitationSvcMock.scorePassword.mockReturnValue(3);
-
-      await mountComponent('/accept-invite?token=t');
-
-      // The component calls updateRulesUi once on mount, which sets the
-      // segments based on the mock.
-      const onSegments = document.querySelectorAll(
-        '.gr-accept-invite__meter-segment--on',
+      expect(meter.querySelectorAll('.gr-strength-meter-segment').length).toBe(
+        4,
       );
-      expect(onSegments.length).toBe(3);
-
-      const meter = document.getElementById('invite-password-meter');
-      expect(meter.getAttribute('aria-valuenow')).toBe('3');
-      expect(meter.classList.contains('gr-accept-invite__meter--tier-3')).toBe(
-        true,
-      );
-
-      const label = document.getElementById('invite-password-meter-label');
-      expect(label.textContent).toBe('Buena');
-    });
-
-    it('updates meter when password input changes', async () => {
-      invitationSvcMock.scorePassword.mockImplementation((p) =>
-        p.length >= 8 ? 2 : 0,
-      );
-
-      await mountComponent('/accept-invite?token=t');
-
-      const input = document.getElementById('invite-password');
-      input.value = 'Short';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const on = document.querySelectorAll(
-          '.gr-accept-invite__meter-segment--on',
-        );
-        expect(on.length).toBe(0);
-      });
-
-      input.value = 'ValidPass1';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      await vi.waitFor(() => {
-        const on = document.querySelectorAll(
-          '.gr-accept-invite__meter-segment--on',
-        );
-        expect(on.length).toBe(2);
-      });
+      expect(
+        document.getElementById('invite-password-meter-label').textContent,
+      ).toBe('—');
     });
   });
 

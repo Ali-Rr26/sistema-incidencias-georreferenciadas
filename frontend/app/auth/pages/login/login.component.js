@@ -24,6 +24,7 @@ import { classifyRole } from '../../../app-shell/app-shell.component.js';
 import { maskPhoneInput } from '../../../utils/ui.js';
 import { EMAIL_RE } from '../../../utils/format.js';
 import { homeRouteForUser } from '../../../utils/role.js';
+import { mountPasswordStrengthMeter } from '../../../shared/password-strength-meter.js';
 
 const REGISTER_FORM_ID = 'register-form';
 
@@ -236,6 +237,22 @@ export default {
           btn.setAttribute('aria-label', 'Mostrar contraseña');
         }
       });
+    });
+
+    // ─── sc-143: shared password strength meter + rules checklist ──────
+    //
+    // Only register mode has password + confirmation fields, so this
+    // is the only place that needs it. The mount function tolerates
+    // missing DOM (e.g. if register form markup is absent), so it's
+    // safe to call unconditionally.
+    mountPasswordStrengthMeter({
+      passwordInput: document.getElementById('register-password'),
+      confirmInput: document.getElementById('password_confirmation'),
+      rulesListEl: document.querySelector(
+        '[data-testid="password-rules-checklist"]',
+      ),
+      meterEl: document.getElementById('register-password-meter'),
+      meterLabelEl: document.getElementById('register-password-meter-label'),
     });
 
     // ─── Forgot password link ───────────────────────────────────────────

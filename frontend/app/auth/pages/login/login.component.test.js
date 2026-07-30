@@ -39,6 +39,18 @@ const authMock = vi.hoisted(() => ({
 }));
 vi.mock('../../auth.service.js', () => ({ auth: authMock }));
 
+// sc-143: the shared password strength meter is wired into the
+// register form. The DOM-update logic is covered by its own test
+// (`password-strength-meter.test.js`) — here we just verify the
+// component hands the right DOM elements to the helper.
+const strengthMeterMock = vi.hoisted(() => ({
+  mountPasswordStrengthMeter: vi.fn(() => ({ destroy: vi.fn() })),
+}));
+
+vi.mock('../../../shared/password-strength-meter.js', () => ({
+  mountPasswordStrengthMeter: strengthMeterMock.mountPasswordStrengthMeter,
+}));
+
 // ─── R12: Firebase loader mock ─────────────────────────────────────────────
 //
 // The component clicks "Iniciar sesión con Google" → calls signInWithGoogle()
@@ -117,6 +129,91 @@ describe('R11 — frontend registration form', () => {
     // shape in one shot.
     expect(document.querySelector('[data-mode-btn="register"]')).not.toBeNull();
     expect(document.getElementById('register-banner')).not.toBeNull();
+  });
+
+  // ─── sc-143: shared password strength meter present in register form ───
+  it('sc-143: register form renders the password strength meter + rules checklist (shared markup)', async () => {
+    await mountComponent();
+
+    expect(
+      document.querySelector('[data-testid="password-strength-meter"]'),
+    ).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="password-rules-checklist"]'),
+    ).not.toBeNull();
+
+    const meter = document.getElementById('register-password-meter');
+    expect(meter).not.toBeNull();
+    expect(meter.getAttribute('role')).toBe('meter');
+    expect(meter.getAttribute('aria-valuenow')).toBe('0');
+    expect(meter.classList.contains('gr-strength-meter')).toBe(true);
+    expect(meter.querySelectorAll('.gr-strength-meter-segment').length).toBe(4);
+    expect(
+      document.getElementById('register-password-meter-label').textContent,
+    ).toBe('—');
+
+    // 5 rule rows, one per backend rule.
+    const rows = document.querySelectorAll('.gr-strength-rule[data-rule]');
+    expect(rows.length).toBe(5);
+    expect(
+      ['minLength', 'hasUpper', 'hasLower', 'hasDigit', 'matches'].every(
+        (k) => document.querySelector(`[data-rule="${k}"]`) !== null,
+      ),
+    ).toBe(true);
+  });
+
+  it('sc-143: login mode keeps the meter hidden (markup lives inside the hidden register form)', async () => {
+    await mountComponent();
+
+    // The meter/rules markup lives INSIDE the #register-form (which is
+    // hidden in default /login mode). The element exists in the DOM
+    // but is invisibly contained in a `d-none` form. We pin that
+    // contract: the parent #register-form carries `d-none` in default
+    // mode, so the user never sees the meter. (Mode is `login` after
+    // mount with no ctx override.)
+    const registerForm = document.getElementById('register-form');
+    expect(registerForm.classList.contains('d-none')).toBe(true);
+
+    expect(
+      document.querySelector('[data-testid="password-strength-meter"]'),
+    ).not.toBeNull();
+    expect(
+      document
+        .querySelector('[data-testid="password-strength-meter"]')
+        .closest('#register-form'),
+    ).toBe(registerForm);
+    expect(
+      document.querySelector('[data-testid="password-rules-checklist"]'),
+    ).not.toBeNull();
+    expect(
+      document
+        .querySelector('[data-testid="password-rules-checklist"]')
+        .closest('#register-form'),
+    ).toBe(registerForm);
+  });
+
+  it('sc-143: onInit calls the shared strength-meter helper with the register DOM elements', async () => {
+    await mountComponent();
+
+    expect(strengthMeterMock.mountPasswordStrengthMeter).toHaveBeenCalledTimes(
+      1,
+    );
+    const opts = strengthMeterMock.mountPasswordStrengthMeter.mock.calls[0][0];
+    expect(opts.passwordInput).toBe(
+      document.getElementById('register-password'),
+    );
+    expect(opts.confirmInput).toBe(
+      document.getElementById('password_confirmation'),
+    );
+    expect(opts.rulesListEl).toBe(
+      document.querySelector('[data-testid="password-rules-checklist"]'),
+    );
+    expect(opts.meterEl).toBe(
+      document.getElementById('register-password-meter'),
+    );
+    expect(opts.meterLabelEl).toBe(
+      document.getElementById('register-password-meter-label'),
+    );
   });
 
   it('toggles between login and register forms when the mode buttons are clicked', async () => {

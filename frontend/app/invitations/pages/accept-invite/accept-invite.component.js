@@ -30,26 +30,11 @@ import { auth } from '../../../auth/auth.service.js';
 import {
   validateAcceptPayload,
   previewInvitation,
-  livePasswordRules,
-  scorePassword,
   InvitationGoneError,
   InvitationNotFoundError,
 } from '../../invitation.service.js';
+import { mountPasswordStrengthMeter } from '../../../shared/password-strength-meter.js';
 import { router } from '../../../core/router.js';
-
-/**
- * Localized labels for the password rules checklist. Keys match the
- * data-rule attributes rendered in the template.
- */
-const RULE_LABELS = {
-  minLength: 'Mínimo 8 caracteres',
-  hasUpper: 'Una mayúscula (A-Z)',
-  hasLower: 'Una minúscula (a-z)',
-  hasDigit: 'Un dígito (0-9)',
-  matches: 'Las contraseñas coinciden',
-};
-
-const METER_TIERS = ['—', 'Débil', 'Aceptable', 'Buena', 'Fuerte'];
 
 /**
  * Read the invitation token from window.location.search.
@@ -326,78 +311,22 @@ export default {
       startCountdown();
     })();
 
-    // ─── sc-130: live password rules + strength meter ─────────────
+    // ─── sc-130 / sc-143: live password rules + strength meter ─────────────
     //
-    // The backend regex is the source of truth on submit; this UI is
-    // feedback-only, mirror-imaging the same rules so the user sees
-    // progress as they type. We do not block submit on these — only
-    // `validateAcceptPayload` (called on submit) is authoritative.
+    // Shared helper `mountPasswordStrengthMeter` (sc-143) wires the
+    // input listeners, toggles rule/meter classes, and writes the
+    // verbal label. The backend regex is the source of truth on
+    // submit (`validateAcceptPayload` blocks actual submission).
 
-    const passwordInput = document.getElementById('invite-password');
-    const passwordConfirmInput = document.getElementById(
-      'invite-password-confirm',
-    );
-    const meter = document.getElementById('invite-password-meter');
-    const meterLabel = document.getElementById('invite-password-meter-label');
-    const meterSegments = meter
-      ? Array.from(meter.querySelectorAll('.gr-accept-invite__meter-segment'))
-      : [];
-    const ruleRows = Array.from(
-      document.querySelectorAll('.gr-accept-invite__rule'),
-    );
-
-    function updateRulesUi() {
-      const rules = livePasswordRules({
-        password: passwordInput.value,
-        passwordConfirmation: passwordConfirmInput.value,
-      });
-      const score = scorePassword(passwordInput.value);
-
-      ruleRows.forEach((row) => {
-        const ruleKey = row.getAttribute('data-rule');
-        const ok = Boolean(rules[ruleKey]);
-        row.classList.toggle('gr-accept-invite__rule--ok', ok);
-        const labelEl = row.querySelector('.gr-accept-invite__rule-label');
-        // Keep the visible label stable — only the icon/check + color
-        // change as the rule flips. Re-announcing the label every
-        // keystroke would be noisy in screen readers.
-        if (labelEl && labelEl.textContent !== RULE_LABELS[ruleKey]) {
-          labelEl.textContent = RULE_LABELS[ruleKey] || '';
-        }
-      });
-
-      if (meter) {
-        meter.setAttribute('aria-valuenow', String(score));
-        // Reset tier classes before applying the current one.
-        meter.classList.remove(
-          'gr-accept-invite__meter--tier-1',
-          'gr-accept-invite__meter--tier-2',
-          'gr-accept-invite__meter--tier-3',
-          'gr-accept-invite__meter--tier-4',
-        );
-        if (score > 0) {
-          meter.classList.add(`gr-accept-invite__meter--tier-${score}`);
-        }
-        meterSegments.forEach((segment, idx) => {
-          segment.classList.toggle(
-            'gr-accept-invite__meter-segment--on',
-            idx < score,
-          );
-        });
-      }
-      if (meterLabel) {
-        meterLabel.textContent = METER_TIERS[score] || '—';
-      }
-    }
-
-    if (passwordInput) {
-      passwordInput.addEventListener('input', updateRulesUi);
-    }
-    if (passwordConfirmInput) {
-      passwordConfirmInput.addEventListener('input', updateRulesUi);
-    }
-    // Initial pass — rules render as pending/dot, meter shows '—'.
-    updateRulesUi();
+    mountPasswordStrengthMeter({
+      passwordInput: document.getElementById('invite-password'),
+      confirmInput: document.getElementById('invite-password-confirm'),
+      rulesListEl: document.querySelector(
+        '[data-testid="password-rules-checklist"]',
+      ),
+      meterEl: document.getElementById('invite-password-meter'),
+      meterLabelEl: document.getElementById('invite-password-meter-label'),
+    });
 
     // ─── sc-130: show-password toggle ──────────────────────────────
     //

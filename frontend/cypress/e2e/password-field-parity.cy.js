@@ -73,9 +73,15 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
       // box-shadow: 0 0 0 3px rgba(106, 92, 243, 0.12)
     });
 
-    it('CT-PWD-004: No strength meter or rules checklist in login/register', () => {
-      cy.get('[data-testid="password-strength-meter"]').should('not.exist');
-      cy.get('[data-testid="password-rules-checklist"]').should('not.exist');
+    it('CT-PWD-004: Strength meter + rules checklist are present in register mode (shared sc-143 helper)', () => {
+      // Contract changed in sc-143: the meter + rules checklist live in
+      // a shared component so /accept-invite and /login register mode
+      // render the EXACT same widget. We assert presence here (default
+      // /login mode is covered by CT-PWD-016 below).
+      cy.get('[data-testid="password-strength-meter"]').should('exist');
+      cy.get('[data-testid="password-strength-meter"]').should('be.visible');
+      cy.get('[data-testid="password-rules-checklist"]').should('exist');
+      cy.get('[data-testid="password-rules-checklist"]').should('be.visible');
     });
 
     it('CT-PWD-005: Error message uses correct color/font', () => {
@@ -120,14 +126,26 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
       cy.get('#invite-password').should('have.css', 'border-color').and('include', 'rgb(106, 92, 243)');
     });
 
-    it('CT-PWD-009: Intentional extra — strength meter present', () => {
-      cy.get('[data-testid="password-strength-meter"]').should('exist');
-      cy.get('[data-testid="password-strength-meter"]').should('be.visible');
+    it('CT-PWD-009: Intentional extra — strength meter present (shared sc-143 helper)', () => {
+      cy.get('[data-testid="password-strength-meter"]')
+        .should('exist')
+        .and('be.visible');
+      cy.get('[data-testid="password-strength-meter"] [role="meter"]').should(
+        'not.exist',
+      );
+      cy.get(
+        '[data-testid="password-strength-meter"] .gr-strength-meter-segment',
+      );
     });
 
-    it('CT-PWD-010: Intentional extra — rules checklist present', () => {
-      cy.get('[data-testid="password-rules-checklist"]').should('exist');
-      cy.get('[data-testid="password-rules-checklist"]').should('be.visible');
+    it('CT-PWD-010: Intentional extra — rules checklist present (shared sc-143 helper)', () => {
+      cy.get('[data-testid="password-rules-checklist"]')
+        .should('exist')
+        .and('be.visible');
+      cy.get('[data-testid="password-rules-checklist"] .gr-strength-rule').should(
+        'have.length',
+        5,
+      );
     });
 
     it('CT-PWD-011: Error message uses correct color/font', () => {
@@ -136,6 +154,66 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
   });
 
   describe('Visual CSS parity (computed snapshots)', () => {
+    it('CT-PWD-016: meter container is visually identical between register mode and accept-invite (shared sc-143 helper)', () => {
+      // Both pages must render the meter under the SAME data-testid,
+      // with the SAME internal structure: 4 segments, the same
+      // initial aria-valuenow, and the same verbal label ("—").
+      // This is the contract that locks the shared module in place.
+
+      let loginMeterInfo;
+      let acceptInviteMeterInfo;
+
+      cy.visit('/#/login?mode=register');
+      cy.get('[data-testid="password-strength-meter"]').then(($meter) => {
+        loginMeterInfo = {
+          testid: $meter.attr('data-testid'),
+          role: $meter.attr('role'),
+          ariaValueNow: $meter.attr('aria-valuenow'),
+          ariaValueMin: $meter.attr('aria-valuemin'),
+          ariaValueMax: $meter.attr('aria-valuemax'),
+          segmentCount: $meter.find('.gr-strength-meter-segment').length,
+          labelText: $meter.find('.gr-strength-meter-label').text().trim(),
+        };
+      });
+
+      cy.visit('/#/accept-invite?token=test-valid-token');
+      cy.get('[data-testid="password-strength-meter"]').then(($meter) => {
+        acceptInviteMeterInfo = {
+          testid: $meter.attr('data-testid'),
+          role: $meter.attr('role'),
+          ariaValueNow: $meter.attr('aria-valuenow'),
+          ariaValueMin: $meter.attr('aria-valuemin'),
+          ariaValueMax: $meter.attr('aria-valuemax'),
+          segmentCount: $meter.find('.gr-strength-meter-segment').length,
+          labelText: $meter.find('.gr-strength-meter-label').text().trim(),
+        };
+
+        // Compare the captured shape — same shape on both pages.
+        expect(loginMeterInfo.testid).to.equal(acceptInviteMeterInfo.testid);
+        expect(loginMeterInfo.role).to.equal(acceptInviteMeterInfo.role);
+        expect(loginMeterInfo.ariaValueNow).to.equal(
+          acceptInviteMeterInfo.ariaValueNow,
+        );
+        expect(loginMeterInfo.ariaValueMin).to.equal(
+          acceptInviteMeterInfo.ariaValueMin,
+        );
+        expect(loginMeterInfo.ariaValueMax).to.equal(
+          acceptInviteMeterInfo.ariaValueMax,
+        );
+        expect(loginMeterInfo.segmentCount).to.equal(
+          acceptInviteMeterInfo.segmentCount,
+        );
+        expect(loginMeterInfo.labelText).to.equal(
+          acceptInviteMeterInfo.labelText,
+        );
+
+        // Pin the contract specifics in case the captures above drift.
+        expect(loginMeterInfo.ariaValueNow).to.equal('0');
+        expect(loginMeterInfo.segmentCount).to.equal(4);
+        expect(loginMeterInfo.labelText).to.equal('—');
+      });
+    });
+  });
     it('CT-PWD-012: Password field CSS properties are pixel-identical', () => {
       let loginSnapshot;
       let acceptInviteSnapshot;
