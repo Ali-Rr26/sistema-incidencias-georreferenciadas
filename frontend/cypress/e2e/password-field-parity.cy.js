@@ -49,10 +49,14 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
 
       cy.get('#register-password')
         .parent()
-        .should('have.class', 'gr-input-wrap');
+        .should('have.class', 'gr-input-wrap')
+        .find('[data-testid="password-icon"]')
+        .should('have.class', 'gr-input-icon');
 
-      cy.get('[data-testid="password-icon"]').should('have.class', 'gr-input-icon');
-      cy.get('[data-testid="password-toggle"]').should('have.class', 'gr-input-eye');
+      cy.get('#register-password')
+        .parent()
+        .find('[data-testid="password-toggle"]')
+        .should('have.class', 'gr-input-eye');
     });
 
     it('CT-PWD-002: Password field height/padding are standard', () => {
@@ -93,10 +97,14 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
 
       cy.get('#invite-password')
         .parent()
-        .should('have.class', 'gr-input-wrap');
+        .should('have.class', 'gr-input-wrap')
+        .find('[data-testid="password-icon"]')
+        .should('have.class', 'gr-input-icon');
 
-      cy.get('[data-testid="password-icon"]').should('have.class', 'gr-input-icon');
-      cy.get('[data-testid="password-toggle"]').should('have.class', 'gr-input-eye');
+      cy.get('#invite-password')
+        .parent()
+        .find('[data-eye-for="invite-password"]')
+        .should('have.class', 'gr-input-eye');
     });
 
     it('CT-PWD-007: Password field height/padding identical to login', () => {
@@ -128,44 +136,39 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
   });
 
   describe('Visual CSS parity (computed snapshots)', () => {
-    let loginSnapshot;
-    let acceptInviteSnapshot;
+    it('CT-PWD-012: Password field CSS properties are pixel-identical', () => {
+      let loginSnapshot;
+      let acceptInviteSnapshot;
 
-    it('CT-PWD-012: Capture login password field CSS snapshot', () => {
       cy.visit('/#/login?mode=register');
       cy.get('#register-password').then(($el) => {
         getVisualSnapshot($el).then((snapshot) => {
           loginSnapshot = snapshot;
           cy.log('Login snapshot captured', snapshot);
+
+          cy.visit('/#/accept-invite?token=test-valid-token');
+          cy.get('#invite-password').then(($el) => {
+            getVisualSnapshot($el).then((inviteSnapshot) => {
+              acceptInviteSnapshot = inviteSnapshot;
+              cy.log('Accept-invite snapshot captured', inviteSnapshot);
+
+              // Compare both snapshots
+              expect(loginSnapshot.height).to.equal(acceptInviteSnapshot.height);
+              expect(loginSnapshot.borderRadius).to.equal(acceptInviteSnapshot.borderRadius);
+              expect(loginSnapshot.borderColor).to.equal(acceptInviteSnapshot.borderColor);
+              expect(loginSnapshot.borderStyle).to.equal(acceptInviteSnapshot.borderStyle);
+              expect(loginSnapshot.borderWidth).to.equal(acceptInviteSnapshot.borderWidth);
+              expect(loginSnapshot.paddingLeft).to.equal(acceptInviteSnapshot.paddingLeft);
+              expect(loginSnapshot.paddingRight).to.equal(acceptInviteSnapshot.paddingRight);
+              expect(loginSnapshot.fontSize).to.equal(acceptInviteSnapshot.fontSize);
+              expect(loginSnapshot.fontFamily).to.equal(acceptInviteSnapshot.fontFamily);
+              expect(loginSnapshot.boxSizing).to.equal(acceptInviteSnapshot.boxSizing);
+              expect(loginSnapshot.backgroundColor).to.equal(acceptInviteSnapshot.backgroundColor);
+              expect(loginSnapshot.color).to.equal(acceptInviteSnapshot.color);
+            });
+          });
         });
       });
-    });
-
-    it('CT-PWD-013: Capture accept-invite password field CSS snapshot', () => {
-      cy.visit('/#/accept-invite?token=test-valid-token');
-      cy.get('#invite-password').then(($el) => {
-        getVisualSnapshot($el).then((snapshot) => {
-          acceptInviteSnapshot = snapshot;
-          cy.log('Accept-invite snapshot captured', snapshot);
-        });
-      });
-    });
-
-    it('CT-PWD-014: Password field CSS properties are pixel-identical', () => {
-      // After both snapshots are captured, compare them
-      // These are the properties that define "visual parity"
-      expect(loginSnapshot.height).to.equal(acceptInviteSnapshot.height);
-      expect(loginSnapshot.borderRadius).to.equal(acceptInviteSnapshot.borderRadius);
-      expect(loginSnapshot.borderColor).to.equal(acceptInviteSnapshot.borderColor);
-      expect(loginSnapshot.borderStyle).to.equal(acceptInviteSnapshot.borderStyle);
-      expect(loginSnapshot.borderWidth).to.equal(acceptInviteSnapshot.borderWidth);
-      expect(loginSnapshot.paddingLeft).to.equal(acceptInviteSnapshot.paddingLeft);
-      expect(loginSnapshot.paddingRight).to.equal(acceptInviteSnapshot.paddingRight);
-      expect(loginSnapshot.fontSize).to.equal(acceptInviteSnapshot.fontSize);
-      expect(loginSnapshot.fontFamily).to.equal(acceptInviteSnapshot.fontFamily);
-      expect(loginSnapshot.boxSizing).to.equal(acceptInviteSnapshot.boxSizing);
-      expect(loginSnapshot.backgroundColor).to.equal(acceptInviteSnapshot.backgroundColor);
-      expect(loginSnapshot.color).to.equal(acceptInviteSnapshot.color);
     });
   });
 
