@@ -159,9 +159,9 @@
   margin-bottom: 20px;
 }
 
-/* Shared form utilities (gr-form-label, gr-input-wrap, gr-input-icon,
-   gr-input, gr-input--pad-right, gr-input:focus, gr-input-eye,
-   gr-input-error) moved to frontend/public/css/app.css — used by
+/* Shared form utilities (.gr-form-label .gr-input-wrap .gr-input-icon
+   .gr-input .gr-input--pad-right .gr-input:focus .gr-input-eye
+   .gr-input-error) moved to frontend/public/css/app.css — used by
    register, forgot-password, accept-invite, reset-password, and
    verify-email too. */
 
