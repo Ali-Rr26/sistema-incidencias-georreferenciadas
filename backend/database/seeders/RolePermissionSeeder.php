@@ -145,7 +145,7 @@ class RolePermissionSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        if (!empty($roleIds)) {
+        if (count($roleIds) > 0) {
             DB::table('role_permission')->whereIn('role_id', $roleIds)->delete();
         }
 
