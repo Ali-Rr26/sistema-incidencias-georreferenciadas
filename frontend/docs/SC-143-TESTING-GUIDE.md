@@ -15,10 +15,10 @@ npm run test:e2e
 
 # Run CI linter check locally
 cd ..
-bash -c 'ERRORS=0; FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-input-icon" ".gr-input-eye" ".gr-input-error" ".gr-input--pad-right"); for class in "${FORBIDDEN_CLASSES[@]}"; do if grep -r "${class}\s*[{,]" frontend/app/**/*.component.css 2>/dev/null | grep -v "^\s*/\*"; then echo "ERROR: $class found"; ERRORS=$((ERRORS + 1)); fi; done; exit $ERRORS'
+bash -c 'ERRORS=0; FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-input-icon" ".gr-input-eye" ".gr-input-error" ".gr-input" ".gr-input--pad-right"); for class in "${FORBIDDEN_CLASSES[@]}"; do while IFS= read -r file; do if grep -E "${class}\s*[{,]" "$file" 2>/dev/null | grep -v "^\s*/\*"; then echo "ERROR: Shared form utility class \"${class}\" found defined in component CSS: $file"; ERRORS=$((ERRORS + 1)); fi; done < <(find frontend/app -name "*.component.css"); done; exit $ERRORS'
 ```
 
-## Test Cases (15 total)
+## Test Cases (13 total)
 
 ### Login (Register Mode) — 5 tests
 - **CT-PWD-001:** Base classes (.gr-input, .gr-input--pad-right, .gr-input-wrap, .gr-input-icon, .gr-input-eye)
@@ -27,19 +27,19 @@ bash -c 'ERRORS=0; FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-inp
 - **CT-PWD-004:** No strength meter / no rules checklist
 - **CT-PWD-005:** Error message styling
 
-### Accept-Invite — 7 tests
+### Accept-Invite — 6 tests
 - **CT-PWD-006:** Identical base classes to login
 - **CT-PWD-007:** Identical dimensions to login
 - **CT-PWD-008:** Identical focus state to login
 - **CT-PWD-009:** HAS strength meter (intentional extra)
 - **CT-PWD-010:** HAS rules checklist (intentional extra)
 - **CT-PWD-011:** Error message styling
-- **CT-PWD-014:** Pixel-identical computed CSS properties
 
-### Regression Guards — 3 tests
-- **CT-PWD-012:** Verify CI grep check is in place
-- **CT-PWD-013:** Capture accept-invite CSS snapshot
-- **CT-PWD-015:** Regression guard (placeholder for CI enforcement)
+### Visual CSS Parity — 1 test
+- **CT-PWD-012:** Pixel-identical computed CSS properties (captures both login & invite snapshots and compares)
+
+### Regression Guards — 1 test
+- **CT-PWD-015:** CI grep check is in place (placeholder for CI enforcement)
 
 ## Manual Testing
 
