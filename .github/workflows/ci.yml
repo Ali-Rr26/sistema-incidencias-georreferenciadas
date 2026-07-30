@@ -39,15 +39,17 @@ jobs:
       - name: Check form utility class scope (SC-143)
         run: |
           ERRORS=0
-          FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-input-icon" ".gr-input-eye" ".gr-input-error" ".gr-input--pad-right")
+          FORBIDDEN_CLASSES=(".gr-form-label" ".gr-input-wrap" ".gr-input-icon" ".gr-input-eye" ".gr-input-error" ".gr-input" ".gr-input--pad-right")
 
           for class in "${FORBIDDEN_CLASSES[@]}"; do
             # Search for class definitions (not just references)
             # Pattern: class name followed by { or , (indicating it's being defined)
-            if grep -r "${class}\s*[{,]" app/**/*.component.css 2>/dev/null | grep -v '^\s*/\*'; then
-              echo "ERROR: Shared form utility class '${class}' found defined in component CSS."
-              ERRORS=$((ERRORS + 1))
-            fi
+            while IFS= read -r file; do
+              if grep -E "${class}\s*[{,]" "$file" 2>/dev/null | grep -v '^\s*/\*'; then
+                echo "ERROR: Shared form utility class '${class}' found defined in component CSS: $file"
+                ERRORS=$((ERRORS + 1))
+              fi
+            done < <(find app -name "*.component.css")
           done
 
           if [ $ERRORS -gt 0 ]; then
