@@ -111,10 +111,12 @@
             required
             autocomplete="current-password"
           />
+          <!-- SC-143: data-eye-for links toggle to password field semantically for tests -->
           <button
             type="button"
             class="gr-input-eye"
             aria-label="Mostrar contraseña"
+            data-eye-for="password"
             data-testid="password-toggle"
           >
             <i class="fa-regular fa-eye"></i>
@@ -214,10 +216,12 @@
             autocomplete="new-password"
             minlength="8"
           />
+          <!-- SC-143: data-eye-for links toggle to password field semantically for tests -->
           <button
             type="button"
             class="gr-input-eye"
             aria-label="Mostrar contraseña"
+            data-eye-for="register-password"
             data-testid="password-toggle"
           >
             <i class="fa-regular fa-eye"></i>
