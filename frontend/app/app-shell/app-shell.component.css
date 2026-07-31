@@ -204,38 +204,6 @@ body[data-role='guest']
   min-width: 0;
 }
 
-.app-shell-header__search {
-  position: relative;
-  flex: 1;
-  max-width: 360px;
-  min-width: 160px;
-}
-
-.app-shell-header__search i {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #5b6172;
-  font-size: 0.85rem;
-}
-
-.app-shell-header__search-input {
-  width: 100%;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid #eef0f5;
-  background: #f7f8fc;
-  padding: 0 12px 0 36px;
-  font-size: 0.85rem;
-  outline: none;
-}
-
-.app-shell-header__search-input:focus {
-  border-color: #6a5cf3;
-  background: #fff;
-}
-
 .app-shell-header__icon-btn {
   width: 38px;
   height: 38px;
@@ -753,9 +721,8 @@ body[data-role='guest']
   }
 }
 
-/* REQ-MR-5: admin header collapse at <=480px — search + name hidden, icons only */
+/* REQ-MR-5: admin header collapse at <=480px — name hidden, icons only */
 @media (max-width: 480px) {
-  body[data-role='admin'] .app-shell-header__search,
   body[data-role='admin'] .app-shell-user-menu__name,
   body[data-role='admin'] .app-shell-user-menu__arrow {
     display: none !important;

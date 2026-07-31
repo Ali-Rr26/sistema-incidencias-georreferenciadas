@@ -32,6 +32,12 @@ const FEED_TEMPLATE = `
       <div class="stats-card"><div class="stats-value" id="stat-resolved">8</div><div class="stats-label">Resueltas hoy</div></div>
       <div class="stats-card"><div class="stats-value" id="stat-avg">2.4d</div><div class="stats-label">Promedio resolución</div></div>
     </div>
+    <div class="feed-search-input-wrap d-block d-lg-none mb-3">
+      <div class="feed-search-input">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="feed-search-input" class="feed-search-input__field" placeholder="Buscar incidencia..." aria-label="Buscar incidencia" />
+      </div>
+    </div>
     <div class="feed-filter-section mb-4">
       <div class="feed-filter-toggle" id="feed-filter-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="feed-filter-content">
         <div class="fw-bold">Filtrar feed</div>
@@ -44,15 +50,6 @@ const FEED_TEMPLATE = `
           <button class="feed-chip btn btn-outline-primary btn-sm" data-status="in_progress">En proceso</button>
           <button class="feed-chip btn btn-outline-primary btn-sm" data-status="resolved">Resueltos</button>
         </div>
-      </div>
-    </div>
-    <div class="active-zones-section mb-4">
-      <div class="fw-bold mb-3">Incidencias activas</div>
-      <div class="zone-tabs d-flex gap-2 flex-wrap" id="zone-tabs">
-        <button class="zone-tab active" data-zone="all">Todos los reportes</button>
-        <button class="zone-tab" data-zone="in_progress">En proceso</button>
-        <button class="zone-tab" data-zone="pending">Pendientes</button>
-        <button class="zone-tab" data-zone="resolved">Resueltos</button>
       </div>
     </div>
     <div id="feed-cargando" class="feed-skeleton-wrap d-none">

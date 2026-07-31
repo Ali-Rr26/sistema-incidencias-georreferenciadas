@@ -248,6 +248,7 @@ export default {
     let filtroStatus = '';
     let cargando = false;
     let todasLasIncidencias = [];
+    let searchQuery = '';
     let observer = null;
 
     document.body.classList.add('feed-view');
@@ -388,25 +389,9 @@ export default {
         if (!append) todasLasIncidencias = datos;
         else todasLasIncidencias = [...todasLasIncidencias, ...datos];
 
-        if (todasLasIncidencias.length === 0) {
-          listEl.innerHTML = '';
-          vacio.classList.remove('d-none');
-          sentinel.classList.add('done');
-        } else {
-          vacio.classList.add('d-none');
-          if (append) {
-            listEl.insertAdjacentHTML(
-              'beforeend',
-              datos.map(renderCard).join(''),
-            );
-          } else {
-            disposeMiniMaps();
-            listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
-          }
-          initMiniMaps();
-          sentinel.classList.toggle('done', !hasMore);
-          sentinel.classList.toggle('loading', hasMore && !cargando);
-        }
+        renderList();
+        sentinel.classList.toggle('done', !hasMore);
+        sentinel.classList.toggle('loading', hasMore && !cargando);
       } catch {
         skeleton.classList.add('d-none');
         vacio.classList.remove('d-none');
@@ -415,6 +400,58 @@ export default {
         document.getElementById(SENTINEL).classList.add('done');
       } finally {
         cargando = false;
+      }
+    }
+
+    // ── Render (applies search + category filters on cached data) ──
+
+    function renderList() {
+      const listEl = document.getElementById(LIST);
+      const vacio = document.getElementById(VACIO);
+      if (!listEl || !vacio) return;
+
+      const q = searchQuery.trim().toLowerCase();
+      const checkedLabels = Array.from(
+        document.querySelectorAll('.rp-checkbox-label'),
+      )
+        .filter((l) =>
+          l.querySelector('.rp-checkbox-box').classList.contains('checked'),
+        )
+        .map((l) => l.textContent.trim().toLowerCase());
+
+      let filtered = todasLasIncidencias;
+
+      if (q) {
+        filtered = filtered.filter((inc) => {
+          const title = (inc.title || '').toLowerCase();
+          const desc = (inc.description || '').toLowerCase();
+          return title.includes(q) || desc.includes(q);
+        });
+      }
+
+      if (checkedLabels.length > 0) {
+        filtered = filtered.filter((inc) => {
+          const cat = (inc.category?.name ?? '').toLowerCase();
+          return checkedLabels.some(
+            (l) => cat.includes(l) || l.includes(cat),
+          );
+        });
+      }
+
+      disposeMiniMaps();
+      if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        vacio.classList.remove('d-none');
+        const vacioP = vacio.querySelector('p');
+        if (vacioP) {
+          vacioP.textContent = q
+            ? `No se encontraron incidencias que coincidan con "${searchQuery.trim()}".`
+            : 'No hay incidencias publicadas.';
+        }
+      } else {
+        vacio.classList.add('d-none');
+        listEl.innerHTML = filtered.map(renderCard).join('');
+        initMiniMaps();
       }
     }
 
@@ -469,14 +506,6 @@ export default {
           );
         });
 
-      // Sync zone-tabs with chip selection
-      document.querySelectorAll('.zone-tab').forEach((t) => {
-        const isActive =
-          t.dataset.zone === chip.dataset.status ||
-          (t.dataset.zone === 'all' && chip.dataset.status === '');
-        t.classList.toggle('active', isActive);
-      });
-
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
       if (observer) observer.disconnect();
@@ -518,33 +547,31 @@ export default {
           label.style.color = '#a3a8b8';
         }
 
-        // Trigger local filtering on category names
-        const checkedLabels = Array.from(
-          document.querySelectorAll('.rp-checkbox-label'),
-        )
-          .filter((l) =>
-            l.querySelector('.rp-checkbox-box').classList.contains('checked'),
-          )
-          .map((l) => l.textContent.trim().toLowerCase());
-
-        const listEl = document.getElementById(LIST);
-        if (listEl) {
-          disposeMiniMaps();
-          if (checkedLabels.length === 0) {
-            listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
-          } else {
-            const filtered = todasLasIncidencias.filter((inc) => {
-              const cat = (inc.category?.name ?? '').toLowerCase();
-              return checkedLabels.some(
-                (l) => cat.includes(l) || l.includes(cat),
-              );
-            });
-            listEl.innerHTML = filtered.map(renderCard).join('');
-          }
-          initMiniMaps();
-        }
+        // Re-render with combined search + category filters
+        renderList();
       });
     }
+
+    // ── Search input (mobile main column + desktop right panel) ──
+    const searchInputs = [
+      document.getElementById('feed-search-input'),
+      document.getElementById('rp-search-input'),
+    ].filter(Boolean);
+
+    function applySearch(value) {
+      searchQuery = value;
+      // Sync the other visible input to the same value
+      searchInputs.forEach((input) => {
+        if (input.value !== value) input.value = value;
+      });
+      renderList();
+    }
+
+    searchInputs.forEach((input) => {
+      input.addEventListener('input', (e) => {
+        applySearch(e.target.value);
+      });
+    });
 
     // ── Filter feed collapsible toggle (main column, mobile) ──
     const feedFilterToggle = document.getElementById('feed-filter-toggle');
@@ -562,32 +589,6 @@ export default {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           toggleFeedFilterPanel();
-        }
-      });
-    }
-
-    // ── Active Zones tabs (filter by status) ──
-    const zoneTabs = document.getElementById('zone-tabs');
-    if (zoneTabs) {
-      zoneTabs.addEventListener('click', (e) => {
-        const tab = e.target.closest('.zone-tab');
-        if (!tab) return;
-
-        // Update active tab
-        document.querySelectorAll('.zone-tab').forEach((t) => {
-          t.classList.remove('active');
-        });
-        tab.classList.add('active');
-
-        // Apply status filter
-        const zoneStatus = tab.dataset.zone;
-        const filterStatus = zoneStatus === 'all' ? '' : zoneStatus;
-
-        const chip = document.querySelector(
-          `.feed-chip[data-status="${filterStatus}"]`,
-        );
-        if (chip) {
-          applyStatusFilter(chip);
         }
       });
     }

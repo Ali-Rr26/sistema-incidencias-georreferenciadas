@@ -581,53 +581,45 @@ body.feed-view {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   ACTIVE ZONES — TABS SECTION
+   SEARCH INPUT (mobile main column + desktop right panel)
    ═════════════════════════════════════════════════════════════════════════ */
 
-.active-zones-section {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.zone-tabs {
+.feed-search-input {
+  position: relative;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
-.zone-tab {
-  padding: 8px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #6b7180;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
+.feed-search-input > i {
+  position: absolute;
+  left: 12px;
+  color: #5b6172;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.feed-search-input__field {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #eef0f5;
+  background: #f7f8fc;
+  padding: 0 12px 0 36px;
+  font-size: 0.85rem;
+  outline: none;
+  color: #23283b;
   transition:
-    background-color 0.2s,
-    color 0.2s,
-    border-color 0.2s;
-  white-space: nowrap;
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
-.zone-tab:hover {
-  border-color: #5e3bdb;
-  background-color: #f8f7ff;
+.feed-search-input__field::placeholder {
+  color: #a3a8b8;
 }
 
-.zone-tab:focus-visible {
-  outline: 2px solid #5e3bdb;
-  outline-offset: 2px;
-}
-
-.zone-tab.active {
-  background: linear-gradient(118deg, #5e3bdb, #a06bf5);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 10px rgba(94, 59, 219, 0.25);
+.feed-search-input__field:focus {
+  border-color: #6a5cf3;
+  background: #fff;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════

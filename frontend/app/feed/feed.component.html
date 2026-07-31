@@ -56,6 +56,20 @@
       </div>
     </div>
 
+    <!-- Search input — mobile-only (right panel hosts it on desktop) -->
+    <div class="feed-search-input-wrap d-block d-lg-none mb-3">
+      <div class="feed-search-input">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          id="feed-search-input"
+          class="feed-search-input__field"
+          placeholder="Buscar incidencia..."
+          aria-label="Buscar incidencia"
+        />
+      </div>
+    </div>
+
     <!-- Filter Feed — Collapsible Section -->
     <div class="feed-filter-section mb-4">
       <div
@@ -127,21 +141,6 @@
       </div>
     </div>
 
-    <!-- Active Zones / Tabs Section — Desktop only (hidden on mobile) -->
-    <div class="active-zones-section mb-4 d-none d-lg-block">
-      <div class="fw-bold mb-3" style="font-size: 15px">
-        Incidencias activas
-      </div>
-      <div class="zone-tabs d-flex gap-2 flex-wrap" id="zone-tabs">
-        <button class="zone-tab active" data-zone="all">
-          Todos los reportes
-        </button>
-        <button class="zone-tab" data-zone="in_progress">En proceso</button>
-        <button class="zone-tab" data-zone="pending">Pendientes</button>
-        <button class="zone-tab" data-zone="resolved">Resueltos</button>
-      </div>
-    </div>
-
     <div id="feed-scroll-region" class="feed-scroll-region">
       <div id="feed-list" class="feed-cards row g-3"></div>
 
@@ -178,6 +177,19 @@
         <i class="fa-solid fa-chevron-down rp-filter-chevron"></i>
       </div>
       <div id="rp-filter-content" class="rp-filter-content">
+        <!-- Search input — desktop (right panel) -->
+        <div class="feed-search-input-wrap mb-3">
+          <div class="feed-search-input">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              id="rp-search-input"
+              class="feed-search-input__field"
+              placeholder="Buscar incidencia..."
+              aria-label="Buscar incidencia"
+            />
+          </div>
+        </div>
         <div
           class="rp-card-section-label text-muted small fw-bold text-uppercase"
         >
