@@ -98,6 +98,15 @@ const FEED_TEMPLATE = `
   </div>
   <aside class="col-12 col-lg-4 position-sticky top-0 d-none d-lg-block">
     <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
+      <div class="rp-card-title card-title fw-bold mb-3">Filtrar feed</div>
+      <div id="rp-filter-content" class="rp-filter-content">
+        <div class="rp-card-section-label text-muted small fw-bold text-uppercase">
+          TIPO
+        </div>
+        <div class="rp-category-filters" id="rp-category-filters"></div>
+      </div>
+    </div>
+    <div class="rp-card card shadow-sm border-0 rounded-3 p-3 mb-3">
       <div class="rp-card-title card-title fw-bold mb-3">Estadísticas hoy</div>
       <div class="rp-stat row align-items-center mb-2">
         <div class="col">
@@ -168,6 +177,34 @@ const MOCK_INCIDENTS = [
     votes_count: 8,
   },
 ];
+
+const MOCK_CATEGORY_TREE = [
+  {
+    id: 1,
+    name: 'Infraestructura',
+    parent_id: null,
+    children: [
+      { id: 5, name: 'Vías', parent_id: 1, children: [] },
+      { id: 6, name: 'Alumbrado público', parent_id: 1, children: [] },
+    ],
+  },
+  { id: 2, name: 'Servicios', parent_id: null, children: [] },
+  { id: 3, name: 'Medio ambiente', parent_id: null, children: [] },
+];
+
+function makeIncident(overrides) {
+  return {
+    id: 1,
+    title: 'Incidencia',
+    description: 'Descripción de la incidencia.',
+    status: 'pending',
+    priority: 'low',
+    category: { id: 3, name: 'Medio ambiente' },
+    user: { first_name: 'Ana', last_name: 'Ruiz', avatar: null },
+    created_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
 
 function makeFakeL() {
   return {
@@ -478,6 +515,228 @@ describe('feed integration', () => {
     expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
       'Ver mapa',
     );
+
+    feedComponent.onDestroy();
+  });
+
+  // ── Category filter (TIPO panel) ──────────────────────────
+
+  function categoriesFetchMock({
+    incidents,
+    categories = MOCK_CATEGORY_TREE,
+  } = {}) {
+    return vi.fn(async (url) => {
+      if (url.includes('/incident-categories/tree')) {
+        return {
+          ok: true,
+          json: () => Promise.resolve({ data: categories }),
+        };
+      }
+      if (url.includes('/incidents/feed')) {
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: incidents,
+              meta: { current_page: 1, last_page: 1 },
+            }),
+        };
+      }
+      if (url.includes('/incidents/stats')) {
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              total: 0,
+              by_status: {},
+              average_resolution_time: {},
+            }),
+        };
+      }
+      return { ok: true, status: 200, text: vi.fn().mockResolvedValue('') };
+    });
+  }
+
+  it('renders TIPO checkboxes from the category tree including subcategories', async () => {
+    fetchMock = categoriesFetchMock({ incidents: MOCK_INCIDENTS });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const container = document.getElementById('rp-category-filters');
+    const boxes = container.querySelectorAll('.rp-checkbox-box');
+    expect(boxes.length).toBe(5);
+    boxes.forEach((box) => {
+      expect(box.dataset.categoryId).not.toBe('');
+    });
+
+    const labels = [...container.querySelectorAll('.rp-checkbox-label')];
+    expect(labels).toHaveLength(5);
+
+    // Subcategory rendered and indented under its parent
+    const viasLabel = labels.find((l) => l.textContent.includes('Vías'));
+    expect(viasLabel).not.toBeNull();
+    expect(viasLabel.style.paddingLeft).toBe('20px');
+
+    // Every checkbox carries its category id
+    expect(
+      container.querySelector('.rp-checkbox-box[data-category-id="1"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('.rp-checkbox-box[data-category-id="5"]'),
+    ).not.toBeNull();
+
+    feedComponent.onDestroy();
+  });
+
+  it('keeps the feed unfiltered when the category tree fetch fails', async () => {
+    fetchMock = vi.fn(async (url) => {
+      if (url.includes('/incident-categories/tree')) {
+        return {
+          ok: false,
+          status: 500,
+          json: () => Promise.reject(new Error('fail')),
+        };
+      }
+      if (url.includes('/incidents/feed')) {
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: MOCK_INCIDENTS,
+              meta: { current_page: 1, last_page: 1 },
+            }),
+        };
+      }
+      if (url.includes('/incidents/stats')) {
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              total: 0,
+              by_status: {},
+              average_resolution_time: {},
+            }),
+        };
+      }
+      return { ok: true, status: 200, text: vi.fn().mockResolvedValue('') };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    expect(
+      document.querySelectorAll('#rp-category-filters .rp-checkbox-box').length,
+    ).toBe(0);
+    expect(document.querySelectorAll('.feed-card').length).toBe(3);
+
+    feedComponent.onDestroy();
+  });
+
+  it('filtering by a parent category includes incidents of its subcategories', async () => {
+    const incidents = [
+      makeIncident({
+        id: 11,
+        title: 'Bache en la avenida',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 12,
+        title: 'Luminaria apagada',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+      makeIncident({
+        id: 13,
+        title: 'Basura acumulada',
+        category: { id: 3, name: 'Medio ambiente' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    // Default: no category checked, every incident visible
+    expect(document.querySelectorAll('.feed-card').length).toBe(3);
+
+    // Checking the "Infraestructura" parent (id 1) must also match its
+    // subcategory incidents (Vías, Alumbrado público).
+    const parentBox = document.querySelector(
+      '#rp-category-filters .rp-checkbox-box[data-category-id="1"]',
+    );
+    parentBox.click();
+
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(2);
+    expect(cards[0].textContent).toContain('Bache en la avenida');
+    expect(cards[1].textContent).toContain('Luminaria apagada');
+
+    feedComponent.onDestroy();
+  });
+
+  it('filtering by a subcategory only includes incidents of that subcategory', async () => {
+    const incidents = [
+      makeIncident({
+        id: 21,
+        title: 'Vía dañada',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 22,
+        title: 'Poste sin luz',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const subBox = document.querySelector(
+      '#rp-category-filters .rp-checkbox-box[data-category-id="5"]',
+    );
+    subBox.click();
+
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(1);
+    expect(cards[0].textContent).toContain('Vía dañada');
+
+    feedComponent.onDestroy();
+  });
+
+  it('filters by category id, not by label text', async () => {
+    const incidents = [
+      makeIncident({
+        id: 31,
+        title: 'Atención ciudadana',
+        category: { id: 2, name: 'Servicios' },
+      }),
+      // Same label text as the checked category but a different id — the
+      // name-based matcher would include it, the id-based one must not.
+      makeIncident({
+        id: 32,
+        title: 'Falsa coincidencia de nombre',
+        category: { id: 9, name: 'Servicios' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const servicesBox = document.querySelector(
+      '#rp-category-filters .rp-checkbox-box[data-category-id="2"]',
+    );
+    servicesBox.click();
+
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(1);
+    expect(cards[0].textContent).toContain('Atención ciudadana');
 
     feedComponent.onDestroy();
   });

@@ -319,6 +319,10 @@ export default {
     let todasLasIncidencias = [];
     let searchQuery = '';
     let observer = null;
+    // Category tree for the TIPO filter panel. Maps a category id to its
+    // own id plus every descendant id, so checking a parent category also
+    // matches incidents filed under any of its subcategories.
+    const categoryDescendants = new Map();
 
     document.body.classList.add('feed-view');
 
@@ -366,6 +370,69 @@ export default {
           return;
         }
         console.error('[feed] Error fetching stats:', error);
+      }
+    }
+
+    // ── Category filters (TIPO panel) ────────────────────────
+    // The checkboxes are rendered from the real category tree
+    // (GET /incident-categories/tree) instead of hardcoded labels, and
+    // filtering matches incidents by exact category id, so renamed or
+    // nested categories keep working.
+    function collectCategoryIds(node, acc) {
+      acc.push(node.id);
+      (node.children ?? []).forEach((child) => collectCategoryIds(child, acc));
+      return acc;
+    }
+
+    function appendCategoryFilter(node, depth, container) {
+      if (node.id == null) return;
+      categoryDescendants.set(node.id, collectCategoryIds(node, []));
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form-check';
+
+      const label = document.createElement('label');
+      label.className = 'rp-checkbox-label form-check-label';
+      label.htmlFor = `rp-cat-${node.id}`;
+
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.className = 'rp-checkbox-box form-check-input';
+      box.id = `rp-cat-${node.id}`;
+      box.dataset.categoryId = String(node.id);
+
+      const name = document.createElement('span');
+      name.textContent = node.name ?? '';
+      if (depth > 0) {
+        // Visually indent subcategories under their parent.
+        label.style.paddingLeft = `${depth * 20}px`;
+        name.prepend(document.createTextNode('— '));
+      }
+
+      label.append(box, name);
+      wrapper.append(label);
+      container.append(wrapper);
+
+      (node.children ?? []).forEach((child) =>
+        appendCategoryFilter(child, depth + 1, container),
+      );
+    }
+
+    async function loadCategoryFilters() {
+      const container = document.getElementById('rp-category-filters');
+      if (!container) return;
+      try {
+        const resp = await http.get('/incident-categories/tree');
+        const nodes = Array.isArray(resp)
+          ? resp
+          : Array.isArray(resp?.data)
+            ? resp.data
+            : [];
+        nodes.forEach((node) => appendCategoryFilter(node, 0, container));
+      } catch (error) {
+        // Degrade gracefully: without the tree there are no checkboxes, so
+        // the category filter stays disabled and the feed unfiltered.
+        console.warn('[feed] Failed to load category filters:', error);
       }
     }
 
@@ -502,19 +569,11 @@ export default {
       if (!listEl || !vacio) return;
 
       const q = searchQuery.trim().toLowerCase();
-      const checkedLabels = Array.from(
-        document.querySelectorAll('.rp-checkbox-label'),
+      const checkedIds = Array.from(
+        document.querySelectorAll('.rp-checkbox-box[data-category-id]'),
       )
-        .filter((l) => {
-          // The input sits as a sibling of the label (not a child), so
-          // querySelector('.rp-checkbox-box') from the label returns null.
-          // Defensive null-check avoids a TypeError on initial render in
-          // desktop, where the right panel is visible and the labels are
-          // in the DOM. The legacy click handler had the same guard.
-          const box = l.querySelector('.rp-checkbox-box');
-          return box?.classList.contains('checked') ?? false;
-        })
-        .map((l) => l.textContent.trim().toLowerCase());
+        .filter((box) => box.classList.contains('checked') || box.checked)
+        .map((box) => Number(box.dataset.categoryId));
 
       let filtered = todasLasIncidencias;
 
@@ -526,11 +585,17 @@ export default {
         });
       }
 
-      if (checkedLabels.length > 0) {
-        filtered = filtered.filter((inc) => {
-          const cat = (inc.category?.name ?? '').toLowerCase();
-          return checkedLabels.some((l) => cat.includes(l) || l.includes(cat));
+      if (checkedIds.length > 0) {
+        // A checked category matches its own incidents and, when it is a
+        // parent, every incident filed under one of its subcategories.
+        const matchIds = new Set();
+        checkedIds.forEach((id) => {
+          const ids = categoryDescendants.get(id);
+          if (ids) ids.forEach((did) => matchIds.add(did));
         });
+        filtered = filtered.filter(
+          (inc) => inc.category?.id != null && matchIds.has(inc.category.id),
+        );
       }
 
       disposeMiniMaps();
@@ -624,6 +689,11 @@ export default {
     }
 
     // ── Right Sidebar Category Checkbox filters ──
+    // Checkboxes are rendered dynamically from the category tree and the
+    // input lives inside its label so the delegated handler can reach it.
+    // Clicking the label stops the browser's implicit activation (which
+    // would forward a synthetic click at the input and double-toggle) and
+    // flips the native input + the visual .checked class ourselves.
     const rpCategoryFilters = document.getElementById('rp-category-filters');
     if (rpCategoryFilters) {
       rpCategoryFilters.addEventListener('click', (e) => {
@@ -633,15 +703,16 @@ export default {
         const box = label.querySelector('.rp-checkbox-box');
         if (!box) return;
 
-        const checked = box.classList.toggle('checked');
-        if (checked) {
-          box.innerHTML =
-            '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
-          label.style.color = '#5b6172';
-        } else {
-          box.innerHTML = '';
-          label.style.color = '#a3a8b8';
-        }
+        const clickingBox = e.target === box;
+        if (!clickingBox) e.preventDefault();
+
+        // For a direct click on the input the native checked state is
+        // already toggled when the handler runs; for a label click we
+        // flip it ourselves after canceling the implicit activation.
+        const checked = clickingBox ? box.checked : !box.checked;
+        box.classList.toggle('checked', checked);
+        if (!clickingBox) box.checked = checked;
+        label.style.color = checked ? '#5b6172' : '#a3a8b8';
 
         // Re-render with combined search + category filters
         renderList();
@@ -710,7 +781,7 @@ export default {
     }
 
     // ── First load ──
-    await fetchIncidencias(1, false);
+    await Promise.all([fetchIncidencias(1, false), loadCategoryFilters()]);
     setupInfiniteScroll();
     await fetchStats();
   },

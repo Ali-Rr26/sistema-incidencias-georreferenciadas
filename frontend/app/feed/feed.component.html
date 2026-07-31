@@ -231,54 +231,12 @@
         >
           TIPO
         </div>
-        <div class="rp-category-filters" id="rp-category-filters">
-          <div class="form-check">
-            <input
-              class="rp-checkbox-box form-check-input"
-              type="checkbox"
-              id="cat-1"
-              data-category="1"
-              checked
-            />
-            <label class="rp-checkbox-label form-check-label" for="cat-1"
-              >Infraestructura</label
-            >
-          </div>
-          <div class="form-check">
-            <input
-              class="rp-checkbox-box form-check-input"
-              type="checkbox"
-              id="cat-2"
-              data-category="2"
-              checked
-            />
-            <label class="rp-checkbox-label form-check-label" for="cat-2"
-              >Servicios públicos</label
-            >
-          </div>
-          <div class="form-check">
-            <input
-              class="rp-checkbox-box form-check-input"
-              type="checkbox"
-              id="cat-3"
-              data-category="3"
-            />
-            <label class="rp-checkbox-label form-check-label" for="cat-3"
-              >Medio ambiente</label
-            >
-          </div>
-          <div class="form-check">
-            <input
-              class="rp-checkbox-box form-check-input"
-              type="checkbox"
-              id="cat-4"
-              data-category="4"
-            />
-            <label class="rp-checkbox-label form-check-label" for="cat-4"
-              >Seguridad</label
-            >
-          </div>
-        </div>
+        <!--
+          Rendered dynamically by feed.component.js from the real category
+          tree (GET /incident-categories/tree), including subcategories.
+          Keep the container empty in the template — no hardcoded labels.
+        -->
+        <div class="rp-category-filters" id="rp-category-filters"></div>
       </div>
     </div>
 
