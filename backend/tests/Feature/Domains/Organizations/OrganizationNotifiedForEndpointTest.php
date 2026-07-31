@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 // Bypass the JWT middleware — these tests use `actingAs()` directly.
 // The endpoint itself still requires authentication (covered below).

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domains\Locations\Http;
 
-use App\Domains\Locations\Http\Resources\LocationCollection;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CatalogLocationsRequest extends FormRequest

@@ -23,9 +23,7 @@ use Illuminate\Routing\Controller;
  */
 class LocationCatalogController extends Controller
 {
-    public function __construct(private readonly LocationRepository $locations)
-    {
-    }
+    public function __construct(private readonly LocationRepository $locations) {}
 
     public function __invoke(CatalogLocationsRequest $request): JsonResponse
     {

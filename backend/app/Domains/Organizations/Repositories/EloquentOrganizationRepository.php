@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domains\Organizations\Repositories;
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Shared\Repositories\EloquentRepository;
@@ -87,7 +88,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
     private function categoryAncestorIds(int $categoryId): array
     {
         $ids = [];
-        $current = \App\Domains\IncidentCategories\Models\IncidentCategory::find($categoryId);
+        $current = IncidentCategory::find($categoryId);
 
         while ($current !== null) {
             $ids[] = $current->id;

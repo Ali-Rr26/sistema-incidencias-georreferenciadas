@@ -862,8 +862,12 @@ export default {
       // (location_id, category_id) pair. The endpoint runs the same logic
       // the backend will run on POST, so the user sees an accurate preview.
       // Mirror the submit handler's precedence: neighborhood > city > null.
-      const orgsLocationId = neighborhoodSelect?.value || citySelect?.value || null;
-      void renderReviewOrgs(subcatSelect?.value || catSelect?.value, orgsLocationId);
+      const orgsLocationId =
+        neighborhoodSelect?.value || citySelect?.value || null;
+      void renderReviewOrgs(
+        subcatSelect?.value || catSelect?.value,
+        orgsLocationId,
+      );
     }
 
     async function renderReviewOrgs(categoryId, locationId) {

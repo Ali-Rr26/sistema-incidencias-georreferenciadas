@@ -354,10 +354,7 @@ describe('location.service — catalog mode (citizen endpoint)', () => {
   it('getChildren hits /locations/catalog when catalog: true', async () => {
     http.get.mockResolvedValue({ data: CITIES_PICHINCHA });
 
-    await locationService.getChildren(
-      { parentId: 1 },
-      { catalog: true },
-    );
+    await locationService.getChildren({ parentId: 1 }, { catalog: true });
 
     const calledPath = http.get.mock.calls[0][0];
     expect(calledPath).toMatch(/^\/locations\/catalog\?/);

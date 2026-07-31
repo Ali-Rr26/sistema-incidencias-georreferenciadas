@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Organizations\Repositories\EloquentOrganizationRepository;
@@ -56,11 +57,11 @@ it('returns a name-ordered catalog with optional parent_id', function (): void {
 });
 
 it('findNotifiedFor returns orgs whose location covers the incident location AND category matches or is NULL', function (): void {
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $category = IncidentCategory::create([
         'name' => 'Alumbrado Público',
         'parent_id' => null,
     ]);
-    $otherCategory = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $otherCategory = IncidentCategory::create([
         'name' => 'Baches',
         'parent_id' => null,
     ]);
@@ -98,7 +99,7 @@ it('findNotifiedFor returns orgs whose location covers the incident location AND
 });
 
 it('findNotifiedFor returns an empty collection when no location matches', function (): void {
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $category = IncidentCategory::create([
         'name' => 'Cualquiera',
         'parent_id' => null,
     ]);
@@ -108,7 +109,7 @@ it('findNotifiedFor returns an empty collection when no location matches', funct
 });
 
 it('findNotifiedFor returns an empty collection when the location does not exist', function (): void {
-    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $category = IncidentCategory::create([
         'name' => 'Cualquiera',
         'parent_id' => null,
     ]);
@@ -117,15 +118,15 @@ it('findNotifiedFor returns an empty collection when the location does not exist
 });
 
 it('an org configured for a root category covers its subcategory (Baches under Infraestructura Vial)', function (): void {
-    $root = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $root = IncidentCategory::create([
         'name' => 'Infraestructura Vial',
         'parent_id' => null,
     ]);
-    $sub = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $sub = IncidentCategory::create([
         'name' => 'Baches y Hundimientos',
         'parent_id' => $root->id,
     ]);
-    $otherRoot = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $otherRoot = IncidentCategory::create([
         'name' => 'Seguridad Ciudadana',
         'parent_id' => null,
     ]);
@@ -160,11 +161,11 @@ it('an org configured for a root category covers its subcategory (Baches under I
 });
 
 it('findForLocation respects the category filter when provided', function (): void {
-    $root = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $root = IncidentCategory::create([
         'name' => 'Infraestructura Vial',
         'parent_id' => null,
     ]);
-    $otherRoot = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+    $otherRoot = IncidentCategory::create([
         'name' => 'Medio Ambiente',
         'parent_id' => null,
     ]);

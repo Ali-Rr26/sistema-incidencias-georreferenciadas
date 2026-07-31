@@ -987,8 +987,16 @@ describe('incidencias.form — 4-step stepper', () => {
       if (path.startsWith('/organizations/notified-for')) {
         return Promise.resolve({
           data: [
-            { id: 1, name: 'GAD Municipal del Cantón Quito', is_claimable: true },
-            { id: 2, name: 'GAD Quito — Zona <b>Centro</b>', is_claimable: false },
+            {
+              id: 1,
+              name: 'GAD Municipal del Cantón Quito',
+              is_claimable: true,
+            },
+            {
+              id: 2,
+              name: 'GAD Quito — Zona <b>Centro</b>',
+              is_claimable: false,
+            },
             { id: 3, name: 'GAD Quito — Zona Norte', is_claimable: false },
             { id: 4, name: 'GAD Quito — Zona Sur', is_claimable: false },
           ],
@@ -996,7 +1004,9 @@ describe('incidencias.form — 4-step stepper', () => {
       }
       return Promise.resolve({ data: [] });
     });
-    mockLocationService.getRoots.mockResolvedValueOnce([PROVINCE_PICHINCHA_GEOM]);
+    mockLocationService.getRoots.mockResolvedValueOnce([
+      PROVINCE_PICHINCHA_GEOM,
+    ]);
     mockLocationService.getChildren
       .mockResolvedValueOnce([CITY_QUITO_GEOM])
       .mockResolvedValueOnce([]);

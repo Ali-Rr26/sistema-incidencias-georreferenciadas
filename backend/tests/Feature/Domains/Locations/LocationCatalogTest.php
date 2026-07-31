@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Locations\Models\Location;
+use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 // NOTE: each citizen test bypasses the JWT middleware explicitly because
 // `actingAs()` does not authenticate through the HTTP middleware stack.
