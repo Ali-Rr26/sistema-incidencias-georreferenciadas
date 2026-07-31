@@ -446,9 +446,7 @@ export default {
       if (checkedLabels.length > 0) {
         filtered = filtered.filter((inc) => {
           const cat = (inc.category?.name ?? '').toLowerCase();
-          return checkedLabels.some(
-            (l) => cat.includes(l) || l.includes(cat),
-          );
+          return checkedLabels.some((l) => cat.includes(l) || l.includes(cat));
         });
       }
 
