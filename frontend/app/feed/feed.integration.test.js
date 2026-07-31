@@ -448,7 +448,9 @@ describe('feed integration', () => {
 
     const toggle = document.querySelector('.feed-map-toggle');
     expect(toggle).not.toBeNull();
-    const container = document.getElementById(`feed-mm-${toggle.dataset.incId}`);
+    const container = document.getElementById(
+      `feed-mm-${toggle.dataset.incId}`,
+    );
     expect(container).not.toBeNull();
 
     // Expand: async init starts and stays pending.
