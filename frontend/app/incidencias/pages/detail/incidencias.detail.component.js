@@ -788,6 +788,7 @@ function setupAuditar(_incidentId, inc) {
   const submittingEl = document.getElementById('detalle-auditar-submitting');
   const errorEl = document.getElementById('detalle-auditar-error');
   const errorMsgEl = document.getElementById('detalle-auditar-error-msg');
+  const msgEl = document.getElementById('detalle-auditar-msg');
   const btnAprobar = document.getElementById('btn-auditar-aprobar');
   const btnRechazar = document.getElementById('btn-auditar-rechazar');
 
@@ -799,6 +800,7 @@ function setupAuditar(_incidentId, inc) {
     errorEl?.classList.add('d-none');
     actionsEl?.classList.remove('d-none');
     submittingEl?.classList.add('d-none');
+    msgEl?.classList.remove('d-none');
   }
 
   // Load-time error: hides actions so the user can't click submit on
@@ -810,6 +812,7 @@ function setupAuditar(_incidentId, inc) {
     actionsEl?.classList.add('d-none');
     submittingEl?.classList.add('d-none');
     errorEl?.classList.remove('d-none');
+    msgEl?.classList.add('d-none');
   }
 
   // Submit-time error: keep the action buttons visible so the user
@@ -856,11 +859,15 @@ function setupAuditar(_incidentId, inc) {
       const notifications = resp.data || [];
       const notif = notifications.find((n) => {
         const nid = n?.data?.incident_id ?? n?.incident_id;
-        return Number(nid) === Number(inc.id);
+        if (Number(nid) !== Number(inc.id)) return false;
+        if (n?.type !== 'incident_pending_approval') return false;
+        if (n?.processed_at) return false;
+        return true;
       });
       if (!notif) {
         loadingEl?.classList.add('d-none');
         sinNotifEl?.classList.remove('d-none');
+        msgEl?.classList.add('d-none');
         return;
       }
       pendingNotifId = notif.id;
