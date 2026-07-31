@@ -272,7 +272,7 @@ export default {
         // "Resueltas hoy" = incidents resolved today (by resolved_at, not created_at)
         const newCount = statsData.total ?? 0;
         const resolvedCount = statsData.by_status?.resolved ?? 0;
-        const avgTime = statsData.average_resolution_time?.formatted ?? 'N/A';
+        const avgTime = statsData.average_resolution_time?.formatted ?? '0';
 
         // Update main stats cards
         const statNewEl = document.getElementById('stat-new');
