@@ -1130,6 +1130,32 @@ describe('incidencias.form — 4-step stepper', () => {
     expect(step(2).classList.contains('d-none')).toBe(true);
   });
 
+  it('"Anterior" from the review step goes back to step 3, not step 2 (no double listener)', async () => {
+    // Regression: btn-prev listeners were registered twice (bootstrap +
+    // a leftover duplicate block), so one click from step 4 jumped two
+    // steps back (4 -> 3 -> 2). The earlier 2 -> 1 test masked it because
+    // goToStep clamps at 1. From the review step it was visible.
+    await component.onInit();
+    fillStep1({ title: 'Poste caído' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(step(4).classList.contains('d-none')).toBe(false);
+
+    document.getElementById('ici-btn-prev').click();
+
+    expect(step(3).classList.contains('d-none')).toBe(false);
+    expect(step(4).classList.contains('d-none')).toBe(true);
+    expect(step(2).classList.contains('d-none')).toBe(true);
+  });
+
   it('submits the full payload from step 4, including priority', async () => {
     mockHttp.post.mockResolvedValue({ data: { id: 99 } });
 

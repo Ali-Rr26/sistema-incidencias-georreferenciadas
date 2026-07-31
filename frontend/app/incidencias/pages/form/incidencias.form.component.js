@@ -988,26 +988,6 @@ export default {
       return true;
     }
 
-    $('btn-next')?.addEventListener('click', () => {
-      if (currentStep === 1 && !validateStep1()) return;
-      if (currentStep === 2 && !validateStep2()) return;
-      if (currentStep === 3 && !validateStep3()) return;
-      goToStep(currentStep + 1);
-    });
-
-    $('btn-prev')?.addEventListener('click', () => {
-      goToStep(currentStep - 1);
-    });
-
-    [1, 2, 3].forEach((n) => {
-      document
-        .getElementById(P + 'review-edit-' + n)
-        ?.addEventListener('click', (e) => {
-          e.preventDefault();
-          goToStep(n);
-        });
-    });
-
     // ── Edit mode loading ──
     // isEdit and incId are declared at the top of onInit so the
     // submit handler (bound early below) can reference them without
