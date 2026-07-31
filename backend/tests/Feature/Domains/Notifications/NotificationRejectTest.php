@@ -286,3 +286,36 @@ it('reject rolls back on invalid reason length (defense-in-depth)', function ():
         'reason' => '123456789', // 9 chars — below min
     ])->assertStatus(422);
 });
+
+// ──────────────────────────────────────────────────────────────
+// Sibling notification resolution
+// ──────────────────────────────────────────────────────────────
+
+it('reject resolves sibling IncidentPendingApproval notifications for the same incident', function (): void {
+    // Two admins (global + org) both received a pending approval for the
+    // same incident. When the first admin rejects, the second admin's
+    // notification should also be marked processed so the UI does not show
+    // a ghost "pending" item that will 409 on click.
+    $sibling = Notification::create([
+        'user_id' => $this->adminOrg->id,
+        'incident_id' => $this->incident->id,
+        'type' => NotificationType::IncidentPendingApproval,
+        'message' => 'Pendiente',
+        'data' => [],
+        'read' => false,
+    ]);
+
+    expect($this->notification->processed_at)->toBeNull();
+    expect($sibling->processed_at)->toBeNull();
+
+    $this->actingAs($this->adminSistemaGlobal);
+
+    $this->postJson("/api/notifications/{$this->notification->id}/reject", [
+        'reason' => 'Motivo de rechazo valido de mas de diez caracteres',
+    ])->assertOk();
+
+    $sibling->refresh();
+
+    expect($sibling->processed_at)->not->toBeNull()
+        ->and($sibling->read)->toBeTrue();
+});

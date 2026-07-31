@@ -49,6 +49,16 @@ vi.mock('../../../shared/lightbox.js', () => ({
   openLightbox: vi.fn(),
 }));
 
+vi.mock('../../../utils/ui.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return {
+    ...mod,
+    mostrarToast: vi.fn(),
+    isDesktop: mod.isDesktop,
+    mostrarEstado: mod.mostrarEstado,
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Bootstrap mocks
 // ---------------------------------------------------------------------------
@@ -121,6 +131,7 @@ const MOCK_NOTIFICATION = {
 let http;
 let notificationService;
 let openLightbox;
+let mostrarToast;
 
 async function createModal() {
   globalThis.bootstrap = {
@@ -132,8 +143,6 @@ async function createModal() {
       show() {}
     },
   };
-
-  globalThis.mostrarToast = vi.fn();
 
   const { default: IncidenciaAuditarModal } =
     await import('./incidencia-auditar-modal.component.js');
@@ -175,11 +184,14 @@ describe('IncidenciaAuditarModal', () => {
     const lbMod = await import('../../../shared/lightbox.js');
     openLightbox = lbMod.openLightbox;
     openLightbox.mockReset();
+
+    const uiMod = await import('../../../utils/ui.js');
+    mostrarToast = uiMod.mostrarToast;
+    mostrarToast.mockReset();
   });
 
   afterEach(() => {
     document.body.innerHTML = '';
-    delete globalThis.mostrarToast;
   });
 
   // -------------------------------------------------------------------------
@@ -299,6 +311,31 @@ describe('IncidenciaAuditarModal', () => {
       expect(decisionEvent.detail.decision).toBe('approved');
       expect(decisionEvent.detail.notificationId).toBe(99);
     });
+
+    it('shows error toast on approve failure', async () => {
+      notificationService.getById.mockResolvedValue(MOCK_NOTIFICATION);
+      http.get.mockResolvedValue({ data: MOCK_INCIDENT });
+      notificationService.approve.mockRejectedValue(new Error('boom'));
+
+      const modal = await createModal();
+      modal.show(99);
+
+      await vi.waitFor(() => {
+        const content = modal.querySelector('.incident-auditar-content');
+        if (content?.classList.contains('d-none'))
+          throw new Error('still hidden');
+      });
+
+      const approveBtn = modal.querySelector('.btn-aprobar');
+      approveBtn.click();
+
+      await vi.waitFor(() => {
+        expect(mostrarToast).toHaveBeenCalledWith(
+          'No se pudo aprobar la incidencia.',
+          'danger',
+        );
+      });
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -354,6 +391,48 @@ describe('IncidenciaAuditarModal', () => {
       expect(decisionEvent).not.toBeNull();
       expect(decisionEvent.detail.decision).toBe('rejected');
       expect(decisionEvent.detail.notificationId).toBe(99);
+    });
+
+    it('shows error toast on reject failure', async () => {
+      notificationService.getById.mockResolvedValue(MOCK_NOTIFICATION);
+      http.get.mockResolvedValue({ data: MOCK_INCIDENT });
+      notificationService.reject.mockRejectedValue(new Error('boom'));
+
+      // Create the sub-modal in the DOM
+      const rejectModal = document.createElement('div');
+      rejectModal.id = 'justificacion-rechazo-modal';
+      rejectModal.innerHTML = '<div class="modal"></div>';
+      document.body.appendChild(rejectModal);
+
+      let storedCallback = null;
+      rejectModal.show = function (cb) {
+        storedCallback = cb;
+      };
+
+      const modal = await createModal();
+      modal.show(99);
+
+      await vi.waitFor(() => {
+        const content = modal.querySelector('.incident-auditar-content');
+        if (content?.classList.contains('d-none'))
+          throw new Error('still hidden');
+      });
+
+      const rejectBtn = modal.querySelector('.btn-rechazar');
+      rejectBtn.click();
+
+      await vi.waitFor(() => {
+        if (!storedCallback) throw new Error('callback not captured');
+      });
+
+      storedCallback('motivo de rechazo');
+
+      await vi.waitFor(() => {
+        expect(mostrarToast).toHaveBeenCalledWith(
+          'No se pudo rechazar la incidencia.',
+          'danger',
+        );
+      });
     });
   });
 

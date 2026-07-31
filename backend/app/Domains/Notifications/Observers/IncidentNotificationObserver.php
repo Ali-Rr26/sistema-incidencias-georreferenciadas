@@ -87,16 +87,23 @@ class IncidentNotificationObserver
             $previous = (string) $incident->getRawOriginal('status');
             $current = $incident->status;
             $currentValue = $current instanceof IncidentStatus ? $current->value : (string) $current;
+            $user = $incident->user;
+            $title = $incident->title;
+            $incidentId = (int) $incident->id;
 
             // Solo notifica al ciudadano cuando la incidencia pasa a 'closed' (no en 'resolved').
+            // Envolvemos en DB::afterCommit para evitar notificaciones fantasma
+            // si la transacción que disparó el cambio hace rollback.
             if ($previous !== IncidentStatus::Closed->value && $currentValue === IncidentStatus::Closed->value) {
-                $this->notifications->notify(
-                    $incident->user,
-                    NotificationType::StatusChange,
-                    "Tu incidencia \"{$incident->title}\" fue cerrada.",
-                    $incident->id,
-                    ['status' => 'closed'],
-                );
+                DB::afterCommit(function () use ($user, $title, $incidentId): void {
+                    $this->notifications->notify(
+                        $user,
+                        NotificationType::StatusChange,
+                        "Tu incidencia \"{$title}\" fue cerrada.",
+                        $incidentId,
+                        ['status' => 'closed'],
+                    );
+                });
             }
         } catch (\Throwable $e) {
             Log::warning('handleConfirmChange failed', ['incident_id' => $incident->id, 'error' => $e->getMessage()]);
@@ -126,12 +133,17 @@ class IncidentNotificationObserver
             }
 
             $recipients = $this->approvalService->pendingApprovalRecipients($incident);
+            $incidentId = (int) $incident->id;
+            $title = $incident->title;
 
             foreach ($recipients as $recipient) {
                 // Dedupe: evita notificaciones duplicadas (user, incident, type) dentro de 60s.
+                // La lectura se hace FUERA del afterCommit: queremos deduplicar
+                // contra el estado actual de la base, no contra el estado
+                // posthumo de la transacción.
                 $exists = Notification::query()
                     ->where('user_id', $recipient->id)
-                    ->where('incident_id', $incident->id)
+                    ->where('incident_id', $incidentId)
                     ->where('type', NotificationType::IncidentPendingApproval->value)
                     ->where('created_at', '>=', now()->subSeconds(60))
                     ->exists();
@@ -140,16 +152,20 @@ class IncidentNotificationObserver
                     continue;
                 }
 
-                $this->notifications->notify(
-                    $recipient,
-                    NotificationType::IncidentPendingApproval,
-                    "La incidencia \"{$incident->title}\" requiere tu aprobación.",
-                    $incident->id,
-                    [
-                        'status' => 'resolved',
-                        'incident_id' => $incident->id,
-                    ],
-                );
+                // El dispatch va DENTRO del afterCommit para evitar
+                // notificaciones fantasma si la transacción hace rollback.
+                DB::afterCommit(function () use ($recipient, $incidentId, $title): void {
+                    $this->notifications->notify(
+                        $recipient,
+                        NotificationType::IncidentPendingApproval,
+                        "La incidencia \"{$title}\" requiere tu aprobación.",
+                        $incidentId,
+                        [
+                            'status' => 'resolved',
+                            'incident_id' => $incidentId,
+                        ],
+                    );
+                });
             }
         } catch (\Throwable $e) {
             Log::warning('handleResolvedPendingApproval failed', ['incident_id' => $incident->id, 'error' => $e->getMessage()]);

@@ -134,7 +134,13 @@ it('approve throws 409 when incident status is not Resolved', function (): void 
 });
 
 it('approve throws 409 when incident is already approved', function (): void {
-    $this->incident->update(['approved_at' => now()]);
+    // Both approved_by and approved_at must be set together to satisfy
+    // the chk_incidents_approved_pair constraint; setting only one would
+    // violate the row invariant the constraint enforces.
+    $this->incident->update([
+        'approved_by' => $this->adminOrg->id,
+        'approved_at' => now(),
+    ]);
 
     expect(fn () => $this->service->approve($this->notification, $this->adminSistema))
         ->toThrow(RuntimeException::class, 'No decidible');

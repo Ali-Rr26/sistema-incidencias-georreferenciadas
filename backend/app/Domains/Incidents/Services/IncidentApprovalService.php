@@ -62,6 +62,15 @@ final class IncidentApprovalService
 
             $notification->update(['processed_at' => now(), 'read' => true]);
 
+            // Marca todas las notificaciones hermanas (mismo incident_id + type)
+            // como procesadas para que los demás admins no vean "pendiente"
+            // lo que ya está decidido y fallen con 409 al intentar aprobar.
+            Notification::where('incident_id', $incident->id)
+                ->where('type', NotificationType::IncidentPendingApproval->value)
+                ->where('id', '!=', $notification->id)
+                ->whereNull('processed_at')
+                ->update(['processed_at' => now(), 'read' => true]);
+
             // Notificar al ciudadano que su incidencia fue cerrada.
             $this->notifyCitizenClosed($incident);
 
@@ -140,6 +149,15 @@ final class IncidentApprovalService
             ]);
 
             $notification->update(['processed_at' => now(), 'read' => true]);
+
+            // Marca todas las notificaciones hermanas (mismo incident_id + type)
+            // como procesadas para que los demás admins no vean "pendiente"
+            // lo que ya está decidido.
+            Notification::where('incident_id', $incident->id)
+                ->where('type', NotificationType::IncidentPendingApproval->value)
+                ->where('id', '!=', $notification->id)
+                ->whereNull('processed_at')
+                ->update(['processed_at' => now(), 'read' => true]);
 
             // Notificar al claimant si sigue asignado.
             if ($incident->claimed_by !== null) {

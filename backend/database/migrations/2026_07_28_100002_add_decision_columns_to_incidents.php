@@ -44,10 +44,50 @@ return new class extends Migration
             $table->index(['approved_at'], 'idx_incidents_decided')
                 ->where('approved_at IS NOT NULL');
         });
+
+        // Defense-in-depth CHECK constraints:
+        // 1. approved_by and approved_at must be both set or both NULL.
+        // 2. rejected_by and rejected_at must be both set or both NULL.
+        // 3. A row cannot have both approved and rejected decided.
+        // DDL via raw SQL because Blueprint does not expose CHECK constraints
+        // portably; PostgreSQL is the production target so we hard-code
+        // `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)`.
+        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+            ALTER TABLE incidents
+                ADD CONSTRAINT chk_incidents_approved_pair
+                CHECK (
+                    (approved_by IS NULL AND approved_at IS NULL)
+                    OR
+                    (approved_by IS NOT NULL AND approved_at IS NOT NULL)
+                )
+        SQL);
+
+        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+            ALTER TABLE incidents
+                ADD CONSTRAINT chk_incidents_rejected_pair
+                CHECK (
+                    (rejected_by IS NULL AND rejected_at IS NULL)
+                    OR
+                    (rejected_by IS NOT NULL AND rejected_at IS NOT NULL)
+                )
+        SQL);
+
+        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+            ALTER TABLE incidents
+                ADD CONSTRAINT chk_incidents_decision_xor
+                CHECK (
+                    NOT (approved_by IS NOT NULL AND rejected_by IS NOT NULL)
+                )
+        SQL);
     }
 
     public function down(): void
     {
+        // Drop CHECK constraints BEFORE the columns they reference.
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_approved_pair');
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_rejected_pair');
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_decision_xor');
+
         Schema::table('incidents', function (Blueprint $table): void {
             $table->dropIndex('idx_incidents_decided');
 
