@@ -226,7 +226,19 @@ async function toggleMiniMap(button) {
   button.setAttribute('aria-expanded', 'true');
   if (labelEl) labelEl.textContent = 'Ocultar mapa';
 
-  if (container._leaflet_map) return;
+  // Fast path — map already built. It was constructed while the container
+  // was hidden (d-none), so re-measure now that it is visible again.
+  if (container._leaflet_map) {
+    container._leaflet_map.invalidateSize();
+    return;
+  }
+
+  // Guard against a concurrent init while one is in flight: clicking the
+  // toggle again during `await loadLeaflet()` must not start a second build,
+  // and the resumed init must not build a map for a card that was collapsed
+  // (or re-rendered/detached) in the meantime (TOCTOU race).
+  if (container._map_loading) return;
+  container._map_loading = true;
 
   const lat = parseFloat(container.dataset.lat);
   const lng = parseFloat(container.dataset.lng);
@@ -235,6 +247,18 @@ async function toggleMiniMap(button) {
   try {
     await loadLeaflet();
   } catch {
+    container._map_loading = false;
+    return;
+  }
+
+  // Re-check the live expanded state after the async gap. If the user
+  // collapsed the card while Leaflet was loading, do not build the map.
+  if (
+    button.getAttribute('aria-expanded') !== 'true' ||
+    container.classList.contains('d-none') ||
+    !container.isConnected
+  ) {
+    container._map_loading = false;
     return;
   }
 
@@ -255,6 +279,7 @@ async function toggleMiniMap(button) {
   L.marker([lat, lng]).addTo(map);
 
   container._leaflet_map = map;
+  container._map_loading = false;
 }
 
 function disposeMiniMaps() {
