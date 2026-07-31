@@ -55,7 +55,7 @@ async function createModal() {
 
   // Wait for connectedCallback to render and bind
   await vi.waitFor(() => {
-    const textarea = modal.querySelector('#rechazo-motivo');
+    const textarea = modal.querySelector('.motivo-textarea');
     if (!textarea) throw new Error('textarea not found');
   });
 
@@ -82,7 +82,7 @@ describe('JustificacionRechazoModal', () => {
   describe('Button disabled state', () => {
     it('button disabled when reason < 10 chars', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       textarea.value = 'corto';
@@ -93,7 +93,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('button disabled when reason > 500 chars', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       textarea.value = 'a'.repeat(501);
@@ -104,7 +104,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('button enabled when reason is 10..500 chars', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       textarea.value = 'a'.repeat(10);
@@ -115,7 +115,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('button enabled at exactly 500 chars', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       textarea.value = 'a'.repeat(500);
@@ -126,7 +126,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('button disabled at exactly 501 chars', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       textarea.value = 'a'.repeat(501);
@@ -142,7 +142,7 @@ describe('JustificacionRechazoModal', () => {
   describe('onConfirm callback', () => {
     it('onConfirm callback receives trimmed reason', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       const callback = vi.fn();
@@ -158,7 +158,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('dispatches confirm CustomEvent with reason detail', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
 
       const callback = vi.fn();
@@ -177,6 +177,34 @@ describe('JustificacionRechazoModal', () => {
       expect(receivedEvent).not.toBeNull();
       expect(receivedEvent.detail.reason).toBe('motivo de prueba');
     });
+
+    it('does NOT dispatch cancel after confirm (regression: cancel-after-confirm bug)', async () => {
+      const modal = await createModal();
+      const textarea = modal.querySelector('.motivo-textarea');
+      const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
+
+      modal.show();
+
+      textarea.value = 'motivo de prueba valido';
+      textarea.dispatchEvent(new Event('input'));
+
+      let confirmEvent = null;
+      let cancelEvent = null;
+      modal.addEventListener('confirm', (e) => {
+        confirmEvent = e;
+      });
+      modal.addEventListener('cancel', (e) => {
+        cancelEvent = e;
+      });
+
+      confirmarBtn.click();
+
+      // Wait for the hidden.bs.modal event to fire (synchronous in this mock)
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(confirmEvent).not.toBeNull();
+      expect(cancelEvent).toBeNull();
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -185,7 +213,7 @@ describe('JustificacionRechazoModal', () => {
   describe('Autofocus', () => {
     it('textarea autofocus on open after modal is shown', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const focusSpy = vi.fn();
       textarea.focus = focusSpy;
 
@@ -235,7 +263,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('resets textarea after modal is hidden', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
 
       modal.show();
 
@@ -248,6 +276,49 @@ describe('JustificacionRechazoModal', () => {
 
       expect(textarea.value).toBe('');
     });
+
+    it('re-opening after confirm fires cancel only on the second close (state reset)', async () => {
+      const modal = await createModal();
+      const textarea = modal.querySelector('.motivo-textarea');
+      const confirmarBtn = modal.querySelector('.btn-confirmar-rechazo');
+      const modalEl = modal.querySelector('.modal');
+
+      modal.show();
+
+      // First open: confirm
+      textarea.value = 'motivo de prueba valido';
+      textarea.dispatchEvent(new Event('input'));
+
+      let confirmEvent = null;
+      let cancelEvent = null;
+      modal.addEventListener('confirm', (e) => {
+        confirmEvent = e;
+      });
+      modal.addEventListener('cancel', (e) => {
+        cancelEvent = e;
+      });
+
+      confirmarBtn.click();
+      // MockModal.hide() doesn't fire hidden.bs.modal — dispatch it so the
+      // modal's reset handler runs.
+      modalEl.dispatchEvent(new Event('hidden.bs.modal'));
+      expect(confirmEvent).not.toBeNull();
+      expect(cancelEvent).toBeNull();
+
+      // Re-open: dispatch hidden.bs.modal explicitly after the cancel button
+      // click to simulate the modal closing without a confirmation.
+      confirmEvent = null;
+      cancelEvent = null;
+      modal.show();
+      const cancelBtn = modal.querySelector(
+        '.btn-secondary[data-bs-dismiss="modal"]',
+      );
+      cancelBtn.click();
+      modalEl.dispatchEvent(new Event('hidden.bs.modal'));
+
+      expect(cancelEvent).not.toBeNull();
+      expect(confirmEvent).toBeNull();
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -256,7 +327,7 @@ describe('JustificacionRechazoModal', () => {
   describe('Char counter', () => {
     it('counter updates on input', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const counter = modal.querySelector('.char-counter');
 
       textarea.value = 'abc';
@@ -267,7 +338,7 @@ describe('JustificacionRechazoModal', () => {
 
     it('counter shows actual value length (not trimmed)', async () => {
       const modal = await createModal();
-      const textarea = modal.querySelector('#rechazo-motivo');
+      const textarea = modal.querySelector('.motivo-textarea');
       const counter = modal.querySelector('.char-counter');
 
       textarea.value = '   abc   ';
@@ -275,6 +346,21 @@ describe('JustificacionRechazoModal', () => {
 
       // Counter shows 9 (the actual value length: 3 + 3 + 3 = 9 chars)
       expect(counter.textContent).toBe('9 / 500');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // getReason() public API
+  // -------------------------------------------------------------------------
+  describe('getReason()', () => {
+    it('returns the trimmed reason without scraping the DOM', async () => {
+      const modal = await createModal();
+      const textarea = modal.querySelector('.motivo-textarea');
+
+      textarea.value = '   trimmed reason text   ';
+      textarea.dispatchEvent(new Event('input'));
+
+      expect(modal.getReason()).toBe('trimmed reason text');
     });
   });
 });

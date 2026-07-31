@@ -20,6 +20,8 @@ class JustificacionRechazoModal extends HTMLElement {
     super();
     this._reason = '';
     this._onConfirmCallback = null;
+    this._confirmed = false;
+    this._textareaId = `motivo-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   connectedCallback() {
@@ -29,7 +31,7 @@ class JustificacionRechazoModal extends HTMLElement {
 
   _render() {
     this.innerHTML = `
-      <div class="modal fade" id="${this.id}" tabindex="-1" aria-hidden="true">
+      <div class="modal fade" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -37,12 +39,12 @@ class JustificacionRechazoModal extends HTMLElement {
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-              <label for="rechazo-motivo" class="form-label">
+              <label for="${this._textareaId}" class="form-label">
                 Describe el motivo del rechazo (10–500 caracteres)
               </label>
               <textarea
-                id="rechazo-motivo"
-                class="form-control"
+                id="${this._textareaId}"
+                class="form-control motivo-textarea"
                 rows="4"
                 placeholder="Ej: La descripción no es clara respecto a la ubicación exacta del incidente."
                 minlength="10"
@@ -64,7 +66,7 @@ class JustificacionRechazoModal extends HTMLElement {
 
   _bindEvents() {
     const modal = this.querySelector('.modal');
-    const textarea = this.querySelector('#rechazo-motivo');
+    const textarea = this.querySelector(`#${this._textareaId}`);
     const counter = this.querySelector('.char-counter');
     const confirmarBtn = this.querySelector('.btn-confirmar-rechazo');
     // Bind cancel handler to ALL dismiss elements (X button + Cancelar button).
@@ -90,6 +92,10 @@ class JustificacionRechazoModal extends HTMLElement {
     confirmarBtn.addEventListener('click', () => {
       if (!this._isValid()) return;
       const trimmedReason = this._reason.trim();
+      // Mark confirmation BEFORE hide() so the hidden.bs.modal handler
+      // does not also fire a cancel event. The flag is reset after the
+      // cancel event handler completes its bookkeeping (see below).
+      this._confirmed = true;
       if (this._onConfirmCallback) {
         this._onConfirmCallback(trimmedReason);
       }
@@ -110,9 +116,15 @@ class JustificacionRechazoModal extends HTMLElement {
       counter.textContent = '0 / 500';
       confirmarBtn.disabled = true;
       this._onConfirmCallback = null;
-      this.dispatchEvent(
-        new CustomEvent('cancel', { bubbles: true, composed: true }),
-      );
+
+      // Only dispatch cancel if the user actually aborted (not after a
+      // successful confirm). Reset state so the next show() starts fresh.
+      if (!this._confirmed) {
+        this.dispatchEvent(
+          new CustomEvent('cancel', { bubbles: true, composed: true }),
+        );
+      }
+      this._confirmed = false;
     });
   }
 
@@ -127,8 +139,9 @@ class JustificacionRechazoModal extends HTMLElement {
    */
   show(callback) {
     this._onConfirmCallback = callback || null;
+    this._confirmed = false;
     const modalEl = this.querySelector('.modal');
-    const textarea = this.querySelector('#rechazo-motivo');
+    const textarea = this.querySelector(`#${this._textareaId}`);
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 
@@ -140,6 +153,14 @@ class JustificacionRechazoModal extends HTMLElement {
       },
       { once: true },
     );
+  }
+
+  /**
+   * Public getter so consumers can read the reason without scraping the DOM.
+   * @returns {string}
+   */
+  getReason() {
+    return this._reason.trim();
   }
 
   /**
