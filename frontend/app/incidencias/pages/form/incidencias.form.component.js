@@ -15,6 +15,7 @@ import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { locationService } from '../../../shared/location.service.js';
 import { mountImageUploader } from '../../../shared/image-uploader.js';
+import { escapeHtml } from '../../../utils/format.js';
 import {
   initSelect,
   getSelect,

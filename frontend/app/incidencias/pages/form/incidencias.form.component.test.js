@@ -979,6 +979,78 @@ describe('incidencias.form — 4-step stepper', () => {
     expect(document.querySelectorAll('.ici-review__orgs-item').length).toBe(0);
   });
 
+  it('step 4 renders the notified orgs list with the Principal pill when the endpoint returns orgs', async () => {
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
+      }
+      if (path.startsWith('/organizations/notified-for')) {
+        return Promise.resolve({
+          data: [
+            { id: 1, name: 'GAD Municipal del Cantón Quito', is_claimable: true },
+            { id: 2, name: 'GAD Quito — Zona <b>Centro</b>', is_claimable: false },
+            { id: 3, name: 'GAD Quito — Zona Norte', is_claimable: false },
+            { id: 4, name: 'GAD Quito — Zona Sur', is_claimable: false },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    mockLocationService.getRoots.mockResolvedValueOnce([PROVINCE_PICHINCHA_GEOM]);
+    mockLocationService.getChildren
+      .mockResolvedValueOnce([CITY_QUITO_GEOM])
+      .mockResolvedValueOnce([]);
+
+    await component.onInit();
+    fillStep1({ title: 'Bache', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    // Full L stub with geoJSON/tileLayer/map so the boundary cascade
+    // (drawBoundaryLayer) doesn't throw while selecting province/city.
+    vi.stubGlobal('L', makeFakeL());
+
+    // City selected so orgsLocationId is not null (same shape as selectCanton).
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '300';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    clickMap(0.1, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer).not.toBeNull();
+    expect(orgsContainer.textContent).not.toContain('No pudimos calcular');
+    expect(orgsContainer.textContent).not.toContain('Ninguna organización');
+
+    const items = orgsContainer.querySelectorAll('.ici-review__orgs-item');
+    expect(items.length).toBe(4);
+    expect(items[0].textContent).toContain('GAD Municipal del Cantón Quito');
+    expect(items[1].textContent).toContain('GAD Quito');
+
+    // Only the claimable org gets the Principal pill.
+    const pills = orgsContainer.querySelectorAll('.ici-review__orgs-pill');
+    expect(pills.length).toBe(1);
+    expect(pills[0].textContent).toContain('Principal');
+
+    // Names are escaped: a raw <b> in the payload never becomes a tag.
+    expect(orgsContainer.querySelector('b')).toBeNull();
+  });
   it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
     await component.onInit();
     fillStep1();
