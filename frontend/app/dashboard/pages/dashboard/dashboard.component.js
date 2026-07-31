@@ -11,7 +11,7 @@ import {
 const __ = (message) => message;
 
 const dashboardMessages = {
-  empty: __('Sin datos en este período'),
+  empty: '0',
   loadError: __(
     'No pudimos cargar las estadísticas. Revisá tu conexión e intentá nuevamente.',
   ),
@@ -68,9 +68,8 @@ function loadC3() {
 // ─────────────────────────────────────────────
 function renderEmptyMetric(el) {
   if (!el) return;
-  el.classList.remove('is-loading');
-  el.classList.add('is-empty');
-  el.innerHTML = `<i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>${dashboardMessages.empty}</span>`;
+  el.classList.remove('is-loading', 'is-empty');
+  el.textContent = '0';
 }
 
 function animateCounter(el, target, duration = 900) {
@@ -217,7 +216,7 @@ function buildActivityFeed(items) {
 // no hay incidencias resueltas todavía.
 // ─────────────────────────────────────────────
 function formatResolutionTime(avg) {
-  if (!avg) return dashboardMessages.empty;
+  if (!avg) return '0';
   const { days, hours } = avg;
   if (days > 0 && hours > 0) return `${days}d ${hours}h`;
   if (days > 0) return `${days}d`;

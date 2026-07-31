@@ -138,7 +138,7 @@ describe('dashboard — average resolution time stat card', () => {
     );
   });
 
-  it('renders the meaningful empty state when there are no resolved incidents yet', async () => {
+  it('falls back to 0 when there are no resolved incidents yet', async () => {
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incidents/stats') {
         return Promise.resolve({
@@ -153,11 +153,11 @@ describe('dashboard — average resolution time stat card', () => {
     await component.onInit();
 
     expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
-      'Sin datos en este período',
+      '0',
     );
   });
 
-  it('renders the placeholder when the field is missing from the response entirely', async () => {
+  it('falls back to 0 when the field is missing from the response entirely', async () => {
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incidents/stats') {
         return Promise.resolve({ total: 0, by_status: {} });
@@ -168,7 +168,7 @@ describe('dashboard — average resolution time stat card', () => {
     await component.onInit();
 
     expect(document.getElementById('stat-tiempo-resolucion').textContent).toBe(
-      'Sin datos en este período',
+      '0',
     );
   });
 

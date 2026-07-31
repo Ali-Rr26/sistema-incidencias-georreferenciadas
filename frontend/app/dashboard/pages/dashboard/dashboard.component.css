@@ -195,71 +195,82 @@
 }
 
 .gr-stat-card {
-  background: #ffffff;
-  border: 1px solid #eef0f5;
-  border-radius: 16px;
-  padding: 20px 22px;
-  color: #1a1f36;
+  border-radius: 18px;
+  padding: 18px 20px;
+  color: #fff;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   position: relative;
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .gr-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+  transform: translateY(-4px);
 }
 
 @media (max-width: 480px) {
   .gr-stat-card {
     border-radius: 12px;
-    padding: 16px 18px;
-    gap: 10px;
+    padding: 14px 16px;
+    gap: 8px;
   }
 }
 
-/* Color overrides — replace the saturated gradients with a white card
-   + accent color tint applied to the icon disc and the trend pill.
-   Keeps the existing BEM class contract (gr-stat-card--{color}) so
-   the HTML and the JS that toggles the trend direction don't change. */
-.gr-stat-card--blue,
-.gr-stat-card--cyan,
-.gr-stat-card--green,
-.gr-stat-card--red,
-.gr-stat-card--purple {
-  background: #ffffff;
-  box-shadow: none;
-  border: 1px solid #eef0f5;
+.gr-stat-card--blue {
+  background: linear-gradient(135deg, #6a5cf3, #4f3ebd);
+  box-shadow: 0 12px 24px -10px rgba(106, 92, 243, 0.5);
+}
+.gr-stat-card--blue:hover {
+  box-shadow: 0 18px 30px -8px rgba(106, 92, 243, 0.65);
 }
 
-.gr-stat-card--blue:hover,
-.gr-stat-card--cyan:hover,
-.gr-stat-card--green:hover,
-.gr-stat-card--red:hover,
+.gr-stat-card--cyan {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  box-shadow: 0 12px 24px -10px rgba(6, 182, 212, 0.5);
+}
+.gr-stat-card--cyan:hover {
+  box-shadow: 0 18px 30px -8px rgba(6, 182, 212, 0.65);
+}
+
+.gr-stat-card--green {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 12px 24px -10px rgba(16, 185, 129, 0.5);
+}
+.gr-stat-card--green:hover {
+  box-shadow: 0 18px 30px -8px rgba(16, 185, 129, 0.65);
+}
+
+.gr-stat-card--red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 12px 24px -10px rgba(239, 68, 68, 0.5);
+}
+.gr-stat-card--red:hover {
+  box-shadow: 0 18px 30px -8px rgba(239, 68, 68, 0.65);
+}
+
+.gr-stat-card--purple {
+  background: linear-gradient(135deg, #a06bf5, #7c3aed);
+  box-shadow: 0 12px 24px -10px rgba(160, 107, 245, 0.5);
+}
 .gr-stat-card--purple:hover {
-  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 30px -8px rgba(160, 107, 245, 0.65);
 }
 
 .gr-stat-card__left {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  position: relative;
-  z-index: 1;
 }
 
 .gr-stat-card__num {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.5px;
-  color: #1a1f36;
-  min-height: 38px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  min-height: 34px;
 }
 
 .gr-stat-card__num.is-empty {
@@ -268,10 +279,9 @@
   gap: 7px;
   max-width: calc(100% - 48px);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 650;
   line-height: 1.35;
   letter-spacing: 0;
-  color: #6b7180;
 }
 
 .gr-stat-card__num.is-empty i {
@@ -281,37 +291,34 @@
 
 @media (max-width: 480px) {
   .gr-stat-card__num {
-    font-size: 24px;
+    font-size: 22px;
   }
 }
 
 .gr-stat-card__label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #6b7180;
-  margin-top: 0;
+  font-size: 13px;
+  opacity: 0.92;
+  margin-top: 2px;
 }
 
 @media (max-width: 480px) {
   .gr-stat-card__label {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 
 .gr-stat-card__icon {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.04);
+  background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 17px;
   position: absolute;
   top: 18px;
-  right: 18px;
+  right: 20px;
 }
 
 @media (max-width: 480px) {
@@ -325,70 +332,23 @@
   }
 }
 
-/* Per-color accent applied to the icon disc and the trend pill state.
-   The accent is the only place the color speaks; the rest of the card
-   stays neutral so the type can carry the information. */
-.gr-stat-card--blue .gr-stat-card__icon {
-  background: rgba(93, 106, 210, 0.1);
-  color: #5d6ad2;
-}
-
-.gr-stat-card--cyan .gr-stat-card__icon {
-  background: rgba(6, 182, 212, 0.1);
-  color: #0891b2;
-}
-
-.gr-stat-card--green .gr-stat-card__icon {
-  background: rgba(16, 185, 129, 0.1);
-  color: #059669;
-}
-
-.gr-stat-card--red .gr-stat-card__icon {
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-}
-
-.gr-stat-card--purple .gr-stat-card__icon {
-  background: rgba(125, 90, 240, 0.1);
-  color: #7d5af0;
-}
-
 .gr-stat-card__trend {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 5px;
   width: fit-content;
   max-width: 100%;
-  padding: 4px 10px;
+  padding: 4px 7px;
   border-radius: 999px;
-  background: #f7f8fc;
-  color: #6b7180;
+  background: rgba(20, 24, 45, 0.24);
+  color: #fff;
   font-size: 11.5px;
-  font-weight: 500;
+  font-weight: 650;
   line-height: 1.35;
 }
 
 .gr-stat-card__trend.is-neutral {
-  background: #f7f8fc;
-  color: #6b7180;
-}
-
-.gr-stat-card__trend.is-positive {
-  background: rgba(16, 185, 129, 0.08);
-  color: #059669;
-}
-
-.gr-stat-card__trend.is-positive i {
-  color: #059669;
-}
-
-.gr-stat-card__trend.is-negative {
-  background: rgba(239, 68, 68, 0.08);
-  color: #dc2626;
-}
-
-.gr-stat-card__trend.is-negative i {
-  color: #dc2626;
+  background: rgba(20, 24, 45, 0.18);
 }
 
 .gr-stat-card__trend i {
