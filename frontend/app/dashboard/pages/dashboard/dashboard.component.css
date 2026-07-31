@@ -195,82 +195,71 @@
 }
 
 .gr-stat-card {
-  border-radius: 18px;
-  padding: 18px 20px;
-  color: #fff;
+  background: #ffffff;
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+  padding: 20px 22px;
+  color: #1a1f36;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   position: relative;
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
 .gr-stat-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.08);
 }
 
 @media (max-width: 480px) {
   .gr-stat-card {
     border-radius: 12px;
-    padding: 14px 16px;
-    gap: 8px;
+    padding: 16px 18px;
+    gap: 10px;
   }
 }
 
-.gr-stat-card--blue {
-  background: linear-gradient(135deg, #6a5cf3, #4f3ebd);
-  box-shadow: 0 12px 24px -10px rgba(106, 92, 243, 0.5);
-}
-.gr-stat-card--blue:hover {
-  box-shadow: 0 18px 30px -8px rgba(106, 92, 243, 0.65);
-}
-
-.gr-stat-card--cyan {
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
-  box-shadow: 0 12px 24px -10px rgba(6, 182, 212, 0.5);
-}
-.gr-stat-card--cyan:hover {
-  box-shadow: 0 18px 30px -8px rgba(6, 182, 212, 0.65);
-}
-
-.gr-stat-card--green {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 12px 24px -10px rgba(16, 185, 129, 0.5);
-}
-.gr-stat-card--green:hover {
-  box-shadow: 0 18px 30px -8px rgba(16, 185, 129, 0.65);
-}
-
-.gr-stat-card--red {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  box-shadow: 0 12px 24px -10px rgba(239, 68, 68, 0.5);
-}
-.gr-stat-card--red:hover {
-  box-shadow: 0 18px 30px -8px rgba(239, 68, 68, 0.65);
-}
-
+/* Color overrides — replace the saturated gradients with a white card
+   + accent color tint applied to the icon disc and the trend pill.
+   Keeps the existing BEM class contract (gr-stat-card--{color}) so
+   the HTML and the JS that toggles the trend direction don't change. */
+.gr-stat-card--blue,
+.gr-stat-card--cyan,
+.gr-stat-card--green,
+.gr-stat-card--red,
 .gr-stat-card--purple {
-  background: linear-gradient(135deg, #a06bf5, #7c3aed);
-  box-shadow: 0 12px 24px -10px rgba(160, 107, 245, 0.5);
+  background: #ffffff;
+  box-shadow: none;
+  border: 1px solid #eef0f5;
 }
+
+.gr-stat-card--blue:hover,
+.gr-stat-card--cyan:hover,
+.gr-stat-card--green:hover,
+.gr-stat-card--red:hover,
 .gr-stat-card--purple:hover {
-  box-shadow: 0 18px 30px -8px rgba(160, 107, 245, 0.65);
+  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.08);
 }
 
 .gr-stat-card__left {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .gr-stat-card__num {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  min-height: 34px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  color: #1a1f36;
+  min-height: 38px;
 }
 
 .gr-stat-card__num.is-empty {
@@ -279,9 +268,10 @@
   gap: 7px;
   max-width: calc(100% - 48px);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.35;
   letter-spacing: 0;
+  color: #6b7180;
 }
 
 .gr-stat-card__num.is-empty i {
@@ -291,34 +281,37 @@
 
 @media (max-width: 480px) {
   .gr-stat-card__num {
-    font-size: 22px;
+    font-size: 24px;
   }
 }
 
 .gr-stat-card__label {
-  font-size: 13px;
-  opacity: 0.92;
-  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7180;
+  margin-top: 0;
 }
 
 @media (max-width: 480px) {
   .gr-stat-card__label {
-    font-size: 11px;
+    font-size: 10px;
   }
 }
 
 .gr-stat-card__icon {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 16px;
   position: absolute;
   top: 18px;
-  right: 20px;
+  right: 18px;
 }
 
 @media (max-width: 480px) {
@@ -332,23 +325,70 @@
   }
 }
 
+/* Per-color accent applied to the icon disc and the trend pill state.
+   The accent is the only place the color speaks; the rest of the card
+   stays neutral so the type can carry the information. */
+.gr-stat-card--blue .gr-stat-card__icon {
+  background: rgba(93, 106, 210, 0.1);
+  color: #5d6ad2;
+}
+
+.gr-stat-card--cyan .gr-stat-card__icon {
+  background: rgba(6, 182, 212, 0.1);
+  color: #0891b2;
+}
+
+.gr-stat-card--green .gr-stat-card__icon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.gr-stat-card--red .gr-stat-card__icon {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.gr-stat-card--purple .gr-stat-card__icon {
+  background: rgba(125, 90, 240, 0.1);
+  color: #7d5af0;
+}
+
 .gr-stat-card__trend {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   width: fit-content;
   max-width: 100%;
-  padding: 4px 7px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(20, 24, 45, 0.24);
-  color: #fff;
+  background: #f7f8fc;
+  color: #6b7180;
   font-size: 11.5px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.35;
 }
 
 .gr-stat-card__trend.is-neutral {
-  background: rgba(20, 24, 45, 0.18);
+  background: #f7f8fc;
+  color: #6b7180;
+}
+
+.gr-stat-card__trend.is-positive {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+}
+
+.gr-stat-card__trend.is-positive i {
+  color: #059669;
+}
+
+.gr-stat-card__trend.is-negative {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.gr-stat-card__trend.is-negative i {
+  color: #dc2626;
 }
 
 .gr-stat-card__trend i {
@@ -555,10 +595,11 @@
 }
 
 .gr-card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 20px 22px;
-  box-shadow: var(--shadow-sm);
+  background: #ffffff;
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: none;
 }
 
 @media (max-width: 480px) {
@@ -569,10 +610,11 @@
 }
 
 .gr-card__title {
-  font-size: 15.5px;
-  font-weight: 700;
-  color: #23283b;
-  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f36;
+  letter-spacing: -0.2px;
+  margin-bottom: 18px;
 }
 
 @media (max-width: 480px) {
@@ -580,6 +622,111 @@
     font-size: 14px;
     margin-bottom: 12px;
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3 chart skin — applied to the SVG C3 injects into .gr-chart.
+   Keeps the C3 config intact but overrides the default font/colour
+   treatment to match the modernised card family.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.gr-chart svg {
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-axis-x text,
+.gr-chart .c3-axis-y text {
+  font-size: 11px;
+  font-weight: 500;
+  fill: #9096a6;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-axis path,
+.gr-chart .c3-axis line {
+  stroke: #eef0f5;
+}
+
+.gr-chart .c3-axis-y .tick line {
+  stroke: #f0f2f5;
+}
+
+.gr-chart .c3-grid line {
+  stroke: #f0f2f5;
+  stroke-dasharray: none;
+}
+
+.gr-chart .c3-line {
+  stroke-width: 2.5px;
+}
+
+.gr-chart .c3-area {
+  opacity: 0.15;
+}
+
+.gr-chart .c3-circle {
+  r: 4;
+}
+
+.gr-chart .c3-circle._expanded_ {
+  r: 6;
+}
+
+.gr-chart .c3-bar {
+  stroke: none;
+}
+
+.gr-chart .c3-legend-item {
+  font-size: 12px;
+  color: #6b7180;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-legend-item text {
+  fill: #6b7180;
+}
+
+.gr-chart .c3-tooltip {
+  background: #1a1f36 !important;
+  border-color: transparent !important;
+  border-radius: 8px !important;
+  box-shadow: 0 12px 28px -8px rgba(15, 23, 42, 0.35) !important;
+  padding: 8px 12px !important;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-tooltip th {
+  background: transparent !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 0 0 4px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.gr-chart .c3-tooltip td {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11.5px !important;
+  padding: 2px 0 !important;
+}
+
+.gr-chart .c3-tooltip td.value,
+.gr-chart .c3-tooltip td.name {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.gr-chart .c3-tooltip .color {
+  border-radius: 50% !important;
+}
+
+/* Volume chart — keep the area subtle but the line crisp. */
+.gr-card--monthly .c3-line {
+  stroke-width: 2.5px;
+}
+
+.gr-card--monthly .c3-area {
+  opacity: 0.18;
 }
 
 /* Legend */

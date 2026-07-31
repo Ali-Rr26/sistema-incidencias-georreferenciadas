@@ -123,21 +123,28 @@ function initCategoriesChart(categories) {
       x: {
         type: 'category',
         categories: categories.map((cat) => cat.name),
+        tick: {
+          // Truncate long category names so the y-axis labels stay
+          // readable without forcing a 150px left-padding on the chart.
+          format: (name) =>
+            name && name.length > 22 ? `${name.slice(0, 21)}…` : name,
+        },
       },
       y: {
-        label: 'Cantidad de incidencias',
+        label: { text: 'Cantidad', position: 'outer-middle' },
+        tick: { format: (d) => Math.round(d) },
+        padding: { top: 4, bottom: 0 },
       },
     },
     bar: {
-      width: {
-        ratio: 0.5,
-      },
+      width: { ratio: 0.55 },
+      padding: 0.15,
     },
     padding: {
-      top: 10,
-      right: 40,
-      bottom: 10,
-      left: 150,
+      top: 8,
+      right: 24,
+      bottom: 0,
+      left: 12,
     },
     tooltip: {
       format: {
@@ -152,9 +159,15 @@ function initCategoriesChart(categories) {
       },
     },
     color: {
-      pattern: ['#8a5cf0', '#d4c5f9'],
+      pattern: ['#7d5af0', '#e4d8ff'],
     },
-    legend: { position: 'bottom' },
+    legend: { position: 'bottom', padding: 8 },
+    grid: {
+      y: {
+        show: true,
+        ticks: 4,
+      },
+    },
   });
 }
 
@@ -264,29 +277,45 @@ function initVolumeChart(days) {
     bindto: '#chart-volumen',
     data: {
       columns: [recibidas],
-      type: 'line',
+      type: 'area',
     },
     axis: {
       x: {
         type: 'category',
         categories: labels,
+        tick: {
+          // C3's default shows every tick label; on a 30-day window that
+          // gets crowded. Culling to ~8 keeps the axis readable.
+          cull: { max: 8 },
+          format: (i) => labels[i],
+        },
       },
       y: {
-        label: 'Cantidad',
+        tick: { format: (d) => Math.round(d) },
+        padding: { top: 8, bottom: 0 },
       },
     },
     color: {
-      pattern: ['#8a5cf0'],
+      pattern: ['#7d5af0'],
     },
     point: {
-      show: true,
-      r: 3,
+      show: false,
+      focus: { expand: { enabled: true, r: 5 } },
     },
     line: {
       connectNull: true,
     },
+    area: {
+      zerobased: true,
+    },
     legend: {
       show: false,
+    },
+    grid: {
+      y: {
+        show: true,
+        ticks: 4,
+      },
     },
   });
 }
