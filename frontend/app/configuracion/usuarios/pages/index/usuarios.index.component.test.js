@@ -694,7 +694,7 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
     expect(img).not.toBeNull();
   });
 
-  it('renders initials when user has no profile_image_path', async () => {
+  it('renders the default avatar image when user has no profile_image_path', async () => {
     const mockUser = {
       id: 2,
       first_name: 'Grace',
@@ -713,7 +713,9 @@ describe('usuarios.index.component — FOTO column (REQ-REDESIGN-9, 11)', () => 
     await componentModule.default.onInit();
     const firstRow = document.querySelector('#tabla-body tr');
     expect(firstRow).not.toBeNull();
-    // Should contain initials "GH" inside a span (initials badge)
-    expect(firstRow.textContent).toContain('GH');
+    // No initials badge — the default avatar image is rendered instead
+    const img = firstRow.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img.src).toContain('/images/default-avatar.svg');
   });
 });

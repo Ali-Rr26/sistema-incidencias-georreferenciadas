@@ -47,4 +47,55 @@ describe('buildCommentItem', () => {
     );
     expect(li.querySelector('.comment-replies')).not.toBeNull();
   });
+
+  it('keeps the headset icon for internal staff', () => {
+    const li = buildCommentItem(
+      {
+        id: 20,
+        user_id: 7,
+        message: 'Hola',
+        created_at: new Date().toISOString(),
+        user: { first_name: 'Admin', last_name: 'Uno', role: 'operator' },
+      },
+      { currentUserId: 7 },
+    );
+    expect(li.querySelector('.comment-avatar i.fa-headset')).not.toBeNull();
+    expect(li.querySelector('.comment-avatar img')).toBeNull();
+  });
+
+  it('renders the default avatar image for a citizen without a photo', () => {
+    const li = buildCommentItem(
+      {
+        id: 21,
+        user_id: 8,
+        message: 'Hola',
+        created_at: new Date().toISOString(),
+        user: { first_name: 'Juan', last_name: 'Pérez' },
+      },
+      {},
+    );
+    const img = li.querySelector('.comment-avatar img');
+    expect(img).not.toBeNull();
+    expect(img.src).toContain('/images/default-avatar.svg');
+  });
+
+  it('renders the citizen photo when present', () => {
+    const li = buildCommentItem(
+      {
+        id: 22,
+        user_id: 9,
+        message: 'Hola',
+        created_at: new Date().toISOString(),
+        user: {
+          first_name: 'Juan',
+          last_name: 'Pérez',
+          profile_image_path: 'users/9/avatar.webp',
+        },
+      },
+      {},
+    );
+    const img = li.querySelector('.comment-avatar img');
+    expect(img).not.toBeNull();
+    expect(img.src).toContain('/storage/users/9/avatar.webp');
+  });
 });

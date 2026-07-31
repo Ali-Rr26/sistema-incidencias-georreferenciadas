@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { getInitials, getUserDisplayName, resolveAvatar } from '../avatar.js';
+import {
+  DEFAULT_AVATAR,
+  getInitials,
+  getUserDisplayName,
+  renderAvatarCell,
+  renderAvatarImg,
+  resolveAvatar,
+  resolveAvatarSrc,
+} from '../avatar.js';
 
 describe('getInitials (SCEN-1.2 regression)', () => {
   it('builds uppercase initials from first and last name', () => {
@@ -165,5 +173,92 @@ describe('resolveAvatar', () => {
     // The precedence contract (profile_image_path wins over avatar) is
     // exercised at the call-site: user.profile_image_path || user.avatar.
     // resolveAvatar receives only the profile_path string, so it returns it.
+  });
+});
+
+describe('resolveAvatarSrc', () => {
+  it('returns DEFAULT_AVATAR when there is no avatar', () => {
+    expect(resolveAvatarSrc(null)).toBe(DEFAULT_AVATAR);
+    expect(resolveAvatarSrc(undefined)).toBe(DEFAULT_AVATAR);
+    expect(resolveAvatarSrc({ foo: 'bar' })).toBe(DEFAULT_AVATAR);
+  });
+
+  it('prefixes a raw storage key with /storage/', () => {
+    expect(resolveAvatarSrc('users/5/abc123.webp')).toBe(
+      '/storage/users/5/abc123.webp',
+    );
+  });
+
+  it('passes a full URL through as-is', () => {
+    expect(resolveAvatarSrc('https://cdn.example/a.png')).toBe(
+      'https://cdn.example/a.png',
+    );
+    expect(resolveAvatarSrc({ url: 'https://cdn.example/a.png' })).toBe(
+      'https://cdn.example/a.png',
+    );
+  });
+
+  it('passes an absolute path through as-is', () => {
+    expect(resolveAvatarSrc('/images/default-avatar.svg')).toBe(
+      '/images/default-avatar.svg',
+    );
+  });
+});
+
+describe('renderAvatarCell', () => {
+  it('renders the profile image when the user has profile_image_path', () => {
+    const html = renderAvatarCell({
+      first_name: 'Ada',
+      last_name: 'Lovelace',
+      profile_image_path: 'users/1/avatar.webp',
+    });
+    expect(html).toContain('<img');
+    expect(html).toContain('/storage/users/1/avatar.webp');
+  });
+
+  it('renders the default avatar image instead of an initials badge', () => {
+    const html = renderAvatarCell({ first_name: 'Ada', last_name: 'Lovelace' });
+    expect(html).toContain('<img');
+    expect(html).toContain('/images/default-avatar.svg');
+    expect(html).not.toContain('AL');
+  });
+
+  it('renders the default avatar image for an anonymous user (issue #234)', () => {
+    const html = renderAvatarCell({
+      id: 142,
+      is_anonymous: true,
+      first_name: null,
+      last_name: null,
+    });
+    expect(html).toContain('/images/default-avatar.svg');
+  });
+});
+
+describe('renderAvatarImg', () => {
+  it('returns an <img> with the real photo when present', () => {
+    const html = renderAvatarImg(
+      {
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+        profile_image_path: 'users/1/avatar.webp',
+      },
+      36,
+    );
+    expect(html).toContain('<img');
+    expect(html).toContain('/storage/users/1/avatar.webp');
+    expect(html).toContain('width:36px');
+  });
+
+  it('returns an <img> with the default avatar when no photo', () => {
+    const html = renderAvatarImg({ first_name: 'Ada', last_name: 'Lovelace' });
+    expect(html).toContain('<img');
+    expect(html).toContain('/images/default-avatar.svg');
+    expect(html).not.toContain('AL');
+  });
+
+  it('renders "Anónimo" alt text for an anonymous user (issue #234)', () => {
+    const html = renderAvatarImg({ id: 142, is_anonymous: true });
+    expect(html).toContain('/images/default-avatar.svg');
+    expect(html).toContain('Anónimo');
   });
 });

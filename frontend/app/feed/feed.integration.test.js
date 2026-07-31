@@ -281,8 +281,13 @@ describe('feed integration', () => {
     expect(cards.length).toBe(3);
 
     // First card should contain user info and description
-    expect(cards[0].textContent).toContain('MG');
+    expect(cards[0].textContent).toContain('María García');
     expect(cards[0].textContent).toContain('Prioridad: Alta');
+
+    // Users without a photo get the default avatar image, not initials
+    const cardAvatar = cards[0].querySelector('.ig-avatar-img');
+    expect(cardAvatar).not.toBeNull();
+    expect(cardAvatar.src).toContain('/images/default-avatar.svg');
 
     // Status badges — soft-fill chip classes
     expect(

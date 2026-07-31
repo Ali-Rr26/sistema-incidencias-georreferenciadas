@@ -160,8 +160,12 @@ describe('appShell visual regression snapshots (T-3.8)', () => {
     expect(adminSidebar).toBeTruthy();
     expect(adminSidebar.dataset.showOnRole).toBe('admin');
 
-    // Citizen avatar letter was populated from auth.getUser().first_name.
-    expect(document.getElementById('app-shell-avatar').textContent).toBe('C');
+    // Citizen avatar was populated from auth.getUser() — no photo, so the
+    // default avatar image is rendered (not a letter badge).
+    const citizenAvatar = document.getElementById('app-shell-avatar');
+    const citizenAvatarImg = citizenAvatar?.querySelector('img');
+    expect(citizenAvatarImg).not.toBeNull();
+    expect(citizenAvatarImg.src).toContain('/images/default-avatar.svg');
 
     // Pin the rendered HTML shape too — citizen differs from admin only by
     // which populated DOM regions, but the chrome itself is identical.
