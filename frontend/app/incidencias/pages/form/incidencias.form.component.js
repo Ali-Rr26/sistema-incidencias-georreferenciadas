@@ -590,7 +590,10 @@ export default {
       );
       initSelect('ici-category', { placeholder: 'Buscar categoría...' });
 
-      provinces = await locationService.getRoots({ level: 'province' });
+      provinces = await locationService.getRoots(
+        { level: 'province' },
+        { catalog: true },
+      );
       poblarSelectNativo(
         'ici-location-province',
         provinces,
@@ -643,9 +646,10 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const cities = await locationService.getChildren({
-        parentId: parseInt(provinceId),
-      });
+      const cities = await locationService.getChildren(
+        { parentId: parseInt(provinceId) },
+        { catalog: true },
+      );
       if (gen !== selectionGeneration) return; // stale
       lastCities = cities;
       lastNeighborhoods = [];
@@ -703,9 +707,10 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const neighborhoods = await locationService.getChildren({
-        parentId: parseInt(cityId),
-      });
+      const neighborhoods = await locationService.getChildren(
+        { parentId: parseInt(cityId) },
+        { catalog: true },
+      );
       if (gen !== selectionGeneration) return; // stale
       lastNeighborhoods = neighborhoods;
 
@@ -1095,9 +1100,10 @@ export default {
             if (nivelCiudad) {
               selectionGeneration++;
               const genCities = selectionGeneration;
-              const cities = await locationService.getChildren({
-                parentId: nivelProvincia.id,
-              });
+              const cities = await locationService.getChildren(
+                { parentId: nivelProvincia.id },
+                { catalog: true },
+              );
               if (genCities !== selectionGeneration) return;
               lastCities = cities;
 
@@ -1120,9 +1126,10 @@ export default {
               if (nivelParroquia) {
                 selectionGeneration++;
                 const genParroquias = selectionGeneration;
-                const parishes = await locationService.getChildren({
-                  parentId: nivelCiudad.id,
-                });
+                const parishes = await locationService.getChildren(
+                  { parentId: nivelCiudad.id },
+                  { catalog: true },
+                );
                 if (genParroquias !== selectionGeneration) return;
                 lastNeighborhoods = parishes;
 

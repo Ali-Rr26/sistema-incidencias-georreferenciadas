@@ -1583,9 +1583,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
         await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
-        level: 'province',
-      });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith(
+        { level: 'province' },
+        { catalog: true },
+      );
     });
 
     it('does NOT call /locations/tree endpoint', async () => {
@@ -1756,9 +1757,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
 
       await new Promise(setImmediate);
 
-      expect(mockLocationService.getChildren).toHaveBeenCalledWith({
-        parentId: 200,
-      });
+      expect(mockLocationService.getChildren).toHaveBeenCalledWith(
+        { parentId: 200 },
+        { catalog: true },
+      );
     });
 
     // Regression: initSelect() destroys the previous tom-select instance
@@ -1923,9 +1925,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
         await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
-        level: 'province',
-      });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith(
+        { level: 'province' },
+        { catalog: true },
+      );
     });
   });
 });

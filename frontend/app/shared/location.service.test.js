@@ -335,3 +335,43 @@ describe('location.service — initial load (roots / level=province)', () => {
     expect(calledPath).not.toMatch(/\/api\/locations/);
   });
 });
+
+describe('location.service — catalog mode (citizen endpoint)', () => {
+  it('getRoots hits /locations/catalog when catalog: true', async () => {
+    http.get.mockResolvedValue({ data: PROVINCES });
+
+    const result = await locationService.getRoots(
+      { level: 'province' },
+      { catalog: true },
+    );
+
+    expect(http.get).toHaveBeenCalledWith(
+      '/locations/catalog?level=province&per_page=500',
+    );
+    expect(result).toEqual(PROVINCES);
+  });
+
+  it('getChildren hits /locations/catalog when catalog: true', async () => {
+    http.get.mockResolvedValue({ data: CITIES_PICHINCHA });
+
+    await locationService.getChildren(
+      { parentId: 1 },
+      { catalog: true },
+    );
+
+    const calledPath = http.get.mock.calls[0][0];
+    expect(calledPath).toMatch(/^\/locations\/catalog\?/);
+    expect(calledPath).toContain('parent_id=1');
+  });
+
+  it('does NOT share cache entries between /locations and /locations/catalog', async () => {
+    http.get.mockResolvedValue({ data: PROVINCES });
+
+    // Same (level, parent_id) query, different route.
+    await locationService.getRoots({ level: 'province' });
+    await locationService.getRoots({ level: 'province' }, { catalog: true });
+
+    // The second call must NOT be served from the admin-route cache entry.
+    expect(http.get).toHaveBeenCalledTimes(2);
+  });
+});
