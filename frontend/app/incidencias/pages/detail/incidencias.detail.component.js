@@ -18,7 +18,6 @@ import {
   sortStatusHistoryDesc,
   statusHistoryEntry,
 } from '../../../utils/status-history.js';
-import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -58,7 +57,6 @@ export default {
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
     setupActionButtons(id, inc);
-    setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
     setupComments(id, inc.comments);
@@ -884,7 +882,10 @@ function setupAuditar(_incidentId, inc) {
       try {
         await notificationService.approve(pendingNotifId);
         mostrarToast('Resolución aprobada.', 'success');
-        window.location.reload();
+        // SPA-reactive refresh: the PostgreSQL trigger has already written
+        // the status_history row, so we just re-render with the fresh
+        // incident payload (status badge / state dropdown / history).
+        await refreshAfterAudit(_incidentId, 'approve');
       } catch (err) {
         showSubmitError(err?.message || 'No se pudo aprobar la resolución.');
         actionsEl?.classList.remove('d-none');
@@ -915,7 +916,7 @@ function setupAuditar(_incidentId, inc) {
         try {
           await notificationService.reject(pendingNotifId, reason.trim());
           mostrarToast('Resolución rechazada.', 'success');
-          window.location.reload();
+          await refreshAfterAudit(_incidentId, 'reject');
         } catch (err) {
           showSubmitError(err?.message || 'No se pudo rechazar la resolución.');
           actionsEl?.classList.remove('d-none');
@@ -926,120 +927,88 @@ function setupAuditar(_incidentId, inc) {
 }
 
 // ── Buscar Responsables (CP-03-01-F) ────────────────────────────
+// Card removed per product feedback (sc-123 / #150): with 1-3 responsibles
+// in typical orgs the picker added noise without utility. The `Asignaciones`
+// card below already exposes the operator select that powers assignment.
 
-function setupBuscarResponsables(_incidentId) {
-  const inputEl = document.getElementById('buscar-responsables-input');
-  const loadingEl = document.getElementById('buscar-responsables-loading');
-  const resultsEl = document.getElementById('buscar-responsables-results');
-  const listEl = document.getElementById('buscar-responsables-list');
-  const vacioEl = document.getElementById('buscar-responsables-vacio');
-  const errorEl = document.getElementById('buscar-responsables-error');
-  const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
-  const operatorSelectEl = document.getElementById(
-    'detalle-asignaciones-select',
-  );
-  const formEl = document.getElementById('detalle-asignaciones-form');
+// ── Audit refresh helper (sc-123 / #150) ────────────────────────────
 
-  if (!inputEl) return;
+/**
+ * Populates the rejection-reason banner from a refreshed incident payload.
+ * Falls back to "—" for fields the backend may not expose via
+ * IncidentResource today (rejection_reason / rejected_by / rejected_at);
+ * the UI degrades gracefully and the banner stays hidden if everything is
+ * empty.
+ */
+function populateRejectionBanner(updatedInc) {
+  const reasonEl = document.getElementById('detalle-rejection-reason');
+  const byEl = document.getElementById('detalle-rejection-by');
+  const atEl = document.getElementById('detalle-rejection-at');
 
-  function showLoading(show) {
-    if (show) {
-      loadingEl?.classList.remove('d-none');
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.add('d-none');
-      errorEl?.classList.add('d-none');
-    } else {
-      loadingEl?.classList.add('d-none');
-    }
-  }
+  if (reasonEl) reasonEl.textContent = updatedInc.rejection_reason || '';
 
-  function showResults(users) {
-    if (!users || users.length === 0) {
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.remove('d-none');
-      return;
-    }
+  const rejectedBy =
+    updatedInc.rejected_by_user?.name ||
+    updatedInc.rejected_by?.name ||
+    '—';
+  if (byEl) byEl.textContent = rejectedBy;
 
-    resultsEl?.classList.remove('d-none');
-    vacioEl?.classList.add('d-none');
-
-    listEl.replaceChildren(
-      ...users.map((user) => {
-        const li = document.createElement('li');
-        li.className = 'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
-        li.style.cursor = 'pointer';
-
-        const name = responsablesService.formatUserName(user);
-        const role = responsablesService.formatRole(user);
-        const email = user.email || '';
-
-        li.innerHTML = `
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="fw-semibold text-dark">${escapeHtml(name)}</div>
-              <small class="text-muted">${escapeHtml(email)}</small>
-              <br />
-              <small class="text-secondary">Rol: ${escapeHtml(role)}</small>
-            </div>
-          </div>
-        `;
-
-        li.addEventListener('mouseenter', () => {
-          li.classList.add('bg-light');
-        });
-        li.addEventListener('mouseleave', () => {
-          li.classList.remove('bg-light');
-        });
-
-        li.addEventListener('click', () => {
-          // CP-03-02-F: seleccionar usuario en búsqueda → llenar operador
-          if (operatorSelectEl && user.id) {
-            operatorSelectEl.value = user.id;
-            if (formEl) {
-              formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-            inputEl.value = '';
-            showLoading(false);
-            resultsEl?.classList.add('d-none');
-            vacioEl?.classList.add('d-none');
-            errorEl?.classList.add('d-none');
-          }
-        });
-
-        return li;
-      }),
+  if (atEl && updatedInc.rejected_at) {
+    atEl.textContent = new Date(updatedInc.rejected_at).toLocaleString(
+      'es-EC',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      },
     );
   }
+}
 
-  function showError(msg) {
-    errorMsgEl.textContent = msg;
-    errorEl?.classList.remove('d-none');
-    resultsEl?.classList.add('d-none');
-    vacioEl?.classList.add('d-none');
-  }
+/**
+ * SPA-reactive refresh after Aprobar / Rechazar. Mirrors the pattern used
+ * by setupEstado (status_history is already persisted server-side by the
+ * PostgreSQL trigger on every UPDATE of incidents.status).
+ */
+async function refreshAfterAudit(incidentId, action /* 'approve' | 'reject' */) {
+  try {
+    const res = await http.get(`/incidents/${incidentId}`);
+    const updatedInc = res.data ?? res;
 
-  inputEl.addEventListener('input', (e) => {
-    const query = e.target.value.trim();
-
-    if (query.length === 0) {
-      showLoading(false);
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.add('d-none');
-      errorEl?.classList.add('d-none');
-      return;
+    // 1. Status badge
+    const statusEl = document.getElementById('detalle-status');
+    if (statusEl) {
+      statusEl.textContent = STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
+      statusEl.className = `ig-status-badge ig-status-${updatedInc.status}`;
     }
 
-    showLoading(true);
+    // 2. State dropdown (valid transitions change)
+    setupEstado(incidentId, updatedInc);
 
-    responsablesService.search(query, (users, err) => {
-      showLoading(false);
+    // 3. Status history (server trigger already wrote the row)
+    renderHistorial(updatedInc.status_history ?? []);
 
-      if (err) {
-        showError(err.message || 'Error al buscar usuarios.');
-        return;
+    // 4. Re-render incident header (in case other fields changed)
+    renderizarIncidencia(updatedInc);
+
+    // 5. Audit card: hide (state no longer 'resolved')
+    const auditCard = document.getElementById('detalle-auditar');
+    if (auditCard) auditCard.classList.add('d-none');
+
+    // 6. Rejection banner: show if reject, hide if approve
+    const banner = document.getElementById('detalle-rejection-banner');
+    if (banner) {
+      if (action === 'reject' && updatedInc.rejection_reason) {
+        populateRejectionBanner(updatedInc);
+        banner.classList.remove('d-none');
+      } else {
+        banner.classList.add('d-none');
       }
-
-      showResults(users);
-    });
-  });
+    }
+  } catch (err) {
+    console.error('Error al refrescar la incidencia:', err);
+    mostrarToast('No se pudo refrescar la incidencia.', 'danger');
+  }
 }
