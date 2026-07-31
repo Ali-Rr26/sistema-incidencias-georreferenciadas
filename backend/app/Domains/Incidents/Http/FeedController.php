@@ -7,6 +7,7 @@ namespace App\Domains\Incidents\Http;
 use App\Domains\Incidents\Models\FeedService;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\IncidentRepository;
+use App\Domains\Users\Services\UserAnonymizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -120,7 +121,7 @@ class FeedController extends Controller
 
         return response()->json([
             'data' => $incidents->getCollection()
-                ->map(fn (Incident $incident) => $this->mapToFeedItem($incident))
+                ->map(fn (Incident $incident) => $this->mapToFeedItem($incident, $request))
                 ->values()
                 ->all(),
             'meta' => [
@@ -137,7 +138,7 @@ class FeedController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function mapToFeedItem(Incident $incident): array
+    private function mapToFeedItem(Incident $incident, Request $request): array
     {
         return [
             'id' => $incident->id,
@@ -159,12 +160,13 @@ class FeedController extends Controller
                 ? ['id' => $incident->organization->id, 'name' => $incident->organization->name]
                 : null,
             'user' => $incident->relationLoaded('user') && $incident->user
-                ? [
-                    'id' => $incident->user->id,
-                    'first_name' => $incident->user->first_name,
-                    'last_name' => $incident->user->last_name,
-                    'avatar' => $incident->user->avatar,
-                ]
+                // Issue #234 — staff path still serializes the user through
+                // the same anonymizer so the shape stays consistent across
+                // both branches of the feed. Operators+ see real data,
+                // a regular user here would be impossible (the staff branch
+                // is gated above by `isRegularUser()`), but the contract
+                // is uniform.
+                ? app(UserAnonymizer::class)->anonymize($incident->user, $request->user())
                 : null,
             'location' => $incident->relationLoaded('location') && $incident->location
                 ? ['id' => $incident->location->id, 'name' => $incident->location->name]

@@ -9,6 +9,8 @@ use App\Domains\Incidents\Http\FeedController;
 use App\Domains\Incidents\Listeners\RedisIncidentSync;
 use App\Domains\Incidents\Models\FeedService;
 use App\Domains\Incidents\Models\Incident;
+use App\Domains\Users\Models\User;
+use App\Domains\Users\Services\UserAnonymizer;
 
 /**
  * Fuente única de verdad del shape que el read model Redis espera por Incidencia.
@@ -25,6 +27,12 @@ final class IncidentFeedSerializer
     /**
      * Serializa una Incidencia al array que se persiste en Redis como `feed:v2:items`.
      *
+     * Issue #234 — the Redis cache is only consumed by the citizen feed
+     * (`FeedController::$citizenBranch` → `FeedService::getFeed()`), so the
+     * user fields are always anonymized. There's no real viewer in a
+     * write-time serializer, so we pass `null` as the viewer and the
+     * anonymizer reduces the user to id-only.
+     *
      * @return array<string, mixed>
      */
     public function serialize(Incident $incident): array
@@ -38,6 +46,13 @@ final class IncidentFeedSerializer
             ->orderBy('depth', 'desc')
             ->pluck('id')
             ->toArray() ?? [];
+
+        // The Redis cache is a *write-time* projection — there is no
+        // viewer at this point. The only consumer (citizen feed) never
+        // sees real names anyway, so we always anonymize.
+        /** @var UserAnonymizer $anonymizer */
+        $anonymizer = app(UserAnonymizer::class);
+        $anonUser = $anonymizer->anonymize($incident->user, null);
 
         return [
             'id' => (string) $incident->id,
@@ -56,9 +71,14 @@ final class IncidentFeedSerializer
             'organization_name' => $incident->organization?->name ?? '',
             'location_name' => $incident->location?->name ?? '',
             'location_path_ids' => json_encode($locationPathIds),
-            'user_first_name' => $incident->user?->first_name,
-            'user_last_name' => $incident->user?->last_name,
-            'user_avatar' => $incident->user?->avatar,
+            // Issue #234 — anonymized reporter payload. The id is the
+            // only thing preserved; the frontend renders "Anónimo" (or
+            // initials + #id) but never a real name.
+            'user_first_name' => $anonUser['first_name'] ?? null,
+            'user_last_name' => $anonUser['last_name'] ?? null,
+            'user_avatar' => $anonUser['profile_image_path'] ?? null,
+            'user_is_anonymous' => $anonUser['is_anonymous'] ?? true,
+            'user_anon_id' => $anonUser['id'] ?? null,
         ];
     }
 }

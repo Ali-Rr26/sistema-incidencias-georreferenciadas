@@ -7,6 +7,12 @@
  * signature on `getInitials` is intentional: it keeps the call shape
  * consistent across the four known call sites and matches the
  * `UserResource` payload shape returned by the API.
+ *
+ * Issue #234 — role-based anonymization. The backend may now return a
+ * user payload with `is_anonymous: true` and the name fields stripped
+ * to null (regular citizen viewer of someone else's report). The
+ * helpers below branch on that flag so the UI never flashes a real
+ * name where the backend redacted one.
  */
 
 /**
@@ -14,10 +20,16 @@
  *
  *   getInitials({ first_name: 'Ada', last_name: 'Lovelace' }) → 'AL'
  *   getInitials(null)                                          → '?'
+ *   getInitials({ is_anonymous: true })                        → 'A'
  *   getInitials({})                                            → '?'
  */
 export function getInitials(user) {
   if (!user) return '?';
+  if (user.is_anonymous) {
+    // Anonymous payload — no name parts. Fall back to the canonical
+    // 'A' (for "Anónimo") so the avatar bubble still has a letter.
+    return 'A';
+  }
   const first = (user.first_name || '')[0] || '';
   const last = (user.last_name || '')[0] || '';
   return (first + last).toUpperCase() || '?';
@@ -45,11 +57,17 @@ export function renderAvatarCell(user) {
 }
 
 /**
- * Resolve a friendly display name for a user. Falls back to a generic
- * label when the user object is missing or has no name parts.
+ * Resolve a friendly display name for a user.
+ *
+ * Order of precedence:
+ *   1. missing user                       → 'Anónimo'
+ *   2. user.is_anonymous (issue #234)     → 'Anónimo'
+ *   3. joined first + last name            → 'Ada Lovelace'
+ *   4. name missing on real user          → 'Usuario'
  */
 export function getUserDisplayName(user) {
   if (!user) return 'Anónimo';
+  if (user.is_anonymous) return 'Anónimo';
   const parts = [user.first_name, user.last_name].filter(Boolean);
   return parts.length ? parts.join(' ') : 'Usuario';
 }

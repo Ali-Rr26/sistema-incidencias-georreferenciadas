@@ -1,4 +1,5 @@
 import { escapeHtml } from '../utils/format.js';
+import { getUserDisplayName } from '../utils/avatar.js';
 import { commentService } from './comment.service.js';
 import { MAX_COMMENT_DEPTH } from './comment-item.js';
 
@@ -46,10 +47,7 @@ export function openInlineReplyForm({
   if (!commentBody) return;
 
   const parentUser = comment.user
-    ? (getUserName?.(comment.user) ??
-        [comment.user.first_name, comment.user.last_name]
-          .filter(Boolean)
-          .join(' ')) ||
+    ? (getUserName?.(comment.user) ?? getUserDisplayName(comment.user)) ||
       'Usuario'
     : 'Usuario';
 
