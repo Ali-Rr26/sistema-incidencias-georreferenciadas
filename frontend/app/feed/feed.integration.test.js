@@ -346,7 +346,9 @@ describe('feed integration', () => {
     // feed-minimap present (incidents have geom, no thumbnail_url), but
     // HIDDEN by default — the toggle button is what actually loads it.
     expect(firstCard.querySelector('.feed-minimap')).not.toBeNull();
-    expect(firstCard.querySelector('.feed-minimap').classList.contains('d-none')).toBe(true);
+    expect(
+      firstCard.querySelector('.feed-minimap').classList.contains('d-none'),
+    ).toBe(true);
     // Opt-in toggle: "Ver mapa" button is visible, aria-expanded=false
     const toggle = firstCard.querySelector('.feed-map-toggle');
     expect(toggle).not.toBeNull();
@@ -372,9 +374,7 @@ describe('feed integration', () => {
     expect(toggle).not.toBeNull();
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
 
-    const minimap = document.getElementById(
-      `feed-mm-${toggle.dataset.incId}`,
-    );
+    const minimap = document.getElementById(`feed-mm-${toggle.dataset.incId}`);
     expect(minimap).not.toBeNull();
     expect(minimap.classList.contains('d-none')).toBe(true);
 
