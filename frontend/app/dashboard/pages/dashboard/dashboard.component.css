@@ -665,9 +665,16 @@
 }
 
 .gr-chart .c3-tooltip td {
+  /* C3's default stylesheet leaves background-color:#fff on the
+     cells. With our dark tooltip that left white text on white cells
+     (everything invisible except the th). Forcing transparent here
+     lets the dark tooltip surface show through so the value labels
+     render the same way they did under the old light tooltip. */
+  background: transparent !important;
+  border: 0 !important;
   color: rgba(255, 255, 255, 0.85) !important;
   font-size: 11.5px !important;
-  padding: 2px 0 !important;
+  padding: 3px 6px !important;
 }
 
 .gr-chart .c3-tooltip td.value,
