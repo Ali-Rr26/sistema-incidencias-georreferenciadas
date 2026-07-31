@@ -252,55 +252,111 @@
           </div>
         </div>
 
-        <!-- Buscar Responsables (CP-03-01-F) -->
-        <div class="gr-card mb-3">
-          <div style="padding: 24px 28px">
-            <h5 class="fw-bold mb-3">
-              <i class="fas fa-search me-2"></i>Buscar Responsables
-            </h5>
-            <div class="mb-3">
-              <input
-                type="text"
-                id="buscar-responsables-input"
-                class="form-control form-control-sm"
-                placeholder="Buscar por nombre o email..."
-                autocomplete="off"
-              />
-            </div>
+        <!-- Aprobar / Rechazar resolución (sc-123 / #150, inline instead of modal) -->
+        <div id="detalle-auditar" class="d-none mb-3">
+          <div class="gr-card">
+            <div style="padding: 24px 28px">
+              <h5 class="fw-bold mb-3">
+                <i class="fas fa-gavel me-2"></i>Auditar resolución
+              </h5>
+              <p id="detalle-auditar-msg" class="text-muted small mb-3 d-none">
+                Esta incidencia fue marcada como resuelta. Aprobalá para
+                cerrarla o rechazala para que el operador la revise de nuevo.
+              </p>
 
-            <!-- Loading -->
-            <div
-              id="buscar-responsables-loading"
-              class="d-none text-center py-2"
-            >
+              <!-- Loading: fetching the pending notification -->
+              <div id="detalle-auditar-loading" class="d-none text-center py-2">
+                <div
+                  class="spinner-border spinner-border-sm text-secondary"
+                  role="status"
+                ></div>
+                <small class="text-muted d-block mt-1"
+                  >Buscando notificación pendiente...</small
+                >
+              </div>
+
+              <!-- No notification found: explain why, no toast -->
+              <div id="detalle-auditar-sin-notif" class="d-none">
+                <div class="alert alert-warning py-2 mb-3 small">
+                  Esta resolución no requiere tu auditoría en este momento: la
+                  notificación ya fue procesada, o está siendo auditada por otro
+                  administrador. No hay acciones disponibles desde aquí.
+                </div>
+              </div>
+
+              <!-- Buttons: visible only when the pending notification was found -->
+              <div id="detalle-auditar-actions" class="d-none">
+                <div class="d-grid gap-2">
+                  <button
+                    id="btn-auditar-aprobar"
+                    type="button"
+                    class="btn btn-success"
+                  >
+                    <i class="fas fa-check-circle me-1"></i>Aprobar resolución
+                  </button>
+                  <button
+                    id="btn-auditar-rechazar"
+                    type="button"
+                    class="btn btn-outline-danger"
+                  >
+                    <i class="fas fa-times-circle me-1"></i>Rechazar resolución
+                  </button>
+                </div>
+              </div>
+
+              <!-- In-flight: button click submitting approve/reject -->
               <div
-                class="spinner-border spinner-border-sm text-secondary"
-                role="status"
-              ></div>
-              <small class="text-muted d-block mt-1">Buscando...</small>
+                id="detalle-auditar-submitting"
+                class="d-none text-center py-2"
+              >
+                <div
+                  class="spinner-border spinner-border-sm text-primary me-2"
+                  role="status"
+                ></div>
+                <span class="text-muted small">Procesando...</span>
+              </div>
+
+              <!-- Error: surface inline -->
+              <div id="detalle-auditar-error" class="d-none">
+                <div
+                  class="alert alert-danger py-2 mb-0 small"
+                  id="detalle-auditar-error-msg"
+                ></div>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Results list -->
-            <div id="buscar-responsables-results" class="d-none">
-              <ul
-                id="buscar-responsables-list"
-                class="list-unstyled"
-                style="max-height: 300px; overflow-y: auto"
-              ></ul>
-            </div>
+        <!-- Motivo de rechazo (sc-123 / #150 — visible después de rechazar) -->
+        <div id="detalle-rejection-banner" class="d-none mb-3">
+          <div class="gr-card">
+            <div style="padding: 24px 28px">
+              <h5 class="fw-bold mb-3">
+                <i class="fas fa-times-circle me-2 text-danger"></i>Resolución
+                rechazada
+              </h5>
+              <p class="text-muted small mb-3">
+                Esta resolución fue rechazada y la incidencia volvió a
+                <strong class="text-dark">En progreso</strong> para que el
+                operador la revise de nuevo.
+              </p>
 
-            <!-- Empty state -->
-            <p
-              id="buscar-responsables-vacio"
-              class="text-muted small mb-0 d-none"
-            >
-              Sin resultados. Intenta otro término de búsqueda.
-            </p>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-muted mb-1">
+                  Motivo del rechazo
+                </label>
+                <div
+                  id="detalle-rejection-reason"
+                  class="p-3 bg-light border rounded small"
+                  style="white-space: pre-wrap"
+                ></div>
+              </div>
 
-            <!-- Error -->
-            <div id="buscar-responsables-error" class="d-none">
-              <div class="alert alert-danger py-2 mb-0 small">
-                <span id="buscar-responsables-error-msg"></span>
+              <div class="d-flex align-items-center text-muted small">
+                <i class="fas fa-user me-1"></i>
+                <span id="detalle-rejection-by" class="me-3">—</span>
+                <i class="fas fa-clock me-1"></i>
+                <span id="detalle-rejection-at">—</span>
               </div>
             </div>
           </div>
@@ -322,20 +378,6 @@
                 id="detalle-estado-select"
                 class="form-select form-select-sm"
               ></select>
-            </div>
-            <div class="mb-2">
-              <label
-                for="detalle-estado-notas"
-                class="form-label small fw-semibold"
-                >Notas / Justificación</label
-              >
-              <textarea
-                id="detalle-estado-notas"
-                class="form-control form-control-sm"
-                rows="2"
-                placeholder="Notas de resolución u observaciones (opcional)..."
-                maxlength="2000"
-              ></textarea>
             </div>
             <button
               id="btn-guardar-estado"
@@ -499,6 +541,22 @@
       <div class="toast-body">
         <i class="fas fa-check-circle me-2"></i>Imagen subida correctamente.
       </div>
+      <button
+        type="button"
+        class="btn-close btn-close-white me-2 m-auto"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+  </div>
+  <div
+    id="toast-msg"
+    class="toast align-items-center text-white border-0"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg-texto"></div>
       <button
         type="button"
         class="btn-close btn-close-white me-2 m-auto"

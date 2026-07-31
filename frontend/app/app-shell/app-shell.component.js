@@ -153,6 +153,10 @@ export const appShell = {
     wireNav();
     wireSidebarToggle();
     wireBellPanels();
+    // Refresh badges after wireBellPanels populates _bellPanels so the
+    // initial badge count is set (populateHeader was called when _bellPanels
+    // was still empty on first init).
+    refreshBellBadges();
 
     // Render sidebar dynamically from /api/menus/my for ANY authenticated
     // user (admin OR citizen). Falls back silently if the endpoint fails

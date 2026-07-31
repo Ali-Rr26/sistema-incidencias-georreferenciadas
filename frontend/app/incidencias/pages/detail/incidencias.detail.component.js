@@ -12,11 +12,12 @@ import setupCommentsForm from '../../../shared/setup-comments-form.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { notificationService } from '../../../shared/notification.service.js';
+import { mostrarToast } from '../../../utils/ui.js';
 import {
   sortStatusHistoryDesc,
   statusHistoryEntry,
 } from '../../../utils/status-history.js';
-import { responsablesService } from '../../../shared/responsables.service.js';
 
 // CP-02-04-F: transiciones válidas por estado actual
 const VALID_TRANSITIONS = {
@@ -56,11 +57,11 @@ export default {
     renderizarImagenes(inc.images ?? []);
     setupUpload(id);
     setupActionButtons(id, inc);
-    setupBuscarResponsables(id);
     setupEstado(id, inc);
     renderHistorial(inc.status_history ?? []);
     setupComments(id, inc.comments);
     setupAssignments(id, inc, inc.assignments);
+    setupAuditar(id, inc);
   },
 
   onDestroy() {
@@ -314,12 +315,6 @@ function setupEstado(incidentId, inc) {
 
     try {
       const payload = { status: newStatus };
-      const notesInput = document.getElementById('detalle-estado-notas');
-      const notes = notesInput?.value.trim() ?? '';
-
-      if (notes) {
-        payload.notes = notes;
-      }
 
       if (newStatus === 'resolved') {
         payload.resolution_date = new Date().toISOString();
@@ -339,10 +334,6 @@ function setupEstado(incidentId, inc) {
 
       setupEstado(incidentId, updatedInc);
       renderHistorial(updatedInc.status_history ?? []);
-
-      if (notesInput) {
-        notesInput.value = '';
-      }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       errorMsg.textContent = err.message || 'No se pudo cambiar el estado.';
@@ -765,121 +756,249 @@ function setupActionButtons(incidentId, inc) {
   }
 }
 
-// ── Buscar Responsables (CP-03-01-F) ────────────────────────────
+// ── Aprobar / Rechazar resolución (sc-123 / #150, inline card) ──
 
-function setupBuscarResponsables(_incidentId) {
-  const inputEl = document.getElementById('buscar-responsables-input');
-  const loadingEl = document.getElementById('buscar-responsables-loading');
-  const resultsEl = document.getElementById('buscar-responsables-results');
-  const listEl = document.getElementById('buscar-responsables-list');
-  const vacioEl = document.getElementById('buscar-responsables-vacio');
-  const errorEl = document.getElementById('buscar-responsables-error');
-  const errorMsgEl = document.getElementById('buscar-responsables-error-msg');
-  const operatorSelectEl = document.getElementById(
-    'detalle-asignaciones-select',
-  );
-  const formEl = document.getElementById('detalle-asignaciones-form');
+/**
+ * Inline "Aprobar / Rechazar" card for admins. Visible only when the
+ * incident is in 'resolved' state AND the current user is admin (any
+ * admin can audit). Fetches the matching pending-approval notification
+ * from the backend; if found, shows the action buttons. Aprobar is
+ * one click; Rechazar opens the existing justificacion-rechazo-modal
+ * to capture the reason, then submits.
+ */
+function setupAuditar(_incidentId, inc) {
+  const cardEl = document.getElementById('detalle-auditar');
+  if (!cardEl) return;
 
-  if (!inputEl) return;
+  const loadingEl = document.getElementById('detalle-auditar-loading');
+  const sinNotifEl = document.getElementById('detalle-auditar-sin-notif');
+  const actionsEl = document.getElementById('detalle-auditar-actions');
+  const submittingEl = document.getElementById('detalle-auditar-submitting');
+  const errorEl = document.getElementById('detalle-auditar-error');
+  const errorMsgEl = document.getElementById('detalle-auditar-error-msg');
+  const msgEl = document.getElementById('detalle-auditar-msg');
+  const btnAprobar = document.getElementById('btn-auditar-aprobar');
+  const btnRechazar = document.getElementById('btn-auditar-rechazar');
 
-  function showLoading(show) {
-    if (show) {
-      loadingEl?.classList.remove('d-none');
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.add('d-none');
-      errorEl?.classList.add('d-none');
-    } else {
-      loadingEl?.classList.add('d-none');
-    }
+  let pendingNotifId = null;
+
+  function showActions() {
+    loadingEl?.classList.add('d-none');
+    sinNotifEl?.classList.add('d-none');
+    errorEl?.classList.add('d-none');
+    actionsEl?.classList.remove('d-none');
+    submittingEl?.classList.add('d-none');
+    msgEl?.classList.remove('d-none');
   }
 
-  function showResults(users) {
-    if (!users || users.length === 0) {
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.remove('d-none');
-      return;
-    }
-
-    resultsEl?.classList.remove('d-none');
-    vacioEl?.classList.add('d-none');
-
-    listEl.replaceChildren(
-      ...users.map((user) => {
-        const li = document.createElement('li');
-        li.className = 'mb-2 p-2 border rounded cursor-pointer hover:bg-light';
-        li.style.cursor = 'pointer';
-
-        const name = responsablesService.formatUserName(user);
-        const role = responsablesService.formatRole(user);
-        const email = user.email || '';
-
-        li.innerHTML = `
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="fw-semibold text-dark">${escapeHtml(name)}</div>
-              <small class="text-muted">${escapeHtml(email)}</small>
-              <br />
-              <small class="text-secondary">Rol: ${escapeHtml(role)}</small>
-            </div>
-          </div>
-        `;
-
-        li.addEventListener('mouseenter', () => {
-          li.classList.add('bg-light');
-        });
-        li.addEventListener('mouseleave', () => {
-          li.classList.remove('bg-light');
-        });
-
-        li.addEventListener('click', () => {
-          // CP-03-02-F: seleccionar usuario en búsqueda → llenar operador
-          if (operatorSelectEl && user.id) {
-            operatorSelectEl.value = user.id;
-            if (formEl) {
-              formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-            inputEl.value = '';
-            showLoading(false);
-            resultsEl?.classList.add('d-none');
-            vacioEl?.classList.add('d-none');
-            errorEl?.classList.add('d-none');
-          }
-        });
-
-        return li;
-      }),
-    );
-  }
-
-  function showError(msg) {
-    errorMsgEl.textContent = msg;
+  // Load-time error: hides actions so the user can't click submit on
+  // a card that never got a notification id.
+  function showLoadError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    loadingEl?.classList.add('d-none');
+    sinNotifEl?.classList.add('d-none');
+    actionsEl?.classList.add('d-none');
+    submittingEl?.classList.add('d-none');
     errorEl?.classList.remove('d-none');
-    resultsEl?.classList.add('d-none');
-    vacioEl?.classList.add('d-none');
+    msgEl?.classList.add('d-none');
   }
 
-  inputEl.addEventListener('input', (e) => {
-    const query = e.target.value.trim();
+  // Submit-time error: keep the action buttons visible so the user
+  // can retry without reloading the page.
+  function showSubmitError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    submittingEl?.classList.add('d-none');
+    errorEl?.classList.remove('d-none');
+  }
 
-    if (query.length === 0) {
-      showLoading(false);
-      resultsEl?.classList.add('d-none');
-      vacioEl?.classList.add('d-none');
-      errorEl?.classList.add('d-none');
+  function startSubmit() {
+    actionsEl?.classList.add('d-none');
+    errorEl?.classList.add('d-none');
+    submittingEl?.classList.remove('d-none');
+  }
+
+  // Only admins can audit. The card is hidden by default (d-none in
+  // HTML); we only ever unhide it after a confirmed role check. R7:
+  // operador_organizacion may hold notifications.update but MUST NOT
+  // see this card. Fail closed on any error.
+  (async () => {
+    if (inc.status !== 'resolved') return;
+
+    let roleName = null;
+    try {
+      const me = await auth.me();
+      roleName = resolveRoleName(me);
+    } catch {
       return;
     }
+    const isAdmin =
+      roleName === 'admin_sistema' || roleName === 'admin_organizacion';
+    if (!isAdmin) return;
 
-    showLoading(true);
+    cardEl.classList.remove('d-none');
+    loadingEl?.classList.remove('d-none');
 
-    responsablesService.search(query, (users, err) => {
-      showLoading(false);
-
-      if (err) {
-        showError(err.message || 'Error al buscar usuarios.');
+    try {
+      const resp = await notificationService.getPendingApprovals({
+        page: 1,
+        perPage: 100,
+        unreadOnly: false,
+      });
+      const notifications = resp.data || [];
+      const notif = notifications.find((n) => {
+        const nid = n?.data?.incident_id ?? n?.incident_id;
+        if (Number(nid) !== Number(inc.id)) return false;
+        if (n?.type !== 'incident_pending_approval') return false;
+        if (n?.processed_at) return false;
+        return true;
+      });
+      if (!notif) {
+        loadingEl?.classList.add('d-none');
+        sinNotifEl?.classList.remove('d-none');
+        msgEl?.classList.add('d-none');
         return;
       }
+      pendingNotifId = notif.id;
+      showActions();
+    } catch (err) {
+      showLoadError('No se pudo cargar la notificación pendiente.');
+    }
+  })();
 
-      showResults(users);
+  if (btnAprobar) {
+    btnAprobar.addEventListener('click', async () => {
+      if (!pendingNotifId) return;
+      startSubmit();
+      try {
+        await notificationService.approve(pendingNotifId);
+        mostrarToast('Resolución aprobada.', 'success');
+        // SPA-reactive refresh: the PostgreSQL trigger has already written
+        // the status_history row, so we just re-render with the fresh
+        // incident payload (status badge / state dropdown / history).
+        await refreshAfterAudit(_incidentId, 'approve');
+      } catch (err) {
+        showSubmitError(err?.message || 'No se pudo aprobar la resolución.');
+        actionsEl?.classList.remove('d-none');
+      }
     });
-  });
+  }
+
+  if (btnRechazar) {
+    btnRechazar.addEventListener('click', async () => {
+      if (!pendingNotifId) return;
+      // Reuse the existing justificacion-rechazo-modal pattern: mount
+      // it lazily if it isn't in the DOM yet (mirrors _openAuditModal
+      // in the index page). show(callback) passes the trimmed reason.
+      let modal = document.getElementById('justificacion-rechazo-modal');
+      if (!modal) {
+        await import('../../../shared/components/justificacion-rechazo-modal/justificacion-rechazo-modal.component.js');
+        modal = document.createElement('justificacion-rechazo-modal');
+        modal.id = 'justificacion-rechazo-modal';
+        document.body.appendChild(modal);
+        // Yield once so connectedCallback + _render can finish before show().
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      await modal.show(async (reason) => {
+        if (typeof reason !== 'string' || reason.trim().length === 0) return;
+        startSubmit();
+        try {
+          await notificationService.reject(pendingNotifId, reason.trim());
+          mostrarToast('Resolución rechazada.', 'success');
+          await refreshAfterAudit(_incidentId, 'reject');
+        } catch (err) {
+          showSubmitError(err?.message || 'No se pudo rechazar la resolución.');
+          actionsEl?.classList.remove('d-none');
+        }
+      });
+    });
+  }
+}
+
+// ── Buscar Responsables (CP-03-01-F) ────────────────────────────
+// Card removed per product feedback (sc-123 / #150): with 1-3 responsibles
+// in typical orgs the picker added noise without utility. The `Asignaciones`
+// card below already exposes the operator select that powers assignment.
+
+// ── Audit refresh helper (sc-123 / #150) ────────────────────────────
+
+/**
+ * Populates the rejection-reason banner from a refreshed incident payload.
+ * Falls back to "—" for fields the backend may not expose via
+ * IncidentResource today (rejection_reason / rejected_by / rejected_at);
+ * the UI degrades gracefully and the banner stays hidden if everything is
+ * empty.
+ */
+function populateRejectionBanner(updatedInc) {
+  const reasonEl = document.getElementById('detalle-rejection-reason');
+  const byEl = document.getElementById('detalle-rejection-by');
+  const atEl = document.getElementById('detalle-rejection-at');
+
+  if (reasonEl) reasonEl.textContent = updatedInc.rejection_reason || '';
+
+  const rejectedBy =
+    updatedInc.rejected_by_user?.name || updatedInc.rejected_by?.name || '—';
+  if (byEl) byEl.textContent = rejectedBy;
+
+  if (atEl && updatedInc.rejected_at) {
+    atEl.textContent = new Date(updatedInc.rejected_at).toLocaleString(
+      'es-EC',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      },
+    );
+  }
+}
+
+/**
+ * SPA-reactive refresh after Aprobar / Rechazar. Mirrors the pattern used
+ * by setupEstado (status_history is already persisted server-side by the
+ * PostgreSQL trigger on every UPDATE of incidents.status).
+ */
+async function refreshAfterAudit(
+  incidentId,
+  action /* 'approve' | 'reject' */,
+) {
+  try {
+    const res = await http.get(`/incidents/${incidentId}`);
+    const updatedInc = res.data ?? res;
+
+    // 1. Status badge
+    const statusEl = document.getElementById('detalle-status');
+    if (statusEl) {
+      statusEl.textContent =
+        STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
+      statusEl.className = `ig-status-badge ig-status-${updatedInc.status}`;
+    }
+
+    // 2. State dropdown (valid transitions change)
+    setupEstado(incidentId, updatedInc);
+
+    // 3. Status history (server trigger already wrote the row)
+    renderHistorial(updatedInc.status_history ?? []);
+
+    // 4. Re-render incident header (in case other fields changed)
+    renderizarIncidencia(updatedInc);
+
+    // 5. Audit card: hide (state no longer 'resolved')
+    const auditCard = document.getElementById('detalle-auditar');
+    if (auditCard) auditCard.classList.add('d-none');
+
+    // 6. Rejection banner: show if reject, hide if approve
+    const banner = document.getElementById('detalle-rejection-banner');
+    if (banner) {
+      if (action === 'reject' && updatedInc.rejection_reason) {
+        populateRejectionBanner(updatedInc);
+        banner.classList.remove('d-none');
+      } else {
+        banner.classList.add('d-none');
+      }
+    }
+  } catch (err) {
+    console.error('Error al refrescar la incidencia:', err);
+    mostrarToast('No se pudo refrescar la incidencia.', 'danger');
+  }
 }

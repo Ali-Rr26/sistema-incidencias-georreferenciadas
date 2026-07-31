@@ -23,7 +23,7 @@ uses(RefreshDatabase::class);
 
 it('exposes values() on the incident enums', function () {
     expect(IncidentStatus::values())
-        ->toBe(['pending', 'in_progress', 'resolved'])
+        ->toBe(['pending', 'in_progress', 'resolved', 'closed'])
         ->and(IncidentPriority::values())
         ->toBe(['low', 'medium', 'high']);
 });

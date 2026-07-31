@@ -76,6 +76,11 @@ class Incident extends Model
         'geom',
         'claimed_by',
         'claimed_at',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'rejection_reason',
     ];
 
     protected $attributes = [
@@ -90,6 +95,8 @@ class Incident extends Model
             'status' => IncidentStatus::class,
             'priority' => IncidentPriority::class,
             'claimed_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             // Normalise FK at the model boundary so consumers (e.g.
             // `IncidentResource::toArray()` → `LocationRepository::ancestors(int $id)`)
             // always see `int`, not the raw JSON string from

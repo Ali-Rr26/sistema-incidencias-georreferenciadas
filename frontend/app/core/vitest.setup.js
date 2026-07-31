@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 class MockBootstrapWidget {
   constructor(element, options = {}) {
@@ -34,6 +34,7 @@ beforeEach(() => {
   window.location.hash = '';
 });
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+// NOTE: vi.restoreAllMocks() is intentionally omitted from this global afterEach.
+// It causes cross-test pollution by removing spy wrappers and restoring original
+// module properties between tests.  Each test file should manage its own cleanup
+// via local afterEach hooks (see incidencias.index.component.test.js pattern).

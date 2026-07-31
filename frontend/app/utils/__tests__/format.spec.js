@@ -70,7 +70,7 @@ describe('timeAgo', () => {
 describe('STATUS_LABEL (SCEN-1.1 consolidation)', () => {
   it('exposes the expected status keys', () => {
     expect(Object.keys(STATUS_LABEL).sort()).toEqual(
-      ['in_progress', 'pending', 'resolved'].sort(),
+      ['closed', 'in_progress', 'pending', 'resolved'].sort(),
     );
   });
 
@@ -78,6 +78,7 @@ describe('STATUS_LABEL (SCEN-1.1 consolidation)', () => {
     expect(STATUS_LABEL.pending).toBe('Pendiente');
     expect(STATUS_LABEL.in_progress).toBe('En proceso');
     expect(STATUS_LABEL.resolved).toBe('Resuelto');
+    expect(STATUS_LABEL.closed).toBe('Cerrada');
   });
 
   it('is frozen so accidental mutation throws in strict mode', () => {

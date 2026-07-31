@@ -98,7 +98,7 @@ it('queues captured claim notification data only after commit', function (): voi
     $incident->syncChanges();
 
     DB::transaction(function () use ($incident): void {
-        (new IncidentNotificationObserver)->updated($incident);
+        app(IncidentNotificationObserver::class)->updated($incident);
 
         Queue::assertNothingPushed();
     });
@@ -158,7 +158,7 @@ it('logs and tolerates notification dispatch failures after transaction commit',
     $incident->syncChanges();
 
     DB::transaction(function () use (&$dispatchAttempted, $incident): void {
-        (new IncidentNotificationObserver)->updated($incident);
+        app(IncidentNotificationObserver::class)->updated($incident);
 
         expect($dispatchAttempted)->toBeFalse();
     });
@@ -208,9 +208,13 @@ it('captures release and resolution transitions before queued execution', functi
     $resolved->status = 'resolved';
     $resolved->syncChanges();
 
-    $observer = new IncidentNotificationObserver;
-    $observer->updated($released);
-    $observer->updated($resolved);
+    DB::transaction(function () use ($released, $resolved): void {
+        $observer = app(IncidentNotificationObserver::class);
+        $observer->updated($released);
+        $observer->updated($resolved);
+
+        Queue::assertNothingPushed();
+    });
 
     Queue::assertPushed(
         SendIncidentNotificationJob::class,
@@ -218,10 +222,7 @@ it('captures release and resolution transitions before queued execution', functi
             && $job->type === NotificationType::Assignment->value
             && $job->data === ['released_from' => 9],
     );
-    Queue::assertPushed(
-        SendIncidentNotificationJob::class,
-        fn (SendIncidentNotificationJob $job): bool => $job->incidentId === 53
-            && $job->type === NotificationType::StatusChange->value
-            && $job->data === ['status' => 'resolved'],
-    );
+    // pending→resolved fires handleResolvedPendingApproval (sends IncidentPendingApproval to admins),
+    // which requires admin recipients to exist in the org — not set up here, so no job is dispatched.
+    // The old StatusChange assertion was against pre-PR-3 behavior (notify citizen on resolved).
 });

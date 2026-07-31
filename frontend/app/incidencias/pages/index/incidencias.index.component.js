@@ -27,7 +27,7 @@ export default {
     let totalPaginas = 1;
     let idEliminar = null;
 
-    function renderTabla(datos, total) {
+    async function renderTabla(datos, total) {
       if (!datos || datos.length === 0) {
         mostrarEstado('vacio');
         return;
@@ -44,7 +44,7 @@ export default {
             const categoria = inc.category?.name || '—';
             const ubicacion = inc.location?.name || '—';
             const titulo = inc.title || 'Sin título';
-            return `<tr data-id="${inc.id}" style="cursor:pointer;" class="lista-row">
+            return `<tr data-id="${inc.id}" data-status="${inc.status}" style="cursor:pointer;" class="lista-row">
             <td class="text-center"><input type="checkbox" class="form-check-input check-row" data-id="${inc.id}" /></td>
             <td>
               <div style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${inc.title ?? ''}">
@@ -63,7 +63,9 @@ export default {
           })
           .join('');
 
-        hydrateKebabActions(tbody, datos, {
+        // Wait for kebab hydration so the dropdown menu is in the DOM
+        // before renderTabla returns.
+        await hydrateKebabActions(tbody, datos, {
           slugs: { update: 'incidents.update', delete: 'incidents.delete' },
           showView: false,
           itemTitle: (inc) => inc.title || 'Sin título',
@@ -79,7 +81,7 @@ export default {
             const ubicacion = inc.location?.name || '—';
             const titulo = inc.title || 'Sin título';
             return `
-            <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" style="cursor:pointer;">
+            <div class="card mb-2 shadow-sm lista-card" data-id="${inc.id}" data-status="${inc.status}" style="cursor:pointer;">
               <div class="card-body p-1" style="padding:0.75rem !important;">
                 <!-- Título y categoría -->
                 <div class="mb-1">
@@ -116,8 +118,9 @@ export default {
           })
           .join('');
 
-        // Mount table-actions on each mobile card (async — does not block DOM insertion)
-        hydrateKebabActions(cards, datos, {
+        // Wait for kebab hydration so the dropdown menu is in the DOM
+        // before renderTabla returns.
+        await hydrateKebabActions(cards, datos, {
           slugs: { update: 'incidents.update', delete: 'incidents.delete' },
           showView: false,
           itemTitle: (inc) => inc.title || 'Sin título',
@@ -163,7 +166,7 @@ export default {
     }
 
     // Delegated click handler for kebab actions ([data-action="view|edit|delete"])
-    function manejarAcciones(e) {
+    async function manejarAcciones(e) {
       const target = e.target.closest('[data-action]');
       if (!target) return;
       const { id, titulo, action } = target.dataset;
@@ -180,6 +183,7 @@ export default {
         idEliminar = id;
         document.getElementById('modal-eliminar-titulo').textContent = titulo;
         new bootstrap.Modal(document.getElementById('modal-eliminar')).show();
+        return;
       }
     }
 
@@ -271,7 +275,7 @@ export default {
         ?.classList.remove('d-none');
     }
 
-    cargarIncidencias(1);
+    await cargarIncidencias(1);
   },
 
   onDestroy() {

@@ -47,7 +47,10 @@ vi.mock('../../../core/http.service.js', async (importOriginal) => {
 const mockRouter = vi.hoisted(() => ({ navigate: vi.fn() }));
 vi.mock('../../../core/router.js', () => ({ router: mockRouter }));
 
-const mockAuth = vi.hoisted(() => ({ getUser: vi.fn(() => null) }));
+const mockAuth = vi.hoisted(() => ({
+  getUser: vi.fn(() => null),
+  me: vi.fn(),
+}));
 vi.mock('../../../auth/auth.service.js', () => ({ auth: mockAuth }));
 
 const mockPermissionService = vi.hoisted(() => ({
@@ -56,6 +59,40 @@ const mockPermissionService = vi.hoisted(() => ({
 vi.mock('../../../shared/permission.service.js', () => ({
   permissionService: mockPermissionService,
 }));
+
+const mockNotificationService = vi.hoisted(() => ({
+  getPendingApprovals: vi.fn(),
+  approve: vi.fn(),
+  reject: vi.fn(),
+}));
+vi.mock('../../../shared/notification.service.js', () => ({
+  notificationService: mockNotificationService,
+}));
+
+const mockUi = vi.hoisted(() => ({ mostrarToast: vi.fn() }));
+vi.mock('../../../utils/ui.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  return { ...mod, mostrarToast: mockUi.mostrarToast };
+});
+
+// Stub the justificacion-rechazo-modal module so the dynamic import
+// in setupAuditar returns a predictable class. The real module calls
+// customElements.define() on import, which conflicts when the same
+// custom element is registered more than once across the suite.
+class StubRechazoModal extends HTMLElement {
+  connectedCallback() {}
+  show(cb) {
+    StubRechazoModal._lastCallback = cb;
+  }
+}
+StubRechazoModal._lastCallback = null;
+if (!customElements.get('justificacion-rechazo-modal')) {
+  customElements.define('justificacion-rechazo-modal', StubRechazoModal);
+}
+vi.mock(
+  '../../../shared/components/justificacion-rechazo-modal/justificacion-rechazo-modal.component.js',
+  () => ({ default: StubRechazoModal }),
+);
 
 function buildDetailDom() {
   document.body.innerHTML = `
@@ -91,6 +128,28 @@ function buildDetailDom() {
     <div id="detalle-comments-loading"></div>
     <ul id="detalle-comments-list"></ul>
     <p id="detalle-comments-vacio" class="d-none">Sin comentarios todavía.</p>
+
+    <div id="detalle-auditar" class="d-none">
+      <p id="detalle-auditar-msg"></p>
+      <div id="detalle-auditar-loading" class="d-none"></div>
+      <div id="detalle-auditar-sin-notif" class="d-none"></div>
+      <div id="detalle-auditar-actions" class="d-none">
+        <button id="btn-auditar-aprobar">Aprobar</button>
+        <button id="btn-auditar-rechazar">Rechazar</button>
+      </div>
+      <div id="detalle-auditar-submitting" class="d-none"></div>
+      <div id="detalle-auditar-error" class="d-none">
+        <div id="detalle-auditar-error-msg"></div>
+      </div>
+    </div>
+
+    <div id="detalle-rejection-banner" class="d-none">
+      <div id="detalle-rejection-reason"></div>
+      <span id="detalle-rejection-by">—</span>
+      <span id="detalle-rejection-at">—</span>
+    </div>
+
+    <div id="toast-msg"><div id="toast-msg-texto"></div></div>
 
     <div id="detalle-asignaciones-card">
       <div id="detalle-asignaciones-loading"></div>
@@ -768,5 +827,654 @@ describe('incidencias.detail — assignments', () => {
     expect(document.getElementById('detalle-asignaciones-list').innerHTML).toBe(
       '',
     );
+  });
+});
+
+/**
+ * incidencias.detail — inline "Aprobar / Rechazar" card (sc-123 / #150).
+ *
+ * Replaces the kebab "Auditar" entry from the index page. Visibility:
+ *   - incident.status === 'resolved' AND user is admin
+ * Behavior:
+ *   - fetches pending-approval notifications for the incident
+ *   - shows the action buttons when one matches
+ *   - shows the empty-state when the operator hasn't marked the
+ *     incident as resolved yet (or the notification was already
+ *     processed)
+ *   - Aprobar calls notificationService.approve and reloads
+ *   - Rechazar opens justificacion-rechazo-modal and, on confirm,
+ *     calls notificationService.reject with the trimmed reason
+ */
+function resolvedIncidentFixture(overrides = {}) {
+  return { ...incidentFixture, status: 'resolved', ...overrides };
+}
+
+describe('incidencias.detail — Aprobar / Rechazar card', () => {
+  let component;
+
+  beforeAll(async () => {
+    const mod = await import('./incidencias.detail.component.js');
+    component = mod.default;
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.getUser.mockReturnValue(null);
+    // Default: anonymous user → the IIFE inside setupAuditar returns
+    // early and the card stays hidden. Per-test override sets the
+    // admin role to flip the gate.
+    mockAuth.me.mockResolvedValue(null);
+    mockPermissionService.getMyPermissions.mockResolvedValue(new Set());
+    // Default: no pending notifications, so the "sin notif" branch
+    // is what the not-admin-by-default tests observe.
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [],
+      meta: { total: 0 },
+    });
+    mockNotificationService.approve.mockResolvedValue(null);
+    mockNotificationService.reject.mockResolvedValue(null);
+    StubRechazoModal._lastCallback = null;
+    buildDetailDom();
+  });
+
+  afterEach(() => {
+    component.onDestroy?.();
+  });
+
+  it('keeps #detalle-auditar hidden when status is not "resolved"', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: incidentFixture }); // status: 'pending'
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    // Give the IIFE a tick to settle.
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(true);
+    expect(mockNotificationService.getPendingApprovals).not.toHaveBeenCalled();
+  });
+
+  it('keeps #detalle-auditar hidden when status is "resolved" but the user is not admin', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'operador_organizacion' });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(true);
+    expect(mockNotificationService.getPendingApprovals).not.toHaveBeenCalled();
+  });
+
+  it('unhides #detalle-auditar and shows the action buttons when admin + pending notification exists', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar');
+      return el && !el.classList.contains('d-none');
+    });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    expect(mockNotificationService.getPendingApprovals).toHaveBeenCalledWith(
+      expect.objectContaining({ unreadOnly: false }),
+    );
+    expect(
+      document
+        .getElementById('detalle-auditar-loading')
+        .classList.contains('d-none'),
+    ).toBe(true);
+    expect(
+      document
+        .getElementById('detalle-auditar-sin-notif')
+        .classList.contains('d-none'),
+    ).toBe(true);
+    expect(
+      document
+        .getElementById('detalle-auditar-actions')
+        .classList.contains('d-none'),
+    ).toBe(false);
+  });
+
+  it('shows the "sin notif" branch when admin but the backend has no matching pending notification', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_organizacion' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        { id: 100, data: { incident_id: 99 } }, // different incident
+      ],
+      meta: { total: 1 },
+    });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-sin-notif');
+      return el && !el.classList.contains('d-none');
+    });
+
+    expect(
+      document
+        .getElementById('detalle-auditar-actions')
+        .classList.contains('d-none'),
+    ).toBe(true);
+  });
+
+  it('shows an inline error when getPendingApprovals rejects', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockRejectedValue(
+      new Error('boom'),
+    );
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-error');
+      return el && !el.classList.contains('d-none');
+    });
+
+    expect(
+      document.getElementById('detalle-auditar-error-msg').textContent,
+    ).toContain('No se pudo cargar la notificación pendiente.');
+  });
+
+  it('clicking Aprobar calls notificationService.approve and updates the page reactively (no full reload)', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockNotificationService.approve.mockResolvedValue({ id: 303 });
+    let getCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        getCallCount += 1;
+        if (getCallCount === 1) {
+          return Promise.resolve({ data: resolvedIncidentFixture() });
+        }
+        // The refresh GET — backend now reports the incident as 'closed'
+        // (auto-generated status_history row lives in DB via the trigger).
+        return Promise.resolve({
+          data: {
+            ...resolvedIncidentFixture(),
+            status: 'closed',
+            status_history: [
+              {
+                id: 9,
+                user_id: 1,
+                previous_status: 'resolved',
+                new_status: 'closed',
+                notes: null,
+                created_at: '2026-07-31T10:00:00Z',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    document.getElementById('btn-auditar-aprobar').click();
+
+    await vi.waitUntil(
+      () => mockNotificationService.approve.mock.calls.length > 0,
+    );
+    expect(mockNotificationService.approve).toHaveBeenCalledWith(303);
+    // The refresh path: confirm a second GET /incidents/42 fired.
+    await vi.waitUntil(() => getCallCount >= 2);
+    expect(mockHttp.get).toHaveBeenCalledWith('/incidents/42');
+    // Status badge reflects the new status (closed → "Cerrada").
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'Cerrada',
+    );
+    // Audit card is hidden now that the incident is no longer 'resolved'.
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(true);
+    // No full reload was triggered.
+    expect(reloadSpy).not.toHaveBeenCalled();
+    // Rejection banner stays hidden on approve.
+    expect(
+      document
+        .getElementById('detalle-rejection-banner')
+        .classList.contains('d-none'),
+    ).toBe(true);
+  });
+
+  it('clicking Rechazar opens the justificacion-rechazo-modal, submits reject, and refreshes reactively (no full reload)', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockNotificationService.reject.mockResolvedValue({ id: 303 });
+    let getCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        getCallCount += 1;
+        if (getCallCount === 1) {
+          return Promise.resolve({ data: resolvedIncidentFixture() });
+        }
+        // Post-reject: status reverts to in_progress and the rejection
+        // metadata is exposed (resource may not expose every field yet —
+        // the banner handles missing fields gracefully).
+        return Promise.resolve({
+          data: {
+            ...resolvedIncidentFixture(),
+            status: 'in_progress',
+            rejection_reason:
+              'La descripción no es clara respecto a la ubicación exacta.',
+            rejected_by_user: { name: 'Admin Test' },
+            rejected_at: '2026-07-31T10:30:00Z',
+            status_history: [
+              {
+                id: 9,
+                user_id: 1,
+                previous_status: 'resolved',
+                new_status: 'in_progress',
+                notes:
+                  'La descripción no es clara respecto a la ubicación exacta.',
+                created_at: '2026-07-31T10:30:00Z',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    document.getElementById('btn-auditar-rechazar').click();
+
+    await vi.waitUntil(
+      () => typeof StubRechazoModal._lastCallback === 'function',
+    );
+    // Simulate the modal handing the reason back.
+    await StubRechazoModal._lastCallback(
+      'La descripción no es clara respecto a la ubicación exacta.',
+    );
+
+    await vi.waitUntil(
+      () => mockNotificationService.reject.mock.calls.length > 0,
+    );
+    expect(mockNotificationService.reject).toHaveBeenCalledWith(
+      303,
+      'La descripción no es clara respecto a la ubicación exacta.',
+    );
+    await vi.waitUntil(() => getCallCount >= 2);
+    expect(mockHttp.get).toHaveBeenCalledWith('/incidents/42');
+    // Status badge reflects the new status (in_progress → "En proceso").
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'En proceso',
+    );
+    // Audit card is hidden now that the incident is no longer 'resolved'.
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(true);
+    // Rejection banner is visible with the reason and the actor metadata.
+    const banner = document.getElementById('detalle-rejection-banner');
+    expect(banner.classList.contains('d-none')).toBe(false);
+    expect(
+      document.getElementById('detalle-rejection-reason').textContent,
+    ).toBe('La descripción no es clara respecto a la ubicación exacta.');
+    expect(document.getElementById('detalle-rejection-by').textContent).toBe(
+      'Admin Test',
+    );
+    expect(
+      document.getElementById('detalle-rejection-at').textContent,
+    ).not.toBe('—');
+    // No full reload was triggered.
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('shows an inline error and re-enables actions when approve fails', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockNotificationService.approve.mockRejectedValue(new Error('forbidden'));
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    document.getElementById('btn-auditar-aprobar').click();
+
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-error');
+      return el && !el.classList.contains('d-none');
+    });
+    expect(
+      document.getElementById('detalle-auditar-error-msg').textContent,
+    ).toBe('forbidden');
+    expect(
+      document
+        .getElementById('detalle-auditar-actions')
+        .classList.contains('d-none'),
+    ).toBe(false);
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('hides the welcome msg when no notification is found', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 100,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 99 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-sin-notif');
+      return el && !el.classList.contains('d-none');
+    });
+
+    expect(
+      document
+        .getElementById('detalle-auditar-msg')
+        .classList.contains('d-none'),
+    ).toBe(true);
+    expect(
+      document
+        .getElementById('detalle-auditar-sin-notif')
+        .classList.contains('d-none'),
+    ).toBe(false);
+  });
+
+  it('shows the welcome msg only when actions are revealed', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        return Promise.resolve({ data: resolvedIncidentFixture() });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    expect(
+      document
+        .getElementById('detalle-auditar-msg')
+        .classList.contains('d-none'),
+    ).toBe(false);
+    expect(
+      document
+        .getElementById('detalle-auditar-actions')
+        .classList.contains('d-none'),
+    ).toBe(false);
+  });
+
+  it('shows rejection reason banner after rejecting', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockNotificationService.reject.mockResolvedValue({ id: 303 });
+    let getCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        getCallCount += 1;
+        if (getCallCount === 1) {
+          return Promise.resolve({ data: resolvedIncidentFixture() });
+        }
+        return Promise.resolve({
+          data: {
+            ...resolvedIncidentFixture(),
+            status: 'in_progress',
+            rejection_reason: 'Faltan imágenes',
+            rejected_by_user: { name: 'Admin Test' },
+            rejected_at: '2026-07-31T10:30:00Z',
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    // Banner starts hidden on initial load.
+    expect(
+      document
+        .getElementById('detalle-rejection-banner')
+        .classList.contains('d-none'),
+    ).toBe(true);
+
+    document.getElementById('btn-auditar-rechazar').click();
+    await vi.waitUntil(
+      () => typeof StubRechazoModal._lastCallback === 'function',
+    );
+    await StubRechazoModal._lastCallback('Faltan imágenes');
+
+    await vi.waitUntil(() => getCallCount >= 2);
+    const banner = document.getElementById('detalle-rejection-banner');
+    expect(banner.classList.contains('d-none')).toBe(false);
+    expect(
+      document.getElementById('detalle-rejection-reason').textContent,
+    ).toBe('Faltan imágenes');
+    expect(document.getElementById('detalle-rejection-by').textContent).toBe(
+      'Admin Test',
+    );
+    expect(document.getElementById('detalle-rejection-at').textContent).toMatch(
+      /\d{2}\/\d{2}\/\d{4}/,
+    );
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it('updates status badge and hides audit card after approving (no reload)', async () => {
+    mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
+    mockNotificationService.getPendingApprovals.mockResolvedValue({
+      data: [
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    mockNotificationService.approve.mockResolvedValue({ id: 303 });
+    let getCallCount = 0;
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incidents/42') {
+        getCallCount += 1;
+        if (getCallCount === 1) {
+          return Promise.resolve({ data: resolvedIncidentFixture() });
+        }
+        return Promise.resolve({
+          data: {
+            ...resolvedIncidentFixture(),
+            status: 'closed',
+            status_history: [
+              {
+                id: 9,
+                user_id: 1,
+                previous_status: 'resolved',
+                new_status: 'closed',
+                notes: null,
+                created_at: '2026-07-31T10:00:00Z',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const reloadSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, reload: reloadSpy },
+    });
+
+    await component.onInit({ params: { id: 42 } });
+    await vi.waitUntil(() => {
+      const el = document.getElementById('detalle-auditar-actions');
+      return el && !el.classList.contains('d-none');
+    });
+
+    // Before approving: badge says "Resuelto" and audit card is visible.
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'Resuelto',
+    );
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(false);
+
+    document.getElementById('btn-auditar-aprobar').click();
+
+    await vi.waitUntil(() => getCallCount >= 2);
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'Cerrada',
+    );
+    expect(
+      document.getElementById('detalle-auditar').classList.contains('d-none'),
+    ).toBe(true);
+    // Confirm SPA-reactive refresh: GET /incidents/{id} was the refresh path.
+    const refreshCalls = mockHttp.get.mock.calls.filter(
+      ([url]) => url === '/incidents/42',
+    );
+    expect(refreshCalls.length).toBeGreaterThanOrEqual(2);
+    expect(reloadSpy).not.toHaveBeenCalled();
   });
 });
