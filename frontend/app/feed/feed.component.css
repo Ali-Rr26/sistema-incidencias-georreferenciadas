@@ -623,20 +623,41 @@ body.feed-view {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   FEED FOOTER MESSAGE
+   FEED END-OF-LIST INDICATOR
+   Sentinel (spinner) is shown while the next page is loading and hidden
+   the moment the last page is reached. The footer message replaces it
+   with a soft divider + success icon + copy — distinct visual language
+   so the user knows the list is finite, not broken.
    ═════════════════════════════════════════════════════════════════════════ */
 
+.feed-sentinel.done {
+  /* Hide the spinner once the last page is in. The IntersectionObserver
+     already disconnects on .done, so no further fetches fire — leaving
+     the spinner spinning would just look like a stuck load. */
+  display: none;
+}
+
 .feed-footer-message {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px 32px;
+  margin-top: 24px;
   font-size: 13px;
-  color: #a3a8b8;
+  font-weight: 500;
+  color: #6b7180;
+  border-top: 1px solid #eef0f5;
+  text-align: center;
+}
+
+.feed-footer-message i {
+  color: #16a96b;
+  font-size: 14px;
 }
 
 .feed-sentinel.done ~ .feed-footer-message {
-  display: block;
-}
-
-.feed-sentinel:not(.done) ~ .feed-footer-message {
-  display: none;
+  display: flex;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════

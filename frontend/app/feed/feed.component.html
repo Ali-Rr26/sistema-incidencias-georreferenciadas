@@ -144,7 +144,7 @@
     <div id="feed-scroll-region" class="feed-scroll-region">
       <div id="feed-list" class="feed-cards row g-3"></div>
 
-      <!-- Infinite scroll sentinel -->
+      <!-- Infinite scroll sentinel (visible only while loading more pages) -->
       <div
         id="feed-sentinel"
         class="feed-sentinel d-flex justify-content-center"
@@ -154,9 +154,10 @@
         </div>
       </div>
 
-      <!-- All incidents viewed footer -->
-      <div class="feed-footer-message text-center text-muted mt-4 pb-3">
-        Todos los incidentes han sido mostrados
+      <!-- End-of-list indicator (visible only once the last page is reached) -->
+      <div class="feed-footer-message" role="status">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <span>Has visto todos los incidentes</span>
       </div>
     </div>
   </div>

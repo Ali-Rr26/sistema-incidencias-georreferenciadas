@@ -78,7 +78,10 @@ const FEED_TEMPLATE = `
       <div id="feed-sentinel" class="feed-sentinel d-flex justify-content-center">
         <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
       </div>
-      <div class="feed-footer-message text-center text-muted mt-4 pb-3">Todos los incidentes han sido mostrados</div>
+      <div class="feed-footer-message" role="status">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <span>Has visto todos los incidentes</span>
+      </div>
     </div>
   </div>
   <aside class="col-12 col-lg-4 position-sticky top-0 d-none d-lg-block">
