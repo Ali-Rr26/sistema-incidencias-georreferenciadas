@@ -891,9 +891,7 @@ function setupAuditar(_incidentId, inc) {
       // in the index page). show(callback) passes the trimmed reason.
       let modal = document.getElementById('justificacion-rechazo-modal');
       if (!modal) {
-        await import(
-          '../../../shared/components/justificacion-rechazo-modal/justificacion-rechazo-modal.component.js'
-        );
+        await import('../../../shared/components/justificacion-rechazo-modal/justificacion-rechazo-modal.component.js');
         modal = document.createElement('justificacion-rechazo-modal');
         modal.id = 'justificacion-rechazo-modal';
         document.body.appendChild(modal);
@@ -938,9 +936,7 @@ function populateRejectionBanner(updatedInc) {
   if (reasonEl) reasonEl.textContent = updatedInc.rejection_reason || '';
 
   const rejectedBy =
-    updatedInc.rejected_by_user?.name ||
-    updatedInc.rejected_by?.name ||
-    '—';
+    updatedInc.rejected_by_user?.name || updatedInc.rejected_by?.name || '—';
   if (byEl) byEl.textContent = rejectedBy;
 
   if (atEl && updatedInc.rejected_at) {
@@ -962,7 +958,10 @@ function populateRejectionBanner(updatedInc) {
  * by setupEstado (status_history is already persisted server-side by the
  * PostgreSQL trigger on every UPDATE of incidents.status).
  */
-async function refreshAfterAudit(incidentId, action /* 'approve' | 'reject' */) {
+async function refreshAfterAudit(
+  incidentId,
+  action /* 'approve' | 'reject' */,
+) {
   try {
     const res = await http.get(`/incidents/${incidentId}`);
     const updatedInc = res.data ?? res;
@@ -970,7 +969,8 @@ async function refreshAfterAudit(incidentId, action /* 'approve' | 'reject' */) 
     // 1. Status badge
     const statusEl = document.getElementById('detalle-status');
     if (statusEl) {
-      statusEl.textContent = STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
+      statusEl.textContent =
+        STATUS_LABEL[updatedInc.status] ?? updatedInc.status;
       statusEl.className = `ig-status-badge ig-status-${updatedInc.status}`;
     }
 

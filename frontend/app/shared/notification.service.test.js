@@ -128,13 +128,19 @@ describe('notificationService', () => {
     err.status = 500;
     http.post.mockRejectedValue(err);
 
-    await expect(notificationService.approve(123)).rejects.toThrow('Internal Server Error');
+    await expect(notificationService.approve(123)).rejects.toThrow(
+      'Internal Server Error',
+    );
   });
 
   // ─── reject ──────────────────────────────────────────────────────────────────
 
   it('reject sends reason in body', async () => {
-    const payload = { id: 123, status: 'rejected', reason: 'motivo válido 123' };
+    const payload = {
+      id: 123,
+      status: 'rejected',
+      reason: 'motivo válido 123',
+    };
     http.post.mockResolvedValue({ data: payload });
 
     const result = await notificationService.reject(123, 'motivo válido 123');
@@ -146,9 +152,9 @@ describe('notificationService', () => {
   });
 
   it('reject throws when reason too short', async () => {
-    await expect(
-      notificationService.reject(123, 'corto'),
-    ).rejects.toThrow('Reason must be a string between 10 and 500 characters.');
+    await expect(notificationService.reject(123, 'corto')).rejects.toThrow(
+      'Reason must be a string between 10 and 500 characters.',
+    );
   });
 
   it('reject throws when reason too long', async () => {
@@ -158,9 +164,9 @@ describe('notificationService', () => {
   });
 
   it('reject throws when reason not string', async () => {
-    await expect(
-      notificationService.reject(123, null),
-    ).rejects.toThrow('Reason must be a string between 10 and 500 characters.');
+    await expect(notificationService.reject(123, null)).rejects.toThrow(
+      'Reason must be a string between 10 and 500 characters.',
+    );
   });
 
   it('reject propagates 4xx', async () => {
@@ -190,9 +196,7 @@ describe('notificationService', () => {
 
     await notificationService.getPendingApprovals({ page: 2, perPage: 10 });
 
-    expect(http.get).toHaveBeenCalledWith(
-      expect.stringContaining('page=2'),
-    );
+    expect(http.get).toHaveBeenCalledWith(expect.stringContaining('page=2'));
     expect(http.get).toHaveBeenCalledWith(
       expect.stringContaining('per_page=10'),
     );

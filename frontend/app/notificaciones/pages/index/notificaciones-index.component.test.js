@@ -124,7 +124,10 @@ const MOCK_PENDING_NOTIFS = [
     type: 'incident_pending_approval',
     read_at: null,
     title: 'Bache en Rivadavia',
-    data: { title: 'Bache en Rivadavia', organization: { name: 'Municipalidad' } },
+    data: {
+      title: 'Bache en Rivadavia',
+      organization: { name: 'Municipalidad' },
+    },
     organization: { name: 'Municipalidad' },
     created_at: '2024-01-15T10:00:00Z',
   },
@@ -228,7 +231,10 @@ async function loadComponentWithPending(pendingNotifs, pendingTotal) {
       return Promise.resolve({ id: '1', role: 'admin_sistema' });
     }
     if (url.includes('type=incident_pending_approval')) {
-      return Promise.resolve({ data: pendingNotifs, meta: { total: pendingTotal } });
+      return Promise.resolve({
+        data: pendingNotifs,
+        meta: { total: pendingTotal },
+      });
     }
     if (url.includes('/notifications?')) {
       return Promise.resolve({ data: [], meta: { total: 0 }, unread_count: 0 });

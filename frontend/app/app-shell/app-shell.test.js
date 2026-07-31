@@ -2342,7 +2342,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       const { badge } = adminBellRefs();
 
       // Wait for the unreadCount() promise triggered during init() to resolve.
-      await vi.waitFor(() => expect(badge.textContent).toBe('5'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('5'), {
+        timeout: 1000,
+      });
 
       expect(badge.classList.contains('d-none')).toBe(false);
     } finally {
@@ -2364,7 +2366,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       const { badge } = adminBellRefs();
 
       // Wait for initial count to be set.
-      await vi.waitFor(() => expect(badge.textContent).toBe('2'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('2'), {
+        timeout: 1000,
+      });
 
       // Simulate SSE event for a new pending approval notification.
       // Backend now has 3 pending approvals.
@@ -2382,7 +2386,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       });
 
       // Counter incremented to reflect the new pending approval.
-      await vi.waitFor(() => expect(badge.textContent).toBe('3'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
     } finally {
       appShell.destroy();
       if (typeof unsub === 'function') unsub();
@@ -2402,7 +2408,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       const { badge } = adminBellRefs();
 
       // Wait for initial count to be set.
-      await vi.waitFor(() => expect(badge.textContent).toBe('3'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
 
       // Simulate SSE event for a comment notification (not a pending approval).
       // The backend still returns 3 because it filters by incident_pending_approval.
@@ -2420,7 +2428,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       });
 
       // Counter unchanged — non-pending notifications don't affect the pending count.
-      await vi.waitFor(() => expect(badge.textContent).toBe('3'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
     } finally {
       appShell.destroy();
       if (typeof unsub === 'function') unsub();
@@ -2437,7 +2447,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
     try {
       const { badge } = adminBellRefs();
 
-      await vi.waitFor(() => expect(badge.textContent).toBe('4'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('4'), {
+        timeout: 1000,
+      });
 
       // SSE for assignment (not a pending approval).
       unreadCountSpy.mockResolvedValue(4);
@@ -2471,7 +2483,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
     try {
       const { badge } = adminBellRefs();
 
-      await vi.waitFor(() => expect(badge.textContent).toBe('1'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('1'), {
+        timeout: 1000,
+      });
 
       // Simulate auth change (page refresh / re-login).
       // The backend now has 6 pending approvals.
@@ -2479,7 +2493,9 @@ describe('appShell — pending-approval bell counter (WU-7)', () => {
       // Trigger populateHeader again via auth change.
       const { appShell: shell2 } = await import('./app-shell.component.js');
       await shell2.init();
-      await vi.waitFor(() => expect(badge.textContent).toBe('6'), { timeout: 1000 });
+      await vi.waitFor(() => expect(badge.textContent).toBe('6'), {
+        timeout: 1000,
+      });
 
       shell2.destroy();
     } finally {

@@ -96,7 +96,9 @@ const component = {
       tablaBody.addEventListener('click', (e) => this._manejarAcciones(e));
     }
     if (contenedorCards) {
-      contenedorCards.addEventListener('click', (e) => this._manejarAcciones(e));
+      contenedorCards.addEventListener('click', (e) =>
+        this._manejarAcciones(e),
+      );
     }
 
     // Confirm reject button
@@ -106,9 +108,7 @@ const component = {
     if (btnConfirmarRechazar) {
       btnConfirmarRechazar.addEventListener('click', async () => {
         if (!this._idRechazar) return;
-        const reason = document
-          .getElementById('rechazo-motivo')
-          ?.value?.trim();
+        const reason = document.getElementById('rechazo-motivo')?.value?.trim();
         if (!reason) {
           mostrarToast('El motivo del rechazo es obligatorio.', 'danger');
           return;
@@ -191,17 +191,14 @@ const component = {
     if (esDesktop) {
       tbody.innerHTML = datos
         .map((notif) => {
-          const titulo =
-            notif.data?.title || notif.title || 'Sin título';
+          const titulo = notif.data?.title || notif.title || 'Sin título';
           const tipo = notif.type || 'incident_pending_approval';
           const leida = notif.read_at != null;
           const createdAt = notif.created_at
             ? formatearFecha(notif.created_at)
             : '—';
           const organizationName =
-            notif.data?.organization?.name ||
-            notif.organization?.name ||
-            '—';
+            notif.data?.organization?.name || notif.organization?.name || '—';
 
           return `<tr data-id="${notif.id}" class="lista-row ${leida ? '' : 'fw-semibold'}">
             <td class="text-center">
@@ -239,17 +236,14 @@ const component = {
       tbody.innerHTML = '';
       cards.innerHTML = datos
         .map((notif) => {
-          const titulo =
-            notif.data?.title || notif.title || 'Sin título';
+          const titulo = notif.data?.title || notif.title || 'Sin título';
           const tipo = notif.type || 'incident_pending_approval';
           const leida = notif.read_at != null;
           const createdAt = notif.created_at
             ? formatearFecha(notif.created_at)
             : '—';
           const organizationName =
-            notif.data?.organization?.name ||
-            notif.organization?.name ||
-            '—';
+            notif.data?.organization?.name || notif.organization?.name || '—';
 
           return `
           <div class="card mb-2 shadow-sm lista-card" data-id="${notif.id}" style="cursor:pointer;">

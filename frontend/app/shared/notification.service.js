@@ -78,7 +78,11 @@ export const notificationService = {
    * @returns {Promise<object>} Updated notification resource
    */
   async reject(id, reason) {
-    if (typeof reason !== 'string' || reason.length < 10 || reason.length > 500) {
+    if (
+      typeof reason !== 'string' ||
+      reason.length < 10 ||
+      reason.length > 500
+    ) {
       throw new Error('Reason must be a string between 10 and 500 characters.');
     }
     const resp = await http.post(`/notifications/${id}/reject`, { reason });

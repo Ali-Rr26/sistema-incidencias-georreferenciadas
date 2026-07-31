@@ -922,7 +922,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1010,9 +1015,7 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     });
 
     expect(
-      document
-        .getElementById('detalle-auditar-error-msg')
-        .textContent,
+      document.getElementById('detalle-auditar-error-msg').textContent,
     ).toContain('No se pudo cargar la notificación pendiente.');
   });
 
@@ -1020,7 +1023,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1067,13 +1075,17 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
 
     document.getElementById('btn-auditar-aprobar').click();
 
-    await vi.waitUntil(() => mockNotificationService.approve.mock.calls.length > 0);
+    await vi.waitUntil(
+      () => mockNotificationService.approve.mock.calls.length > 0,
+    );
     expect(mockNotificationService.approve).toHaveBeenCalledWith(303);
     // The refresh path: confirm a second GET /incidents/42 fired.
     await vi.waitUntil(() => getCallCount >= 2);
     expect(mockHttp.get).toHaveBeenCalledWith('/incidents/42');
     // Status badge reflects the new status (closed → "Cerrada").
-    expect(document.getElementById('detalle-status').textContent).toBe('Cerrada');
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'Cerrada',
+    );
     // Audit card is hidden now that the incident is no longer 'resolved'.
     expect(
       document.getElementById('detalle-auditar').classList.contains('d-none'),
@@ -1092,7 +1104,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1121,7 +1138,8 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
                 user_id: 1,
                 previous_status: 'resolved',
                 new_status: 'in_progress',
-                notes: 'La descripción no es clara respecto a la ubicación exacta.',
+                notes:
+                  'La descripción no es clara respecto a la ubicación exacta.',
                 created_at: '2026-07-31T10:30:00Z',
               },
             ],
@@ -1152,7 +1170,9 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
       'La descripción no es clara respecto a la ubicación exacta.',
     );
 
-    await vi.waitUntil(() => mockNotificationService.reject.mock.calls.length > 0);
+    await vi.waitUntil(
+      () => mockNotificationService.reject.mock.calls.length > 0,
+    );
     expect(mockNotificationService.reject).toHaveBeenCalledWith(
       303,
       'La descripción no es clara respecto a la ubicación exacta.',
@@ -1187,13 +1207,16 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
-    mockNotificationService.approve.mockRejectedValue(
-      new Error('forbidden'),
-    );
+    mockNotificationService.approve.mockRejectedValue(new Error('forbidden'));
     mockHttp.get.mockImplementation((path) => {
       if (path === '/incidents/42') {
         return Promise.resolve({ data: resolvedIncidentFixture() });
@@ -1233,7 +1256,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 100, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 99 } },
+        {
+          id: 100,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 99 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1266,7 +1294,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1299,7 +1332,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1357,9 +1395,9 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     expect(document.getElementById('detalle-rejection-by').textContent).toBe(
       'Admin Test',
     );
-    expect(
-      document.getElementById('detalle-rejection-at').textContent,
-    ).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+    expect(document.getElementById('detalle-rejection-at').textContent).toMatch(
+      /\d{2}\/\d{2}\/\d{4}/,
+    );
     expect(reloadSpy).not.toHaveBeenCalled();
   });
 
@@ -1367,7 +1405,12 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     mockAuth.me.mockResolvedValue({ role: 'admin_sistema' });
     mockNotificationService.getPendingApprovals.mockResolvedValue({
       data: [
-        { id: 303, type: 'incident_pending_approval', processed_at: null, data: { incident_id: 42 } },
+        {
+          id: 303,
+          type: 'incident_pending_approval',
+          processed_at: null,
+          data: { incident_id: 42 },
+        },
       ],
       meta: { total: 1 },
     });
@@ -1421,7 +1464,9 @@ describe('incidencias.detail — Aprobar / Rechazar card', () => {
     document.getElementById('btn-auditar-aprobar').click();
 
     await vi.waitUntil(() => getCallCount >= 2);
-    expect(document.getElementById('detalle-status').textContent).toBe('Cerrada');
+    expect(document.getElementById('detalle-status').textContent).toBe(
+      'Cerrada',
+    );
     expect(
       document.getElementById('detalle-auditar').classList.contains('d-none'),
     ).toBe(true);
