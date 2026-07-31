@@ -623,18 +623,35 @@ body.feed-view {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
-   FEED END-OF-LIST INDICATOR
-   Sentinel (spinner) is shown while the next page is loading and hidden
-   the moment the last page is reached. The footer message replaces it
-   with a soft divider + success icon + copy — distinct visual language
-   so the user knows the list is finite, not broken.
+   FEED LOADING + END-OF-LIST INDICATOR
+
+   Two distinct visual states, both replace the old always-visible spinner:
+
+   1. While the next page is in flight (#feed-loading has no .d-none):
+      a centered spinner. Tells the user "wait, more is coming".
+
+   2. Once the last page is reached (trigger has .done):
+      a soft divider + success icon + copy. Tells the user "you've seen
+      everything; the list is finite".
+
+   The trigger element itself stays invisible — it's just an
+   IntersectionObserver target. Bootstrap's d-flex/d-none utility classes
+   are used on the loading element so the JS only needs to toggle a single
+   class to flip the state.
    ═════════════════════════════════════════════════════════════════════════ */
 
-.feed-sentinel.done {
-  /* Hide the spinner once the last page is in. The IntersectionObserver
-     already disconnects on .done, so no further fetches fire — leaving
-     the spinner spinning would just look like a stuck load. */
-  display: none;
+.feed-scroll-trigger {
+  height: 1px;
+}
+
+.feed-loading {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.feed-loading.d-none {
+  display: none !important;
 }
 
 .feed-footer-message {
@@ -656,7 +673,10 @@ body.feed-view {
   font-size: 14px;
 }
 
-.feed-sentinel.done ~ .feed-footer-message {
+/* When the trigger's done state is reached, the footer message takes
+   over the visual slot. Using the sibling general-sibling combinator so
+   the loading element sitting between them does not break the rule. */
+#feed-scroll-trigger.done ~ .feed-footer-message {
   display: flex;
 }
 

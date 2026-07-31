@@ -232,7 +232,8 @@ const LIST = 'feed-list';
 const FILTERS = 'feed-filters';
 const SKELETON = 'feed-cargando';
 const VACIO = 'feed-vacio';
-const SENTINEL = 'feed-sentinel';
+const TRIGGER = 'feed-scroll-trigger';
+const LOADING = 'feed-loading';
 const SCROLL_REGION = 'feed-scroll-region';
 const CHIP_SELECTOR = '.feed-chip';
 
@@ -359,14 +360,20 @@ export default {
       const listEl = document.getElementById(LIST);
       const skeleton = document.getElementById(SKELETON);
       const vacio = document.getElementById(VACIO);
-      const sentinel = document.getElementById(SENTINEL);
+      const trigger = document.getElementById(TRIGGER);
+      const loadingEl = document.getElementById(LOADING);
 
       if (!append) {
         skeleton.classList.remove('d-none');
         listEl.innerHTML = '';
         vacio.classList.add('d-none');
-        sentinel.classList.remove('done');
+        trigger.classList.remove('done');
         todasLasIncidencias = [];
+      } else {
+        // Infinite-scroll fetch: only here do we show the spinner. The
+        // initial load uses the skeleton loader instead, so the user
+        // never sees a spinner spin idly at the bottom of the list.
+        loadingEl.classList.remove('d-none');
       }
 
       const params = new URLSearchParams({
@@ -385,19 +392,20 @@ export default {
         const hasMore = paginaActual < totalPaginas;
 
         skeleton.classList.add('d-none');
+        loadingEl.classList.add('d-none');
 
         if (!append) todasLasIncidencias = datos;
         else todasLasIncidencias = [...todasLasIncidencias, ...datos];
 
         renderList();
-        sentinel.classList.toggle('done', !hasMore);
-        sentinel.classList.toggle('loading', hasMore && !cargando);
+        trigger.classList.toggle('done', !hasMore);
       } catch {
         skeleton.classList.add('d-none');
+        loadingEl.classList.add('d-none');
         vacio.classList.remove('d-none');
         vacio.querySelector('p').textContent =
           'Error al cargar. Intente de nuevo.';
-        document.getElementById(SENTINEL).classList.add('done');
+        document.getElementById(TRIGGER).classList.add('done');
       } finally {
         cargando = false;
       }
@@ -466,14 +474,14 @@ export default {
     function setupInfiniteScroll() {
       if (observer) observer.disconnect();
 
-      const sentinel = document.getElementById(SENTINEL);
-      if (!sentinel || sentinel.classList.contains('done')) return;
+      const trigger = document.getElementById(TRIGGER);
+      if (!trigger || trigger.classList.contains('done')) return;
 
       // The feed-scroll-region is the only scrollable area when the
       // feed is mounted (we force `body.feed-view { overflow: hidden }`
       // in the component CSS to disable the app-shell-main scroll).
       // Scope the IntersectionObserver to it so the infinite-scroll
-      // trigger fires when the sentinel reaches its bottom. Guard
+      // trigger fires when the trigger reaches its bottom. Guard
       // against a missing root so we don't silently fall back to the
       // viewport (REL-1 fix).
       const root = document.getElementById(SCROLL_REGION);
@@ -491,7 +499,6 @@ export default {
             !cargando &&
             paginaActual < totalPaginas
           ) {
-            sentinel.classList.add('loading');
             fetchIncidencias(paginaActual + 1, true);
           }
         },

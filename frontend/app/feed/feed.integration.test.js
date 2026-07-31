@@ -75,8 +75,9 @@ const FEED_TEMPLATE = `
     </div>
     <div id="feed-scroll-region" class="feed-scroll-region">
       <div id="feed-list" class="feed-cards row g-3"></div>
-      <div id="feed-sentinel" class="feed-sentinel d-flex justify-content-center">
-        <div class="feed-sentinel-spinner"><div class="feed-spinner"></div></div>
+      <div id="feed-scroll-trigger" class="feed-scroll-trigger" aria-hidden="true"></div>
+      <div id="feed-loading" class="feed-loading d-none">
+        <div class="feed-spinner"></div>
       </div>
       <div class="feed-footer-message" role="status">
         <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
