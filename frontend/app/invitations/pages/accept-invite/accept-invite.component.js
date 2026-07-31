@@ -173,6 +173,13 @@ function escapeAttr(s) {
   return escapeHtml(s);
 }
 
+// Module-level handle for the password strength meter. Lives outside
+// the exported object so both onInit (mount) and onDestroy (teardown)
+// can reach it — they are separate closure scopes on the literal
+// export object. Without this, every navigation away + back would
+// leak an extra pair of input listeners.
+let _passwordMeter = null;
+
 export default {
   template,
   style,
@@ -318,7 +325,10 @@ export default {
     // verbal label. The backend regex is the source of truth on
     // submit (`validateAcceptPayload` blocks actual submission).
 
-    mountPasswordStrengthMeter({
+    // Capture the controller so onDestroy can call .destroy() and
+    // remove the listeners on page unmount. Without this, every
+    // navigation away + back would leak a pair of input listeners.
+    _passwordMeter = mountPasswordStrengthMeter({
       passwordInput: document.getElementById('invite-password'),
       confirmInput: document.getElementById('invite-password-confirm'),
       rulesListEl: document.querySelector(
@@ -484,6 +494,14 @@ export default {
       // we can at least detach aria-live so the announcement doesn't
       // outlive the component on a hot-reload.
       target.removeAttribute('aria-live');
+    }
+
+    // Tear down the password strength meter. Captured into the
+    // module-level `_passwordMeter` in onInit because onInit and
+    // onDestroy are separate closure scopes on the literal export.
+    if (_passwordMeter) {
+      _passwordMeter.destroy();
+      _passwordMeter = null;
     }
   },
 };

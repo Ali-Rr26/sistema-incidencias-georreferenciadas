@@ -135,7 +135,7 @@ describe('SC-143: Password field parity (login vs accept-invite)', () => {
       );
       cy.get(
         '[data-testid="password-strength-meter"] .gr-strength-meter-segment',
-      );
+      ).should('have.length', 4);
     });
 
     it('CT-PWD-010: Intentional extra — rules checklist present (shared sc-143 helper)', () => {

@@ -215,6 +215,7 @@
             required
             autocomplete="new-password"
             minlength="8"
+            aria-describedby="register-password-rules"
           />
           <!-- SC-143: data-eye-for links toggle to password field semantically for tests -->
           <button
@@ -257,6 +258,7 @@
           `frontend/app/shared/password-strength-meter.js`.
         -->
         <ul
+          id="register-password-rules"
           class="gr-strength-rules"
           data-testid="password-rules-checklist"
           aria-label="Reglas de la contraseña"

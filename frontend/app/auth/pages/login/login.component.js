@@ -74,6 +74,14 @@ export function validateRegisterPayload(payload) {
   return errors;
 }
 
+// Module-level handle for the password strength meter. Lives outside
+// the exported object so both onInit (mount) and onDestroy (teardown)
+// can reach it — they are separate closure scopes on the literal
+// export object. Without this, every navigation away + back would
+// leak an extra pair of input listeners (CodeRabbit review: the same
+// pattern as in accept-invite.component.js).
+let _passwordMeter = null;
+
 export default {
   template,
   style,
@@ -245,7 +253,7 @@ export default {
     // is the only place that needs it. The mount function tolerates
     // missing DOM (e.g. if register form markup is absent), so it's
     // safe to call unconditionally.
-    mountPasswordStrengthMeter({
+    _passwordMeter = mountPasswordStrengthMeter({
       passwordInput: document.getElementById('register-password'),
       confirmInput: document.getElementById('password_confirmation'),
       rulesListEl: document.querySelector(
@@ -469,6 +477,12 @@ export default {
   },
 
   onDestroy() {
-    // Sin cleanup necesario por ahora
+    // Tear down the password strength meter. Captured into the
+    // module-level `_passwordMeter` in onInit because onInit and
+    // onDestroy are separate closure scopes on the literal export.
+    if (_passwordMeter) {
+      _passwordMeter.destroy();
+      _passwordMeter = null;
+    }
   },
 };
