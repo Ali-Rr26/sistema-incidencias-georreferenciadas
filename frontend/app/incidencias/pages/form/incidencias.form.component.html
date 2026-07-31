@@ -367,6 +367,27 @@
                 <dd id="ici-review-coords"></dd>
               </dl>
             </div>
+
+            <!--
+              Issue #235 — Organizaciones a notificar. Populated asynchronously
+              by renderReviewSummary() so the user can see, before submitting,
+              which entities will be reached and which one is the primary
+              claimable org (the one the backend will auto-assign on store).
+            -->
+            <div class="ici-review__section">
+              <div class="ici-review__section-header">
+                <span class="fw-semibold">Notificación</span>
+              </div>
+              <div id="ici-review-orgs" class="ici-review__orgs">
+                <div class="text-center text-muted py-3">
+                  <i
+                    class="fa-solid fa-circle-notch fa-spin me-2"
+                    aria-hidden="true"
+                  ></i>
+                  Calculando organizaciones…
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- ================================ Footer / Navigation ======= -->

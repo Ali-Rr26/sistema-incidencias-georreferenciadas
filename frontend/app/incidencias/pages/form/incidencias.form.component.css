@@ -167,6 +167,41 @@
   font-weight: 600;
 }
 
+/* ── Notified-orgs preview (issue #235) ──────────────────── */
+.ici-review__orgs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ici-review__orgs-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f7f8fc;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #1a1f36;
+}
+
+.ici-review__orgs-item .fa-building {
+  color: #5b4ee0;
+  font-size: 13px;
+}
+
+.ici-review__orgs-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #6a5cf3;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
 .ici-review__dl {
   display: grid;
   grid-template-columns: max-content 1fr;

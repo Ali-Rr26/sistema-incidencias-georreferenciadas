@@ -15,6 +15,7 @@ import { router } from '../../../core/router.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { locationService } from '../../../shared/location.service.js';
 import { mountImageUploader } from '../../../shared/image-uploader.js';
+import { escapeHtml } from '../../../utils/format.js';
 import {
   initSelect,
   getSelect,
@@ -590,7 +591,10 @@ export default {
       );
       initSelect('ici-category', { placeholder: 'Buscar categoría...' });
 
-      provinces = await locationService.getRoots({ level: 'province' });
+      provinces = await locationService.getRoots(
+        { level: 'province' },
+        { catalog: true },
+      );
       poblarSelectNativo(
         'ici-location-province',
         provinces,
@@ -619,6 +623,10 @@ export default {
     // Stale-request guard — incremented before each async call; stale
     // responses are discarded when generation mismatches.
     let selectionGeneration = 0;
+    // Dedicated guard for the step-4 orgs preview so it never couples to
+    // the catalog loads above (re-entering step 4 must invalidate the
+    // previous preview request).
+    let orgsPreviewGeneration = 0;
 
     async function onProvinceChange() {
       const provinceId = provinceSelect.value;
@@ -643,9 +651,10 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const cities = await locationService.getChildren({
-        parentId: parseInt(provinceId),
-      });
+      const cities = await locationService.getChildren(
+        { parentId: parseInt(provinceId) },
+        { catalog: true },
+      );
       if (gen !== selectionGeneration) return; // stale
       lastCities = cities;
       lastNeighborhoods = [];
@@ -703,9 +712,10 @@ export default {
 
       selectionGeneration++;
       const gen = selectionGeneration;
-      const neighborhoods = await locationService.getChildren({
-        parentId: parseInt(cityId),
-      });
+      const neighborhoods = await locationService.getChildren(
+        { parentId: parseInt(cityId) },
+        { catalog: true },
+      );
       if (gen !== selectionGeneration) return; // stale
       lastNeighborhoods = neighborhoods;
 
@@ -851,6 +861,93 @@ export default {
           reviewCoords.textContent = 'Sin ubicación en el mapa';
         }
       }
+
+      // Issue #235 — load the orgs that will be notified for the
+      // (location_id, category_id) pair. The endpoint runs the same logic
+      // the backend will run on POST, so the user sees an accurate preview.
+      // Mirror the submit handler's precedence: neighborhood > city > null.
+      const orgsLocationId =
+        neighborhoodSelect?.value || citySelect?.value || null;
+      const previewGen = ++orgsPreviewGeneration;
+      void renderReviewOrgs(
+        subcatSelect?.value || catSelect?.value,
+        orgsLocationId,
+        previewGen,
+      );
+    }
+
+    async function renderReviewOrgs(categoryId, locationId, generation) {
+      const container = $('review-orgs');
+      if (!container) return;
+
+      // No category or no location → nothing to notify.
+      if (!categoryId || !locationId) {
+        container.innerHTML = `
+          <div class="text-muted small">
+            <i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>
+            Selecciona categoría y ubicación territorial para ver las
+            organizaciones que serán notificadas.
+          </div>`;
+        return;
+      }
+
+      // Loading state.
+      container.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="fa-solid fa-circle-notch fa-spin me-2" aria-hidden="true"></i>
+          Calculando organizaciones…
+        </div>`;
+
+      try {
+        const json = await http.get(
+          `/organizations/notified-for?location_id=${encodeURIComponent(locationId)}&category_id=${encodeURIComponent(categoryId)}`,
+        );
+        if (generation !== orgsPreviewGeneration) return; // stale
+        const orgs = Array.isArray(json?.data) ? json.data : [];
+
+        if (orgs.length === 0) {
+          container.innerHTML = `
+            <div class="text-muted small">
+              <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i>
+              Ninguna organización cubrirá esta combinación de categoría y
+              ubicación. La incidencia quedará sin asignación automática.
+            </div>`;
+          return;
+        }
+
+        // Render the list. The is_claimable flag (computed by the backend
+        // via findForLocation) gets a pill so the user can tell at a glance
+        // which entity will actually receive the claim.
+        container.innerHTML = `
+          <ul class="ici-review__orgs-list" role="list">
+            ${orgs
+              .map((org) => {
+                const claimablePill = org.is_claimable
+                  ? '<span class="ici-review__orgs-pill">Principal</span>'
+                  : '';
+                return `
+                  <li class="ici-review__orgs-item">
+                    <i class="fa-solid fa-building me-2" aria-hidden="true"></i>
+                    <span class="flex-grow-1">${escapeHtml(org.name || '')}</span>
+                    ${claimablePill}
+                  </li>`;
+              })
+              .join('')}
+          </ul>
+          <p class="text-muted small mb-0 mt-2">
+            <i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>
+            La marcada como <strong>Principal</strong> será la asignada
+            automáticamente al registrar la incidencia.
+          </p>`;
+      } catch {
+        if (generation !== orgsPreviewGeneration) return; // stale
+        container.innerHTML = `
+          <div class="text-warning small">
+            <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i>
+            No pudimos calcular las organizaciones notificadas. Podés
+            continuar; la incidencia se enviará igualmente.
+          </div>`;
+      }
     }
 
     function goToStep(n) {
@@ -902,26 +999,6 @@ export default {
       }
       return true;
     }
-
-    $('btn-next')?.addEventListener('click', () => {
-      if (currentStep === 1 && !validateStep1()) return;
-      if (currentStep === 2 && !validateStep2()) return;
-      if (currentStep === 3 && !validateStep3()) return;
-      goToStep(currentStep + 1);
-    });
-
-    $('btn-prev')?.addEventListener('click', () => {
-      goToStep(currentStep - 1);
-    });
-
-    [1, 2, 3].forEach((n) => {
-      document
-        .getElementById(P + 'review-edit-' + n)
-        ?.addEventListener('click', (e) => {
-          e.preventDefault();
-          goToStep(n);
-        });
-    });
 
     // ── Edit mode loading ──
     // isEdit and incId are declared at the top of onInit so the
@@ -1016,9 +1093,10 @@ export default {
             if (nivelCiudad) {
               selectionGeneration++;
               const genCities = selectionGeneration;
-              const cities = await locationService.getChildren({
-                parentId: nivelProvincia.id,
-              });
+              const cities = await locationService.getChildren(
+                { parentId: nivelProvincia.id },
+                { catalog: true },
+              );
               if (genCities !== selectionGeneration) return;
               lastCities = cities;
 
@@ -1041,9 +1119,10 @@ export default {
               if (nivelParroquia) {
                 selectionGeneration++;
                 const genParroquias = selectionGeneration;
-                const parishes = await locationService.getChildren({
-                  parentId: nivelCiudad.id,
-                });
+                const parishes = await locationService.getChildren(
+                  { parentId: nivelCiudad.id },
+                  { catalog: true },
+                );
                 if (genParroquias !== selectionGeneration) return;
                 lastNeighborhoods = parishes;
 
