@@ -54,3 +54,64 @@ it('returns a name-ordered catalog with optional parent_id', function (): void {
     $withParent = $this->repo->catalog(withParent: true);
     expect($withParent->firstWhere('name', 'Alpha Org')['parent_id'])->toBe($parent->id);
 });
+
+it('findNotifiedFor returns orgs whose location covers the incident location AND category matches or is NULL', function (): void {
+    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Alumbrado Público',
+        'parent_id' => null,
+    ]);
+    $otherCategory = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Baches',
+        'parent_id' => null,
+    ]);
+
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province']);
+    $city = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'parent_id' => $province->id,
+    ]);
+
+    $transversal = Organization::create([
+        'name' => 'GAD Provincial',
+        'location_id' => $province->id,
+        'incident_category_id' => null,
+    ]);
+    $categoriaMatch = Organization::create([
+        'name' => 'Empresa Eléctrica Quito',
+        'location_id' => $city->id,
+        'incident_category_id' => $category->id,
+    ]);
+    $otraCategoria = Organization::create([
+        'name' => 'Empresa de Baches',
+        'location_id' => $city->id,
+        'incident_category_id' => $otherCategory->id,
+    ]);
+
+    $notified = $this->repo->findNotifiedFor($city->id, $category->id);
+
+    // Both the transversal (any category) and the category-specific match.
+    // The other-category org must NOT be here.
+    expect($notified->pluck('id')->sort()->values()->all())
+        ->toBe([$transversal->id, $categoriaMatch->id]->sort()->values()->all());
+    expect($notified->pluck('id'))->not->toContain($otraCategoria->id);
+});
+
+it('findNotifiedFor returns an empty collection when no location matches', function (): void {
+    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Cualquiera',
+        'parent_id' => null,
+    ]);
+    $loc = Location::create(['name' => 'Islote', 'level' => 'city']);
+
+    expect($this->repo->findNotifiedFor($loc->id, $category->id))->toBeEmpty();
+});
+
+it('findNotifiedFor returns an empty collection when the location does not exist', function (): void {
+    $category = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Cualquiera',
+        'parent_id' => null,
+    ]);
+
+    expect($this->repo->findNotifiedFor(999999, $category->id))->toBeEmpty();
+});

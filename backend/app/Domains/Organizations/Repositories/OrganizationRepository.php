@@ -20,6 +20,22 @@ interface OrganizationRepository extends Repository
     public function findForLocation(int $locationId): ?Organization;
 
     /**
+     * Organizaciones que serán notificadas cuando se cree una incidencia con
+     * la combinación (location_id, category_id) indicada. Incluye toda org
+     * cuya location_id esté en la cadena ancestral de la ubicación
+     * (mismo criterio que `findForLocation`), siempre que su
+     * `incident_category_id` coincida con la categoría o sea NULL
+     * (orgs "transversales" que atienden cualquier categoría).
+     *
+     * Orden estable por id para que el primer elemento sea determinístico
+     * (coincide con el que `findForLocation` devolvería, así el frontend
+     * puede marcar sin ambigüedad cuál es la "principal" / claimable).
+     *
+     * @return Collection<int, Organization>
+     */
+    public function findNotifiedFor(int $locationId, int $categoryId): Collection;
+
+    /**
      * Catálogo plano id/name (ordenado por nombre) para selects de
      * formularios. Con `$withParent` incluye parent_id (form de organizaciones).
      *

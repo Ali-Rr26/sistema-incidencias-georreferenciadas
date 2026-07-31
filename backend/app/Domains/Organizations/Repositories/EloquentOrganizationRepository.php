@@ -42,6 +42,29 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         return $this->newQuery()->whereIn('location_id', $locationIds)->first();
     }
 
+    public function findNotifiedFor(int $locationId, int $categoryId): Collection
+    {
+        $location = Location::find($locationId);
+        if ($location === null) {
+            return collect();
+        }
+
+        $locationIds = $location->ancestorsAndSelf()->pluck('id');
+
+        // An org "ate" the notification if its location covers the incident
+        // and (its category matches OR it handles any category). The NULL
+        // branch is intentional: orgs transversales (e.g. "GAD Municipal")
+        // must surface here even when the incident has a specific category.
+        return $this->newQuery()
+            ->whereIn('location_id', $locationIds)
+            ->where(function ($q) use ($categoryId) {
+                $q->where('incident_category_id', $categoryId)
+                    ->orWhereNull('incident_category_id');
+            })
+            ->orderBy('id')
+            ->get();
+    }
+
     public function catalog(bool $withParent = false): Collection
     {
         $columns = $withParent ? ['id', 'name', 'parent_id'] : ['id', 'name'];

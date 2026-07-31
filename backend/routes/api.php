@@ -129,6 +129,7 @@ Route::middleware('jwt')->group(function () {
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
     Route::get('organizations/form-data', [OrganizationController::class, 'formData']);
+    Route::get('organizations/notified-for', [OrganizationController::class, 'notifiedFor']);
     Route::apiResource('organizations', OrganizationController::class);
 
     Route::get('incident-categories/tree', [IncidentCategoryController::class, 'tree']);

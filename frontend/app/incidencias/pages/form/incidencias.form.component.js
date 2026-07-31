@@ -851,6 +851,85 @@ export default {
           reviewCoords.textContent = 'Sin ubicación en el mapa';
         }
       }
+
+      // Issue #235 — load the orgs that will be notified for the
+      // (location_id, category_id) pair. The endpoint runs the same logic
+      // the backend will run on POST, so the user sees an accurate preview.
+      // Mirror the submit handler's precedence: neighborhood > city > null.
+      const orgsLocationId = neighborhoodSelect?.value || citySelect?.value || null;
+      void renderReviewOrgs(subcatSelect?.value || catSelect?.value, orgsLocationId);
+    }
+
+    async function renderReviewOrgs(categoryId, locationId) {
+      const container = $('review-orgs');
+      if (!container) return;
+
+      // No category or no location → nothing to notify.
+      if (!categoryId || !locationId) {
+        container.innerHTML = `
+          <div class="text-muted small">
+            <i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>
+            Selecciona categoría y ubicación territorial para ver las
+            organizaciones que serán notificadas.
+          </div>`;
+        return;
+      }
+
+      // Loading state.
+      container.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="fa-solid fa-circle-notch fa-spin me-2" aria-hidden="true"></i>
+          Calculando organizaciones…
+        </div>`;
+
+      try {
+        const json = await http.get(
+          `/organizations/notified-for?location_id=${encodeURIComponent(locationId)}&category_id=${encodeURIComponent(categoryId)}`,
+        );
+        const orgs = Array.isArray(json?.data) ? json.data : [];
+
+        if (orgs.length === 0) {
+          container.innerHTML = `
+            <div class="text-muted small">
+              <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i>
+              Ninguna organización cubrirá esta combinación de categoría y
+              ubicación. La incidencia quedará sin asignación automática.
+            </div>`;
+          return;
+        }
+
+        // Render the list. The is_claimable flag (computed by the backend
+        // via findForLocation) gets a pill so the user can tell at a glance
+        // which entity will actually receive the claim.
+        container.innerHTML = `
+          <ul class="ici-review__orgs-list" role="list">
+            ${orgs
+              .map((org) => {
+                const claimablePill = org.is_claimable
+                  ? '<span class="ici-review__orgs-pill">Principal</span>'
+                  : '';
+                return `
+                  <li class="ici-review__orgs-item">
+                    <i class="fa-solid fa-building me-2" aria-hidden="true"></i>
+                    <span class="flex-grow-1">${escapeHtml(org.name || '')}</span>
+                    ${claimablePill}
+                  </li>`;
+              })
+              .join('')}
+          </ul>
+          <p class="text-muted small mb-0 mt-2">
+            <i class="fa-solid fa-circle-info me-1" aria-hidden="true"></i>
+            La marcada como <strong>Principal</strong> será la asignada
+            automáticamente al registrar la incidencia.
+          </p>`;
+      } catch {
+        container.innerHTML = `
+          <div class="text-warning small">
+            <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i>
+            No pudimos calcular las organizaciones notificadas. Podés
+            continuar; la incidencia se enviará igualmente.
+          </div>`;
+      }
     }
 
     function goToStep(n) {

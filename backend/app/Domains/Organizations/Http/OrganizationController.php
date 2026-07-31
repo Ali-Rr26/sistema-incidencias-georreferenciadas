@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 class OrganizationController extends Controller
 {
@@ -102,5 +103,45 @@ class OrganizationController extends Controller
                 'parent_id' => $c->parent_id,
             ])->values(),
         ]);
+    }
+
+    /**
+     * Preview of the organizations that will be notified when a new
+     * incident is created with the given (location_id, category_id) pair.
+     * Used by the incident form (Paso 4 — Revisión Final) so the user can
+     * see before submitting which entities will be reached and which one
+     * is the primary claimable org (the one IncidentController::store
+     * would auto-assign via `findForLocation`).
+     *
+     * Authorization: any authenticated user can preview (they need it to
+     * complete the incident creation flow). The data is read-only and
+     * scoped to the location/category they themselves selected.
+     */
+    public function notifiedFor(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'location_id' => ['required', 'integer', Rule::exists('locations', 'id')],
+            'category_id' => ['required', 'integer', Rule::exists('incident_categories', 'id')],
+        ]);
+
+        $orgs = $this->organizations->findNotifiedFor(
+            (int) $validated['location_id'],
+            (int) $validated['category_id'],
+        );
+
+        // The "claimable" org is the one IncidentController::store will
+        // auto-assign via findForLocation. We compute it separately so the
+        // frontend can render a single badge without re-deriving the rule.
+        $claimable = $this->organizations->findForLocation((int) $validated['location_id']);
+        $claimableId = $claimable?->id;
+
+        $data = $orgs->map(function (Organization $org) use ($request, $claimableId) {
+            $payload = (new OrganizationResource($org))->resolve($request);
+            $payload['is_claimable'] = $org->id === $claimableId;
+
+            return $payload;
+        })->values();
+
+        return response()->json(['data' => $data]);
     }
 }

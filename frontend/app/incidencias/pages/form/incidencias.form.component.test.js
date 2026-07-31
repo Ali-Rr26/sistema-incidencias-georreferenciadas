@@ -318,9 +318,10 @@ function buildFormDom() {
         <span id="ici-review-category"></span>
         <span id="ici-review-location"></span>
         <span id="ici-review-images-count"></span>
-        <a href="#" id="ici-review-edit-3"></a>
-        <span id="ici-review-coords"></span>
-      </div>
+            <a href="#" id="ici-review-edit-3"></a>
+            <span id="ici-review-coords"></span>
+            <div id="ici-review-orgs"></div>
+          </div>
 
       <button type="button" id="ici-btn-prev"></button>
       <a href="#/incidencias" id="ici-btn-cancel"></a>
@@ -951,6 +952,31 @@ describe('incidencias.form — 4-step stepper', () => {
     document.getElementById('ici-btn-next').click(); // -> step 3
 
     expect(fakeMap.invalidateSize).toHaveBeenCalled();
+  });
+
+  it('step 4 preview shows the hint when category or location is missing', async () => {
+    // Reach step 4 without a city selected — the form is still valid
+    // because step 3 only requires a map click. The rendered hint tells
+    // the user why no orgs list appeared.
+    await component.onInit();
+    fillStep1({ title: 'Fuga', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    clickMap(10, 20);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer).not.toBeNull();
+    expect(orgsContainer.textContent).toContain('Selecciona');
+    // No orgs list rendered when there's no locationId.
+    expect(document.querySelectorAll('.ici-review__orgs-item').length).toBe(0);
   });
 
   it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
