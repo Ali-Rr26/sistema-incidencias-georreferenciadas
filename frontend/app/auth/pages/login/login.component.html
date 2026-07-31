@@ -99,7 +99,10 @@
 
         <label class="gr-form-label" for="password">Contraseña</label>
         <div class="gr-input-wrap">
-          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <i
+            class="fa-solid fa-lock gr-input-icon"
+            data-testid="password-icon"
+          ></i>
           <input
             type="password"
             id="password"
@@ -108,10 +111,13 @@
             required
             autocomplete="current-password"
           />
+          <!-- SC-143: data-eye-for links toggle to password field semantically for tests -->
           <button
             type="button"
             class="gr-input-eye"
             aria-label="Mostrar contraseña"
+            data-eye-for="password"
+            data-testid="password-toggle"
           >
             <i class="fa-regular fa-eye"></i>
           </button>
@@ -197,7 +203,10 @@
 
         <label class="gr-form-label" for="register-password">Contraseña</label>
         <div class="gr-input-wrap">
-          <i class="fa-solid fa-lock gr-input-icon"></i>
+          <i
+            class="fa-solid fa-lock gr-input-icon"
+            data-testid="password-icon"
+          ></i>
           <input
             type="password"
             id="register-password"
@@ -206,11 +215,15 @@
             required
             autocomplete="new-password"
             minlength="8"
+            aria-describedby="register-password-rules"
           />
+          <!-- SC-143: data-eye-for links toggle to password field semantically for tests -->
           <button
             type="button"
             class="gr-input-eye"
             aria-label="Mostrar contraseña"
+            data-eye-for="register-password"
+            data-testid="password-toggle"
           >
             <i class="fa-regular fa-eye"></i>
           </button>
@@ -236,6 +249,71 @@
           class="gr-input-error d-none"
           data-error-for="password_confirmation"
         ></div>
+
+        <!--
+          Password rules checklist + strength meter (sc-143).
+          Wired by `mountPasswordStrengthMeter` so this stays visually
+          identical to /accept-invite's meter. Marked up here in the
+          template, but the live-update logic lives in
+          `frontend/app/shared/password-strength-meter.js`.
+        -->
+        <ul
+          id="register-password-rules"
+          class="gr-strength-rules"
+          data-testid="password-rules-checklist"
+          aria-label="Reglas de la contraseña"
+        >
+          <li class="gr-strength-rule" data-rule="minLength" aria-live="polite">
+            <span class="gr-strength-rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-strength-rule-label">Mínimo 8 caracteres</span>
+          </li>
+          <li class="gr-strength-rule" data-rule="hasUpper" aria-live="polite">
+            <span class="gr-strength-rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-strength-rule-label">Una mayúscula (A-Z)</span>
+          </li>
+          <li class="gr-strength-rule" data-rule="hasLower" aria-live="polite">
+            <span class="gr-strength-rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-strength-rule-label">Una minúscula (a-z)</span>
+          </li>
+          <li class="gr-strength-rule" data-rule="hasDigit" aria-live="polite">
+            <span class="gr-strength-rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-strength-rule-label">Un dígito (0-9)</span>
+          </li>
+          <li class="gr-strength-rule" data-rule="matches" aria-live="polite">
+            <span class="gr-strength-rule-icon" aria-hidden="true"
+              ><i class="fa-solid fa-circle"></i></span
+            ><span class="gr-strength-rule-label"
+              >Las contraseñas coinciden</span
+            >
+          </li>
+        </ul>
+
+        <div
+          id="register-password-meter"
+          class="gr-strength-meter"
+          data-testid="password-strength-meter"
+          role="meter"
+          aria-valuemin="0"
+          aria-valuemax="4"
+          aria-valuenow="0"
+          aria-label="Seguridad de la contraseña"
+        >
+          <div class="gr-strength-meter-segments">
+            <span class="gr-strength-meter-segment"></span>
+            <span class="gr-strength-meter-segment"></span>
+            <span class="gr-strength-meter-segment"></span>
+            <span class="gr-strength-meter-segment"></span>
+          </div>
+          <span
+            class="gr-strength-meter-label"
+            id="register-password-meter-label"
+            >—</span
+          >
+        </div>
 
         <button type="submit" class="gr-btn-primary w-100">Crear cuenta</button>
 
