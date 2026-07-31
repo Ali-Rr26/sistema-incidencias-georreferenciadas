@@ -12,6 +12,8 @@ import setupCommentsForm from '../../../shared/setup-comments-form.js';
 import initMapView from '../../../shared/init-map-view.js';
 import { assignmentService } from '../../../shared/assignment.service.js';
 import { permissionService } from '../../../shared/permission.service.js';
+import { notificationService } from '../../../shared/notification.service.js';
+import { mostrarToast } from '../../../utils/ui.js';
 import {
   sortStatusHistoryDesc,
   statusHistoryEntry,
@@ -61,6 +63,7 @@ export default {
     renderHistorial(inc.status_history ?? []);
     setupComments(id, inc.comments);
     setupAssignments(id, inc, inc.assignments);
+    setupAuditar(id, inc);
   },
 
   onDestroy() {
@@ -762,6 +765,156 @@ function setupActionButtons(incidentId, inc) {
         }
       });
     }
+  }
+}
+
+// ── Aprobar / Rechazar resolución (sc-123 / #150, inline card) ──
+
+/**
+ * Inline "Aprobar / Rechazar" card for admins. Visible only when the
+ * incident is in 'resolved' state AND the current user is admin (any
+ * admin can audit). Fetches the matching pending-approval notification
+ * from the backend; if found, shows the action buttons. Aprobar is
+ * one click; Rechazar opens the existing justificacion-rechazo-modal
+ * to capture the reason, then submits.
+ */
+function setupAuditar(_incidentId, inc) {
+  const cardEl = document.getElementById('detalle-auditar');
+  if (!cardEl) return;
+
+  const loadingEl = document.getElementById('detalle-auditar-loading');
+  const sinNotifEl = document.getElementById('detalle-auditar-sin-notif');
+  const actionsEl = document.getElementById('detalle-auditar-actions');
+  const submittingEl = document.getElementById('detalle-auditar-submitting');
+  const errorEl = document.getElementById('detalle-auditar-error');
+  const errorMsgEl = document.getElementById('detalle-auditar-error-msg');
+  const btnAprobar = document.getElementById('btn-auditar-aprobar');
+  const btnRechazar = document.getElementById('btn-auditar-rechazar');
+
+  let pendingNotifId = null;
+
+  function showActions() {
+    loadingEl?.classList.add('d-none');
+    sinNotifEl?.classList.add('d-none');
+    errorEl?.classList.add('d-none');
+    actionsEl?.classList.remove('d-none');
+    submittingEl?.classList.add('d-none');
+  }
+
+  // Load-time error: hides actions so the user can't click submit on
+  // a card that never got a notification id.
+  function showLoadError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    loadingEl?.classList.add('d-none');
+    sinNotifEl?.classList.add('d-none');
+    actionsEl?.classList.add('d-none');
+    submittingEl?.classList.add('d-none');
+    errorEl?.classList.remove('d-none');
+  }
+
+  // Submit-time error: keep the action buttons visible so the user
+  // can retry without reloading the page.
+  function showSubmitError(msg) {
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+    submittingEl?.classList.add('d-none');
+    errorEl?.classList.remove('d-none');
+  }
+
+  function startSubmit() {
+    actionsEl?.classList.add('d-none');
+    errorEl?.classList.add('d-none');
+    submittingEl?.classList.remove('d-none');
+  }
+
+  // Only admins can audit. The card is hidden by default (d-none in
+  // HTML); we only ever unhide it after a confirmed role check. R7:
+  // operador_organizacion may hold notifications.update but MUST NOT
+  // see this card. Fail closed on any error.
+  (async () => {
+    if (inc.status !== 'resolved') return;
+
+    let roleName = null;
+    try {
+      const me = await auth.me();
+      roleName = resolveRoleName(me);
+    } catch {
+      return;
+    }
+    const isAdmin =
+      roleName === 'admin_sistema' || roleName === 'admin_organizacion';
+    if (!isAdmin) return;
+
+    cardEl.classList.remove('d-none');
+    loadingEl?.classList.remove('d-none');
+
+    try {
+      const resp = await notificationService.getPendingApprovals({
+        page: 1,
+        perPage: 100,
+        unreadOnly: false,
+      });
+      const notifications = resp.data || [];
+      const notif = notifications.find((n) => {
+        const nid = n?.data?.incident_id ?? n?.incident_id;
+        return Number(nid) === Number(inc.id);
+      });
+      if (!notif) {
+        loadingEl?.classList.add('d-none');
+        sinNotifEl?.classList.remove('d-none');
+        return;
+      }
+      pendingNotifId = notif.id;
+      showActions();
+    } catch (err) {
+      showLoadError('No se pudo cargar la notificación pendiente.');
+    }
+  })();
+
+  if (btnAprobar) {
+    btnAprobar.addEventListener('click', async () => {
+      if (!pendingNotifId) return;
+      startSubmit();
+      try {
+        await notificationService.approve(pendingNotifId);
+        mostrarToast('Resolución aprobada.', 'success');
+        window.location.reload();
+      } catch (err) {
+        showSubmitError(err?.message || 'No se pudo aprobar la resolución.');
+        actionsEl?.classList.remove('d-none');
+      }
+    });
+  }
+
+  if (btnRechazar) {
+    btnRechazar.addEventListener('click', async () => {
+      if (!pendingNotifId) return;
+      // Reuse the existing justificacion-rechazo-modal pattern: mount
+      // it lazily if it isn't in the DOM yet (mirrors _openAuditModal
+      // in the index page). show(callback) passes the trimmed reason.
+      let modal = document.getElementById('justificacion-rechazo-modal');
+      if (!modal) {
+        await import(
+          '../../../shared/components/justificacion-rechazo-modal/justificacion-rechazo-modal.component.js'
+        );
+        modal = document.createElement('justificacion-rechazo-modal');
+        modal.id = 'justificacion-rechazo-modal';
+        document.body.appendChild(modal);
+        // Yield once so connectedCallback + _render can finish before show().
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      await modal.show(async (reason) => {
+        if (typeof reason !== 'string' || reason.trim().length === 0) return;
+        startSubmit();
+        try {
+          await notificationService.reject(pendingNotifId, reason.trim());
+          mostrarToast('Resolución rechazada.', 'success');
+          window.location.reload();
+        } catch (err) {
+          showSubmitError(err?.message || 'No se pudo rechazar la resolución.');
+          actionsEl?.classList.remove('d-none');
+        }
+      });
+    });
   }
 }
 
