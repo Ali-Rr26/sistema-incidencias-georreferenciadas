@@ -59,9 +59,7 @@ class UserSeeder extends Seeder
                     'password' => Hash::make($u['password']),
                     'first_name' => $u['first_name'],
                     'last_name' => $u['last_name'],
-                    'email_verified_at' => User::query()
-                        ->where('email', $u['email'])
-                        ->value('email_verified_at') ?? now(),
+                    'email_verified_at' => now(),
                 ],
             );
             $this->command?->info("Usuario global [{$u['email']}] creado/actualizado.");
@@ -83,9 +81,7 @@ class UserSeeder extends Seeder
                     'password' => Hash::make('Admin123!'),
                     'first_name' => 'Admin',
                     'last_name' => $org->name,
-                    'email_verified_at' => User::query()
-                        ->where('email', $adminEmail)
-                        ->value('email_verified_at') ?? now(),
+                    'email_verified_at' => now(),
                 ],
             );
             $this->command?->info("  Admin Org [{$adminEmail}] -> {$org->name}");
@@ -100,9 +96,7 @@ class UserSeeder extends Seeder
                     'password' => Hash::make('Operador123!'),
                     'first_name' => 'Operador',
                     'last_name' => $org->name,
-                    'email_verified_at' => User::query()
-                        ->where('email', $operadorEmail)
-                        ->value('email_verified_at') ?? now(),
+                    'email_verified_at' => now(),
                 ],
             );
             $this->command?->info("  Operador Org [{$operadorEmail}] -> {$org->name}");
