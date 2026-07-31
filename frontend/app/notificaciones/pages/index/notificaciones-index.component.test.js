@@ -179,7 +179,7 @@ beforeEach(async () => {
     if (url === '/me') {
       return Promise.resolve({ id: '1', role: 'admin_sistema' });
     }
-    if (url.includes('/notifications/pending-approvals')) {
+    if (url.includes('type=incident_pending_approval')) {
       return Promise.resolve({ data: [], meta: { total: 0 } });
     }
     if (url.includes('/notifications?')) {
@@ -227,7 +227,7 @@ async function loadComponentWithPending(pendingNotifs, pendingTotal) {
     if (url === '/me') {
       return Promise.resolve({ id: '1', role: 'admin_sistema' });
     }
-    if (url.includes('/notifications/pending-approvals')) {
+    if (url.includes('type=incident_pending_approval')) {
       return Promise.resolve({ data: pendingNotifs, meta: { total: pendingTotal } });
     }
     if (url.includes('/notifications?')) {

@@ -23,7 +23,12 @@ class UpdateIncidentStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED])],
+            // `closed` is permitted here so the controller's explicit guard
+            // (see IncidentController::updateStatus) can produce the
+            // dedicated "flow required" message. The request validation is
+            // intentionally permissive — the controller is the single source
+            // of truth for the closed-status rejection reason.
+            'status' => ['required', Rule::in([Incident::STATUS_PENDING, Incident::STATUS_IN_PROGRESS, Incident::STATUS_RESOLVED, 'closed'])],
             'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
@@ -31,7 +36,7 @@ class UpdateIncidentStatusRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'status.in' => 'El estado debe ser: pending, in_progress o resolved.',
+            'status.in' => 'El estado debe ser: pending, in_progress, resolved o closed.',
         ];
     }
 }

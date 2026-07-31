@@ -2,7 +2,7 @@ import template from './notificaciones-index.component.html?raw';
 import { notificationService } from '../../../shared/notification.service.js';
 import { auth } from '../../../auth/auth.service.js';
 import { mostrarToast, mostrarEstado, isDesktop } from '../../../utils/ui.js';
-import { formatearFecha } from '../../../utils/format.js';
+import { formatearFecha, escapeHtml } from '../../../utils/format.js';
 import { renderPaginacion } from '../../../shared/pagination/pagination.js';
 import {
   initSelect,
@@ -24,6 +24,13 @@ const component = {
   _cargarFn: null,
 
   async onInit() {
+    // Reset module-level singleton state on every re-init so values from
+    // a previous navigation never leak into the new instance.
+    this.currentTab = 'pending';
+    this._paginaActual = 1;
+    this._totalPaginas = 1;
+    this._idRechazar = null;
+
     // Cache the current user role for filter visibility and action buttons
     let currentUser = null;
     try {
@@ -80,11 +87,17 @@ const component = {
       );
     }
 
-    // Action delegation: approve/reject buttons on table and cards
+    // Action delegation: approve/reject buttons on table and cards.
+    // Both elements are required for delegated handlers to work — if
+    // either is missing, skip silently instead of throwing.
     const tablaBody = document.getElementById('tabla-body');
     const contenedorCards = document.getElementById('contenedor-cards');
-    tablaBody.addEventListener('click', (e) => this._manejarAcciones(e));
-    contenedorCards.addEventListener('click', (e) => this._manejarAcciones(e));
+    if (tablaBody) {
+      tablaBody.addEventListener('click', (e) => this._manejarAcciones(e));
+    }
+    if (contenedorCards) {
+      contenedorCards.addEventListener('click', (e) => this._manejarAcciones(e));
+    }
 
     // Confirm reject button
     const btnConfirmarRechazar = document.getElementById(
@@ -107,11 +120,17 @@ const component = {
 
         try {
           await notificationService.reject(this._idRechazar, reason);
-          bootstrap.Modal.getInstance(
-            document.getElementById('modal-rechazar'),
-          ).hide();
+          // bootstrap.Modal.getInstance() can return null if the modal
+          // was never shown or was already torn down — guard so a
+          // successful reject doesn't throw an uncaught TypeError.
+          const modalEl = document.getElementById('modal-rechazar');
+          const modalInstance = modalEl
+            ? bootstrap.Modal.getInstance(modalEl)
+            : null;
+          if (modalInstance) modalInstance.hide();
           mostrarToast('Rechazada correctamente.', 'success');
-          document.getElementById('rechazo-motivo').value = '';
+          const motivoEl = document.getElementById('rechazo-motivo');
+          if (motivoEl) motivoEl.value = '';
           this._idRechazar = null;
           this._cargarPagina(this._paginaActual);
         } catch {
@@ -193,12 +212,12 @@ const component = {
               }
             </td>
             <td>
-              <div style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${titulo}">
-                ${titulo}
+              <div style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(titulo)}">
+                ${escapeHtml(titulo)}
               </div>
-              <small class="text-muted">${organizationName}</small>
+              <small class="text-muted">${escapeHtml(organizationName)}</small>
             </td>
-            <td class="small text-muted">${createdAt}</td>
+            <td class="small text-muted">${escapeHtml(createdAt)}</td>
             <td class="text-center">
               ${
                 tipo === 'incident_pending_approval'
@@ -237,8 +256,8 @@ const component = {
             <div class="card-body p-2">
               <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="flex-grow-1 me-2">
-                  <h6 class="mb-0" style="font-size:0.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${titulo}</h6>
-                  <small class="text-muted">${organizationName}</small>
+                  <h6 class="mb-0" style="font-size:0.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(titulo)}</h6>
+                  <small class="text-muted">${escapeHtml(organizationName)}</small>
                 </div>
                 ${
                   !leida
@@ -246,7 +265,7 @@ const component = {
                     : ''
                 }
               </div>
-              <div class="small text-muted mb-2">${createdAt}</div>
+              <div class="small text-muted mb-2">${escapeHtml(createdAt)}</div>
               ${
                 tipo === 'incident_pending_approval'
                   ? `<div class="d-flex gap-1 justify-content-end">

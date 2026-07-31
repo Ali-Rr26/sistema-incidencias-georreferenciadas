@@ -1,6 +1,8 @@
 import { http } from '../../../core/http.service.js';
 import { notificationService } from '../../../shared/notification.service.js';
 import { openLightbox } from '../../../shared/lightbox.js';
+import { escapeHtml } from '../../../utils/format.js';
+import { mostrarToast } from '../../../utils/ui.js';
 
 /**
  * IncidenciaAuditarModal — Bootstrap modal for auditing a pending incident.
@@ -308,13 +310,13 @@ class IncidenciaAuditarModal extends HTMLElement {
         (img) => `
       <div class="col-6 col-md-4 col-lg-3">
         <div class="incident-auditar-thumbnail-wrapper position-relative"
-             data-src="${img.url}"
-             data-caption="${img.original_name || ''}"
+             data-src="${escapeHtml(img.url)}"
+             data-caption="${escapeHtml(img.original_name || '')}"
              role="button"
              tabindex="0"
-             aria-label="Abrir imagen: ${img.original_name || 'sin nombre'}">
-          <img src="${img.url}"
-               alt="${img.original_name || 'Imagen'}"
+             aria-label="Abrir imagen: ${escapeHtml(img.original_name || 'sin nombre')}">
+          <img src="${escapeHtml(img.url)}"
+               alt="${escapeHtml(img.original_name || 'Imagen')}"
                class="img-fluid rounded incident-auditar-thumbnail"
                loading="lazy" />
         </div>
@@ -367,13 +369,13 @@ class IncidenciaAuditarModal extends HTMLElement {
         (img) => `
       <div class="col-6 col-md-4 col-lg-3">
         <div class="incident-auditar-thumbnail-wrapper position-relative"
-             data-src="${img.url}"
-             data-caption="${img.original_name || ''}"
+             data-src="${escapeHtml(img.url)}"
+             data-caption="${escapeHtml(img.original_name || '')}"
              role="button"
              tabindex="0"
-             aria-label="Abrir imagen de comentario: ${img.original_name || 'sin nombre'}">
-          <img src="${img.url}"
-               alt="${img.original_name || 'Imagen de comentario'}"
+             aria-label="Abrir imagen de comentario: ${escapeHtml(img.original_name || 'sin nombre')}">
+          <img src="${escapeHtml(img.url)}"
+               alt="${escapeHtml(img.original_name || 'Imagen de comentario')}"
                class="img-fluid rounded incident-auditar-thumbnail"
                loading="lazy" />
         </div>
@@ -424,9 +426,7 @@ class IncidenciaAuditarModal extends HTMLElement {
       bootstrap.Modal.getInstance(this.querySelector('.modal'))?.hide();
     } catch (err) {
       // Show error toast
-      if (typeof mostrarToast === 'function') {
-        mostrarToast('No se pudo aprobar la incidencia.', 'danger');
-      }
+      mostrarToast('No se pudo aprobar la incidencia.', 'danger');
     } finally {
       approveBtn.disabled = false;
       rejectBtn.disabled = false;
@@ -475,9 +475,7 @@ class IncidenciaAuditarModal extends HTMLElement {
 
       bootstrap.Modal.getInstance(this.querySelector('.modal'))?.hide();
     } catch (err) {
-      if (typeof mostrarToast === 'function') {
-        mostrarToast('No se pudo rechazar la incidencia.', 'danger');
-      }
+      mostrarToast('No se pudo rechazar la incidencia.', 'danger');
     } finally {
       approveBtn.disabled = false;
       rejectBtn.disabled = false;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domains\Incidents\Http;
 
 use App\Domains\IncidentCategories\Models\IncidentCategory;
+use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Http\Requests\StoreIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentRequest;
 use App\Domains\Incidents\Http\Requests\UpdateIncidentStatusRequest;
@@ -188,6 +189,16 @@ class IncidentController extends Controller
     public function updateStatus(UpdateIncidentStatusRequest $request, Incident $incident): JsonResponse
     {
         $validated = $request->validated();
+
+        // Defense-in-depth: la request ya restringe status a
+        // pending|in_progress|resolved, pero blindamos explícitamente
+        // el endpoint para que nadie pueda cerrar una incidencia
+        // directa (bypass del flujo de aprobación).
+        if ($validated['status'] === IncidentStatus::Closed->value) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'status' => 'El estado closed solo puede asignarse a través del flujo de aprobación.',
+            ]);
+        }
 
         // Permiso de update + regla de responsable, ambos en la Policy.
         $this->authorize('updateStatus', [$incident, $validated['status']]);

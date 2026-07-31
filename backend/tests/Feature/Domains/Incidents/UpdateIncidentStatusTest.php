@@ -116,3 +116,17 @@ it('rejects an invalid status value', function (): void {
         ])
         ->assertStatus(422);
 });
+
+it('rejects closed status (must use the approval flow, not /estado)', function (): void {
+    $this->actingAs($this->responsable)
+        ->putJson("/api/incidents/{$this->incident->id}/estado", [
+            'status' => 'closed',
+        ])
+        ->assertStatus(422)
+        ->assertJsonFragment([
+            'status' => ['El estado closed solo puede asignarse a través del flujo de aprobación.'],
+        ]);
+
+    // State must not have changed.
+    expect($this->incident->fresh()->status->value)->toBe(Incident::STATUS_PENDING);
+});
