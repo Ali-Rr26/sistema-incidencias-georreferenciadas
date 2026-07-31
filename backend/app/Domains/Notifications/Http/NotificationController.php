@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domains\Notifications\Http;
 
+use App\Domains\Incidents\Services\IncidentApprovalService;
+use App\Domains\Notifications\Http\Requests\RejectNotificationRequest;
 use App\Domains\Notifications\Http\Resources\NotificationResource;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Services\NotificationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +21,7 @@ class NotificationController extends Controller
 
     public function __construct(
         private readonly NotificationService $service,
+        private readonly IncidentApprovalService $approval,
     ) {}
 
     /**
@@ -89,6 +93,8 @@ class NotificationController extends Controller
 
     /**
      * Devuelve solo el conteo de no leídas (badge del header).
+     * Admin scoped: admin_sistema global ve todas las incident_pending_approval;
+     * admin_sistema org-scoped y admin_organizacion solo las de su org.
      */
     public function unreadCount(Request $request): JsonResponse
     {
@@ -97,8 +103,68 @@ class NotificationController extends Controller
             return response()->json(['message' => __('messages.unauthenticated')], 401);
         }
 
-        $count = Notification::query()->forUser($user)->unread()->count();
+        $query = Notification::query()
+            ->forUser($user)
+            ->unread();
 
-        return response()->json(['unread_count' => $count]);
+        // Admin con organization_id=null es global — ve todas.
+        // Admin org-scoped o admin_organizacion: incident_pending_approval filtrado por org.
+        if (! $user->isSystemAdmin() || $user->organization_id !== null) {
+            $query->where(function ($q) use ($user): void {
+                /** @var Builder $q */
+                $q->where('type', '!=', 'incident_pending_approval')
+                    ->orWhereHas('incident', function ($iq) use ($user): void {
+                        /** @var Builder $iq */
+                        $iq->where('organization_id', $user->organization_id);
+                    });
+            });
+        }
+
+        return response()->json(['unread_count' => $query->count()]);
+    }
+
+    /**
+     * Aprueba una notificación de tipo IncidentPendingApproval — cierra la incidencia.
+     *
+     * POST /notifications/{notification}/approve
+     */
+    public function approve(Request $request, Notification $notification): JsonResponse
+    {
+        abort_unless($request->user() !== null, 401);
+        $this->authorize('approve', $notification);
+
+        try {
+            $this->approval->approve($notification, $request->user());
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 409);
+        }
+
+        $notification->refresh();
+        $notification->load('incident');
+
+        return (new NotificationResource($notification))->response();
+    }
+
+    /**
+     * Rechaza una notificación de tipo IncidentPendingApproval — vuelve la incidencia
+     * a in_progress o pending según corresponda.
+     *
+     * POST /notifications/{notification}/reject
+     */
+    public function reject(RejectNotificationRequest $request, Notification $notification): JsonResponse
+    {
+        abort_unless($request->user() !== null, 401);
+        $this->authorize('reject', $notification);
+
+        try {
+            $this->approval->reject($notification, $request->user(), $request->validated('reason'));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 422);
+        }
+
+        $notification->refresh();
+        $notification->load('incident');
+
+        return (new NotificationResource($notification))->response();
     }
 }

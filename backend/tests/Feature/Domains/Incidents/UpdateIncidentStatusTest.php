@@ -112,7 +112,21 @@ it('allows a same-status request from a non-responsable (no-op)', function (): v
 it('rejects an invalid status value', function (): void {
     $this->actingAs($this->responsable)
         ->putJson("/api/incidents/{$this->incident->id}/estado", [
-            'status' => 'closed',
+            'status' => 'foo',
         ])
         ->assertStatus(422);
+});
+
+it('rejects closed status (must use the approval flow, not /estado)', function (): void {
+    $this->actingAs($this->responsable)
+        ->putJson("/api/incidents/{$this->incident->id}/estado", [
+            'status' => 'closed',
+        ])
+        ->assertStatus(422)
+        ->assertJsonFragment([
+            'status' => ['El estado closed solo puede asignarse a través del flujo de aprobación.'],
+        ]);
+
+    // State must not have changed.
+    expect($this->incident->fresh()->status->value)->toBe(Incident::STATUS_PENDING);
 });

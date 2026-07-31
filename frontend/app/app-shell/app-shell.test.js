@@ -2200,6 +2200,312 @@ describe('citizen notification bell — SSE + dropdown', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
+// Pending-approval bell counter — WU-7 (admin-approval-notifications)
+// Verifies the bell badge correctly reflects the pending-approval count
+// filtered by the backend (scope: admin, type: incident_pending_approval).
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Admin bell markup fixture — mirrors the structure used in the citizen
+ * bell tests (TEMPLATE_HTML_WITH_BELL) but for the admin header variant.
+ * Both admin and citizen bell markup are always in the DOM; only one
+ * is visible per role via CSS.
+ */
+const ADMIN_BELL_TEMPLATE = `
+<div class="app-shell">
+<header class="app-shell-header">
+  <button type="button" class="app-shell-sidebar-toggle" id="app-shell-sidebar-toggle" aria-label="Alternar barra lateral" aria-expanded="true">
+    <i class="fa-solid fa-angles-left"></i>
+  </button>
+  <div class="app-shell-header__admin" data-show-on-role="admin">
+    <div class="app-shell-bell-wrapper">
+      <button class="app-shell-header__bell" id="app-shell-bell-admin" type="button" aria-label="Notificaciones" aria-haspopup="true" aria-expanded="false" aria-controls="app-shell-bell-panel-admin">
+        <i class="fa-regular fa-bell"></i>
+        <span class="app-shell-header__notif-badge d-none" id="app-shell-bell-badge-admin">0</span>
+      </button>
+      <div class="app-shell-user-menu__panel app-shell-bell-panel" id="app-shell-bell-panel-admin" hidden>
+        <div class="app-shell-bell-panel__header">Notificaciones</div>
+        <ul class="app-shell-bell-panel__list" id="app-shell-bell-list-admin">
+          <li class="app-shell-bell-panel__empty" id="app-shell-bell-empty-admin">Sin notificaciones</li>
+        </ul>
+      </div>
+    </div>
+    <div class="app-shell-user-menu">
+      <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger" aria-haspopup="menu" aria-expanded="false">
+        <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar">A</span>
+        <span class="app-shell-user-menu__name" id="app-shell-user-name">Admin</span>
+      </button>
+    </div>
+  </div>
+</header>
+<aside class="app-shell-sidebar" id="app-shell-sidebar">
+  <nav class="app-shell-sidebar__nav" id="app-shell-admin-sidebar" data-show-on-role="admin">
+    <ul class="app-shell-sidebar__list" id="app-shell-admin-menu-list"></ul>
+  </nav>
+</aside>
+<main class="app-shell-main">
+  <div id="page-outlet"></div>
+</main>
+<nav class="app-shell-bottom-nav">
+  <ul id="app-shell-bottom-nav-list" class="app-shell-bottom-nav-list"></ul>
+</nav>
+</div>
+`;
+
+describe('appShell — pending-approval bell counter (WU-7)', () => {
+  class MockEventSource {
+    constructor(url, options) {
+      this.url = url;
+      this.options = options;
+      this.onmessage = null;
+      this.onerror = null;
+      this.listeners = new Map();
+      this.closed = false;
+      MockEventSource.instances.push(this);
+    }
+    addEventListener(type, listener) {
+      this.listeners.set(type, listener);
+    }
+    close() {
+      this.closed = true;
+    }
+  }
+  MockEventSource.instances = [];
+
+  let consoleErrorSpy;
+  let unreadCountSpy;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MockEventSource.instances = [];
+    document.body.replaceChildren(
+      Object.assign(document.createElement('div'), {
+        id: 'shell-outlet',
+      }),
+    );
+    document.body.removeAttribute('data-role');
+    vi.stubGlobal('fetch', mockFetchTemplate(ADMIN_BELL_TEMPLATE));
+    window.EventSource = MockEventSource;
+
+    const adminUser = {
+      id: 1,
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: { id: 1, name: 'admin_sistema' },
+    };
+    vi.spyOn(auth, 'me').mockResolvedValue(adminUser);
+    vi.spyOn(auth, 'getUser').mockReturnValue(adminUser);
+    vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
+    vi.spyOn(auth, 'onAuthChange').mockImplementation(() => () => {});
+    vi.spyOn(menuService, 'getMyMenu').mockResolvedValue([]);
+    unreadCountSpy = vi
+      .spyOn(notificationService, 'unreadCount')
+      .mockResolvedValue(0);
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    delete window.EventSource;
+    vi.unstubAllGlobals();
+    consoleErrorSpy.mockRestore();
+  });
+
+  async function mountAdmin() {
+    const { appShell } = await import('./app-shell.component.js');
+    await appShell.mount();
+    const unsub = await appShell.init();
+    return { appShell, unsub };
+  }
+
+  function adminBellRefs() {
+    return {
+      btn: document.getElementById('app-shell-bell-admin'),
+      panel: document.getElementById('app-shell-bell-panel-admin'),
+      list: document.getElementById('app-shell-bell-list-admin'),
+      badge: document.getElementById('app-shell-bell-badge-admin'),
+    };
+  }
+
+  /**
+   * WU-7 AC-1: Counter initial value comes from /notifications/unread-count.
+   * The backend filters this endpoint by scope (admin) and type (incident_pending_approval),
+   * so the initial badge value is the pending-approval count — not the total unread count.
+   *
+   * Note: mock must be set BEFORE mountAdmin() because populateHeader() calls
+   * updateBadge() synchronously during init().
+   */
+  it('renders the initial pending-approval counter from the unread-count endpoint', async () => {
+    unreadCountSpy.mockResolvedValue(5);
+    const { appShell, unsub } = await mountAdmin();
+    try {
+      const { badge } = adminBellRefs();
+
+      // Wait for the unreadCount() promise triggered during init() to resolve.
+      await vi.waitFor(() => expect(badge.textContent).toBe('5'), {
+        timeout: 1000,
+      });
+
+      expect(badge.classList.contains('d-none')).toBe(false);
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  /**
+   * WU-7 AC-2: SSE event for incident_pending_approval increments the counter.
+   * When a new pending-approval notification arrives via SSE, the bell re-fetches
+   * the unread count from the backend (which now includes this new notification
+   * in its filtered count), causing the badge to update.
+   */
+  it('re-fetches the counter when an incident_pending_approval SSE event arrives', async () => {
+    unreadCountSpy.mockResolvedValue(2);
+    const { appShell, unsub } = await mountAdmin();
+    try {
+      const { badge } = adminBellRefs();
+
+      // Wait for initial count to be set.
+      await vi.waitFor(() => expect(badge.textContent).toBe('2'), {
+        timeout: 1000,
+      });
+
+      // Simulate SSE event for a new pending approval notification.
+      // Backend now has 3 pending approvals.
+      unreadCountSpy.mockResolvedValue(3);
+      const instance = MockEventSource.instances[0];
+      instance.listeners.get('notification')({
+        data: JSON.stringify({
+          id: 99,
+          type: 'incident_pending_approval',
+          message: 'Nueva incidencia pendiente de aprobación',
+          read: false,
+          incident: { id: 42, title: 'Bache en Av. Principal' },
+          created_at: '2026-07-28T12:00:00Z',
+        }),
+      });
+
+      // Counter incremented to reflect the new pending approval.
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  /**
+   * WU-7 AC-3: SSE event for non-pending notification types does NOT increment
+   * the pending-approval counter. The bell still re-fetches from the backend,
+   * but since the backend filters by incident_pending_approval, the count
+   * returned is still the correct pending-approval count (unchanged).
+   */
+  it('does not increment the pending-approval counter when a non-pending SSE event arrives', async () => {
+    unreadCountSpy.mockResolvedValue(3);
+    const { appShell, unsub } = await mountAdmin();
+    try {
+      const { badge } = adminBellRefs();
+
+      // Wait for initial count to be set.
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
+
+      // Simulate SSE event for a comment notification (not a pending approval).
+      // The backend still returns 3 because it filters by incident_pending_approval.
+      unreadCountSpy.mockResolvedValue(3);
+      const instance = MockEventSource.instances[0];
+      instance.listeners.get('notification')({
+        data: JSON.stringify({
+          id: 100,
+          type: 'comment',
+          message: 'Nuevo comentario en tu incidencia',
+          read: false,
+          incident: { id: 5, title: 'Semáforo dañado' },
+          created_at: '2026-07-28T12:05:00Z',
+        }),
+      });
+
+      // Counter unchanged — non-pending notifications don't affect the pending count.
+      await vi.waitFor(() => expect(badge.textContent).toBe('3'), {
+        timeout: 1000,
+      });
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  /**
+   * WU-7 AC-3 variant: SSE event for assignment type also does NOT increment
+   * the pending-approval counter.
+   */
+  it('does not increment the pending-approval counter when an assignment SSE event arrives', async () => {
+    unreadCountSpy.mockResolvedValue(4);
+    const { appShell, unsub } = await mountAdmin();
+    try {
+      const { badge } = adminBellRefs();
+
+      await vi.waitFor(() => expect(badge.textContent).toBe('4'), {
+        timeout: 1000,
+      });
+
+      // SSE for assignment (not a pending approval).
+      unreadCountSpy.mockResolvedValue(4);
+      const instance = MockEventSource.instances[0];
+      instance.listeners.get('notification')({
+        data: JSON.stringify({
+          id: 101,
+          type: 'assignment',
+          message: 'Incidencia asignada a tu organización',
+          read: false,
+          incident: { id: 8, title: 'Alumbrado público apagado' },
+          created_at: '2026-07-28T12:10:00Z',
+        }),
+      });
+
+      expect(badge.textContent).toBe('4');
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+
+  /**
+   * WU-7: counter resets to fresh backend value after page refresh (init).
+   * Each time init() runs (e.g. after auth change), the bell re-fetches
+   * the unread count, ensuring the displayed count is always accurate.
+   */
+  it('re-fetches the pending-approval count on init (auth change / page refresh)', async () => {
+    unreadCountSpy.mockResolvedValue(1);
+    const { appShell, unsub } = await mountAdmin();
+    try {
+      const { badge } = adminBellRefs();
+
+      await vi.waitFor(() => expect(badge.textContent).toBe('1'), {
+        timeout: 1000,
+      });
+
+      // Simulate auth change (page refresh / re-login).
+      // The backend now has 6 pending approvals.
+      unreadCountSpy.mockResolvedValue(6);
+      // Trigger populateHeader again via auth change.
+      const { appShell: shell2 } = await import('./app-shell.component.js');
+      await shell2.init();
+      await vi.waitFor(() => expect(badge.textContent).toBe('6'), {
+        timeout: 1000,
+      });
+
+      shell2.destroy();
+    } finally {
+      appShell.destroy();
+      if (typeof unsub === 'function') unsub();
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
 // populateHeader avatar rendering (C3)
 // ────────────────────────────────────────────────────────────────────
 

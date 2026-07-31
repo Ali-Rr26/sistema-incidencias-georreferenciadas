@@ -34,6 +34,7 @@ class Notification extends Model
         'data',
         'message',
         'read',
+        'processed_at',
     ];
 
     protected function casts(): array
@@ -42,6 +43,7 @@ class Notification extends Model
             'type' => NotificationType::class,
             'data' => 'array',
             'read' => 'boolean',
+            'processed_at' => 'datetime',
         ];
     }
 

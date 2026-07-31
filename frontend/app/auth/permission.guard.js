@@ -49,6 +49,7 @@ const CHILD_ROUTE_PERMISSIONS = {
   // /roles/:id requires roles.update for edit, or roles.create if id='create'
   '/roles/create': 'roles.create',
   '/roles/:id': 'roles.update',
+  '/notificaciones': 'notifications.update',
 };
 
 /**
