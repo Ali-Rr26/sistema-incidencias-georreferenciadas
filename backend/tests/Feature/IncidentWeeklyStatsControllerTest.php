@@ -7,6 +7,7 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -19,10 +20,10 @@ uses(RefreshDatabase::class);
 it('returns weekly stats with correct structure', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $response = $this->actingAs($admin)->getJson('/api/incidents/weekly-stats');
 
@@ -42,10 +43,10 @@ it('returns weekly stats with correct structure', function () {
 it('returns correct counts for incidents', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create([
@@ -78,10 +79,10 @@ it('returns correct counts for incidents', function () {
 it('respects custom date range filter', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create([
@@ -128,10 +129,10 @@ it('respects custom date range filter', function () {
 it('separates received vs resolved incidents correctly', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create([
@@ -157,7 +158,7 @@ it('composes category and location filters', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
     $this->seed(RoleSeeder::class);
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country']);
     $province = Location::create(['name' => 'Santa Elena', 'level' => 'province', 'parent_id' => $country->id]);
     $city = Location::create(['name' => 'La Libertad', 'level' => 'city', 'parent_id' => $province->id]);
@@ -193,7 +194,7 @@ it('serves the same daily series from cache on the second request', function () 
     Cache::tags(['incident-stats'])->flush();
     $this->seed(RoleSeeder::class);
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $location = Location::create(['name' => 'Cache City', 'level' => 'city']);
     $org = Organization::create(['name' => 'Cache Org', 'location_id' => $location->id]);
     $category = IncidentCategory::create(['name' => 'Cache Category', 'organization_id' => $org->id]);
@@ -235,12 +236,12 @@ it('serves the same daily series from cache on the second request', function () 
 it('requires dashboard.view permission', function () {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
         ['id' => 2, 'name' => 'user_regular', 'created_at' => now(), 'updated_at' => now()],
     ]);
 
-    $adminWithPerm = User::factory()->create(['role_id' => 1]);
+    $adminWithPerm = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $userWithoutPerm = User::factory()->create(['role_id' => 2]);
 
     $response = $this->actingAs($adminWithPerm)->getJson('/api/incidents/weekly-stats');

@@ -5,15 +5,15 @@ declare(strict_types=1);
 use App\Domains\Invitations\Models\UserInvitation;
 use App\Domains\Invitations\Services\InvitationService;
 use App\Domains\Mail\Services\MailSenderInterface;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 });
 
 it('sends UserInvitedMail with correct accept URL when creating invitation', function (): void {

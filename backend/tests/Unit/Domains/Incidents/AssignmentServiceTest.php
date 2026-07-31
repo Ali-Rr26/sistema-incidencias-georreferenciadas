@@ -10,6 +10,7 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ beforeEach(function (): void {
     // path silently drops the explicit id and lets auto-increment assign
     // whatever the sequence happens to be at (see RoleSeederTest / the
     // same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 5, 'name' => UserRole::Usuario->value],
     ]);

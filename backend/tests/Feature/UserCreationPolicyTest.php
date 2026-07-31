@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -19,6 +20,12 @@ beforeEach(function (): void {
     $this->seed(PermissionSeeder::class);
     $this->seed(RoleSeeder::class);
     $this->seed(RolePermissionSeeder::class);
+
+    // Fetch role IDs by name
+    $this->adminOrganizacionRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+    $this->usuarioRoleId = Role::where('name', 'usuario')->first()->id;
+    $this->adminSistemaRoleId = Role::where('name', 'admin_sistema')->first()->id;
+    $this->operadorSistemaRoleId = Role::where('name', 'operador_sistema')->first()->id;
 
     foreach (Permission::all() as $permission) {
         $slug = "{$permission->resource}.{$permission->action}";
@@ -46,7 +53,7 @@ beforeEach(function (): void {
 
     // AdminOrganizacion user
     $this->adminA = User::factory()->create([
-        'role_id' => 3, // admin_organizacion
+        'role_id' => $this->adminOrganizacionRoleId,
         'organization_id' => $this->orgA->id,
     ]);
 });
@@ -57,7 +64,7 @@ it('prevents AdminOrganizacion from creating users in another organization', fun
         ->postJson('/api/users', [
             'email' => 'otherorg@example.com',
             'password' => 'password123',
-            'role_id' => 5, // usuario
+            'role_id' => $this->usuarioRoleId,
             'organization_id' => $this->orgB->id,
             'first_name' => 'Other',
             'last_name' => 'Org User',
@@ -94,7 +101,7 @@ it('allows AdminOrganizacion to create users in their own organization with allo
         ->actingAs($this->adminA)
         ->postJson('/api/users', [
             'email' => 'ownorg@example.com',
-            'role_id' => 5, // usuario
+            'role_id' => $this->usuarioRoleId,
             'organization_id' => $this->orgA->id,
             'first_name' => 'Own',
             'last_name' => 'Org User',
@@ -105,13 +112,13 @@ it('allows AdminOrganizacion to create users in their own organization with allo
     $this->assertDatabaseHas('users', [
         'email' => 'ownorg@example.com',
         'organization_id' => $this->orgA->id,
-        'role_id' => 5,
+        'role_id' => $this->usuarioRoleId,
     ]);
 });
 
 it('prevents AdminOrganizacion from updating a user in another organization', function (): void {
     $otherUser = User::factory()->create([
-        'role_id' => 5,
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => $this->orgB->id,
     ]);
 
@@ -126,7 +133,7 @@ it('prevents AdminOrganizacion from updating a user in another organization', fu
 
 it('prevents AdminOrganizacion from assigning administrative roles on user update', function (int $adminRoleId): void {
     $ownUser = User::factory()->create([
-        'role_id' => 5,
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => $this->orgA->id,
     ]);
 
@@ -141,7 +148,7 @@ it('prevents AdminOrganizacion from assigning administrative roles on user updat
 
 it('allows AdminOrganizacion to update a user in their own organization', function (): void {
     $ownUser = User::factory()->create([
-        'role_id' => 5,
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => $this->orgA->id,
     ]);
 
@@ -162,7 +169,7 @@ it('allows AdminOrganizacion to update a user in their own organization', functi
 
 it('allows SystemAdmin to create any user in any organization with any role', function (): void {
     $systemAdmin = User::factory()->create([
-        'role_id' => 1, // admin_sistema
+        'role_id' => $this->adminSistemaRoleId,
         'organization_id' => null,
     ]);
 
@@ -172,7 +179,7 @@ it('allows SystemAdmin to create any user in any organization with any role', fu
         ->actingAs($systemAdmin)
         ->postJson('/api/users', [
             'email' => 'syscreated@example.com',
-            'role_id' => 2, // operador_sistema
+            'role_id' => $this->operadorSistemaRoleId,
             'organization_id' => $this->orgB->id,
             'first_name' => 'Sys',
             'last_name' => 'Created',
@@ -182,40 +189,40 @@ it('allows SystemAdmin to create any user in any organization with any role', fu
     $response->assertStatus(201);
     $this->assertDatabaseHas('users', [
         'email' => 'syscreated@example.com',
-        'role_id' => 2,
+        'role_id' => $this->operadorSistemaRoleId,
         'organization_id' => $this->orgB->id,
     ]);
 });
 
 it('allows SystemAdmin to update any user in any organization to any role', function (): void {
     $systemAdmin = User::factory()->create([
-        'role_id' => 1, // admin_sistema
+        'role_id' => $this->adminSistemaRoleId,
         'organization_id' => null,
     ]);
 
     $user = User::factory()->create([
-        'role_id' => 5,
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => $this->orgA->id,
     ]);
 
     $response = $this->withoutMiddleware([JwtAuthenticate::class])
         ->actingAs($systemAdmin)
         ->putJson("/api/users/{$user->id}", [
-            'role_id' => 1, // promote to admin_sistema
+            'role_id' => $this->adminSistemaRoleId,
             'organization_id' => $this->orgB->id,
         ]);
 
     $response->assertStatus(200);
     $this->assertDatabaseHas('users', [
         'id' => $user->id,
-        'role_id' => 1,
+        'role_id' => $this->adminSistemaRoleId,
         'organization_id' => $this->orgB->id,
     ]);
 });
 
 it('prevents normal users from creating users', function (): void {
     $normalUser = User::factory()->create([
-        'role_id' => 5, // usuario
+        'role_id' => $this->usuarioRoleId,
         'organization_id' => null,
     ]);
 
@@ -224,7 +231,7 @@ it('prevents normal users from creating users', function (): void {
         ->postJson('/api/users', [
             'email' => 'failedcreate@example.com',
             'password' => 'password123',
-            'role_id' => 5,
+            'role_id' => $this->usuarioRoleId,
             'first_name' => 'Fail',
             'last_name' => 'User',
         ]);

@@ -16,7 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 
     $this->user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);

@@ -8,6 +8,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,20 +20,23 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // Seed roles and permissions (skip IncidentSeeder — requires PostGIS).
     //
-    // Direct DB::insert with a pinned id, not Role::create(): the
-    // role_permission grant below hardcodes role_id=1 for admin_sistema.
-    // `Role::create()` relies on nextval(), which does NOT reliably land
+    // insertOrIgnore with pinned ids to ensure consistent FK targets.
+    // Fetch admin_sistema ID by name (lines 38-39) to resolve dynamically.
+    // `Role::firstOrCreate()` relies on nextval(), which does NOT reliably land
     // on 1 — PostgreSQL sequences are not rolled back between tests, so
     // an earlier test in the same parallel worker database can leave the
     // sequence past 1 by the time this one runs (see RoleSeederTest /
     // the same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'operador_sistema'],
         ['id' => 3, 'name' => 'admin_organizacion'],
         ['id' => 4, 'name' => 'operador_organizacion'],
         ['id' => 5, 'name' => 'usuario'],
     ]);
+
+    // Fetch admin_sistema role ID by name
+    $adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
 
     Permission::create(['resource' => 'comments', 'action' => 'view',   'name' => 'Ver Comentarios',       'description' => '']);
     Permission::create(['resource' => 'comments', 'action' => 'create', 'name' => 'Agregar Comentarios',   'description' => '']);
@@ -43,10 +47,10 @@ beforeEach(function (): void {
     Permission::create(['resource' => 'incidents', 'action' => 'update', 'name' => 'Actualizar Incidencias', 'description' => '']);
     Permission::create(['resource' => 'incidents', 'action' => 'delete', 'name' => 'Eliminar Incidencias', 'description' => '']);
 
-    // Role-permission grants for admin_sistema (role_id = 1)
+    // Role-permission grants for admin_sistema (resolved from name, not hardcoded)
     foreach (Permission::all() as $perm) {
-        DB::table('role_permission')->insert([
-            'role_id' => 1,
+        DB::table('role_permission')->insertOrIgnore([
+            'role_id' => $adminRoleId,
             'permission_id' => $perm->permission_id,
             'created_at' => now(),
             'updated_at' => now(),

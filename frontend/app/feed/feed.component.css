@@ -197,24 +197,34 @@
 
 /* --- Scrollable incidents region (vertical scroll only) --- */
 .feed-scroll-region {
-  max-height: calc(100dvh - 240px);
-  overflow-y: auto;
   overflow-x: hidden;
 }
-@supports not (height: 100dvh) {
+
+/* Desktop only: cap height for constrained scroll */
+@media (min-width: 992px) {
   .feed-scroll-region {
-    max-height: calc(100vh - 240px);
+    max-height: calc(100dvh - 240px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  @supports not (height: 100dvh) {
+    .feed-scroll-region {
+      max-height: calc(100vh - 240px);
+    }
   }
 }
 
-/* When the feed is mounted we want the ONLY scrollable area to be
-   `.feed-scroll-region` — disable the app-shell-main's own overflow
-   so the user never sees two scrollbars on the same page. */
+/* Mobile: allow body scroll; desktop: disable for fixed regions */
 body.feed-view {
-  overflow: hidden;
+  overflow: auto;
 }
-body.feed-view .app-shell-main {
-  overflow: hidden !important;
+@media (min-width: 992px) {
+  body.feed-view {
+    overflow: hidden;
+  }
+  body.feed-view .app-shell-main {
+    overflow: hidden !important;
+  }
 }
 
 /* --- Card preview gradient background --- */
@@ -438,5 +448,276 @@ body.feed-view .app-shell-main {
     -webkit-line-clamp: 2; /* Max 2 líneas */
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   STATS CARDS (Mockup Opción B)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 16px;
+  padding: 0;
+}
+
+.stats-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.stats-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.stats-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.stats-icon-new {
+  background: linear-gradient(135deg, #a06bf5, #5e3bdb);
+  color: #fff;
+}
+
+.stats-icon-resolved {
+  background: linear-gradient(135deg, #16a96b, #0d6d3a);
+  color: #fff;
+}
+
+.stats-icon-avg {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  color: #fff;
+}
+
+.stats-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #23283b;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stats-label {
+  font-size: 12px;
+  color: #6b7180;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FILTER FEED — COLLAPSIBLE SECTION
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-filter-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.feed-filter-toggle {
+  cursor: pointer;
+  user-select: none;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.feed-filter-toggle:hover {
+  opacity: 0.8;
+}
+
+.feed-filter-toggle:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
+}
+
+.feed-filter-chevron {
+  transition: transform 0.3s ease;
+  color: #6b7180;
+}
+
+.feed-filter-toggle[aria-expanded='true'] .feed-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.feed-filter-content {
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.feed-filter-content.feed-filter-collapsed {
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: block !important;
+  pointer-events: none;
+}
+
+.feed-filter-content:not(.feed-filter-collapsed) {
+  max-height: 500px;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   SEARCH INPUT (mobile main column + desktop right panel)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.feed-search-input > i {
+  position: absolute;
+  left: 12px;
+  color: #5b6172;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.feed-search-input__field {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #eef0f5;
+  background: #f7f8fc;
+  padding: 0 12px 0 36px;
+  font-size: 0.85rem;
+  outline: none;
+  color: #23283b;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.feed-search-input__field::placeholder {
+  color: #a3a8b8;
+}
+
+.feed-search-input__field:focus {
+  border-color: #6a5cf3;
+  background: #fff;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FEED LOADING + END-OF-LIST INDICATOR
+
+   Two distinct visual states, both replace the old always-visible spinner:
+
+   1. While the next page is in flight (#feed-loading has no .d-none):
+      a centered spinner. Tells the user "wait, more is coming".
+
+   2. Once the last page is reached (trigger has .done):
+      a soft divider + success icon + copy. Tells the user "you've seen
+      everything; the list is finite".
+
+   The trigger element itself stays invisible — it's just an
+   IntersectionObserver target. Bootstrap's d-flex/d-none utility classes
+   are used on the loading element so the JS only needs to toggle a single
+   class to flip the state.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.feed-scroll-trigger {
+  height: 1px;
+}
+
+.feed-loading {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.feed-loading.d-none {
+  display: none !important;
+}
+
+.feed-footer-message {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px 32px;
+  margin-top: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7180;
+  border-top: 1px solid #eef0f5;
+  text-align: center;
+}
+
+.feed-footer-message i {
+  color: #16a96b;
+  font-size: 14px;
+}
+
+/* When the trigger's done state is reached, the footer message takes
+   over the visual slot. Using the sibling general-sibling combinator so
+   the loading element sitting between them does not break the rule. */
+#feed-scroll-trigger.done ~ .feed-footer-message {
+  display: flex;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   RESPONSIVE: Mobile-first stats cards
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 576px) {
+  .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .stats-card {
+    padding: 12px;
+  }
+
+  .stats-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .stats-value {
+    font-size: 18px;
+  }
+
+  .stats-label {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 577px) {
+  .stats-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Hide filter section on desktop (≥992px) if filter is in main column */
+@media (min-width: 992px) {
+  .feed-filter-section {
+    display: none;
   }
 }

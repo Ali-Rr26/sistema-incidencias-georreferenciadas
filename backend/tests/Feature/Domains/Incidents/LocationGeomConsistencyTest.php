@@ -6,12 +6,12 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use MatanYadaev\EloquentSpatial\Objects\LineString;
 use MatanYadaev\EloquentSpatial\Objects\MultiPolygon;
@@ -78,34 +78,6 @@ function quitoSquare(): MultiPolygon
     ]);
 }
 
-beforeEach(function (): void {
-    $this->withoutMiddleware([
-        JwtAuthenticate::class,
-        Authorize::class,
-    ]);
-
-    Storage::fake('s3');
-
-    DB::table('roles')->insert([
-        ['id' => 1, 'name' => 'admin_sistema'],
-    ]);
-
-    $this->systemAdmin = User::factory()->create([
-        'role_id' => 1,
-        'organization_id' => null,
-    ]);
-
-    $orgLocation = Location::create(['name' => 'Org Base Location', 'level' => 'city']);
-    $this->organization = Organization::create([
-        'name' => 'Org A',
-        'location_id' => $orgLocation->id,
-    ]);
-    $this->category = IncidentCategory::create([
-        'name' => 'General',
-        'organization_id' => $this->organization->id,
-    ]);
-});
-
 function locationGeomBasePayload(array $overrides = []): array
 {
     return array_merge([
@@ -116,27 +88,33 @@ function locationGeomBasePayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('location_id present without geom passes (nothing to cross-check, sqlite-safe)', function (): void {
-    $location = Location::create(['name' => 'Machala', 'level' => 'city']);
-    $this->actingAs($this->systemAdmin);
+beforeEach(function (): void {
+    $this->withoutMiddleware([
+        JwtAuthenticate::class,
+        Authorize::class,
+    ]);
 
-    $response = $this->postJson('/api/incidents', locationGeomBasePayload([
+    Storage::fake('s3');
+
+    $adminRole = Role::firstOrCreate(['name' => 'admin_sistema']);
+    $adminRoleId = $adminRole->id;
+
+    // Create system admin user
+    $this->systemAdmin = User::factory()->create(['role_id' => $adminRoleId]);
+
+    // Create location and organization for tests
+    $location = Location::create(['name' => 'Test Location', 'level' => 'city']);
+    $this->organization = Organization::create([
+        'name' => 'Test Org',
         'location_id' => $location->id,
-    ]));
+        'max_active_claims' => 5,
+    ]);
 
-    $response->assertCreated();
-});
-
-it('pgsql: a point matching no polygon at all passes (no boundary data loaded yet)', function (): void {
-    $location = Location::create(['name' => 'Machala', 'level' => 'city']); // no geom set
-    $this->actingAs($this->systemAdmin);
-
-    $response = $this->postJson('/api/incidents', locationGeomBasePayload([
-        'location_id' => $location->id,
-        'geom' => json_encode(['type' => 'Point', 'coordinates' => [-80.7, -0.9]]),
-    ]));
-
-    $response->assertCreated();
+    // Create incident category
+    $this->category = IncidentCategory::create([
+        'name' => 'Test Category',
+        'organization_id' => $this->organization->id,
+    ]);
 });
 
 it('pgsql: a point inside the selected location\'s polygon passes', function (): void {

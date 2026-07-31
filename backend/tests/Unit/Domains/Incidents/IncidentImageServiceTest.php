@@ -18,7 +18,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 
     $user = User::factory()->create();
     $category = IncidentCategory::create(['name' => 'Test Cat']);

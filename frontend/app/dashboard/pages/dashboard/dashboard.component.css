@@ -555,10 +555,11 @@
 }
 
 .gr-card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 20px 22px;
-  box-shadow: var(--shadow-sm);
+  background: #ffffff;
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: none;
 }
 
 @media (max-width: 480px) {
@@ -569,10 +570,11 @@
 }
 
 .gr-card__title {
-  font-size: 15.5px;
-  font-weight: 700;
-  color: #23283b;
-  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f36;
+  letter-spacing: -0.2px;
+  margin-bottom: 18px;
 }
 
 @media (max-width: 480px) {
@@ -580,6 +582,118 @@
     font-size: 14px;
     margin-bottom: 12px;
   }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   C3 chart skin — applied to the SVG C3 injects into .gr-chart.
+   Keeps the C3 config intact but overrides the default font/colour
+   treatment to match the modernised card family.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.gr-chart svg {
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-axis-x text,
+.gr-chart .c3-axis-y text {
+  font-size: 11px;
+  font-weight: 500;
+  fill: #9096a6;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-axis path,
+.gr-chart .c3-axis line {
+  stroke: #eef0f5;
+}
+
+.gr-chart .c3-axis-y .tick line {
+  stroke: #f0f2f5;
+}
+
+.gr-chart .c3-grid line {
+  stroke: #f0f2f5;
+  stroke-dasharray: none;
+}
+
+.gr-chart .c3-line {
+  stroke-width: 2.5px;
+}
+
+.gr-chart .c3-area {
+  opacity: 0.15;
+}
+
+.gr-chart .c3-circle {
+  r: 4;
+}
+
+.gr-chart .c3-circle._expanded_ {
+  r: 6;
+}
+
+.gr-chart .c3-bar {
+  stroke: none;
+}
+
+.gr-chart .c3-legend-item {
+  font-size: 12px;
+  color: #6b7180;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-legend-item text {
+  fill: #6b7180;
+}
+
+.gr-chart .c3-tooltip {
+  background: #1a1f36 !important;
+  border-color: transparent !important;
+  border-radius: 8px !important;
+  box-shadow: 0 12px 28px -8px rgba(15, 23, 42, 0.35) !important;
+  padding: 8px 12px !important;
+  font-family: var(--font-family);
+}
+
+.gr-chart .c3-tooltip th {
+  background: transparent !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 0 0 4px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.gr-chart .c3-tooltip td {
+  /* C3's default stylesheet leaves background-color:#fff on the
+     cells. With our dark tooltip that left white text on white cells
+     (everything invisible except the th). Forcing transparent here
+     lets the dark tooltip surface show through so the value labels
+     render the same way they did under the old light tooltip. */
+  background: transparent !important;
+  border: 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 11.5px !important;
+  padding: 3px 6px !important;
+}
+
+.gr-chart .c3-tooltip td.value,
+.gr-chart .c3-tooltip td.name {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.gr-chart .c3-tooltip .color {
+  border-radius: 50% !important;
+}
+
+/* Volume chart — keep the area subtle but the line crisp. */
+.gr-card--monthly .c3-line {
+  stroke-width: 2.5px;
+}
+
+.gr-card--monthly .c3-area {
+  opacity: 0.18;
 }
 
 /* Legend */

@@ -219,7 +219,7 @@ it('deletes a comment (soft)', function (): void {
 it('R-15 denies comment creation for user without comments.create permission', function (): void {
     // Fresh role with no pivot rows. role_id=null trips a SQLite NOT NULL
     // on users.role_id, so we synthesize a non-admin role instead.
-    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $noPermsRole = Role::firstOrCreate(['name' => 'rol_test_sin_permisos']);
     $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
     $this->actingAs($stranger);
 
@@ -243,7 +243,7 @@ it('R-16 denies comment listing for user without comments.view permission', func
     // now grants comments.view per RolePermissionSeeder, which would let
     // the index route return 200. Use a no-permission role so the gate
     // truly denies comments.view without ambiguity.
-    $noPermsRole = Role::create(['name' => 'rol_test_sin_permisos']);
+    $noPermsRole = Role::firstOrCreate(['name' => 'rol_test_sin_permisos']);
     $stranger = User::factory()->create(['role_id' => $noPermsRole->id]);
     $this->actingAs($stranger);
 

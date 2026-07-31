@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\EcuadorLocationSeeder;
@@ -52,8 +53,8 @@ it('pgsql: reproduces and closes the manually-reported bug — Santa Elena/La Li
     }
 
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
-    $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();
     (new LocationGeomSeeder)->run();
@@ -87,8 +88,8 @@ it('pgsql: a pin actually inside La Libertad (SantaElenaIncidentSeeder\'s own co
     }
 
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
-    $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();
     (new LocationGeomSeeder)->run();
@@ -126,8 +127,8 @@ it('pgsql: rejects Santa Elena/La Libertad + Quito pin via HTTP when geom is sen
     // bug was a 500, not a missing validation, so the rule's semantic
     // hasn't changed.
     $this->withoutMiddleware([JwtAuthenticate::class, Authorize::class]);
-    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
-    $user = User::factory()->create(['role_id' => 1, 'organization_id' => null]);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id, 'organization_id' => null]);
 
     (new EcuadorLocationSeeder)->run();
     (new LocationGeomSeeder)->run();

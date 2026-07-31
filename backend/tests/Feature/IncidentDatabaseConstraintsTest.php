@@ -7,6 +7,7 @@ use App\Domains\Incidents\Enums\IncidentStatus;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -39,10 +40,10 @@ it('validates location table normalization without redundancy', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('prevents assigning parent category to incident (trigger validation)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $user = User::factory()->create(['role_id' => 1]);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'Test City', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
@@ -82,10 +83,10 @@ it('prevents assigning parent category to incident (trigger validation)', functi
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('calculates average resolution time correctly (CP-08-06-BD)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $user = User::factory()->create(['role_id' => 1]);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'Test City', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);
@@ -144,10 +145,10 @@ it('calculates average resolution time correctly (CP-08-06-BD)', function () {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 it('trigger automatically logs status changes to history (CP-02-06-BD)', function () {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema', 'created_at' => now(), 'updated_at' => now()],
     ]);
-    $user = User::factory()->create(['role_id' => 1]);
+    $user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'Test City', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

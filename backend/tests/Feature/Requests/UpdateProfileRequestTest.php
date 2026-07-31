@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Local\Http\Requests\UpdateProfileRequest;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 });
 
 it('JSON request with text-only fields validates successfully', function (): void {

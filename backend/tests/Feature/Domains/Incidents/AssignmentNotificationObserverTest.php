@@ -10,6 +10,7 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Enums\NotificationType;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ beforeEach(function (): void {
     // Seed mínimo: roles + estructura jerárquica (location → org → category)
     // + 2 operadores (uno principal, uno secundario para tests de
     // reasignación).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'operador_organizacion'],
     ]);

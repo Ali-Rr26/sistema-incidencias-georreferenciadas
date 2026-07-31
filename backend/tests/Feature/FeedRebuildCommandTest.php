@@ -10,16 +10,16 @@ use App\Domains\Organizations\Models\Organization;
 use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    // Seed role for UserFactory (role_id=1)
-    DB::table('roles')->insert(['id' => 1, 'name' => 'Admin']);
+    // Seed role for UserFactory
+    Role::firstOrCreate(['name' => 'Admin']);
+    $adminRoleId = Role::where('name', 'Admin')->first()->id;
 
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role_id' => $adminRoleId]);
     $category = IncidentCategory::create(['name' => 'Test']);
     $location = Location::create(['name' => 'Test Loc', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

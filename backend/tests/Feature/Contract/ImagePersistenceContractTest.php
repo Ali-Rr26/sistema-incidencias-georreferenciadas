@@ -25,6 +25,7 @@ use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageStorageService;
@@ -42,9 +43,10 @@ beforeEach(function (): void {
     // `Gate::before` bypass (`$user->isAdmin()`), so a single admin actor
     // is authorized across incidents, comments, and users without needing
     // to seed the permissions table for this cross-domain contract suite.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::where('name', 'admin_sistema')->first()->id;
 
-    $this->admin = User::factory()->create();
+    $this->admin = User::factory()->create(['role_id' => $adminRoleId]);
     $this->withoutMiddleware(JwtAuthenticate::class);
     Storage::fake('s3');
 

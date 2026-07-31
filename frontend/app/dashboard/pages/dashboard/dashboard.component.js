@@ -11,7 +11,7 @@ import {
 const __ = (message) => message;
 
 const dashboardMessages = {
-  empty: __('Sin datos en este período'),
+  empty: '0',
   loadError: __(
     'No pudimos cargar las estadísticas. Revisá tu conexión e intentá nuevamente.',
   ),
@@ -68,9 +68,8 @@ function loadC3() {
 // ─────────────────────────────────────────────
 function renderEmptyMetric(el) {
   if (!el) return;
-  el.classList.remove('is-loading');
-  el.classList.add('is-empty');
-  el.innerHTML = `<i class="fa-regular fa-folder-open" aria-hidden="true"></i><span>${dashboardMessages.empty}</span>`;
+  el.classList.remove('is-loading', 'is-empty');
+  el.textContent = '0';
 }
 
 function animateCounter(el, target, duration = 900) {
@@ -125,18 +124,23 @@ function initCategoriesChart(categories) {
         categories: categories.map((cat) => cat.name),
       },
       y: {
-        label: 'Cantidad de incidencias',
+        label: { text: 'Cantidad', position: 'outer-middle' },
+        tick: { format: (d) => Math.round(d) },
+        padding: { top: 4, bottom: 0 },
       },
     },
     bar: {
-      width: {
-        ratio: 0.5,
-      },
+      width: { ratio: 0.55 },
+      padding: 0.15,
     },
     padding: {
-      top: 10,
-      right: 40,
-      bottom: 10,
+      top: 8,
+      right: 24,
+      bottom: 0,
+      // 150px reserved on the left so category names render in full
+      // (the longest seed category — 'Recolección de Residuos',
+      // 'Contaminación Ambiental', 'Construcciones Ilegales' — all need
+      // ~22-25 chars at the 11px axis font-size).
       left: 150,
     },
     tooltip: {
@@ -152,9 +156,15 @@ function initCategoriesChart(categories) {
       },
     },
     color: {
-      pattern: ['#8a5cf0', '#d4c5f9'],
+      pattern: ['#7d5af0', '#e4d8ff'],
     },
-    legend: { position: 'bottom' },
+    legend: { position: 'bottom', padding: 8 },
+    grid: {
+      y: {
+        show: true,
+        ticks: 4,
+      },
+    },
   });
 }
 
@@ -204,7 +214,7 @@ function buildActivityFeed(items) {
 // no hay incidencias resueltas todavía.
 // ─────────────────────────────────────────────
 function formatResolutionTime(avg) {
-  if (!avg) return dashboardMessages.empty;
+  if (!avg) return '0';
   const { days, hours } = avg;
   if (days > 0 && hours > 0) return `${days}d ${hours}h`;
   if (days > 0) return `${days}d`;
@@ -264,29 +274,45 @@ function initVolumeChart(days) {
     bindto: '#chart-volumen',
     data: {
       columns: [recibidas],
-      type: 'line',
+      type: 'area',
     },
     axis: {
       x: {
         type: 'category',
         categories: labels,
+        tick: {
+          // C3's default shows every tick label; on a 30-day window that
+          // gets crowded. Culling to ~8 keeps the axis readable.
+          cull: { max: 8 },
+          format: (i) => labels[i],
+        },
       },
       y: {
-        label: 'Cantidad',
+        tick: { format: (d) => Math.round(d) },
+        padding: { top: 8, bottom: 0 },
       },
     },
     color: {
-      pattern: ['#8a5cf0'],
+      pattern: ['#7d5af0'],
     },
     point: {
-      show: true,
-      r: 3,
+      show: false,
+      focus: { expand: { enabled: true, r: 5 } },
     },
     line: {
       connectNull: true,
     },
+    area: {
+      zerobased: true,
+    },
     legend: {
       show: false,
+    },
+    grid: {
+      y: {
+        show: true,
+        ticks: 4,
+      },
     },
   });
 }

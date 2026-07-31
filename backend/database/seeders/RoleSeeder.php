@@ -18,21 +18,19 @@ class RoleSeeder extends Seeder
 
     public function run(): void
     {
+        // Loop with per-role insertOrIgnore:
+        // `Role::$fillable = ['name']` excludes `id`, so Eloquent's mass-assignment
+        // path silently dropped explicit ids — wrong for these FK-target rows.
+        // Surfaced by SQLite → PostgreSQL test migration (backend-tests-postgres-migration, #197):
+        // Postgres SERIAL sequences persist across rolled-back transactions.
+        // insertOrIgnore: insert with pinned id if new, preserve existing id if role exists.
+        // Never updates/changes an existing role's id (preserves FKs).
+        // Guarantees FK visibility in same transaction for RolePermissionSeeder.
         foreach (self::ROLES as $role) {
-            // `DB::table()->updateOrInsert()`, not `Role::query()->updateOrCreate()`:
-            // `Role::$fillable = ['name']` excludes `id`, so the Eloquent
-            // mass-assignment path silently dropped the explicit id on
-            // create and let auto-increment assign whatever the sequence
-            // happened to be at — wrong for these FK-target rows.
-            // Surfaced by the SQLite → PostgreSQL test migration
-            // (backend-tests-postgres-migration, issue #197): Postgres
-            // SERIAL sequences persist across rolled-back transactions,
-            // so the "first insert lands on id=N" coincidence that masked
-            // this on SQLite no longer holds.
-            DB::table('roles')->updateOrInsert(
-                ['name' => $role['name']],
-                ['id' => $role['id']],
-            );
+            DB::table('roles')->insertOrIgnore([
+                'id' => $role['id'],
+                'name' => $role['name'],
+            ]);
 
             $this->command?->info("Rol {$role['name']} creado/actualizado.");
         }

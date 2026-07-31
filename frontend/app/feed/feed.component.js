@@ -104,7 +104,7 @@ function renderCard(inc) {
     `;
   } else if (geomCoords) {
     mediaHtml = `
-      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3"
+      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3 d-none d-lg-block"
            data-lat="${geomCoords.lat}" data-lng="${geomCoords.lng}"
            style="height:180px;background:#e8ecf1">
         ${coordsHtml}
@@ -170,6 +170,14 @@ function renderCard(inc) {
 // ── Mini-map initializer ──────────────────────────────────
 
 async function initMiniMaps() {
+  // Skip on mobile — minimaps hidden via d-none d-lg-block
+  // Handle jsdom (test environment) where matchMedia is undefined
+  if (
+    typeof window.matchMedia !== 'function' ||
+    !window.matchMedia('(min-width: 992px)').matches
+  )
+    return;
+
   const containers = document.querySelectorAll(
     '.feed-minimap:not([data-map-init])',
   );
@@ -224,7 +232,8 @@ const LIST = 'feed-list';
 const FILTERS = 'feed-filters';
 const SKELETON = 'feed-cargando';
 const VACIO = 'feed-vacio';
-const SENTINEL = 'feed-sentinel';
+const TRIGGER = 'feed-scroll-trigger';
+const LOADING = 'feed-loading';
 const SCROLL_REGION = 'feed-scroll-region';
 const CHIP_SELECTOR = '.feed-chip';
 
@@ -240,9 +249,57 @@ export default {
     let filtroStatus = '';
     let cargando = false;
     let todasLasIncidencias = [];
+    let searchQuery = '';
     let observer = null;
 
     document.body.classList.add('feed-view');
+
+    // ── Fetch stats for today ──
+    async function fetchStats() {
+      try {
+        // Gate stats fetch: only attempt if user has dashboard.view permission.
+        // Guests and unauthorized users will get 403 — don't spam console.
+        const today = new Date().toLocaleDateString('en-CA');
+        const params = new URLSearchParams({
+          inicio: today,
+          fin: today,
+        });
+        const statsData = await http.get(
+          `/incidents/stats?${params.toString()}`,
+        );
+
+        // Parse stats and update UI
+        // "Nuevas hoy" = total incidents created today (not just pending)
+        // "Resueltas hoy" = incidents resolved today (by resolved_at, not created_at)
+        const newCount = statsData.total ?? 0;
+        const resolvedCount = statsData.by_status?.resolved ?? 0;
+        const avgTime = statsData.average_resolution_time?.formatted ?? '0';
+
+        // Update main stats cards
+        const statNewEl = document.getElementById('stat-new');
+        const statResolvedEl = document.getElementById('stat-resolved');
+        const statAvgEl = document.getElementById('stat-avg');
+
+        if (statNewEl) statNewEl.textContent = newCount;
+        if (statResolvedEl) statResolvedEl.textContent = resolvedCount;
+        if (statAvgEl) statAvgEl.textContent = avgTime;
+
+        // Update right panel stats (desktop)
+        const rpStatNewEl = document.getElementById('rp-stat-new');
+        const rpStatResolvedEl = document.getElementById('rp-stat-resolved');
+        const rpStatAvgEl = document.getElementById('rp-stat-avg');
+
+        if (rpStatNewEl) rpStatNewEl.textContent = newCount;
+        if (rpStatResolvedEl) rpStatResolvedEl.textContent = resolvedCount;
+        if (rpStatAvgEl) rpStatAvgEl.textContent = avgTime;
+      } catch (error) {
+        // Ignore 403 Forbidden (unauthorized users and guests have no dashboard.view)
+        if (error.response?.status === 403) {
+          return;
+        }
+        console.error('[feed] Error fetching stats:', error);
+      }
+    }
 
     // Composer setup
     const composerBar = document.getElementById('composer-bar');
@@ -264,7 +321,7 @@ export default {
 
     const feedList = document.getElementById(LIST);
     const feedFilters = document.getElementById(FILTERS);
-    if (!feedFilters || !feedList) return;
+    if (!feedList) return;
 
     // Event delegation: any click on an element with [data-route]
     // (cards, "Ver detalle" buttons) navigates via the router. The
@@ -303,14 +360,20 @@ export default {
       const listEl = document.getElementById(LIST);
       const skeleton = document.getElementById(SKELETON);
       const vacio = document.getElementById(VACIO);
-      const sentinel = document.getElementById(SENTINEL);
+      const trigger = document.getElementById(TRIGGER);
+      const loadingEl = document.getElementById(LOADING);
 
       if (!append) {
         skeleton.classList.remove('d-none');
         listEl.innerHTML = '';
         vacio.classList.add('d-none');
-        sentinel.classList.remove('done');
+        trigger.classList.remove('done');
         todasLasIncidencias = [];
+      } else {
+        // Infinite-scroll fetch: only here do we show the spinner. The
+        // initial load uses the skeleton loader instead, so the user
+        // never sees a spinner spin idly at the bottom of the list.
+        loadingEl.classList.remove('d-none');
       }
 
       const params = new URLSearchParams({
@@ -329,37 +392,78 @@ export default {
         const hasMore = paginaActual < totalPaginas;
 
         skeleton.classList.add('d-none');
+        loadingEl.classList.add('d-none');
 
         if (!append) todasLasIncidencias = datos;
         else todasLasIncidencias = [...todasLasIncidencias, ...datos];
 
-        if (todasLasIncidencias.length === 0) {
-          listEl.innerHTML = '';
-          vacio.classList.remove('d-none');
-          sentinel.classList.add('done');
-        } else {
-          vacio.classList.add('d-none');
-          if (append) {
-            listEl.insertAdjacentHTML(
-              'beforeend',
-              datos.map(renderCard).join(''),
-            );
-          } else {
-            disposeMiniMaps();
-            listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
-          }
-          initMiniMaps();
-          sentinel.classList.toggle('done', !hasMore);
-          sentinel.classList.toggle('loading', hasMore && !cargando);
-        }
+        renderList();
+        trigger.classList.toggle('done', !hasMore);
       } catch {
         skeleton.classList.add('d-none');
+        loadingEl.classList.add('d-none');
         vacio.classList.remove('d-none');
         vacio.querySelector('p').textContent =
           'Error al cargar. Intente de nuevo.';
-        document.getElementById(SENTINEL).classList.add('done');
+        document.getElementById(TRIGGER).classList.add('done');
       } finally {
         cargando = false;
+      }
+    }
+
+    // ── Render (applies search + category filters on cached data) ──
+
+    function renderList() {
+      const listEl = document.getElementById(LIST);
+      const vacio = document.getElementById(VACIO);
+      if (!listEl || !vacio) return;
+
+      const q = searchQuery.trim().toLowerCase();
+      const checkedLabels = Array.from(
+        document.querySelectorAll('.rp-checkbox-label'),
+      )
+        .filter((l) => {
+          // The input sits as a sibling of the label (not a child), so
+          // querySelector('.rp-checkbox-box') from the label returns null.
+          // Defensive null-check avoids a TypeError on initial render in
+          // desktop, where the right panel is visible and the labels are
+          // in the DOM. The legacy click handler had the same guard.
+          const box = l.querySelector('.rp-checkbox-box');
+          return box?.classList.contains('checked') ?? false;
+        })
+        .map((l) => l.textContent.trim().toLowerCase());
+
+      let filtered = todasLasIncidencias;
+
+      if (q) {
+        filtered = filtered.filter((inc) => {
+          const title = (inc.title || '').toLowerCase();
+          const desc = (inc.description || '').toLowerCase();
+          return title.includes(q) || desc.includes(q);
+        });
+      }
+
+      if (checkedLabels.length > 0) {
+        filtered = filtered.filter((inc) => {
+          const cat = (inc.category?.name ?? '').toLowerCase();
+          return checkedLabels.some((l) => cat.includes(l) || l.includes(cat));
+        });
+      }
+
+      disposeMiniMaps();
+      if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        vacio.classList.remove('d-none');
+        const vacioP = vacio.querySelector('p');
+        if (vacioP) {
+          vacioP.textContent = q
+            ? `No se encontraron incidencias que coincidan con "${searchQuery.trim()}".`
+            : 'No hay incidencias publicadas.';
+        }
+      } else {
+        vacio.classList.add('d-none');
+        listEl.innerHTML = filtered.map(renderCard).join('');
+        initMiniMaps();
       }
     }
 
@@ -368,14 +472,14 @@ export default {
     function setupInfiniteScroll() {
       if (observer) observer.disconnect();
 
-      const sentinel = document.getElementById(SENTINEL);
-      if (!sentinel || sentinel.classList.contains('done')) return;
+      const trigger = document.getElementById(TRIGGER);
+      if (!trigger || trigger.classList.contains('done')) return;
 
       // The feed-scroll-region is the only scrollable area when the
       // feed is mounted (we force `body.feed-view { overflow: hidden }`
       // in the component CSS to disable the app-shell-main scroll).
       // Scope the IntersectionObserver to it so the infinite-scroll
-      // trigger fires when the sentinel reaches its bottom. Guard
+      // trigger fires when the trigger reaches its bottom. Guard
       // against a missing root so we don't silently fall back to the
       // viewport (REL-1 fix).
       const root = document.getElementById(SCROLL_REGION);
@@ -393,7 +497,6 @@ export default {
             !cargando &&
             paginaActual < totalPaginas
           ) {
-            sentinel.classList.add('loading');
             fetchIncidencias(paginaActual + 1, true);
           }
         },
@@ -413,16 +516,19 @@ export default {
             c.dataset.status === chip.dataset.status,
           );
         });
+
       filtroStatus = chip.dataset.status;
       paginaActual = 1;
       if (observer) observer.disconnect();
       return fetchIncidencias(1, false).then(() => setupInfiniteScroll());
     }
 
-    feedFilters.addEventListener('click', (e) => {
-      const chip = e.target.closest(CHIP_SELECTOR);
-      if (chip) applyStatusFilter(chip);
-    });
+    if (feedFilters) {
+      feedFilters.addEventListener('click', (e) => {
+        const chip = e.target.closest(CHIP_SELECTOR);
+        if (chip) applyStatusFilter(chip);
+      });
+    }
 
     const rpStatusFilters = document.getElementById('rp-status-filters');
     if (rpStatusFilters) {
@@ -452,44 +558,55 @@ export default {
           label.style.color = '#a3a8b8';
         }
 
-        // Trigger local filtering on category names
-        const checkedLabels = Array.from(
-          document.querySelectorAll('.rp-checkbox-label'),
-        )
-          .filter((l) =>
-            l.querySelector('.rp-checkbox-box').classList.contains('checked'),
-          )
-          .map((l) => l.textContent.trim().toLowerCase());
+        // Re-render with combined search + category filters
+        renderList();
+      });
+    }
 
-        const listEl = document.getElementById(LIST);
-        if (listEl) {
-          disposeMiniMaps();
-          if (checkedLabels.length === 0) {
-            listEl.innerHTML = todasLasIncidencias.map(renderCard).join('');
-          } else {
-            const filtered = todasLasIncidencias.filter((inc) => {
-              const cat = (inc.category?.name ?? '').toLowerCase();
-              return checkedLabels.some(
-                (l) => cat.includes(l) || l.includes(cat),
-              );
-            });
-            listEl.innerHTML = filtered.map(renderCard).join('');
-          }
-          initMiniMaps();
+    // ── Search input (mobile main column + desktop right panel) ──
+    const searchInputs = [
+      document.getElementById('feed-search-input'),
+      document.getElementById('rp-search-input'),
+    ].filter(Boolean);
+
+    function applySearch(value) {
+      searchQuery = value;
+      // Sync the other visible input to the same value
+      searchInputs.forEach((input) => {
+        if (input.value !== value) input.value = value;
+      });
+      renderList();
+    }
+
+    searchInputs.forEach((input) => {
+      input.addEventListener('input', (e) => {
+        applySearch(e.target.value);
+      });
+    });
+
+    // ── Filter feed collapsible toggle (main column, mobile) ──
+    const feedFilterToggle = document.getElementById('feed-filter-toggle');
+    const feedFilterContent = document.getElementById('feed-filter-content');
+    if (feedFilterToggle && feedFilterContent) {
+      function toggleFeedFilterPanel() {
+        const isExpanded =
+          feedFilterToggle.getAttribute('aria-expanded') === 'true';
+        feedFilterToggle.setAttribute('aria-expanded', !isExpanded);
+        feedFilterContent.classList.toggle('feed-filter-collapsed');
+      }
+
+      feedFilterToggle.addEventListener('click', toggleFeedFilterPanel);
+      feedFilterToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFeedFilterPanel();
         }
       });
     }
 
-    // ── Right panel collapsible toggle (mobile only) ──
+    // ── Right panel collapsible toggle (desktop ≥992px) ──
     const rpFilterToggle = document.getElementById('rp-filter-toggle');
     if (rpFilterToggle) {
-      // Mobile only: start collapsed (panels hidden by default)
-      const isMobile = window.innerWidth <= 576;
-      if (isMobile) {
-        rpFilterToggle.classList.add('collapsed');
-        rpFilterToggle.setAttribute('aria-expanded', 'false');
-      }
-
       function toggleFilterPanel() {
         rpFilterToggle.classList.toggle('collapsed');
         rpFilterToggle.setAttribute(
@@ -510,6 +627,7 @@ export default {
     // ── First load ──
     await fetchIncidencias(1, false);
     setupInfiniteScroll();
+    await fetchStats();
   },
 
   onDestroy() {

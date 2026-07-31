@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use App\Domains\Auth\Local\Exceptions\PendingInvitationException;
 use App\Domains\Auth\Shared\Services\AuthService;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
 

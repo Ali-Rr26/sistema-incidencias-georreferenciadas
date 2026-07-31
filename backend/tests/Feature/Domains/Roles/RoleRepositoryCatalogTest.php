@@ -9,8 +9,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('returns a name-ordered id/name catalog', function (): void {
-    Role::create(['name' => 'usuario']);
-    Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'usuario']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 
     $catalog = new EloquentRoleRepository()->catalog();
 

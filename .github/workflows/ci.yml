@@ -312,7 +312,7 @@ jobs:
 
     # Same plaintext-non-secret rationale as the `backend` job above — this
     # job also runs `composer run test:coverage`, which needs the same
-    # Postgres+PostGIS service.
+    # Postgres+PostGIS and Redis services.
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -329,6 +329,16 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d incidencias_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

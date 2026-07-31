@@ -9,6 +9,7 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -51,7 +52,7 @@ beforeEach(function (): void {
     // path silently drops the explicit id and lets auto-increment assign
     // whatever the sequence happens to be at (see RoleSeederTest / the
     // same convention documented in AssignmentPolicyTest.php).
-    DB::table('roles')->insert(['id' => 1, 'name' => UserRole::AdminSistema->value]);
+    DB::table('roles')->insertOrIgnore(['id' => 1, 'name' => UserRole::AdminSistema->value]);
 
     $location = Location::create(['name' => 'Loc', 'level' => 'city']);
     $category = IncidentCategory::create(['name' => 'Cat']);

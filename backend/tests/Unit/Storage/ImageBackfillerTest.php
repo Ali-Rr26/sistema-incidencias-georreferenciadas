@@ -18,7 +18,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
 
     // RefreshDatabase migrates straight to head, where WU8's
     // drop_legacy_image_storage migration has already removed the legacy

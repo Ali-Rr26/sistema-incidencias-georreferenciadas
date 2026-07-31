@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Assignment;
 use App\Domains\Incidents\Models\Incident;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ beforeEach(function (): void {
     // the next free slot — wrong for FK targets in our tests. The
     // existing test suite uses this same approach (see
     // tests/Feature/Domains/Incidents/IncidentAssignmentsTest.php:17).
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => UserRole::AdminSistema->value],
         ['id' => 3, 'name' => UserRole::AdminOrganizacion->value],
         ['id' => 4, 'name' => UserRole::OperadorOrganizacion->value],
@@ -151,7 +152,7 @@ it('bypasses authorization for system admin (admin_sistema) via Gate::before', f
     // does NOT need an explicit assignments.create grant — matches the
     // other policies in this codebase (UserPolicy, OrganizationPolicy).
     $systemAdmin = User::factory()->create([
-        'role_id' => 1, // admin_sistema — no DB-level assignments.create row needed
+        'role_id' => Role::where('name', 'admin_sistema')->first()->id, // admin_sistema — no DB-level assignments.create row needed
     ]);
 
     // Even with NO permissions attached, the gate short-circuits.

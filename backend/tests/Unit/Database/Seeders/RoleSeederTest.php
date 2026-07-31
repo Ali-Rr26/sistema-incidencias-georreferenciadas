@@ -40,8 +40,8 @@ it('seeds all five roles with their pinned ids on a fresh table', function (): v
 it('still lands on the pinned ids even when the roles sequence has already advanced', function (): void {
     // Simulates a deploy where something else already inserted into
     // `roles` before the seeder ran, advancing the id sequence past 5.
-    Role::create(['name' => 'some-earlier-role']);
-    Role::create(['name' => 'another-earlier-role']);
+    Role::firstOrCreate(['name' => 'some-earlier-role']);
+    Role::firstOrCreate(['name' => 'another-earlier-role']);
 
     (new RoleSeeder)->run();
 
@@ -57,16 +57,16 @@ it('is idempotent — running it twice does not duplicate or renumber roles', fu
     expect(Role::query()->find(1)?->name)->toBe(UserRole::AdminSistema->value);
 });
 
-it('leaves the id sequence in sync so a real Role::create() afterwards does not collide', function (): void {
+it('leaves the id sequence in sync so a real Role::firstOrCreate() afterwards does not collide', function (): void {
     // The seeder pins ids 1-5 via a raw DB::insert (Role::$fillable
     // excludes `id`, see the class docblock above). On PostgreSQL that
     // raw insert does NOT advance `roles_id_seq` — a subsequent Eloquent
-    // `Role::create()` (the real path RoleController::store() uses in
+    // `Role::firstOrCreate()` (the real path RoleController::store() uses in
     // production) relies on `nextval()`, which would otherwise still
     // return 1 and collide with the row the seeder just pinned there.
     (new RoleSeeder)->run();
 
-    $role = Role::create(['name' => 'a-brand-new-role']);
+    $role = Role::firstOrCreate(['name' => 'a-brand-new-role']);
 
     expect($role->id)->toBeGreaterThan(5);
 });

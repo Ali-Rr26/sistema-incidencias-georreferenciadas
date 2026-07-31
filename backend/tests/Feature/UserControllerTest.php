@@ -15,19 +15,19 @@ declare(strict_types=1);
  * sources `profile_image_path` from the `avatarImage()` relation instead.
  */
 
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use App\Storage\ImageRules;
 use App\Storage\Models\Image;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
     Storage::fake('s3');
     $this->withoutMiddleware(JwtAuthenticate::class);
 });
@@ -49,14 +49,14 @@ it('PUT /users/{id} multipart with avatar replaces existing avatar', function ()
     $target = User::factory()->create();
     seedAvatar($target, 'users/1/old-uuid.webp');
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
     $file = UploadedFile::fake()->image('avatar.jpg', 512, 512);
 
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
         'first_name' => 'Juan',
         'last_name' => 'Perez',
         'email' => $target->email,
-        'role_id' => 1,
+        'role_id' => Role::where('name', 'admin_sistema')->first()->id,
         'organization_id' => null,
         'phone' => '0999999999',
         'avatar' => $file,
@@ -75,13 +75,13 @@ it('PUT /users/{id} JSON with _delete_avatar=true removes the avatar', function 
     $target = User::factory()->create();
     seedAvatar($target, 'users/1/existing.webp');
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $response = $this->actingAs($admin)->putJson('/api/users/'.$target->id, [
         'first_name' => 'Juan',
         'last_name' => 'Perez',
         'email' => $target->email,
-        'role_id' => 1,
+        'role_id' => Role::where('name', 'admin_sistema')->first()->id,
         'organization_id' => null,
         'phone' => null,
         '_delete_avatar' => true,
@@ -99,7 +99,7 @@ it('PUT /users/{id} JSON text-only preserves the existing avatar', function (): 
     ]);
     seedAvatar($target, 'users/1/keep-me.webp');
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $response = $this->actingAs($admin)->putJson('/api/users/'.$target->id, [
         'first_name' => 'New Name',
@@ -121,7 +121,7 @@ it('PUT /users/{id} multipart without avatar file preserves the existing avatar'
     $target = User::factory()->create();
     seedAvatar($target, 'users/1/also-keep.webp');
 
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     // Multipart request without an avatar file in the payload.
     $response = $this->actingAs($admin)->put('/api/users/'.$target->id, [
@@ -135,7 +135,7 @@ it('PUT /users/{id} multipart without avatar file preserves the existing avatar'
 
 it('PUT /users/{id} rejects oversized avatar file', function (): void {
     $target = User::factory()->create();
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     // 5200 KB — over ImageRules::MAX_SIZE_KB (5120 KB / 5 MB), the shared
     // D10 cap now enforced for avatars too (WU7 cutover).
@@ -152,7 +152,7 @@ it('PUT /users/{id} rejects oversized avatar file', function (): void {
 
 it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
     $target = User::factory()->create();
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     // bmp is not in ImageRules::MIMES (jpeg,png,webp,gif).
     $file = UploadedFile::fake()->create('avatar.bmp', 100, 'image/bmp');
@@ -168,7 +168,7 @@ it('PUT /users/{id} rejects wrong MIME type avatar', function (): void {
 
 it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function (): void {
     $target = User::factory()->create();
-    $admin = User::factory()->create(['role_id' => 1]);
+    $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $file = UploadedFile::fake()->image('avatar.jpg')->size(ImageRules::MAX_SIZE_KB);
 
@@ -194,7 +194,6 @@ it('PUT /users/{id} accepts avatar at exactly the ImageRules size cap', function
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
 use App\Domains\Permissions\Models\Permission;
-use App\Domains\Roles\Models\Role;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -216,8 +215,8 @@ describe('CRUD — admin_sistema bypass', function (): void {
     });
 
     it('index — lists paginated users', function (): void {
-        $admin = User::factory()->create(['role_id' => 1]);
-        User::factory()->count(3)->create(['role_id' => 1]);
+        $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+        User::factory()->count(3)->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
         $response = $this->actingAs($admin)->getJson('/api/users');
 
@@ -229,8 +228,8 @@ describe('CRUD — admin_sistema bypass', function (): void {
     });
 
     it('show — returns a single user with role and organization', function (): void {
-        $admin = User::factory()->create(['role_id' => 1]);
-        $target = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+        $target = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
         $response = $this->actingAs($admin)->getJson("/api/users/{$target->id}");
 
@@ -242,8 +241,8 @@ describe('CRUD — admin_sistema bypass', function (): void {
     });
 
     it('destroy — soft-deletes a user', function (): void {
-        $admin = User::factory()->create(['role_id' => 1]);
-        $target = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+        $target = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
         $response = $this->actingAs($admin)->deleteJson("/api/users/{$target->id}");
 
@@ -269,7 +268,7 @@ describe('formData', function (): void {
     });
 
     it('returns roles and organizations catalogs', function (): void {
-        $admin = User::factory()->create(['role_id' => 1]);
+        $admin = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
         $response = $this->actingAs($admin)->getJson('/api/users/form-data');
 
@@ -281,7 +280,8 @@ describe('formData', function (): void {
     it('filters system roles for non-system-admin', function (): void {
         $location = Location::create(['name' => 'Loc', 'level' => 'city']);
         $org = Organization::create(['name' => 'Mi Org', 'location_id' => $location->id]);
-        $adminOrg = User::factory()->create(['role_id' => 3, 'organization_id' => $org->id]);
+        $adminOrgRoleId = Role::where('name', 'admin_organizacion')->first()->id;
+        $adminOrg = User::factory()->create(['role_id' => $adminOrgRoleId, 'organization_id' => $org->id]);
 
         $response = $this->actingAs($adminOrg)->getJson('/api/users/form-data');
 
@@ -294,7 +294,7 @@ describe('formData', function (): void {
     });
 
     it('denies access without users.view permission', function (): void {
-        $role = Role::create(['name' => 'sin_permisos']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/users/form-data');
@@ -317,10 +317,13 @@ describe('authorization — denied without correct permission', function (): voi
                 fn (User $user) => $user->hasPermission("{$p->resource}.{$p->action}"),
             );
         }
+
+        // Fetch role ID for usuario role
+        $this->usuarioRoleId = Role::where('name', 'usuario')->first()->id;
     });
 
     it('denies index without users.view', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_idx']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_idx']);
         $user = User::factory()->create(['role_id' => $role->id]);
 
         $response = $this->actingAs($user)->getJson('/api/users');
@@ -329,8 +332,8 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies show for other user without users.view', function (): void {
-        $usuario = User::factory()->create(['role_id' => 5]);
-        $other = User::factory()->create(['role_id' => 5]);
+        $usuario = User::factory()->create(['role_id' => $this->usuarioRoleId]);
+        $other = User::factory()->create(['role_id' => $this->usuarioRoleId]);
 
         $response = $this->actingAs($usuario)->getJson("/api/users/{$other->id}");
 
@@ -338,7 +341,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('allows user to view their own profile without users.view', function (): void {
-        $usuario = User::factory()->create(['role_id' => 5]);
+        $usuario = User::factory()->create(['role_id' => $this->usuarioRoleId]);
 
         $response = $this->actingAs($usuario)->getJson("/api/users/{$usuario->id}");
 
@@ -347,7 +350,7 @@ describe('authorization — denied without correct permission', function (): voi
     });
 
     it('denies destroy without users.delete', function (): void {
-        $role = Role::create(['name' => 'sin_permisos_del']);
+        $role = Role::firstOrCreate(['name' => 'sin_permisos_del']);
         $user = User::factory()->create(['role_id' => $role->id]);
         // A real, existing target user — route-model binding must resolve
         // it before the policy denies, otherwise a stale hardcoded id

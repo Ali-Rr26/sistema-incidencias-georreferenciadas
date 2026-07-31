@@ -18,7 +18,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // Mismo seed mínimo que AssignmentNotificationObserverTest.
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
         ['id' => 2, 'name' => 'operador_organizacion'],
     ]);

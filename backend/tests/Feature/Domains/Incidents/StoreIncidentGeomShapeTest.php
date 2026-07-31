@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domains\IncidentCategories\Models\IncidentCategory;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Auth\Middleware\Authorize;
@@ -22,12 +23,12 @@ beforeEach(function (): void {
 
     app()->setLocale('es');
 
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 
     $this->systemAdmin = User::factory()->create([
-        'role_id' => 1,
+        'role_id' => Role::where('name', 'admin_sistema')->first()->id,
         'organization_id' => null,
     ]);
 

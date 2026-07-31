@@ -12,7 +12,7 @@ use Mockery\MockInterface;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    Role::create(['name' => 'Admin']);
+    Role::firstOrCreate(['name' => 'Admin']);
 });
 
 it('keeps the cookie-based auth contract working end to end', function (): void {

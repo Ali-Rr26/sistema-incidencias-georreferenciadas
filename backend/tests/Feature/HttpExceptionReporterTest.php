@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domains\Auth\Shared\Exceptions\AuthenticationException;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use App\Exceptions\HttpExceptionReporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +20,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     // User factory references role_id; seed a placeholder role.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 
     // Ensure the 'exceptions' channel exists in config even if config/logging.php
     // does not yet define it. The reporter must always have a channel to write to.

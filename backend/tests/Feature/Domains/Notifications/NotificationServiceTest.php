@@ -10,6 +10,7 @@ use App\Domains\Notifications\Jobs\SendIncidentNotificationJob;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Services\NotificationService;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -18,11 +19,11 @@ use Illuminate\Support\Facades\Redis;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    DB::table('roles')->insert([
+    DB::table('roles')->insertOrIgnore([
         ['id' => 1, 'name' => 'admin_sistema'],
     ]);
 
-    $this->user = User::factory()->create(['role_id' => 1]);
+    $this->user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

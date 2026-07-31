@@ -37,11 +37,11 @@ use App\Domains\Locations\Models\Location;
 use App\Domains\Notifications\Models\Notification;
 use App\Domains\Notifications\Support\RedisSubscriber;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Sessions\Http\Middleware\JwtAuthenticate;
 use App\Domains\Users\Models\User;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Mockery\MockInterface;
 
@@ -68,9 +68,9 @@ function stubRedisFactory(): MockInterface
 beforeEach(function (): void {
     $this->withoutMiddleware(JwtAuthenticate::class);
 
-    DB::table('roles')->insert([['id' => 1, 'name' => 'admin_sistema']]);
-    $this->user = User::factory()->create(['role_id' => 1]);
-    $this->otherUser = User::factory()->create(['role_id' => 1, 'email' => 'other@example.com']);
+    Role::firstOrCreate(['name' => 'admin_sistema']);
+    $this->user = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id]);
+    $this->otherUser = User::factory()->create(['role_id' => Role::where('name', 'admin_sistema')->first()->id, 'email' => 'other@example.com']);
 
     $location = Location::create(['name' => 'HQ', 'level' => 'city']);
     $org = Organization::create(['name' => 'Test Org', 'location_id' => $location->id]);

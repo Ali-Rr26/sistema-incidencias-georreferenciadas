@@ -18,9 +18,8 @@ const TEMPLATE_HTML = `
   </button>
   <div class="app-shell-header__brand">GeoReporta</div>
 
-  <!-- Admin-only header (search + user menu) -->
+  <!-- Admin-only header (notifications + user menu) -->
   <div class="app-shell-header__admin" data-show-on-role="admin">
-    <input type="text" class="form-control app-shell-header__search" placeholder="Buscar..." />
     <div class="app-shell-user-menu">
       <button class="app-shell-user-menu__trigger" id="app-shell-user-menu-trigger" aria-haspopup="menu" aria-expanded="false">
     <span class="app-shell-user-menu__avatar" id="app-shell-user-avatar">U</span>

@@ -7,6 +7,7 @@ use App\Domains\Incidents\Models\Incident;
 use App\Domains\Incidents\Repositories\EloquentIncidentRepository;
 use App\Domains\Locations\Models\Location;
 use App\Domains\Organizations\Models\Organization;
+use App\Domains\Roles\Models\Role;
 use App\Domains\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,10 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // admin_sistema is bypassed by the repository's applyFilters, so it can
     // stand in here to avoid the tenant-scoping whereRaw.
-    DB::table('roles')->insert(['id' => 1, 'name' => 'admin_sistema']);
+    $adminRoleId = Role::firstOrCreate(['name' => 'admin_sistema'])->id;
 
     $this->systemAdmin = User::factory()->create([
-        'role_id' => 1,
+        'role_id' => $adminRoleId,
         'organization_id' => null,
     ]);
 
