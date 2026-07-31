@@ -239,6 +239,32 @@ body.feed-view {
   color: #5e3bdb !important;
 }
 
+/* --- Map opt-in toggle (issue #225) ---
+   The map lives inside a card without a thumbnail. The coords label is
+   always visible. The toggle button is the only thing the user has to
+   click to actually load Leaflet + tiles for that card. */
+.feed-map-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.feed-map-toggle[aria-expanded='true'] {
+  background-color: #6a5cf3;
+  border-color: #6a5cf3;
+  color: #fff;
+}
+
+.feed-map-toggle[aria-expanded='true']:hover {
+  background-color: #5b4ee0;
+  border-color: #5b4ee0;
+  color: #fff;
+}
+
+.feed-minimap {
+  width: 100%;
+}
+
 /* --- Skeleton shimmer animation --- */
 @keyframes feed-shimmer {
   0% {

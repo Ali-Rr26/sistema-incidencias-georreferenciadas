@@ -11,6 +11,17 @@ const layout = vi.hoisted(() => ({
 
 vi.mock('../utils/layout.js', () => layout);
 
+// Control when the Leaflet loader resolves so we can exercise the TOCTOU
+// race: the default (rejection) keeps the pre-existing tests behaving as
+// before; the new race test overrides it with a deferred promise.
+const leafletLoader = vi.hoisted(() => ({
+  loadLeaflet: vi.fn(),
+}));
+
+vi.mock('../shared/leaflet.js', () => ({
+  default: leafletLoader.loadLeaflet,
+}));
+
 import { auth } from '../auth/auth.service.js';
 
 const FEED_TEMPLATE = `
@@ -158,11 +169,31 @@ const MOCK_INCIDENTS = [
   },
 ];
 
+function makeFakeL() {
+  return {
+    map: vi.fn(() => ({
+      setView: vi.fn(function () {
+        return this;
+      }),
+      remove: vi.fn(),
+      invalidateSize: vi.fn(),
+    })),
+    tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
+    marker: vi.fn(() => ({ addTo: vi.fn() })),
+  };
+}
+
 describe('feed integration', () => {
   let fetchMock;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Default: Leaflet is unavailable in jsdom. The component swallows the
+    // rejection, so pre-existing tests keep their current behavior.
+    leafletLoader.loadLeaflet.mockRejectedValue(
+      new Error('leaflet unavailable in jsdom'),
+    );
 
     // Mock auth
     vi.spyOn(auth, 'isAuthenticated').mockReturnValue(true);
@@ -343,14 +374,110 @@ describe('feed integration', () => {
     const firstCard = cards[0];
     expect(firstCard.querySelector('.card-header')).not.toBeNull();
     expect(firstCard.querySelector('.fw-bold')).not.toBeNull();
-    // feed-minimap present (incidents have geom, no thumbnail_url)
+    // feed-minimap present (incidents have geom, no thumbnail_url), but
+    // HIDDEN by default — the toggle button is what actually loads it.
     expect(firstCard.querySelector('.feed-minimap')).not.toBeNull();
+    expect(
+      firstCard.querySelector('.feed-minimap').classList.contains('d-none'),
+    ).toBe(true);
+    // Opt-in toggle: "Ver mapa" button is visible, aria-expanded=false
+    const toggle = firstCard.querySelector('.feed-map-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ver mapa',
+    );
     expect(firstCard.querySelector('.card-body')).not.toBeNull();
     expect(firstCard.querySelector('.card-footer')).not.toBeNull();
     expect(
       firstCard.querySelector('.feed-status-chip.feed-status-pending'),
     ).not.toBeNull();
     expect(firstCard.classList.contains('feed-priority-high')).toBe(true);
+
+    feedComponent.onDestroy();
+  });
+
+  it('clicking the map toggle flips aria-expanded and toggles label', async () => {
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const toggle = document.querySelector('.feed-map-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    const minimap = document.getElementById(`feed-mm-${toggle.dataset.incId}`);
+    expect(minimap).not.toBeNull();
+    expect(minimap.classList.contains('d-none')).toBe(true);
+
+    // Click → open. Leaflet is not loaded in jsdom, so the map element
+    // stays hidden (loadLeaflet() rejects silently in the test env), but
+    // the aria/label/visibility state must flip regardless.
+    toggle.click();
+
+    // The toggle's own state flips even if Leaflet fails to load.
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ocultar mapa',
+    );
+    expect(minimap.classList.contains('d-none')).toBe(false);
+
+    // Click again → close.
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ver mapa',
+    );
+    expect(minimap.classList.contains('d-none')).toBe(true);
+
+    feedComponent.onDestroy();
+  });
+
+  it('does not build a map when the toggle is collapsed during lazy load (TOCTOU race)', async () => {
+    const fakeL = makeFakeL();
+    vi.stubGlobal('L', fakeL);
+
+    // Make loadLeaflet() stay pending until we resolve it manually.
+    const deferred = {};
+    deferred.promise = new Promise((resolve) => {
+      deferred.resolve = resolve;
+    });
+    leafletLoader.loadLeaflet.mockResolvedValueOnce(deferred.promise);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const toggle = document.querySelector('.feed-map-toggle');
+    expect(toggle).not.toBeNull();
+    const container = document.getElementById(
+      `feed-mm-${toggle.dataset.incId}`,
+    );
+    expect(container).not.toBeNull();
+
+    // Expand: async init starts and stays pending.
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(container.classList.contains('d-none')).toBe(false);
+    expect(leafletLoader.loadLeaflet).toHaveBeenCalledTimes(1);
+
+    // Collapse while the load is still pending — the resumed init must NOT
+    // build a map for a card the user asked to close.
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(container.classList.contains('d-none')).toBe(true);
+    expect(container._leaflet_map).toBeUndefined();
+
+    // Let the pending load finish and flush the resumed continuation.
+    deferred.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fakeL.map).not.toHaveBeenCalled();
+    expect(container._leaflet_map).toBeUndefined();
+    expect(container.classList.contains('d-none')).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ver mapa',
+    );
 
     feedComponent.onDestroy();
   });

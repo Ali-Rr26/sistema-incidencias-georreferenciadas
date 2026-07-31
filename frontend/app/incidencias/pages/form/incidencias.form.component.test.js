@@ -318,9 +318,10 @@ function buildFormDom() {
         <span id="ici-review-category"></span>
         <span id="ici-review-location"></span>
         <span id="ici-review-images-count"></span>
-        <a href="#" id="ici-review-edit-3"></a>
-        <span id="ici-review-coords"></span>
-      </div>
+            <a href="#" id="ici-review-edit-3"></a>
+            <span id="ici-review-coords"></span>
+            <div id="ici-review-orgs"></div>
+          </div>
 
       <button type="button" id="ici-btn-prev"></button>
       <a href="#/incidencias" id="ici-btn-cancel"></a>
@@ -953,6 +954,223 @@ describe('incidencias.form — 4-step stepper', () => {
     expect(fakeMap.invalidateSize).toHaveBeenCalled();
   });
 
+  it('step 4 preview shows the hint when category or location is missing', async () => {
+    // Reach step 4 without a city selected — the form is still valid
+    // because step 3 only requires a map click. The rendered hint tells
+    // the user why no orgs list appeared.
+    await component.onInit();
+    fillStep1({ title: 'Fuga', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    clickMap(10, 20);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer).not.toBeNull();
+    expect(orgsContainer.textContent).toContain('Selecciona');
+    // No orgs list rendered when there's no locationId.
+    expect(document.querySelectorAll('.ici-review__orgs-item').length).toBe(0);
+  });
+
+  it('step 4 renders the notified orgs list with the Principal pill when the endpoint returns orgs', async () => {
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
+      }
+      if (path.startsWith('/organizations/notified-for')) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 1,
+              name: 'GAD Municipal del Cantón Quito',
+              is_claimable: true,
+            },
+            {
+              id: 2,
+              name: 'GAD Quito — Zona <b>Centro</b>',
+              is_claimable: false,
+            },
+            { id: 3, name: 'GAD Quito — Zona Norte', is_claimable: false },
+            { id: 4, name: 'GAD Quito — Zona Sur', is_claimable: false },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    mockLocationService.getRoots.mockResolvedValueOnce([
+      PROVINCE_PICHINCHA_GEOM,
+    ]);
+    mockLocationService.getChildren
+      .mockResolvedValueOnce([CITY_QUITO_GEOM])
+      .mockResolvedValueOnce([]);
+
+    await component.onInit();
+    fillStep1({ title: 'Bache', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    // Full L stub with geoJSON/tileLayer/map so the boundary cascade
+    // (drawBoundaryLayer) doesn't throw while selecting province/city.
+    vi.stubGlobal('L', makeFakeL());
+
+    // City selected so orgsLocationId is not null (same shape as selectCanton).
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '300';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    clickMap(0.1, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer).not.toBeNull();
+    expect(orgsContainer.textContent).not.toContain('No pudimos calcular');
+    expect(orgsContainer.textContent).not.toContain('Ninguna organización');
+
+    const items = orgsContainer.querySelectorAll('.ici-review__orgs-item');
+    expect(items.length).toBe(4);
+    expect(items[0].textContent).toContain('GAD Municipal del Cantón Quito');
+    expect(items[1].textContent).toContain('GAD Quito');
+
+    // Only the claimable org gets the Principal pill.
+    const pills = orgsContainer.querySelectorAll('.ici-review__orgs-pill');
+    expect(pills.length).toBe(1);
+    expect(pills[0].textContent).toContain('Principal');
+
+    // Names are escaped: a raw <b> in the payload never becomes a tag.
+    expect(orgsContainer.querySelector('b')).toBeNull();
+  });
+  it('step 4 orgs preview ignores stale responses when the user re-enters the step', async () => {
+    // Second selectable city so the re-entered step 4 represents a
+    // different location selection than the first visit.
+    const CITY_RUMINAHUI_GEOM = {
+      id: 301,
+      name: 'Rumiñahui',
+      level: 'city',
+      parent_id: 200,
+      geom: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-78.4, -0.25],
+              [-78.3, -0.25],
+              [-78.3, -0.15],
+              [-78.4, -0.15],
+              [-78.4, -0.25],
+            ],
+          ],
+        ],
+      },
+    };
+
+    // Deferred promises for the orgs preview endpoint — each call records
+    // its own resolve so the test controls resolution order.
+    const pendingOrgs = [];
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
+      }
+      if (path.startsWith('/organizations/notified-for')) {
+        return new Promise((resolve) => {
+          pendingOrgs.push({ path, resolve });
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    mockLocationService.getRoots.mockResolvedValueOnce([
+      PROVINCE_PICHINCHA_GEOM,
+    ]);
+    mockLocationService.getChildren
+      .mockResolvedValueOnce([CITY_QUITO_GEOM, CITY_RUMINAHUI_GEOM])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    await component.onInit();
+    fillStep1({ title: 'Bache', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    vi.stubGlobal('L', makeFakeL());
+
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '300';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    clickMap(0.1, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4 (call 1)
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pendingOrgs.length).toBe(1);
+
+    // Back to step 3, pick a different city, and re-enter step 4 while the
+    // first preview request is still in flight (call 2).
+    document.getElementById('ici-btn-prev').click(); // -> step 3
+    citySelect.value = '301';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    document.getElementById('ici-btn-next').click(); // -> step 4 (call 2)
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pendingOrgs.length).toBe(2);
+
+    // The NEWEST request resolves first — its orgs must render.
+    pendingOrgs[1].resolve({
+      data: [{ id: 5, name: 'GAD Rumiñahui', is_claimable: true }],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer.textContent).toContain('GAD Rumiñahui');
+    expect(orgsContainer.textContent).not.toContain('GAD Quito Norte');
+
+    // The OLD request (first selection) resolves LAST — its payload must be
+    // discarded as stale, leaving the second selection untouched.
+    pendingOrgs[0].resolve({
+      data: [{ id: 1, name: 'GAD Quito Norte', is_claimable: true }],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(orgsContainer.textContent).toContain('GAD Rumiñahui');
+    expect(orgsContainer.textContent).not.toContain('GAD Quito Norte');
+  });
   it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
     await component.onInit();
     fillStep1();
@@ -1029,6 +1247,32 @@ describe('incidencias.form — 4-step stepper', () => {
     document.getElementById('ici-btn-prev').click();
 
     expect(step(1).classList.contains('d-none')).toBe(false);
+    expect(step(2).classList.contains('d-none')).toBe(true);
+  });
+
+  it('"Anterior" from the review step goes back to step 3, not step 2 (no double listener)', async () => {
+    // Regression: btn-prev listeners were registered twice (bootstrap +
+    // a leftover duplicate block), so one click from step 4 jumped two
+    // steps back (4 -> 3 -> 2). The earlier 2 -> 1 test masked it because
+    // goToStep clamps at 1. From the review step it was visible.
+    await component.onInit();
+    fillStep1({ title: 'Poste caído' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+    clickMap(1, 2);
+    document.getElementById('ici-btn-next').click(); // -> step 4
+
+    expect(step(4).classList.contains('d-none')).toBe(false);
+
+    document.getElementById('ici-btn-prev').click();
+
+    expect(step(3).classList.contains('d-none')).toBe(false);
+    expect(step(4).classList.contains('d-none')).toBe(true);
     expect(step(2).classList.contains('d-none')).toBe(true);
   });
 
@@ -1557,9 +1801,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
         await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
-        level: 'province',
-      });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith(
+        { level: 'province' },
+        { catalog: true },
+      );
     });
 
     it('does NOT call /locations/tree endpoint', async () => {
@@ -1730,9 +1975,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
 
       await new Promise(setImmediate);
 
-      expect(mockLocationService.getChildren).toHaveBeenCalledWith({
-        parentId: 200,
-      });
+      expect(mockLocationService.getChildren).toHaveBeenCalledWith(
+        { parentId: 200 },
+        { catalog: true },
+      );
     });
 
     // Regression: initSelect() destroys the previous tom-select instance
@@ -1897,9 +2143,10 @@ describe('incidencias.form — progressive location loading (WU-3)', () => {
         await import('./incidencias.form.component.js');
       await component.onInit();
 
-      expect(mockLocationService.getRoots).toHaveBeenCalledWith({
-        level: 'province',
-      });
+      expect(mockLocationService.getRoots).toHaveBeenCalledWith(
+        { level: 'province' },
+        { catalog: true },
+      );
     });
   });
 });
