@@ -414,9 +414,15 @@ export default {
       const checkedLabels = Array.from(
         document.querySelectorAll('.rp-checkbox-label'),
       )
-        .filter((l) =>
-          l.querySelector('.rp-checkbox-box').classList.contains('checked'),
-        )
+        .filter((l) => {
+          // The input sits as a sibling of the label (not a child), so
+          // querySelector('.rp-checkbox-box') from the label returns null.
+          // Defensive null-check avoids a TypeError on initial render in
+          // desktop, where the right panel is visible and the labels are
+          // in the DOM. The legacy click handler had the same guard.
+          const box = l.querySelector('.rp-checkbox-box');
+          return box?.classList.contains('checked') ?? false;
+        })
         .map((l) => l.textContent.trim().toLowerCase());
 
       let filtered = todasLasIncidencias;
