@@ -343,14 +343,60 @@ describe('feed integration', () => {
     const firstCard = cards[0];
     expect(firstCard.querySelector('.card-header')).not.toBeNull();
     expect(firstCard.querySelector('.fw-bold')).not.toBeNull();
-    // feed-minimap present (incidents have geom, no thumbnail_url)
+    // feed-minimap present (incidents have geom, no thumbnail_url), but
+    // HIDDEN by default — the toggle button is what actually loads it.
     expect(firstCard.querySelector('.feed-minimap')).not.toBeNull();
+    expect(firstCard.querySelector('.feed-minimap').classList.contains('d-none')).toBe(true);
+    // Opt-in toggle: "Ver mapa" button is visible, aria-expanded=false
+    const toggle = firstCard.querySelector('.feed-map-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ver mapa',
+    );
     expect(firstCard.querySelector('.card-body')).not.toBeNull();
     expect(firstCard.querySelector('.card-footer')).not.toBeNull();
     expect(
       firstCard.querySelector('.feed-status-chip.feed-status-pending'),
     ).not.toBeNull();
     expect(firstCard.classList.contains('feed-priority-high')).toBe(true);
+
+    feedComponent.onDestroy();
+  });
+
+  it('clicking the map toggle flips aria-expanded and toggles label', async () => {
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const toggle = document.querySelector('.feed-map-toggle');
+    expect(toggle).not.toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    const minimap = document.getElementById(
+      `feed-mm-${toggle.dataset.incId}`,
+    );
+    expect(minimap).not.toBeNull();
+    expect(minimap.classList.contains('d-none')).toBe(true);
+
+    // Click → open. Leaflet is not loaded in jsdom, so the map element
+    // stays hidden (loadLeaflet() rejects silently in the test env), but
+    // the aria/label/visibility state must flip regardless.
+    toggle.click();
+
+    // The toggle's own state flips even if Leaflet fails to load.
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ocultar mapa',
+    );
+    expect(minimap.classList.contains('d-none')).toBe(false);
+
+    // Click again → close.
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.querySelector('.feed-map-toggle__label').textContent).toBe(
+      'Ver mapa',
+    );
+    expect(minimap.classList.contains('d-none')).toBe(true);
 
     feedComponent.onDestroy();
   });

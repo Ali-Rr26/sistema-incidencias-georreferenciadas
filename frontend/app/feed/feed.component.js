@@ -103,11 +103,36 @@ function renderCard(inc) {
       </div>
     `;
   } else if (geomCoords) {
+    // Map is opt-in (issue #225): never render the Leaflet map by default.
+    // The user clicks the toggle to lazy-load Leaflet + tiles for that
+    // specific card; clicking again disposes the map. The coords label is
+    // always visible so the user has the geographic context for free.
     mediaHtml = `
-      <div id="feed-mm-${inc.id}" class="feed-minimap rounded-3 overflow-hidden position-relative mx-3 mb-3 d-none d-lg-block"
-           data-lat="${geomCoords.lat}" data-lng="${geomCoords.lng}"
-           style="height:180px;background:#e8ecf1">
-        ${coordsHtml}
+      <div class="feed-map-section mx-3 mb-3">
+        <div class="feed-map-coords d-flex align-items-center gap-2 mb-2">
+          <i class="fa-solid fa-location-crosshairs" style="color:#5a6ff0;font-size:11px" aria-hidden="true"></i>
+          <span class="text-muted" style="font-size:12px;font-weight:500">
+            ${geomCoords.lat.toFixed(4)}, ${geomCoords.lng.toFixed(4)}
+          </span>
+        </div>
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm rounded-pill feed-map-toggle"
+          data-inc-id="${inc.id}"
+          aria-expanded="false"
+          aria-controls="feed-mm-${inc.id}"
+        >
+          <i class="fa-solid fa-map-location-dot me-1" aria-hidden="true"></i>
+          <span class="feed-map-toggle__label">Ver mapa</span>
+        </button>
+        <div
+          id="feed-mm-${inc.id}"
+          class="feed-minimap rounded-3 overflow-hidden d-none mt-2"
+          data-inc-id="${inc.id}"
+          data-lat="${geomCoords.lat}"
+          data-lng="${geomCoords.lng}"
+          style="height:180px;background:#e8ecf1"
+        ></div>
       </div>
     `;
   }
@@ -167,21 +192,45 @@ function renderCard(inc) {
   `;
 }
 
-// ── Mini-map initializer ──────────────────────────────────
+// ── Mini-map (opt-in toggle) ───────────────────────────────
+//
+// Each card with a geom renders a coords label + a "Ver mapa" toggle. The
+// Leaflet map is only constructed when the user clicks the toggle. Clicking
+// again disposes the map. This avoids downloading Leaflet + tiles for every
+// card in the feed (issue #225) — bandwidth-friendly by default.
 
-async function initMiniMaps() {
-  // Skip on mobile — minimaps hidden via d-none d-lg-block
-  // Handle jsdom (test environment) where matchMedia is undefined
-  if (
-    typeof window.matchMedia !== 'function' ||
-    !window.matchMedia('(min-width: 992px)').matches
-  )
+async function toggleMiniMap(button) {
+  const incId = button.dataset.incId;
+  if (!incId) return;
+
+  const container = document.getElementById(`feed-mm-${incId}`);
+  if (!container) return;
+
+  const labelEl = button.querySelector('.feed-map-toggle__label');
+  const isActive = button.getAttribute('aria-expanded') === 'true';
+
+  if (isActive) {
+    // Collapse — dispose the map and hide the container.
+    container.classList.add('d-none');
+    button.setAttribute('aria-expanded', 'false');
+    if (labelEl) labelEl.textContent = 'Ver mapa';
+    if (container._leaflet_map) {
+      container._leaflet_map.remove();
+      delete container._leaflet_map;
+    }
     return;
+  }
 
-  const containers = document.querySelectorAll(
-    '.feed-minimap:not([data-map-init])',
-  );
-  if (!containers.length) return;
+  // Expand — show the container and lazy-init the map on first open.
+  container.classList.remove('d-none');
+  button.setAttribute('aria-expanded', 'true');
+  if (labelEl) labelEl.textContent = 'Ocultar mapa';
+
+  if (container._leaflet_map) return;
+
+  const lat = parseFloat(container.dataset.lat);
+  const lng = parseFloat(container.dataset.lng);
+  if (isNaN(lat) || isNaN(lng)) return;
 
   try {
     await loadLeaflet();
@@ -189,35 +238,29 @@ async function initMiniMaps() {
     return;
   }
 
-  containers.forEach((el) => {
-    const lat = parseFloat(el.dataset.lat);
-    const lng = parseFloat(el.dataset.lng);
-    if (isNaN(lat) || isNaN(lng)) return;
+  const map = L.map(container, {
+    zoomControl: false,
+    dragging: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    touchZoom: false,
+    keyboard: false,
+    attributionControl: false,
+  }).setView([lat, lng], 15);
 
-    if (el._leaflet_map) return;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
 
-    const map = L.map(el, {
-      zoomControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
-      keyboard: false,
-      attributionControl: false,
-    }).setView([lat, lng], 15);
+  L.marker([lat, lng]).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(map);
-
-    L.marker([lat, lng]).addTo(map);
-
-    el._leaflet_map = map;
-    el.dataset.mapInit = '';
-  });
+  container._leaflet_map = map;
 }
 
 function disposeMiniMaps() {
+  // Tear down any active maps before the card markup is replaced. Maps are
+  // toggled individually now, but a search/filter change still re-renders
+  // the whole list, so we have to clean up dangling Leaflet instances.
   document.querySelectorAll('.feed-minimap').forEach((el) => {
     if (el._leaflet_map) {
       el._leaflet_map.remove();
@@ -331,11 +374,26 @@ export default {
     // Keyboard parity: Enter / Space on the card root (or any non-button
     // descendant) triggers the same navigation. Internal buttons still
     // fire their own native handlers.
+    //
+    // Map opt-in toggle (issue #225) is checked FIRST so a click on the
+    // toggle opens/closes the map without triggering the card's
+    // [data-route] navigation. The toggle button relies on this
+    // delegation working the same way as the comment/follow pill
+    // buttons (which use inline event.stopPropagation() for the same
+    // reason).
     function navigateFromTarget(target, originalEvent) {
       if (!target) return;
       originalEvent.preventDefault();
       router.navigate(target.dataset.route);
     }
+
+    feedList.addEventListener('click', (e) => {
+      const toggle = e.target.closest('.feed-map-toggle');
+      if (toggle) {
+        toggleMiniMap(toggle);
+        e.stopImmediatePropagation();
+      }
+    });
 
     feedList.addEventListener('click', (e) => {
       const target = e.target.closest('[data-route]');
@@ -463,7 +521,9 @@ export default {
       } else {
         vacio.classList.add('d-none');
         listEl.innerHTML = filtered.map(renderCard).join('');
-        initMiniMaps();
+        // Maps are now opt-in per card (issue #225); renderList no longer
+        // preloads Leaflet or any tiles. The toggle handler attached in
+        // onInit wires up the per-card lazy-load on click.
       }
     }
 
