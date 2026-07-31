@@ -93,7 +93,7 @@ it('findNotifiedFor returns orgs whose location covers the incident location AND
     // Both the transversal (any category) and the category-specific match.
     // The other-category org must NOT be here.
     expect($notified->pluck('id')->sort()->values()->all())
-        ->toBe([$transversal->id, $categoriaMatch->id]->sort()->values()->all());
+        ->toBe(collect([$transversal->id, $categoriaMatch->id])->sort()->values()->all());
     expect($notified->pluck('id'))->not->toContain($otraCategoria->id);
 });
 
@@ -114,4 +114,81 @@ it('findNotifiedFor returns an empty collection when the location does not exist
     ]);
 
     expect($this->repo->findNotifiedFor(999999, $category->id))->toBeEmpty();
+});
+
+it('an org configured for a root category covers its subcategory (Baches under Infraestructura Vial)', function (): void {
+    $root = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Infraestructura Vial',
+        'parent_id' => null,
+    ]);
+    $sub = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Baches y Hundimientos',
+        'parent_id' => $root->id,
+    ]);
+    $otherRoot = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Seguridad Ciudadana',
+        'parent_id' => null,
+    ]);
+
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province']);
+    $city = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'parent_id' => $province->id,
+    ]);
+
+    $gad = Organization::create([
+        'name' => 'GAD Municipal del Cantón Quito',
+        'location_id' => $city->id,
+        'incident_category_id' => $root->id, // configured for the ROOT
+    ]);
+    $unrelated = Organization::create([
+        'name' => 'Seguridad GAD',
+        'location_id' => $city->id,
+        'incident_category_id' => $otherRoot->id,
+    ]);
+
+    // The incident is filed under the SUBcategory; the org configured for
+    // the root must still match (same ancestry rule as locations).
+    $notified = $this->repo->findNotifiedFor($city->id, $sub->id);
+
+    expect($notified->pluck('id'))->toContain($gad->id);
+    expect($notified->pluck('id'))->not->toContain($unrelated->id);
+
+    // findForLocation (auto-assign) must resolve the same org for the pair.
+    expect($this->repo->findForLocation($city->id, $sub->id)?->id)->toBe($gad->id);
+});
+
+it('findForLocation respects the category filter when provided', function (): void {
+    $root = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Infraestructura Vial',
+        'parent_id' => null,
+    ]);
+    $otherRoot = \App\Domains\IncidentCategories\Models\IncidentCategory::create([
+        'name' => 'Medio Ambiente',
+        'parent_id' => null,
+    ]);
+
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province']);
+    $city = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'parent_id' => $province->id,
+    ]);
+
+    $gadVial = Organization::create([
+        'name' => 'GAD Vial',
+        'location_id' => $city->id,
+        'incident_category_id' => $root->id,
+    ]);
+    Organization::create([
+        'name' => 'GAD Ambiente',
+        'location_id' => $city->id,
+        'incident_category_id' => $otherRoot->id,
+    ]);
+
+    // Without a category the first org in id order wins (backward compat).
+    expect($this->repo->findForLocation($city->id)?->id)->toBe($gadVial->id);
+    // With a category that the first org does NOT cover, it must be skipped.
+    expect($this->repo->findForLocation($city->id, $otherRoot->id)?->id)->not->toBe($gadVial->id);
 });

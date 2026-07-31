@@ -29,7 +29,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         return $this->newQuery()->with('category')->find($id);
     }
 
-    public function findForLocation(int $locationId): ?Organization
+    public function findForLocation(int $locationId, ?int $categoryId = null): ?Organization
     {
         $location = Location::find($locationId);
         if ($location === null) {
@@ -39,7 +39,15 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         $locationIds = $location->ancestorsAndSelf()->pluck('id');
 
         /** @var Organization|null */
-        return $this->newQuery()->whereIn('location_id', $locationIds)->first();
+        return $this->newQuery()
+            ->whereIn('location_id', $locationIds)
+            ->when($categoryId !== null, function (Builder $q) use ($categoryId) {
+                $q->where(function (Builder $sub) use ($categoryId) {
+                    $sub->whereIn('incident_category_id', $this->categoryAncestorIds($categoryId))
+                        ->orWhereNull('incident_category_id');
+                });
+            })
+            ->first();
     }
 
     public function findNotifiedFor(int $locationId, int $categoryId): Collection
@@ -52,17 +60,41 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
         $locationIds = $location->ancestorsAndSelf()->pluck('id');
 
         // An org "ate" the notification if its location covers the incident
-        // and (its category matches OR it handles any category). The NULL
-        // branch is intentional: orgs transversales (e.g. "GAD Municipal")
-        // must surface here even when the incident has a specific category.
+        // and (its category covers the incident category OR it handles any
+        // category). Category coverage follows the same ancestry rule used
+        // for locations: an org configured for a root category (e.g.
+        // "Infraestructura Vial") also covers its subcategories (e.g.
+        // "Baches y Hundimientos"). The NULL branch is intentional: orgs
+        // transversales (e.g. "GAD Municipal") must surface here even when
+        // the incident has a specific category.
         return $this->newQuery()
             ->whereIn('location_id', $locationIds)
             ->where(function ($q) use ($categoryId) {
-                $q->where('incident_category_id', $categoryId)
+                $q->whereIn('incident_category_id', $this->categoryAncestorIds($categoryId))
                     ->orWhereNull('incident_category_id');
             })
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Category ids in the ancestry chain of the given category, including
+     * itself (mirrors `Location::ancestorsAndSelf`). Orgs configured for a
+     * parent category cover all of its subcategories.
+     *
+     * @return array<int, int>
+     */
+    private function categoryAncestorIds(int $categoryId): array
+    {
+        $ids = [];
+        $current = \App\Domains\IncidentCategories\Models\IncidentCategory::find($categoryId);
+
+        while ($current !== null) {
+            $ids[] = $current->id;
+            $current = $current->parent;
+        }
+
+        return $ids;
     }
 
     public function catalog(bool $withParent = false): Collection

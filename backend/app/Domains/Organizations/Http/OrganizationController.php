@@ -132,7 +132,12 @@ class OrganizationController extends Controller
         // The "claimable" org is the one IncidentController::store will
         // auto-assign via findForLocation. We compute it separately so the
         // frontend can render a single badge without re-deriving the rule.
-        $claimable = $this->organizations->findForLocation((int) $validated['location_id']);
+        // It must respect the category too — otherwise the badge could mark
+        // as "Principal" an org that does not cover the selected category.
+        $claimable = $this->organizations->findForLocation(
+            (int) $validated['location_id'],
+            (int) $validated['category_id'],
+        );
         $claimableId = $claimable?->id;
 
         $data = $orgs->map(function (Organization $org) use ($request, $claimableId) {

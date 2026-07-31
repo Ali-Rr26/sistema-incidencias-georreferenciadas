@@ -117,9 +117,16 @@ class IncidentController extends Controller
         // Los archivos se manejan aparte — no mezclar con el create
         unset($data['images']);
 
-        // Auto-asignar organización basada en la ubicación (B-02)
+        // Auto-asignar organización basada en la ubicación y categoría (B-02).
+        // `findForLocation` también exige que la org cubra la categoría
+        // (o sea transversal), igual que el preview del form — así la
+        // asignación real nunca contradice lo que el usuario vio en
+        // "Notificación" (Paso 4).
         if (empty($data['organization_id']) && ! empty($data['location_id'])) {
-            $org = $this->organizations->findForLocation((int) $data['location_id']);
+            $org = $this->organizations->findForLocation(
+                (int) $data['location_id'],
+                (int) $data['incident_category_id'],
+            );
             if ($org !== null) {
                 $data['organization_id'] = $org->id;
             }
