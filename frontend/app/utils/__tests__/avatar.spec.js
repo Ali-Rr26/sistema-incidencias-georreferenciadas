@@ -32,6 +32,17 @@ describe('getInitials (SCEN-1.2 regression)', () => {
     expect(getInitials({ first_name: '', last_name: '' })).toBe('?');
   });
 
+  it('returns "A" for an anonymous user payload (issue #234)', () => {
+    expect(
+      getInitials({
+        id: 142,
+        is_anonymous: true,
+        first_name: null,
+        last_name: null,
+      }),
+    ).toBe('A');
+  });
+
   it('matches the legacy single-object fixture (regression-safe)', () => {
     // Locks the output for the exact fixture used by feed.component.js
     // and feed-detail.component.js prior to the migration.
@@ -63,6 +74,30 @@ describe('getUserDisplayName', () => {
   it('returns the only set part when the other is missing', () => {
     expect(getUserDisplayName({ first_name: 'Ada' })).toBe('Ada');
     expect(getUserDisplayName({ last_name: 'Lovelace' })).toBe('Lovelace');
+  });
+
+  it('returns "Anónimo" for the anonymous payload (issue #234)', () => {
+    expect(
+      getUserDisplayName({
+        id: 142,
+        is_anonymous: true,
+        first_name: null,
+        last_name: null,
+      }),
+    ).toBe('Anónimo');
+  });
+
+  it('does not leak the raw user when is_anonymous is true but first_name is also set (defense in depth)', () => {
+    // If the backend ever sends a mixed payload, the anonymous flag
+    // wins — the frontend is the last line of defense.
+    expect(
+      getUserDisplayName({
+        id: 142,
+        is_anonymous: true,
+        first_name: 'Ada',
+        last_name: 'Lovelace',
+      }),
+    ).toBe('Anónimo');
   });
 });
 

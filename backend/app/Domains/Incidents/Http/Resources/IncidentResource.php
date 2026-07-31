@@ -6,6 +6,7 @@ namespace App\Domains\Incidents\Http\Resources;
 
 use App\Domains\Locations\Http\Resources\LocationResource;
 use App\Domains\Locations\Repositories\LocationRepository;
+use App\Domains\Users\Services\UserAnonymizer;
 use App\Storage\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,6 +30,11 @@ class IncidentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $storage = app(StorageService::class);
+        // Centralised in one place so every payload that embeds a user
+        // (reporter, assignment owner, comment author) reads the same
+        // privacy policy. Operators keep the real identity; regular
+        // viewers see only the id + is_anonymous flag (issue #234).
+        $anonymizer = app(UserAnonymizer::class);
 
         // NOTE (image-persistence-polymorphic, WU2/WU5): `images` used to be
         // both a legacy JSON column on Incident AND the real MorphMany
@@ -68,7 +74,14 @@ class IncidentResource extends JsonResource
             'claimed_at' => $this->claimed_at,
             'category' => $this->whenLoaded('category'),
             'organization' => $this->whenLoaded('organization'),
-            'user' => $this->whenLoaded('user'),
+            // Issue #234 — anonymize the reporter for regular viewers.
+            // The shape is identical to a real user payload (both have
+            // the same keys), with `is_anonymous` flagging which is which,
+            // so the frontend can branch on it without second-guessing.
+            'user' => $this->whenLoaded('user', fn () => $anonymizer->anonymize(
+                $this->user,
+                $request->user(),
+            )),
             // Use LocationResource to ensure geom is always serialized (null when absent)
             'location' => $this->whenLoaded('location', fn () => new LocationResource($this->location)),
             'thumbnail_url' => $thumbnail
@@ -123,7 +136,12 @@ class IncidentResource extends JsonResource
                     'role' => $a->assignment_role,
                     'created_at' => $a->created_at,
                     'updated_at' => $a->updated_at,
-                    'user' => $a->relationLoaded('user') ? $a->user : null,
+                    // Issue #234 — anonymize assignment owners the same
+                    // way the reporter is anonymized. Operators+ keep the
+                    // real user; regular viewers see the id-only payload.
+                    'user' => $a->relationLoaded('user')
+                        ? $anonymizer->anonymize($a->user, $request->user())
+                        : null,
                 ])->values()->all(),
             );
         }

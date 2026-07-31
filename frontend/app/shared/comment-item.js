@@ -17,7 +17,7 @@
  */
 
 import { escapeHtml, timeAgo, getCommentImageUrl } from '../utils/format.js';
-import { getInitials } from '../utils/avatar.js';
+import { getInitials, getUserDisplayName } from '../utils/avatar.js';
 
 /**
  * @typedef {Object} CommentItemOptions
@@ -35,12 +35,13 @@ import { getInitials } from '../utils/avatar.js';
  * @returns {string}
  */
 function defaultGetUserName(user) {
-  if (!user) return 'Usuario';
-  return (
-    [user.first_name, user.last_name].filter(Boolean).join(' ') ||
-    user.email ||
-    'Usuario'
-  );
+  // Issue #234 — defer to the shared helper so the same anonymous-payload
+  // rules (is_anonymous → "Anónimo", missing user → "Anónimo") apply here
+  // without duplicating the matrix. Fall back to the email only when the
+  // helper itself returned its generic "Usuario" placeholder.
+  const name = getUserDisplayName(user);
+  if (name !== 'Usuario') return name;
+  return user?.email || 'Usuario';
 }
 
 /**
