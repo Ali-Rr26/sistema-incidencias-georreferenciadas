@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use MatanYadaev\EloquentSpatial\Objects\Point;
 
 /**
@@ -195,7 +196,7 @@ class IncidentController extends Controller
         // el endpoint para que nadie pueda cerrar una incidencia
         // directa (bypass del flujo de aprobación).
         if ($validated['status'] === IncidentStatus::Closed->value) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'status' => 'El estado closed solo puede asignarse a través del flujo de aprobación.',
             ]);
         }

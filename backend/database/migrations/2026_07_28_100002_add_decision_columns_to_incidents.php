@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -52,7 +53,7 @@ return new class extends Migration
         // DDL via raw SQL because Blueprint does not expose CHECK constraints
         // portably; PostgreSQL is the production target so we hard-code
         // `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)`.
-        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+        DB::statement(<<<'SQL'
             ALTER TABLE incidents
                 ADD CONSTRAINT chk_incidents_approved_pair
                 CHECK (
@@ -62,7 +63,7 @@ return new class extends Migration
                 )
         SQL);
 
-        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+        DB::statement(<<<'SQL'
             ALTER TABLE incidents
                 ADD CONSTRAINT chk_incidents_rejected_pair
                 CHECK (
@@ -72,7 +73,7 @@ return new class extends Migration
                 )
         SQL);
 
-        \Illuminate\Support\Facades\DB::statement(<<<'SQL'
+        DB::statement(<<<'SQL'
             ALTER TABLE incidents
                 ADD CONSTRAINT chk_incidents_decision_xor
                 CHECK (
@@ -84,9 +85,9 @@ return new class extends Migration
     public function down(): void
     {
         // Drop CHECK constraints BEFORE the columns they reference.
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_approved_pair');
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_rejected_pair');
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_decision_xor');
+        DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_approved_pair');
+        DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_rejected_pair');
+        DB::statement('ALTER TABLE incidents DROP CONSTRAINT IF EXISTS chk_incidents_decision_xor');
 
         Schema::table('incidents', function (Blueprint $table): void {
             $table->dropIndex('idx_incidents_decided');
