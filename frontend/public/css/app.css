@@ -1059,11 +1059,25 @@ select,
   font-size: max(16px, 1rem) !important;
 }
 
-/* ─── Shared form utilities (sc-130 fix) ─────────────────────────
+/* ─── Shared form utilities (sc-130 fix, sc-143 parity) ──────────
    These classes were scoped inside login.component.css but used by
    login, register, forgot-password, accept-invite, reset-password,
    and verify-email. Moving them here is the correct location so every
    auth/identity page picks them up automatically.
+
+   SC-143 DECISION: Password field parity is enforced by shared base classes
+   (.gr-input, .gr-input-wrap, .gr-input-icon, .gr-input-eye, .gr-input-error).
+   Both /login (register mode) and /accept-invite render pixel-identical base
+   inputs. /accept-invite intentionally has *extra* UX (strength meter +
+   rules checklist) that /login doesn't have—this divergence is documented
+   and covered by Cypress visual regression tests.
+
+   CI Rule: These classes MUST NOT be redefined in any .component.css file
+   (enforced by .github/workflows/ci.yml "Check form utility class scope").
+   Any future CSS changes to these classes affect ALL auth pages automatically.
+
+   Refs: https://github.com/Ali-Rr26/sistema-incidencias-georreferenciadas/issues/229
+         frontend/cypress/e2e/password-field-parity.cy.js
    ──────────────────────────────────────────────────────────────── */
 
 .gr-form-label {
@@ -1157,3 +1171,99 @@ select,
 .gr-input-wrap + .gr-input-error {
   margin-top: -12px;
 }
+
+/* ─── shared password strength meter + rules checklist (sc-130 / sc-143) ─── */
+.gr-strength-rules {
+  list-style: none;
+  margin: -4px 0 14px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+}
+
+@media (max-width: 380px) {
+  .gr-strength-rules {
+    grid-template-columns: 1fr;
+  }
+}
+
+.gr-strength-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.35;
+  transition: color 0.15s ease;
+}
+
+.gr-strength-rule-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 8px;
+  color: var(--text-light);
+  background: var(--border-light);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.gr-strength-rule-icon i {
+  font-size: inherit;
+}
+
+.gr-strength-rule--ok {
+  color: #1e7a4d;
+}
+.gr-strength-rule--ok .gr-strength-rule-icon {
+  background: rgba(30, 122, 77, 0.15);
+  color: #1e7a4d;
+}
+.gr-strength-rule--ok .gr-strength-rule-icon i::before {
+  content: '\f00c';
+}
+
+.gr-strength-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+.gr-strength-meter-segments {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.gr-strength-meter-segment {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-light);
+  transition: background-color 0.18s ease;
+}
+
+.gr-strength-meter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+  transition: color 0.18s ease;
+}
+
+.gr-strength-meter--tier-1 .gr-strength-meter-segment--on { background: #fa5a7d; }
+.gr-strength-meter--tier-1 .gr-strength-meter-label { color: #fa5a7d; }
+.gr-strength-meter--tier-2 .gr-strength-meter-segment--on { background: #f0a020; }
+.gr-strength-meter--tier-2 .gr-strength-meter-label { color: #b8770a; }
+.gr-strength-meter--tier-3 .gr-strength-meter-segment--on { background: #10bfe0; }
+.gr-strength-meter--tier-3 .gr-strength-meter-label { color: #0a93b2; }
+.gr-strength-meter--tier-4 .gr-strength-meter-segment--on { background: #1fc56e; }
+.gr-strength-meter--tier-4 .gr-strength-meter-label { color: #1e7a4d; }
