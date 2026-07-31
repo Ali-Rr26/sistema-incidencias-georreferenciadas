@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 class MockBootstrapWidget {
   constructor(element, options = {}) {
