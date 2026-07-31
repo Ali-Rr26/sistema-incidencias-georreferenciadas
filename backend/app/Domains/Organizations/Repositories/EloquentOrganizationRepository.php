@@ -48,6 +48,7 @@ class EloquentOrganizationRepository extends EloquentRepository implements Organ
                         ->orWhereNull('incident_category_id');
                 });
             })
+            ->orderBy('id')
             ->first();
     }
 

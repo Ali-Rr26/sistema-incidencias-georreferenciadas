@@ -193,3 +193,50 @@ it('findForLocation respects the category filter when provided', function (): vo
     // With a category that the first org does NOT cover, it must be skipped.
     expect($this->repo->findForLocation($city->id, $otherRoot->id)?->id)->not->toBe($gadVial->id);
 });
+
+it('findForLocation is deterministic and matches the first notified org (lowest id wins)', function (): void {
+    $category = IncidentCategory::create([
+        'name' => 'Infraestructura Vial',
+        'parent_id' => null,
+    ]);
+    $otherCategory = IncidentCategory::create([
+        'name' => 'Medio Ambiente',
+        'parent_id' => null,
+    ]);
+
+    $province = Location::create(['name' => 'Pichincha', 'level' => 'province']);
+    $city = Location::create([
+        'name' => 'Quito',
+        'level' => 'city',
+        'parent_id' => $province->id,
+    ]);
+
+    $firstOrg = Organization::create([
+        'name' => 'GAD Vial Norte',
+        'location_id' => $city->id,
+        'incident_category_id' => $category->id,
+    ]);
+    $secondOrg = Organization::create([
+        'name' => 'GAD Vial Sur',
+        'location_id' => $city->id,
+        'incident_category_id' => $category->id,
+    ]);
+    Organization::create([
+        'name' => 'GAD Ambiente',
+        'location_id' => $city->id,
+        'incident_category_id' => $otherCategory->id,
+    ]);
+
+    // Both same-category orgs cover the (location, category) pair; the
+    // LOWEST id must win every time, no matter the row read order.
+    $found = $this->repo->findForLocation($city->id, $category->id);
+    expect($found?->id)->toBe($firstOrg->id);
+    expect($secondOrg->id)->toBeGreaterThan($firstOrg->id);
+
+    // Shared selection rule: findForLocation IS the first org that
+    // findNotifiedFor would notify — keeps the preview (is_claimable) and
+    // the auto-assignment on submit consistent.
+    $notified = $this->repo->findNotifiedFor($city->id, $category->id);
+    expect($notified->first()?->id)->toBe($firstOrg->id);
+    expect($found?->id)->toBe($notified->first()?->id);
+});
