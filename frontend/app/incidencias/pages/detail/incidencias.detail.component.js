@@ -315,12 +315,6 @@ function setupEstado(incidentId, inc) {
 
     try {
       const payload = { status: newStatus };
-      const notesInput = document.getElementById('detalle-estado-notas');
-      const notes = notesInput?.value.trim() ?? '';
-
-      if (notes) {
-        payload.notes = notes;
-      }
 
       if (newStatus === 'resolved') {
         payload.resolution_date = new Date().toISOString();
@@ -340,10 +334,6 @@ function setupEstado(incidentId, inc) {
 
       setupEstado(incidentId, updatedInc);
       renderHistorial(updatedInc.status_history ?? []);
-
-      if (notesInput) {
-        notesInput.value = '';
-      }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       errorMsg.textContent = err.message || 'No se pudo cambiar el estado.';
