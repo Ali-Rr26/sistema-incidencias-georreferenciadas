@@ -122,12 +122,6 @@ function initCategoriesChart(categories) {
       x: {
         type: 'category',
         categories: categories.map((cat) => cat.name),
-        tick: {
-          // Truncate long category names so the y-axis labels stay
-          // readable without forcing a 150px left-padding on the chart.
-          format: (name) =>
-            name && name.length > 22 ? `${name.slice(0, 21)}…` : name,
-        },
       },
       y: {
         label: { text: 'Cantidad', position: 'outer-middle' },
@@ -143,7 +137,11 @@ function initCategoriesChart(categories) {
       top: 8,
       right: 24,
       bottom: 0,
-      left: 12,
+      // 150px reserved on the left so category names render in full
+      // (the longest seed category — 'Recolección de Residuos',
+      // 'Contaminación Ambiental', 'Construcciones Ilegales' — all need
+      // ~22-25 chars at the 11px axis font-size).
+      left: 150,
     },
     tooltip: {
       format: {
