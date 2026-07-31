@@ -34,11 +34,11 @@ class UserAnonymizer
     /**
      * Project the user payload for the given viewer.
      *
-     * @param  User|null $subject  the user being serialized (the reporter,
+     * @param  User|null  $subject  the user being serialized (the reporter,
      *                              an assignee, a comment author, etc.)
-     * @param  User|null $viewer   the authenticated requester
-     * @return array<string, mixed>  the safe payload to embed in the
-     *                                response. Empty array when $subject is null.
+     * @param  User|null  $viewer  the authenticated requester
+     * @return array<string, mixed> the safe payload to embed in the
+     *                              response. Empty array when $subject is null.
      */
     public function anonymize(?User $subject, ?User $viewer): array
     {
