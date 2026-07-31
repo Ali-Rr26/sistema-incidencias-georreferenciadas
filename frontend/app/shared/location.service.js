@@ -48,10 +48,16 @@ class LocationService {
    * Uses level filter to avoid full tree downloads.
    *
    * @param {{ level: string }} opts
+   * @param {{ catalog?: boolean }} [extra] — catalog:true hits the
+   *   citizen-facing /locations/catalog endpoint (no administrative
+   *   locations.view permission required), used by the incident form.
    * @returns {Promise<object[]>}
    */
-  async getRoots({ level }) {
-    return this._fetch({ parentId: null, level }, '/locations');
+  async getRoots({ level }, { catalog = false } = {}) {
+    return this._fetch(
+      { parentId: null, level },
+      catalog ? '/locations/catalog' : '/locations',
+    );
   }
 
   /**
@@ -59,10 +65,15 @@ class LocationService {
    * Uses parent_id filter for direct-children-only queries.
    *
    * @param {LocationQuery} opts
+   * @param {{ catalog?: boolean }} [extra] — catalog:true hits the
+   *   citizen-facing /locations/catalog endpoint.
    * @returns {Promise<object[]>}
    */
-  async getChildren({ parentId, level }) {
-    return this._fetch({ parentId, level: level ?? null }, '/locations');
+  async getChildren({ parentId, level }, { catalog = false } = {}) {
+    return this._fetch(
+      { parentId, level: level ?? null },
+      catalog ? '/locations/catalog' : '/locations',
+    );
   }
 
   /**
@@ -88,12 +99,17 @@ class LocationService {
   // ─── Private ────────────────────────────────────────────────────────────────
 
   /**
-   * Build a stable cache key from query params.
+   * Build a stable cache key from query params + base path.
+   * The base path matters: `/locations` (admin) and `/locations/catalog`
+   * (citizen) may be queried with the same (level, parent_id) but return
+   * differently-authorized data, so they must not share a cache entry.
    * @param {LocationQuery} query
+   * @param {string} basePath
    * @returns {string}
    */
-  _cacheKey(query) {
+  _cacheKey(query, basePath) {
     return JSON.stringify({
+      basePath,
       parentId: query.parentId ?? null,
       level: query.level ?? null,
     });
@@ -126,7 +142,7 @@ class LocationService {
    * @returns {Promise<object[]>}
    */
   _fetch(query, basePath) {
-    const key = this._cacheKey(query);
+    const key = this._cacheKey(query, basePath);
 
     // Check cache first
     const cached = this._cache.get(key);

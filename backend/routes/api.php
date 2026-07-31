@@ -18,6 +18,7 @@ use App\Domains\Incidents\Http\IncidentWeeklyStatsController;
 use App\Domains\Incidents\Http\IncidentWorkflowController;
 use App\Domains\Incidents\Http\MapFilterController;
 use App\Domains\Invitations\Http\Controllers\InvitationAcceptController;
+use App\Domains\Locations\Http\LocationCatalogController;
 use App\Domains\Locations\Http\LocationController;
 use App\Domains\Menus\Http\MenuController;
 use App\Domains\Notifications\Http\NotificationController;
@@ -126,9 +127,15 @@ Route::middleware('jwt')->group(function () {
 
     // Catálogos
     Route::get('map/filters', MapFilterController::class);
+    // Citizen catalog for the incident form cascade — registered BEFORE the
+    // apiResource so `catalog` is not captured as a {location} route param.
+    // Deliberately permissive (no locations.view requirement): every
+    // authenticated role must be able to fill the create/edit form.
+    Route::get('locations/catalog', LocationCatalogController::class);
     Route::apiResource('locations', LocationController::class);
     Route::get('organizations/tree', [OrganizationController::class, 'tree']);
     Route::get('organizations/form-data', [OrganizationController::class, 'formData']);
+    Route::get('organizations/notified-for', [OrganizationController::class, 'notifiedFor']);
     Route::apiResource('organizations', OrganizationController::class);
 
     Route::get('incident-categories/tree', [IncidentCategoryController::class, 'tree']);
