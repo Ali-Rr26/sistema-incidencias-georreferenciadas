@@ -623,6 +623,10 @@ export default {
     // Stale-request guard — incremented before each async call; stale
     // responses are discarded when generation mismatches.
     let selectionGeneration = 0;
+    // Dedicated guard for the step-4 orgs preview so it never couples to
+    // the catalog loads above (re-entering step 4 must invalidate the
+    // previous preview request).
+    let orgsPreviewGeneration = 0;
 
     async function onProvinceChange() {
       const provinceId = provinceSelect.value;
@@ -864,13 +868,15 @@ export default {
       // Mirror the submit handler's precedence: neighborhood > city > null.
       const orgsLocationId =
         neighborhoodSelect?.value || citySelect?.value || null;
+      const previewGen = ++orgsPreviewGeneration;
       void renderReviewOrgs(
         subcatSelect?.value || catSelect?.value,
         orgsLocationId,
+        previewGen,
       );
     }
 
-    async function renderReviewOrgs(categoryId, locationId) {
+    async function renderReviewOrgs(categoryId, locationId, generation) {
       const container = $('review-orgs');
       if (!container) return;
 
@@ -896,6 +902,7 @@ export default {
         const json = await http.get(
           `/organizations/notified-for?location_id=${encodeURIComponent(locationId)}&category_id=${encodeURIComponent(categoryId)}`,
         );
+        if (generation !== orgsPreviewGeneration) return; // stale
         const orgs = Array.isArray(json?.data) ? json.data : [];
 
         if (orgs.length === 0) {
@@ -933,6 +940,7 @@ export default {
             automáticamente al registrar la incidencia.
           </p>`;
       } catch {
+        if (generation !== orgsPreviewGeneration) return; // stale
         container.innerHTML = `
           <div class="text-warning small">
             <i class="fa-solid fa-triangle-exclamation me-1" aria-hidden="true"></i>

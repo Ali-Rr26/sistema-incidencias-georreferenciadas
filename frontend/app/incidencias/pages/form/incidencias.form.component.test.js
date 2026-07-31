@@ -1061,6 +1061,116 @@ describe('incidencias.form — 4-step stepper', () => {
     // Names are escaped: a raw <b> in the payload never becomes a tag.
     expect(orgsContainer.querySelector('b')).toBeNull();
   });
+  it('step 4 orgs preview ignores stale responses when the user re-enters the step', async () => {
+    // Second selectable city so the re-entered step 4 represents a
+    // different location selection than the first visit.
+    const CITY_RUMINAHUI_GEOM = {
+      id: 301,
+      name: 'Rumiñahui',
+      level: 'city',
+      parent_id: 200,
+      geom: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-78.4, -0.25],
+              [-78.3, -0.25],
+              [-78.3, -0.15],
+              [-78.4, -0.15],
+              [-78.4, -0.25],
+            ],
+          ],
+        ],
+      },
+    };
+
+    // Deferred promises for the orgs preview endpoint — each call records
+    // its own resolve so the test controls resolution order.
+    const pendingOrgs = [];
+    mockHttp.get.mockImplementation((path) => {
+      if (path === '/incident-categories/tree') {
+        return Promise.resolve({ data: categoryTreeFixture });
+      }
+      if (path.startsWith('/organizations/notified-for')) {
+        return new Promise((resolve) => {
+          pendingOrgs.push({ path, resolve });
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    mockLocationService.getRoots.mockResolvedValueOnce([
+      PROVINCE_PICHINCHA_GEOM,
+    ]);
+    mockLocationService.getChildren
+      .mockResolvedValueOnce([CITY_QUITO_GEOM, CITY_RUMINAHUI_GEOM])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    await component.onInit();
+    fillStep1({ title: 'Bache', priority: 'high' });
+    document.getElementById('ici-btn-next').click(); // -> step 2
+
+    const catSelect = document.getElementById('ici-category');
+    catSelect.value = '1';
+    catSelect.dispatchEvent(new Event('change'));
+    const subcatSelect = document.getElementById('ici-subcategory');
+    subcatSelect.value = '11';
+    document.getElementById('ici-btn-next').click(); // -> step 3
+
+    vi.stubGlobal('L', makeFakeL());
+
+    const provinceSelect = document.getElementById('ici-location-province');
+    provinceSelect.value = '200';
+    provinceSelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    const citySelect = document.getElementById('ici-location-city');
+    citySelect.value = '300';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    clickMap(0.1, -78.5);
+    document.getElementById('ici-btn-next').click(); // -> step 4 (call 1)
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pendingOrgs.length).toBe(1);
+
+    // Back to step 3, pick a different city, and re-enter step 4 while the
+    // first preview request is still in flight (call 2).
+    document.getElementById('ici-btn-prev').click(); // -> step 3
+    citySelect.value = '301';
+    citySelect.dispatchEvent(new Event('change'));
+    await Promise.resolve();
+    await Promise.resolve();
+    document.getElementById('ici-btn-next').click(); // -> step 4 (call 2)
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(pendingOrgs.length).toBe(2);
+
+    // The NEWEST request resolves first — its orgs must render.
+    pendingOrgs[1].resolve({
+      data: [{ id: 5, name: 'GAD Rumiñahui', is_claimable: true }],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const orgsContainer = document.getElementById('ici-review-orgs');
+    expect(orgsContainer.textContent).toContain('GAD Rumiñahui');
+    expect(orgsContainer.textContent).not.toContain('GAD Quito Norte');
+
+    // The OLD request (first selection) resolves LAST — its payload must be
+    // discarded as stale, leaving the second selection untouched.
+    pendingOrgs[0].resolve({
+      data: [{ id: 1, name: 'GAD Quito Norte', is_claimable: true }],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(orgsContainer.textContent).toContain('GAD Rumiñahui');
+    expect(orgsContainer.textContent).not.toContain('GAD Quito Norte');
+  });
   it('review summary never shows a province-only selection as saved location (it would submit as null)', async () => {
     await component.onInit();
     fillStep1();
