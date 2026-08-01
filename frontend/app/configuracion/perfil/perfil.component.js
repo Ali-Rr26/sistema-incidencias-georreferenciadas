@@ -6,6 +6,7 @@ import {
   AVATAR_MAX_KB,
   ACCEPTED_MIME_TYPES,
 } from '../../utils/avatar.constants.js';
+import { resolveAvatarSrc } from '../../utils/avatar.js';
 import { mountAvatarUploader } from '../../shared/avatar-uploader.js';
 import { mostrarToast, maskPhoneInput } from '../../utils/ui.js';
 
@@ -84,9 +85,10 @@ export default {
       input: '#perfil-avatar',
     });
 
-    if (u.profile_image_path) {
-      _avatar?.setPreviewFromUrl('/storage/' + u.profile_image_path);
-    }
+    // Show the user's photo, or the default avatar when none exists.
+    // resolveAvatarSrc(null) → DEFAULT_AVATAR, so the preview is never
+    // an empty box on first load.
+    _avatar?.setPreviewFromUrl(resolveAvatarSrc(u.profile_image_path));
 
     renderAvatarHelp();
 
@@ -151,11 +153,9 @@ export default {
             const newPath =
               data?.user?.profile_image_path ?? data?.profile_image_path;
             if (_avatar) {
-              if (newPath) {
-                _avatar.setPreviewFromUrl('/storage/' + newPath);
-              } else {
-                _avatar.clear();
-              }
+              // Newly uploaded photo → show it; otherwise fall back to the
+              // default avatar (consistent with the initial load).
+              _avatar.setPreviewFromUrl(resolveAvatarSrc(newPath));
             }
           }
         } catch (err) {
