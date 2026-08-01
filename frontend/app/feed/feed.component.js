@@ -747,6 +747,16 @@ export default {
       setCategoryExpanded(toggle, true);
     }
 
+    // Set a checkbox to a concrete checked state, keeping the native input
+    // and the visual .checked class in sync. Used by the parent/subcategory
+    // sync below, where a box may be cleared without a click on itself.
+    function setBoxChecked(box, checked) {
+      box.checked = checked;
+      box.classList.toggle('checked', checked);
+      const label = box.closest('.rp-checkbox-label');
+      if (label) label.style.color = checked ? '#5b6172' : '#a3a8b8';
+    }
+
     if (rpCategoryFilters) {
       rpCategoryFilters.addEventListener('click', (e) => {
         // Chevron toggle: expand/collapse a parent branch without touching
@@ -774,9 +784,7 @@ export default {
         // already toggled when the handler runs; for a label click we
         // flip it ourselves after canceling the implicit activation.
         const checked = clickingBox ? box.checked : !box.checked;
-        box.classList.toggle('checked', checked);
-        if (!clickingBox) box.checked = checked;
-        label.style.color = checked ? '#5b6172' : '#a3a8b8';
+        setBoxChecked(box, checked);
 
         // Checking a parent reveals its subcategories (feedback that the
         // selection implies them). Unchecking does not collapse the branch.
@@ -787,6 +795,34 @@ export default {
           if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
             expandCategory(toggleBtn);
           }
+        }
+
+        // Parent/subcategory sync: a specific selection wins over its
+        // umbrella. Checking a subcategory clears its parent (so the filter
+        // narrows to that exact subcategory), and checking a parent clears
+        // its subcategories (the parent already implies them). This keeps
+        // every check visibly effective instead of being masked by an
+        // ancestor that implies it.
+        const parentContainer = box.closest('.rp-cat-children');
+        if (checked && parentContainer) {
+          // Subcategory → clear its parent row.
+          const parentId = parentContainer.id.replace('rp-cat-children-', '');
+          const parentBox = document.getElementById(`rp-cat-${parentId}`);
+          if (parentBox?.checked) setBoxChecked(parentBox, false);
+        } else if (checked) {
+          // Parent → clear every checked subcategory inside it.
+          const controls = label
+            .closest('.rp-cat-row')
+            ?.querySelector('.rp-cat-toggle')
+            ?.getAttribute('aria-controls');
+          const childrenContainer = controls
+            ? document.getElementById(controls)
+            : null;
+          childrenContainer
+            ?.querySelectorAll('.rp-checkbox-box')
+            .forEach((sub) => {
+              if (sub.checked) setBoxChecked(sub, false);
+            });
         }
 
         // Re-render with combined search + category filters

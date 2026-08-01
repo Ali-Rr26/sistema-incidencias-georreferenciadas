@@ -780,6 +780,111 @@ describe('feed integration', () => {
     feedComponent.onDestroy();
   });
 
+  it('checking a subcategory clears its checked parent so the sub wins', async () => {
+    const incidents = [
+      makeIncident({
+        id: 41,
+        title: 'Vía dañada',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 42,
+        title: 'Poste sin luz',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    // Parent checked first → both subcategory incidents visible.
+    const parentBox = categoryBox(1);
+    parentBox.click();
+    expect(document.querySelectorAll('.feed-card').length).toBe(2);
+
+    // Expanding shows the subcategories; checking one must clear the parent.
+    expandParent(1);
+    const subBox = categoryBox(5);
+    subBox.click();
+
+    // The parent checkbox is now unchecked and the list narrows to the sub.
+    expect(categoryBox(1).checked).toBe(false);
+    expect(categoryBox(1).classList.contains('checked')).toBe(false);
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(1);
+    expect(cards[0].textContent).toContain('Vía dañada');
+
+    feedComponent.onDestroy();
+  });
+
+  it('checking a parent clears its checked subcategories', async () => {
+    const incidents = [
+      makeIncident({
+        id: 51,
+        title: 'Vía dañada',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 52,
+        title: 'Poste sin luz',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    // Subcategory checked alone first → only its incident visible.
+    expandParent(1);
+    categoryBox(5).click();
+    expect(document.querySelectorAll('.feed-card').length).toBe(1);
+
+    // Checking the parent clears the subcategory and widens the list.
+    categoryBox(1).click();
+    expect(categoryBox(5).checked).toBe(false);
+    expect(categoryBox(5).classList.contains('checked')).toBe(false);
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(2);
+
+    feedComponent.onDestroy();
+  });
+
+  it('two subcategories of the same parent stay independent', async () => {
+    const incidents = [
+      makeIncident({
+        id: 61,
+        title: 'Vía dañada',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 62,
+        title: 'Poste sin luz',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    expandParent(1);
+    categoryBox(5).click();
+    categoryBox(6).click();
+
+    // Both subs stay checked (each clears only its own parent, not a sibling)
+    // and the filter matches the union of both.
+    expect(categoryBox(5).checked).toBe(true);
+    expect(categoryBox(6).checked).toBe(true);
+    expect(document.querySelectorAll('.feed-card').length).toBe(2);
+
+    feedComponent.onDestroy();
+  });
+
   // ── Category accordion (progressive disclosure) ──────────
 
   it('by default only parent categories are visible and subcategories stay hidden', async () => {
