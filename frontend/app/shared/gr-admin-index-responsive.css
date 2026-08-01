@@ -1,0 +1,49 @@
+/* Admin list pages responsive layout — shared stylesheet
+   Applied to: usuarios, organizaciones, localizaciones, categorias index pages
+   Breakpoint: 768px (Bootstrap md)
+*/
+
+@media (max-width: 768px) {
+  .gr-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gr-filters__search {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .gr-filters__selects {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .custom-select-wrap {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .custom-select-menu {
+    min-width: 0 !important;
+  }
+
+  .gr-btn-filter {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 100px;
+  }
+
+  .gr-btn-filter--clear {
+    flex: 0 0 auto;
+    width: 42px;
+    min-width: 42px;
+  }
+
+  .gr-filters__selects > :nth-last-child(-n + 2) {
+    align-self: flex-start;
+  }
+}

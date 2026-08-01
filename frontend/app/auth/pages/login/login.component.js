@@ -17,6 +17,7 @@
  *     mayúscula, ≥1 minúscula, ≥1 dígito, y `password === password_confirmation`.
  */
 import template from './login.component.html?raw';
+import '../../auth-shared.css';
 import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';

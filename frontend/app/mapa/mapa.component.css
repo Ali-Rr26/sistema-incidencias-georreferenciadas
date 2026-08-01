@@ -241,4 +241,9 @@ body.mp-filters-open .mp-filters-fab {
     left: auto;
     right: 16px;
   }
+
+  /* Leaflet popup — constrain to viewport width so it doesn't overflow */
+  .mp-marker-popup .leaflet-popup-content-wrapper {
+    max-width: calc(100vw - 32px);
+  }
 }

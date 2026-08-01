@@ -1,0 +1,526 @@
+{"type":"Metric","data":{"name":"http_reqs","type":"counter","contains":"default","thresholds":[],"submetrics":null},"metric":"http_reqs"}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_duration","type":"trend","contains":"time","thresholds":["p(95)<200","p(99)<300"],"submetrics":[{"name":"http_req_duration{expected_response:true}","suffix":"expected_response:true","tags":{"expected_response":"true"}}]},"metric":"http_req_duration"}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":2.619996,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_blocked","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_blocked"}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0.871751,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_connecting","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_connecting"}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0.14954,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_tls_handshaking","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_tls_handshaking"}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_sending","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_sending"}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0.056823,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_waiting","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_waiting"}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":2.378983,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_receiving","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"http_req_receiving"}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0.18419,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"http_req_failed","type":"rate","contains":"default","thresholds":["rate<0.01"],"submetrics":null},"metric":"http_req_failed"}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:12.786776982Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"type":"Metric","data":{"name":"checks","type":"rate","contains":"default","thresholds":[],"submetrics":null},"metric":"checks"}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:12.786910948Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:12.786910948Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"type":"Metric","data":{"name":"vus","type":"gauge","contains":"default","thresholds":[],"submetrics":null},"metric":"vus"}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:13.782887116Z","value":1,"tags":{}}}
+{"type":"Metric","data":{"name":"vus_max","type":"gauge","contains":"default","thresholds":[],"submetrics":null},"metric":"vus_max"}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:13.782887116Z","value":1,"tags":{}}}
+{"type":"Metric","data":{"name":"data_sent","type":"counter","contains":"data","thresholds":[],"submetrics":null},"metric":"data_sent"}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:13.786997963Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"type":"Metric","data":{"name":"data_received","type":"counter","contains":"data","thresholds":[],"submetrics":null},"metric":"data_received"}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:13.786997963Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"type":"Metric","data":{"name":"iteration_duration","type":"trend","contains":"time","thresholds":[],"submetrics":null},"metric":"iteration_duration"}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:13.786997963Z","value":1003.838891,"tags":{"group":"","scenario":"default"}}}
+{"type":"Metric","data":{"name":"iterations","type":"counter","contains":"default","thresholds":[],"submetrics":null},"metric":"iterations"}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:13.786997963Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":2.245386,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0.004881,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0.016194,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":2.170114,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0.059078,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:13.789365842Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:13.789402409Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:13.789402409Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:14.782637128Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:14.782637128Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:14.790219272Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:14.790219272Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:14.790219272Z","value":1003.194331,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:14.790219272Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":2.195522,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0.007662,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0.030051,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":2.099804,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0.065667,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:14.79258261Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:14.792640328Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:14.792640328Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:15.782308577Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:15.782308577Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:15.793781914Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:15.793781914Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:15.793781914Z","value":1003.516697,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:15.793781914Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":2.156318,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0.009744,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0.028468,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":2.070577,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0.057273,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:15.796133849Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:15.796186944Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:15.796186944Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:16.782636715Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:16.782636715Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:16.797306379Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:16.797306379Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:16.797306379Z","value":1003.459691,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:16.797306379Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":2.139895,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0.004782,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0.01529,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":2.065374,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0.059231,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:16.79954498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:16.799591364Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:16.799591364Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:17.782761255Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:17.782761255Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:17.799912511Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:17.799912511Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:17.799912511Z","value":1002.577382,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:17.799912511Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":2.459256,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0.004008,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0.012057,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":2.397634,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0.049565,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:17.802459337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:17.802507212Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:17.802507212Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:18.782830487Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:18.782830487Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:18.803122918Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:18.803122918Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:18.803122918Z","value":1003.186484,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:18.803122918Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":2.508825,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0.004238,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0.012631,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":2.426296,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0.069898,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:18.805703815Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:18.805731761Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:18.805731761Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:19.782708726Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:19.782708726Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:19.805808677Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:19.805808677Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:19.805808677Z","value":1002.666376,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:19.805808677Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":1.981311,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0.003677,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0.010687,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":1.934012,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0.036612,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:19.807890041Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:19.807918716Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:19.807918716Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:20.782647024Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:20.782647024Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:20.808853329Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:20.808853329Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:20.808853329Z","value":1003.00653,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:20.808853329Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":2.001005,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0.00322,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0.011103,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":1.954795,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0.035107,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:20.810919337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:20.810955516Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:20.810955516Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:21.782382799Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:21.782382799Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:21.811877628Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:21.811877628Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:21.811877628Z","value":1003.006534,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:21.811877628Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":2.311914,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0.003902,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0.01093,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":2.243376,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0.057608,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:21.814367956Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:21.814410167Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:21.814410167Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:22.782430768Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:22.782430768Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:22.814899571Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:22.814899571Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:22.814899571Z","value":1002.972773,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:22.814899571Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":2.388492,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0.017895,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0.051136,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":2.250341,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0.087015,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:22.817678216Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:22.817712892Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:22.817712892Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:23.782234827Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:23.782234827Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:23.818313307Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:23.818313307Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:23.818313307Z","value":1003.276368,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:23.818313307Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":2.257744,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0.00424,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0.011991,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":2.062577,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0.183176,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:23.820688423Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:23.820734039Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:23.820734039Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:24.783036472Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:24.783036472Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:24.8207939Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:24.8207939Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:24.8207939Z","value":1002.435628,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:24.8207939Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":2.502141,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0.006238,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0.022901,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":2.396328,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0.082912,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:24.823532891Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:24.823574548Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:24.823574548Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:25.782267937Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:25.782267937Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:25.824633422Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:25.824633422Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:25.824633422Z","value":1003.813614,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:25.824633422Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":2.227741,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0.005847,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0.024101,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":2.147668,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0.055972,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:25.826971109Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:25.827020496Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:25.827020496Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:26.782200797Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:26.782200797Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:26.827235165Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:26.827235165Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:26.827235165Z","value":1002.571176,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:26.827235165Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":1.990866,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0.007378,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0.021257,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":1.932477,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0.037132,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:26.829363311Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:26.829393818Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:26.829393818Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:27.782722418Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:27.782722418Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:27.830015546Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:27.830015546Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:27.830015546Z","value":1002.749773,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:27.830015546Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":2.297912,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0.009024,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0.029366,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":2.179982,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0.088564,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:27.832487397Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:27.832538432Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:27.832538432Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:28.782681955Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:28.782681955Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:28.832911913Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:28.832911913Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:28.832911913Z","value":1002.848101,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:28.832911913Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":2.886239,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0.00351,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0.012063,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":2.799238,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0.074938,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:28.835981337Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:28.836048165Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:28.836048165Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:29.782132637Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:29.782132637Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:29.836467327Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:29.836467327Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:29.836467327Z","value":1003.519787,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:29.836467327Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":3.14291,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0.004165,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0.01025,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":3.093351,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0.039309,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:29.839676669Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:29.839710664Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:29.839710664Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:30.782696111Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:30.782696111Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:30.840108646Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:30.840108646Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:30.840108646Z","value":1003.62419,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:30.840108646Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":3.080929,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0.0046,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0.014974,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":2.973123,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0.092832,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:30.843285029Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:30.843320066Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:30.843320066Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:31.782630444Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:31.782630444Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:31.844301613Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:31.844301613Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:31.844301613Z","value":1004.167923,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:31.844301613Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":3.277358,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0.004779,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0.016819,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":3.216145,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0.044394,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:31.847669064Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:31.847699038Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:31.847699038Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:32.782799851Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:32.782799851Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:32.848195722Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:32.848195722Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:32.848195722Z","value":1003.868445,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:32.848195722Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":2.268963,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0.003606,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0.010323,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":2.199222,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0.059418,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:32.850598348Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:32.850644208Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:32.850644208Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:33.782503652Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:33.782503652Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:33.850984962Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:33.850984962Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:33.850984962Z","value":1002.749819,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:33.850984962Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":1.987765,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0.003857,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0.011086,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":1.939069,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0.03761,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:33.85304645Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:33.853080412Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:33.853080412Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:34.782481529Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:34.782481529Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:34.854013872Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:34.854013872Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:34.854013872Z","value":1003.000827,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:34.854013872Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":2.058316,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0.003447,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0.011035,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":1.990358,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0.056923,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:34.856134498Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:34.856194316Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:34.856194316Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:35.782775494Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:35.782775494Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:35.856568094Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:35.856568094Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:35.856568094Z","value":1002.53724,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:35.856568094Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":1.966588,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0.004073,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0.013611,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":1.897701,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0.055276,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:35.858615901Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:35.85864585Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:35.85864585Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:36.782620983Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:36.782620983Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:36.85937342Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:36.85937342Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:36.85937342Z","value":1002.78176,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:36.85937342Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":2.750418,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0.004461,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0.016704,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":2.631134,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0.10258,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:36.862207046Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:36.862240099Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:36.862240099Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:37.782172119Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:37.782172119Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:37.862812057Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:37.862812057Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:37.862812057Z","value":1003.416499,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:37.862812057Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":3.77377,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0.005543,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0.01894,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":3.653528,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0.101302,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:37.866706136Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:37.866855971Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:37.866855971Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:38.781869041Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:38.781869041Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:38.867191675Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:38.867191675Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:38.867191675Z","value":1004.354247,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:38.867191675Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":2.967976,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0.003758,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0.011883,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":2.899539,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0.056554,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:38.870262042Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:38.870300174Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:38.870300174Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:39.782180243Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:39.782180243Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:39.870781688Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:39.870781688Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:39.870781688Z","value":1003.538716,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:39.870781688Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":2.807225,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0.004629,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0.015088,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":2.738123,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0.054014,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:39.873686662Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:39.873734105Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:39.873734105Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:40.783032246Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:40.783032246Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:40.873861138Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:40.873861138Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:40.873861138Z","value":1003.04703,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:40.873861138Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":2.470358,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0.004559,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0.017238,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":2.367376,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0.085744,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:40.876422447Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:40.876454038Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:40.876454038Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:41.782384466Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:41.782384466Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:41.877030551Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:41.877030551Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:41.877030551Z","value":1003.142758,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:41.877030551Z","value":1,"tags":{"group":"","scenario":"default"}}}
+{"metric":"http_reqs","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":1,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_duration","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":2.374671,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_blocked","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0.003494,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_connecting","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_tls_handshaking","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_sending","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0.009892,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_waiting","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":2.268619,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_receiving","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0.09616,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"http_req_failed","type":"Point","data":{"time":"2026-08-01T00:11:41.879464299Z","value":0,"tags":{"expected_response":"true","group":"","method":"GET","name":"health","proto":"HTTP/1.1","scenario":"default","status":"200","url":"health"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:41.879507928Z","value":1,"tags":{"check":"status 200","group":"","scenario":"default"}}}
+{"metric":"checks","type":"Point","data":{"time":"2026-08-01T00:11:41.879507928Z","value":1,"tags":{"check":"has status field","group":"","scenario":"default"}}}
+{"metric":"vus","type":"Point","data":{"time":"2026-08-01T00:11:42.782364965Z","value":1,"tags":{}}}
+{"metric":"vus_max","type":"Point","data":{"time":"2026-08-01T00:11:42.782364965Z","value":1,"tags":{}}}
+{"metric":"data_sent","type":"Point","data":{"time":"2026-08-01T00:11:42.879939997Z","value":78,"tags":{"group":"","scenario":"default"}}}
+{"metric":"data_received","type":"Point","data":{"time":"2026-08-01T00:11:42.879939997Z","value":782,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iteration_duration","type":"Point","data":{"time":"2026-08-01T00:11:42.879939997Z","value":1002.89465,"tags":{"group":"","scenario":"default"}}}
+{"metric":"iterations","type":"Point","data":{"time":"2026-08-01T00:11:42.879939997Z","value":1,"tags":{"group":"","scenario":"default"}}}
