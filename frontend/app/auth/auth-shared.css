@@ -212,7 +212,9 @@
   font-family: var(--font-family);
   cursor: pointer;
   box-shadow: 0 14px 26px -10px rgba(106, 92, 243, 0.55);
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.1s ease;
 }
 
 @media (max-width: 480px) {
@@ -264,7 +266,9 @@
   padding: 10px 14px;
   border-radius: 9px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .gr-login__mode-btn--active {
@@ -332,7 +336,10 @@
   font-weight: 600;
   cursor: pointer;
   box-sizing: border-box;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .gr-btn-google:hover {
@@ -409,7 +416,10 @@
   outline: none;
   box-sizing: border-box;
   caret-color: var(--color-primary);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
   -moz-appearance: textfield;
   appearance: textfield;
 }
