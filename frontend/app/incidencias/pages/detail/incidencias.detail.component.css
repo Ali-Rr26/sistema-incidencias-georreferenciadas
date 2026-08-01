@@ -253,3 +253,10 @@
   font-weight: 600;
   color: #495057;
 }
+
+/* Mobile responsive padding — Breakpoint 576px */
+@media (max-width: 576px) {
+  .incid-detail__card-body {
+    padding: 16px;
+  }
+}

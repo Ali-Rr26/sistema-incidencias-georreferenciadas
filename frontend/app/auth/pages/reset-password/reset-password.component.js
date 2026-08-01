@@ -1,5 +1,5 @@
 import template from './reset-password.component.html?raw';
-import style from '../login/login.component.css?raw';
+import '../../auth-shared.css';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 

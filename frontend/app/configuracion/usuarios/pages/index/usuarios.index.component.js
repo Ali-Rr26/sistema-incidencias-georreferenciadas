@@ -1,4 +1,6 @@
 import template from './usuarios.index.component.html?raw';
+import '../../../../shared/custom-select.css';
+import '../../../../shared/gr-admin-index-responsive.css';
 import './usuarios.index.component.css';
 import { http } from '../../../../core/http.service.js';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';

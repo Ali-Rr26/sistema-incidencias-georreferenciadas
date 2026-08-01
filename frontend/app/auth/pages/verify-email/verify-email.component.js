@@ -17,7 +17,7 @@
  * celda (56px mobile, 64px desktop).
  */
 import template from './verify-email.component.html?raw';
-import style from '../login/login.component.css?raw';
+import '../../auth-shared.css';
 import { http } from '../../../core/http.service.js';
 import { router } from '../../../core/router.js';
 

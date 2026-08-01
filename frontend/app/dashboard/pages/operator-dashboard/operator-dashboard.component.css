@@ -581,7 +581,7 @@
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 992px) {
   .operator-dashboard__stats,
   .operator-dashboard__skeleton-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -609,7 +609,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .operator-dashboard__header,
   .operator-dashboard__heading {
     flex-direction: column;
@@ -662,7 +662,7 @@
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 576px) {
   .operator-dashboard {
     padding: 16px 12px 28px;
   }
