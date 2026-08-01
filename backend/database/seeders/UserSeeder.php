@@ -12,6 +12,65 @@ use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Password shared by every citizen account created below.
+     * Kept in a constant so the seeder output and the docs stay in sync.
+     */
+    private const CITIZEN_PASSWORD = 'Usuario123!';
+
+    /**
+     * Password shared by every organization operator (including the extra
+     * operators seeded per organization for assignment variety).
+     */
+    private const OPERATOR_PASSWORD = 'Operador123!';
+
+    /**
+     * Citizen accounts used as incident reporters and commenters.
+     * Emails follow `first.last@correo.com` (slugified, accent-free).
+     *
+     * @var list<array{0: string, 1: string}>
+     */
+    private const CITIZENS = [
+        ['María Fernanda', 'Cevallos'],
+        ['Juan Carlos', 'Villacís'],
+        ['Andrea', 'Zambrano'],
+        ['Luis Alberto', 'Paredes'],
+        ['Gabriela', 'Moreira'],
+        ['Diego', 'Salazar'],
+        ['Karla', 'Vinueza'],
+        ['Jorge', 'Andrade'],
+        ['Paola', 'Cedeño'],
+        ['Marco', 'Tapia'],
+        ['Verónica', 'Loor'],
+        ['Christian', 'Guerrero'],
+        ['Silvia', 'Chiriboga'],
+        ['Fernando', 'Espinoza'],
+        ['Daniela', 'Yépez'],
+        ['Ricardo', 'Bustamante'],
+        ['Michelle', 'Alvarado'],
+        ['Esteban', 'Naranjo'],
+        ['Johanna', 'Quinteros'],
+        ['Patricio', 'Mendoza'],
+        ['Cristina', 'Jaramillo'],
+        ['Wilson', 'Cabrera'],
+        ['Elena', 'Ruiz'],
+        ['Byron', 'Pazmiño'],
+    ];
+
+    /**
+     * Extra operators created per organization, on top of the canonical
+     * `operador.{slug}@organizacion.com`. Having more than one operator per
+     * organization is what makes the seeded assignments (responsable + apoyo)
+     * look like real workload distribution instead of one person owning
+     * every incident.
+     *
+     * @var list<array{prefix: string, first_name: string}>
+     */
+    private const EXTRA_OPERATORS = [
+        ['prefix' => 'operador2', 'first_name' => 'Operador Dos'],
+        ['prefix' => 'operador3', 'first_name' => 'Operador Tres'],
+    ];
+
     public function run(): void
     {
         $roleMap = Role::pluck('id', 'name')->toArray();
@@ -100,6 +159,42 @@ class UserSeeder extends Seeder
                 ],
             );
             $this->command?->info("  Operador Org [{$operadorEmail}] -> {$org->name}");
+
+            // Extra operators so incidents can carry a responsable plus one or
+            // more apoyo assignments (see MassIncidentSeeder).
+            foreach (self::EXTRA_OPERATORS as $extra) {
+                $extraEmail = "{$extra['prefix']}.{$slug}@organizacion.com";
+                User::query()->updateOrCreate(
+                    ['email' => $extraEmail],
+                    [
+                        'role_id' => $operadorOrgRoleId,
+                        'organization_id' => $org->id,
+                        'password' => Hash::make(self::OPERATOR_PASSWORD),
+                        'first_name' => $extra['first_name'],
+                        'last_name' => $org->name,
+                        'email_verified_at' => now(),
+                    ],
+                );
+            }
         }
+
+        // ─── 3. Ciudadanos (reporteros de incidencias) ────────────────────
+        foreach (self::CITIZENS as [$firstName, $lastName]) {
+            $email = Str::slug($firstName, '.').'.'.Str::slug($lastName).'@correo.com';
+
+            User::query()->updateOrCreate(
+                ['email' => $email],
+                [
+                    'role_id' => $usuarioRoleId,
+                    'organization_id' => null,
+                    'password' => Hash::make(self::CITIZEN_PASSWORD),
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email_verified_at' => now(),
+                ],
+            );
+        }
+
+        $this->command?->info(count(self::CITIZENS).' ciudadanos creados/actualizados (password: '.self::CITIZEN_PASSWORD.').');
     }
 }

@@ -28,10 +28,12 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             IncidentCategorySeeder::class,
             IncidentSeeder::class,
+            // 1000 incidents with a full lifecycle (assignments, status
+            // history, approvals, threaded comments and pending-approval
+            // notifications). Skips itself when the database already holds
+            // that many incidents, so re-running `db:seed` is safe.
+            MassIncidentSeeder::class,
         ]);
-
-        // Uncomment for performance / demo testing (creates 1000 incidents + comments):
-        // $this->call(MassIncidentSeeder::class);
 
         // Uncomment to seed ~25 realistic incidents in the Santa Elena province
         // (cantons: Santa Elena, La Libertad, Salinas). Idempotent on title — safe
