@@ -1,4 +1,6 @@
 import template from './organizaciones.index.component.html?raw';
+import '../../../../shared/custom-select.css';
+import '../../../../shared/gr-admin-index-responsive.css';
 import { createCrudIndexPage } from '../../../../shared/crud-index.js';
 import { formatearFecha } from '../../../../utils/format.js';
 import { permissionService } from '../../../../shared/permission.service.js';

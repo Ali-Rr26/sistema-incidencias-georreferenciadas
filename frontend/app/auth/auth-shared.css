@@ -159,12 +159,6 @@
   margin-bottom: 20px;
 }
 
-/* Shared form utilities (.gr-form-label .gr-input-wrap .gr-input-icon
-   .gr-input .gr-input--pad-right .gr-input:focus .gr-input-eye
-   .gr-input-error) moved to frontend/public/css/app.css — used by
-   register, forgot-password, accept-invite, reset-password, and
-   verify-email too. */
-
 .gr-login__options {
   display: flex;
   align-items: center;
@@ -233,6 +227,7 @@
 .gr-btn-primary:hover {
   opacity: 0.93;
 }
+
 .gr-btn-primary:active {
   transform: translateY(1px);
 }
@@ -251,8 +246,7 @@
   text-decoration: none;
 }
 
-/* ─── R11: mode toggle (login ↔ register) ─────────────────────────── */
-
+/* R11: mode toggle (login ↔ register) */
 .gr-login__mode-toggle {
   display: flex;
   background: #f4f5f9;
@@ -287,8 +281,7 @@
   color: #23283b;
 }
 
-/* ─── R11: success banner (post-201) ─────────────────────────── */
-
+/* R11: success banner (post-201) */
 .gr-login__banner {
   display: flex;
   align-items: center;
@@ -307,13 +300,7 @@
   font-size: 16px;
 }
 
-/* ─── R11: field-level validation errors ─────────────────────────── */
-
-/* .gr-input-error + .gr-input-wrap + .gr-input-error combinator moved
-   to frontend/public/css/app.css (shared form utilities). */
-
-/* ─── R12: divider + Google sign-in button ────────────────────────── */
-
+/* R12: divider + Google sign-in button */
 .gr-login__divider {
   display: flex;
   align-items: center;
@@ -387,12 +374,7 @@
   }
 }
 
-/* ─── R-sc-117: OTP cells (verify-email) ───────────────────────────── */
-/*
- * Six contiguous cells replace the single OTP input with letter-spacing.
- * Same border/radius/focus-ring vocabulary as .gr-input — no new tokens.
- */
-
+/* R-sc-117: OTP cells (verify-email) */
 .gr-otp {
   margin: 0 0 20px;
   padding: 0;
@@ -438,7 +420,6 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease,
     background-color 0.15s ease;
-  /* Belt-and-suspenders against native number-input styling. */
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -470,9 +451,6 @@
   }
 }
 
-/* Shake: 150ms total (per spec). Subtle 2-jolt pattern — exponential
-   ease-out from a clean rest position. Replayed by toggling the class
-   with a forced reflow between calls. */
 @keyframes gr-otp__shake {
   0%,
   100% {

@@ -17,7 +17,7 @@
  *     mayúscula, ≥1 minúscula, ≥1 dígito, y `password === password_confirmation`.
  */
 import template from './login.component.html?raw';
-import style from './login.component.css?raw';
+import '../../auth-shared.css';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
@@ -84,7 +84,6 @@ let _passwordMeter = null;
 
 export default {
   template,
-  style,
 
   onInit(ctx) {
     // Ocultar preloader (vanilla, nada de jQuery)

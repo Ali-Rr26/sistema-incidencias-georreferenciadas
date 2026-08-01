@@ -153,7 +153,7 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 576px) {
   .gr-quick-filters {
     width: 100%;
     justify-content: space-between;
@@ -174,7 +174,7 @@
   margin-bottom: 20px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
   .gr-stats-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -447,7 +447,7 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 576px) {
   .gr-dashboard-error {
     align-items: flex-start;
     flex-wrap: wrap;

@@ -1,4 +1,6 @@
 import template from './localizaciones.index.component.html?raw';
+import '../../../../shared/custom-select.css';
+import '../../../../shared/gr-admin-index-responsive.css';
 import { http } from '../../../../core/http.service.js';
 import { router } from '../../../../core/router.js';
 import { locationService } from '../../../../shared/location.service.js';
