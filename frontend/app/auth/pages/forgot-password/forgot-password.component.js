@@ -4,7 +4,6 @@ import { http } from '../../../core/http.service.js';
 
 export default {
   template,
-  style,
 
   async onInit() {
     const form = document.getElementById('forgot-form');

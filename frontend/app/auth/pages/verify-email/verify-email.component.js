@@ -27,7 +27,6 @@ const ERROR_CLEAR_MS = 1200;
 
 export default {
   template,
-  style,
 
   async onInit({ query } = {}) {
     const emailInput = document.getElementById('otp-email');

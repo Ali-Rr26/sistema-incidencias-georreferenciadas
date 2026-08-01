@@ -5,7 +5,6 @@ import { router } from '../../../core/router.js';
 
 export default {
   template,
-  style,
 
   async onInit({ query } = {}) {
     const token = query?.get('token');
