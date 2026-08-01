@@ -18,7 +18,6 @@
  */
 import template from './login.component.html?raw';
 import '../../auth-shared.css';
-import style from './login.component.css?raw';
 import { auth } from '../../auth.service.js';
 import { router } from '../../../core/router.js';
 import { classifyRole } from '../../../app-shell/app-shell.component.js';
@@ -85,7 +84,6 @@ let _passwordMeter = null;
 
 export default {
   template,
-  style,
 
   onInit(ctx) {
     // Ocultar preloader (vanilla, nada de jQuery)
