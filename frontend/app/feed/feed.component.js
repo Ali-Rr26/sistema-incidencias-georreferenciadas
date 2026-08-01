@@ -384,12 +384,20 @@ export default {
       return acc;
     }
 
+    // Accordion category tree. Parents render as a row (checkbox + name +
+    // chevron toggle); subcategories render inside a collapsible container
+    // hidden by default, so a deep tree stays compact until the user opens
+    // a branch. The parent checkbox still implies its descendants for
+    // filtering (categoryDescendants); the chevron only toggles visibility.
     function appendCategoryFilter(node, depth, container) {
       if (node.id == null) return;
       categoryDescendants.set(node.id, collectCategoryIds(node, []));
 
-      const wrapper = document.createElement('div');
-      wrapper.className = 'form-check';
+      const children = node.children ?? [];
+      const hasChildren = children.length > 0;
+
+      const row = document.createElement('div');
+      row.className = 'rp-cat-row';
 
       const label = document.createElement('label');
       label.className = 'rp-checkbox-label form-check-label';
@@ -404,18 +412,39 @@ export default {
       const name = document.createElement('span');
       name.textContent = node.name ?? '';
       if (depth > 0) {
-        // Visually indent subcategories under their parent.
+        // Visually indent subcategories under their parent. The indent +
+        // chevron affordance replaces the old "— " text prefix.
         label.style.paddingLeft = `${depth * 20}px`;
-        name.prepend(document.createTextNode('— '));
       }
 
       label.append(box, name);
-      wrapper.append(label);
-      container.append(wrapper);
+      row.append(label);
 
-      (node.children ?? []).forEach((child) =>
-        appendCategoryFilter(child, depth + 1, container),
-      );
+      if (hasChildren) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'rp-cat-toggle';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-controls', `rp-cat-children-${node.id}`);
+        toggle.setAttribute(
+          'aria-label',
+          `Mostrar subcategorías de ${node.name ?? ''}`,
+        );
+        toggle.innerHTML =
+          '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
+        row.append(toggle);
+
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'rp-cat-children';
+        childrenContainer.id = `rp-cat-children-${node.id}`;
+        childrenContainer.hidden = true;
+        children.forEach((child) =>
+          appendCategoryFilter(child, depth + 1, childrenContainer),
+        );
+        container.append(row, childrenContainer);
+      } else {
+        container.append(row);
+      }
     }
 
     async function loadCategoryFilters() {
@@ -695,8 +724,43 @@ export default {
     // would forward a synthetic click at the input and double-toggle) and
     // flips the native input + the visual .checked class ourselves.
     const rpCategoryFilters = document.getElementById('rp-category-filters');
+
+    // Accordion helpers: expand/collapse a parent branch. Only one branch
+    // is open at a time — opening one collapses any other open one.
+    function setCategoryExpanded(toggle, expanded) {
+      toggle.setAttribute('aria-expanded', String(expanded));
+      const target = document.getElementById(
+        toggle.getAttribute('aria-controls'),
+      );
+      if (target) target.hidden = !expanded;
+      const icon = toggle.querySelector('.fa-solid');
+      if (icon) {
+        icon.classList.toggle('fa-chevron-down', expanded);
+        icon.classList.toggle('fa-chevron-right', !expanded);
+      }
+    }
+
+    function expandCategory(toggle) {
+      rpCategoryFilters
+        .querySelectorAll('.rp-cat-toggle[aria-expanded="true"]')
+        .forEach((other) => setCategoryExpanded(other, false));
+      setCategoryExpanded(toggle, true);
+    }
+
     if (rpCategoryFilters) {
       rpCategoryFilters.addEventListener('click', (e) => {
+        // Chevron toggle: expand/collapse a parent branch without touching
+        // its checkbox. It is a real <button>, so Enter/Space work natively.
+        const toggle = e.target.closest('.rp-cat-toggle');
+        if (toggle) {
+          if (toggle.getAttribute('aria-expanded') === 'true') {
+            setCategoryExpanded(toggle, false);
+          } else {
+            expandCategory(toggle);
+          }
+          return;
+        }
+
         const label = e.target.closest('.rp-checkbox-label');
         if (!label) return;
 
@@ -713,6 +777,17 @@ export default {
         box.classList.toggle('checked', checked);
         if (!clickingBox) box.checked = checked;
         label.style.color = checked ? '#5b6172' : '#a3a8b8';
+
+        // Checking a parent reveals its subcategories (feedback that the
+        // selection implies them). Unchecking does not collapse the branch.
+        if (checked) {
+          const toggleBtn = label
+            .closest('.rp-cat-row')
+            ?.querySelector('.rp-cat-toggle');
+          if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
+            expandCategory(toggleBtn);
+          }
+        }
 
         // Re-render with combined search + category filters
         renderList();

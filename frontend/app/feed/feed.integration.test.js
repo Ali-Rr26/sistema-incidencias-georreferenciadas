@@ -192,6 +192,24 @@ const MOCK_CATEGORY_TREE = [
   { id: 3, name: 'Medio ambiente', parent_id: null, children: [] },
 ];
 
+// Two parents with children, to exercise the accordion's one-open-at-a-time
+// behavior. Not the default tree — the default keeps leaf parents too.
+const MOCK_TWO_BRANCH_TREE = [
+  {
+    id: 1,
+    name: 'Infraestructura',
+    parent_id: null,
+    children: [{ id: 5, name: 'Vías', parent_id: 1, children: [] }],
+  },
+  {
+    id: 2,
+    name: 'Servicios',
+    parent_id: null,
+    children: [{ id: 7, name: 'Agua potable', parent_id: 2, children: [] }],
+  },
+  { id: 3, name: 'Medio ambiente', parent_id: null, children: [] },
+];
+
 function makeIncident(overrides) {
   return {
     id: 1,
@@ -557,6 +575,23 @@ describe('feed integration', () => {
     });
   }
 
+  // Accordion helpers — subcategories live behind a parent toggle.
+  function categoryToggle(categoryId) {
+    return document.querySelector(
+      `#rp-category-filters .rp-cat-toggle[aria-controls="rp-cat-children-${categoryId}"]`,
+    );
+  }
+
+  function expandParent(categoryId) {
+    categoryToggle(categoryId).click();
+  }
+
+  function categoryBox(categoryId) {
+    return document.querySelector(
+      `#rp-category-filters .rp-checkbox-box[data-category-id="${categoryId}"]`,
+    );
+  }
+
   it('renders TIPO checkboxes from the category tree including subcategories', async () => {
     fetchMock = categoriesFetchMock({ incidents: MOCK_INCIDENTS });
     vi.stubGlobal('fetch', fetchMock);
@@ -574,18 +609,21 @@ describe('feed integration', () => {
     const labels = [...container.querySelectorAll('.rp-checkbox-label')];
     expect(labels).toHaveLength(5);
 
-    // Subcategory rendered and indented under its parent
+    // Every checkbox carries its category id
+    expect(categoryBox(1)).not.toBeNull();
+    expect(categoryBox(5)).not.toBeNull();
+
+    // Subcategory lives behind the parent toggle — hidden by default
+    const viasChildren = document.getElementById('rp-cat-children-1');
+    expect(viasChildren).not.toBeNull();
+    expect(viasChildren.hidden).toBe(true);
+
+    // Expanding the parent reveals its subcategories, indented
+    expandParent(1);
+    expect(viasChildren.hidden).toBe(false);
     const viasLabel = labels.find((l) => l.textContent.includes('Vías'));
     expect(viasLabel).not.toBeNull();
     expect(viasLabel.style.paddingLeft).toBe('20px');
-
-    // Every checkbox carries its category id
-    expect(
-      container.querySelector('.rp-checkbox-box[data-category-id="1"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('.rp-checkbox-box[data-category-id="5"]'),
-    ).not.toBeNull();
 
     feedComponent.onDestroy();
   });
@@ -696,9 +734,10 @@ describe('feed integration', () => {
     const { default: feedComponent } = await import('./feed.component.js');
     await feedComponent.onInit();
 
-    const subBox = document.querySelector(
-      '#rp-category-filters .rp-checkbox-box[data-category-id="5"]',
-    );
+    // Subcategory checkboxes are hidden behind their parent — expand first.
+    expandParent(1);
+    const subBox = categoryBox(5);
+    expect(subBox).not.toBeNull();
     subBox.click();
 
     const cards = document.querySelectorAll('.feed-card');
@@ -737,6 +776,165 @@ describe('feed integration', () => {
     const cards = document.querySelectorAll('.feed-card');
     expect(cards.length).toBe(1);
     expect(cards[0].textContent).toContain('Atención ciudadana');
+
+    feedComponent.onDestroy();
+  });
+
+  // ── Category accordion (progressive disclosure) ──────────
+
+  it('by default only parent categories are visible and subcategories stay hidden', async () => {
+    fetchMock = categoriesFetchMock({ incidents: MOCK_INCIDENTS });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const container = document.getElementById('rp-category-filters');
+
+    // Three parent rows are direct children; no subcategory row escapes its
+    // collapsible container.
+    const parentRows = [...container.children].filter((el) =>
+      el.classList.contains('rp-cat-row'),
+    );
+    expect(parentRows).toHaveLength(3);
+
+    // The single branch (Infraestructura) starts collapsed.
+    const childrenContainers = [
+      ...container.querySelectorAll('.rp-cat-children'),
+    ];
+    expect(childrenContainers).toHaveLength(1);
+    expect(childrenContainers[0].hidden).toBe(true);
+
+    // Subcategory checkboxes exist in the DOM but are not visible yet.
+    expect(categoryBox(5)).not.toBeNull();
+    expect(categoryBox(5).closest('.rp-cat-children').hidden).toBe(true);
+
+    feedComponent.onDestroy();
+  });
+
+  it('clicking a parent toggle expands only that parent and collapses the previously open one', async () => {
+    fetchMock = categoriesFetchMock({
+      incidents: MOCK_INCIDENTS,
+      categories: MOCK_TWO_BRANCH_TREE,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const childrenOf = (id) => document.getElementById(`rp-cat-children-${id}`);
+
+    expect(childrenOf(1).hidden).toBe(true);
+    expect(childrenOf(2).hidden).toBe(true);
+
+    expandParent(1);
+    expect(childrenOf(1).hidden).toBe(false);
+    expect(categoryToggle(1).getAttribute('aria-expanded')).toBe('true');
+
+    // Opening the second parent collapses the first (one open at a time).
+    expandParent(2);
+    expect(childrenOf(1).hidden).toBe(true);
+    expect(childrenOf(2).hidden).toBe(false);
+    expect(categoryToggle(1).getAttribute('aria-expanded')).toBe('false');
+    expect(categoryToggle(2).getAttribute('aria-expanded')).toBe('true');
+
+    // Clicking an open toggle collapses it again.
+    categoryToggle(2).click();
+    expect(childrenOf(2).hidden).toBe(true);
+    expect(categoryToggle(2).getAttribute('aria-expanded')).toBe('false');
+
+    feedComponent.onDestroy();
+  });
+
+  it('checking a parent auto-expands it and filters by its id including descendants', async () => {
+    const incidents = [
+      makeIncident({
+        id: 11,
+        title: 'Bache en la avenida',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 12,
+        title: 'Luminaria apagada',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+      makeIncident({
+        id: 13,
+        title: 'Basura acumulada',
+        category: { id: 3, name: 'Medio ambiente' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const childrenContainer = document.getElementById('rp-cat-children-1');
+    expect(childrenContainer.hidden).toBe(true);
+
+    // Checking the parent auto-expands its branch.
+    categoryBox(1).click();
+    expect(childrenContainer.hidden).toBe(false);
+    expect(categoryToggle(1).getAttribute('aria-expanded')).toBe('true');
+
+    // And filters by the parent id, matching its subcategory incidents.
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(2);
+    expect(cards[0].textContent).toContain('Bache en la avenida');
+    expect(cards[1].textContent).toContain('Luminaria apagada');
+
+    feedComponent.onDestroy();
+  });
+
+  it('checking a subcategory (after expanding) filters only by that subcategory id', async () => {
+    const incidents = [
+      makeIncident({
+        id: 21,
+        title: 'Vía dañada',
+        category: { id: 5, name: 'Vías' },
+      }),
+      makeIncident({
+        id: 22,
+        title: 'Poste sin luz',
+        category: { id: 6, name: 'Alumbrado público' },
+      }),
+    ];
+    fetchMock = categoriesFetchMock({ incidents });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    expandParent(1);
+    categoryBox(5).click();
+
+    const cards = document.querySelectorAll('.feed-card');
+    expect(cards.length).toBe(1);
+    expect(cards[0].textContent).toContain('Vía dañada');
+
+    feedComponent.onDestroy();
+  });
+
+  it('the chevron toggle never changes the checkbox state', async () => {
+    fetchMock = categoriesFetchMock({ incidents: MOCK_INCIDENTS });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { default: feedComponent } = await import('./feed.component.js');
+    await feedComponent.onInit();
+
+    const parentBox = categoryBox(1);
+    expect(parentBox.checked).toBe(false);
+    expect(parentBox.classList.contains('checked')).toBe(false);
+
+    // Open and close the branch — the parent checkbox must stay untouched.
+    categoryToggle(1).click();
+    expect(parentBox.checked).toBe(false);
+    expect(parentBox.classList.contains('checked')).toBe(false);
+
+    categoryToggle(1).click();
+    expect(parentBox.checked).toBe(false);
+    expect(parentBox.classList.contains('checked')).toBe(false);
 
     feedComponent.onDestroy();
   });
