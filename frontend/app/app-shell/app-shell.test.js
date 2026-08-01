@@ -2581,7 +2581,7 @@ describe('appShell — populateHeader avatar rendering (C3)', () => {
     if (typeof unsub === 'function') unsub();
   });
 
-  it('falls back to initials when user has no profile_image_path (regression)', async () => {
+  it('falls back to the default avatar image when user has no profile_image_path (regression)', async () => {
     setupShell({
       id: 1,
       first_name: 'Ana',
@@ -2596,9 +2596,10 @@ describe('appShell — populateHeader avatar rendering (C3)', () => {
     const unsub = await appShell.init();
 
     const avatarEl = document.getElementById('app-shell-user-avatar');
-    // Should have initials, not an <img>
-    expect(avatarEl.textContent).toBe('A');
-    expect(avatarEl.querySelector('img')).toBeNull();
+    const img = avatarEl?.querySelector('img');
+    // No initials — the default avatar image is rendered instead
+    expect(img).not.toBeNull();
+    expect(img.src).toContain('/images/default-avatar.svg');
 
     if (typeof unsub === 'function') unsub();
   });

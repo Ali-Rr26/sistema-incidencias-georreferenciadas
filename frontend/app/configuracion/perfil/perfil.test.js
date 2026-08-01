@@ -333,6 +333,32 @@ describe('perfilComponent — avatar upload (C1)', () => {
     expect(preview.style.display).not.toBe('none');
   });
 
+  it('shows the default avatar image when the user has no photo', async () => {
+    mockHttp.get.mockResolvedValue({
+      data: {
+        id: 1,
+        first_name: 'Juan',
+        last_name: 'Perez',
+        phone: '123456789',
+        profile_image_path: null,
+        role: { id: 1, name: 'admin_sistema' },
+      },
+    });
+    mockAuth.me.mockResolvedValue({
+      id: 1,
+      first_name: 'Juan',
+      last_name: 'Perez',
+      profile_image_path: null,
+      role: { id: 1, name: 'admin_sistema' },
+    });
+
+    await perfilComponent.onInit();
+
+    const preview = document.getElementById('perfil-avatar-preview');
+    expect(preview.src).toContain('default-avatar.svg');
+    expect(preview.style.display).not.toBe('none');
+  });
+
   it('uploads avatar via PUT /auth/profile with FormData and triggers auth refresh', async () => {
     const updatedUser = {
       id: 1,
@@ -709,7 +735,7 @@ describe('perfilComponent — avatar upload (C1)', () => {
     expect(preview.style.display).toBe('block');
   });
 
-  it('shows initials when no profile_image_path', async () => {
+  it('shows the default avatar when no profile_image_path', async () => {
     mockHttp.get.mockResolvedValue({
       data: {
         id: 1,
@@ -724,8 +750,9 @@ describe('perfilComponent — avatar upload (C1)', () => {
     await perfilComponent.onInit();
 
     const preview = document.getElementById('perfil-avatar-preview');
-    // Preview should be hidden (no image to show)
-    expect(preview.style.display).toBe('none');
+    // Default avatar image instead of a hidden/empty preview
+    expect(preview.src).toContain('default-avatar.svg');
+    expect(preview.style.display).not.toBe('none');
   });
 });
 

@@ -17,7 +17,7 @@
  */
 
 import { escapeHtml, timeAgo, getCommentImageUrl } from '../utils/format.js';
-import { getInitials, getUserDisplayName } from '../utils/avatar.js';
+import { getUserDisplayName, resolveAvatarSrc } from '../utils/avatar.js';
 
 /**
  * @typedef {Object} CommentItemOptions
@@ -114,19 +114,25 @@ export function buildCommentItem(comment, options = {}, depth = 0) {
 
   // ── Name & role ──────────────────────────────────────────────────────────
   const userName = getUserName(comment.user);
-  const initials = getInitials(comment.user);
 
   const role = (comment.user?.role || '').toLowerCase();
   const isInternal = ['admin', 'operator', 'support', 'staff'].includes(role);
 
   const avatarBgColor = isInternal ? '#4F6BED' : avatarBg(comment.user);
+  let avatarContent;
+  if (isInternal) {
+    // Institutional staff keep the headset icon — intentional.
+    avatarContent =
+      '<i class="fas fa-headset" style="font-size:0.85rem;color:#fff"></i>';
+  } else {
+    const avatarSrc = resolveAvatarSrc(
+      comment.user?.profile_image_path ?? comment.user?.avatar,
+    );
+    avatarContent = `<img src="${avatarSrc}" alt="${escapeHtml(userName)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" />`;
+  }
   const avatarHtml = `
     <div class="comment-avatar" style="background:${avatarBgColor}" aria-hidden="true">
-      ${
-        isInternal
-          ? '<i class="fas fa-headset" style="font-size:0.85rem;color:#fff"></i>'
-          : `<span>${escapeHtml(initials)}</span>`
-      }
+      ${avatarContent}
     </div>`;
 
   const institutionalBadge = isInternal

@@ -22,7 +22,7 @@ import template from './app-shell.component.html?raw';
 import style from './app-shell.component.css?raw';
 import { auth } from '../auth/auth.service.js';
 import { resolveRoleName, OPERATIONAL_ROLES } from '../utils/role.js';
-import { resolveAvatar } from '../utils/avatar.js';
+import { resolveAvatarSrc } from '../utils/avatar.js';
 import { menuService } from '../shared/menu.service.js';
 import { permissionService } from '../shared/permission.service.js';
 import { notificationService } from '../shared/notification.service.js';
@@ -540,8 +540,8 @@ async function populateHeader() {
 }
 
 /**
- * Render an <img> avatar inside avatarEl when resolveAvatar returns a URL,
- * otherwise fall back to initials.
+ * Render an <img> avatar inside avatarEl — the user's photo when
+ * available, otherwise the default avatar image.
  *
  * @param {Element} avatarEl  - the span element to populate
  * @param {object}  u        - the user object
@@ -550,18 +550,8 @@ async function populateHeader() {
 function renderAvatar(avatarEl, u, _role) {
   // Try profile_image_path first, then legacy avatar object
   const rawKey = u.profile_image_path ?? null;
-  const resolvedUrl = resolveAvatar(rawKey || u.avatar);
-
-  if (resolvedUrl) {
-    // Normalize a raw storage key to a full /storage/ URL.
-    // A raw key looks like "users/5/uuid.webp".
-    // A full URL (e.g. Google) is returned as-is.
-    const src = rawKey ? '/storage/' + rawKey : resolvedUrl;
-    avatarEl.innerHTML = `<img src="${src}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
-  } else {
-    const initial = (u.first_name || u.email || '?')[0].toUpperCase();
-    avatarEl.textContent = initial;
-  }
+  const src = resolveAvatarSrc(rawKey || u.avatar);
+  avatarEl.innerHTML = `<img src="${src}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
 }
 
 /**

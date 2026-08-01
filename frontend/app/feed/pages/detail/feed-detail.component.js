@@ -16,7 +16,7 @@ import {
   STATUS_LABEL,
   PRIORITY_LABEL,
 } from '../../../utils/format.js';
-import { getInitials, getUserDisplayName } from '../../../utils/avatar.js';
+import { getUserDisplayName, resolveAvatarSrc } from '../../../utils/avatar.js';
 import { router } from '../../../core/router.js';
 import { http } from '../../../core/http.service.js';
 import initMapView from '../../../shared/init-map-view.js';
@@ -108,8 +108,11 @@ export default {
   },
 
   _renderHeader(inc) {
-    const userName = getUserDisplayName(inc.user || inc.reporter);
-    const initials = getInitials(inc.user || inc.reporter);
+    const reporter = inc.user || inc.reporter;
+    const userName = getUserDisplayName(reporter);
+    const avatarSrc = resolveAvatarSrc(
+      reporter?.profile_image_path ?? reporter?.avatar,
+    );
     const statusLabel = STATUS_LABEL[inc.status] ?? inc.status;
     const priorityLabel = PRIORITY_LABEL[inc.priority] ?? inc.priority;
     const tiempo = timeAgo(inc.created_at);
@@ -170,7 +173,7 @@ export default {
           <span class="${priorityBadgeClass}">${priorityIcon}${escapeHtml(priorityLabel)}</span>
         </div>
         <div class="d-flex align-items-center gap-3 mb-2">
-          <div class="fd-avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:42px;height:42px;font-size:0.9rem">${escapeHtml(initials)}</div>
+          <img src="${avatarSrc}" alt="${escapeHtml(userName)}" class="rounded-circle" style="width:42px;height:42px;object-fit:cover" />
           <div class="flex-grow-1">
             <div class="fw-bold" style="font-size:0.9rem">${escapeHtml(userName)}</div>
             <div class="text-muted" style="font-size:0.75rem">${tiempo}</div>
@@ -488,7 +491,9 @@ export default {
             .map((item) => {
               const { prev, next, userName } = statusHistoryEntry(item);
               const time = timeStr(item.created_at);
-              const initials = getInitials(item.user);
+              const avatarSrc = resolveAvatarSrc(
+                item.user?.profile_image_path ?? item.user?.avatar,
+              );
               return `
             <div class="fd-timeline-item">
               <div class="fd-timeline-dot" aria-hidden="true"></div>
@@ -498,7 +503,7 @@ export default {
                   <span class="fd-timeline-time">${time}</span>
                 </div>
                 <div class="fd-timeline-actor">
-                  <span class="fd-timeline-avatar">${escapeHtml(initials)}</span>
+                  <img class="fd-timeline-avatar" src="${avatarSrc}" alt="${escapeHtml(userName)}" />
                   ${escapeHtml(userName)}
                 </div>
               </div>
@@ -542,11 +547,10 @@ export default {
         const badge =
           roleBadge[a.role] ??
           `<span class="badge bg-light text-muted">${escapeHtml(String(a.role ?? ''))}</span>`;
-        const avatarUrl = a.user?.avatar_url || a.user?.avatar?.url || null;
-        const initials = getInitials(a.user);
-        const avatarHtml = avatarUrl
-          ? `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(nombre)}" class="rounded-circle" style="width:40px;height:40px;object-fit:cover" loading="lazy" />`
-          : `<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:40px;height:40px;font-size:0.9rem">${escapeHtml(initials)}</div>`;
+        const avatarSrc = resolveAvatarSrc(
+          a.user?.profile_image_path ?? a.user?.avatar,
+        );
+        const avatarHtml = `<img src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(nombre)}" class="rounded-circle" style="width:40px;height:40px;object-fit:cover" loading="lazy" />`;
 
         return `
         <div class="d-flex align-items-center gap-3 py-2 border-bottom">

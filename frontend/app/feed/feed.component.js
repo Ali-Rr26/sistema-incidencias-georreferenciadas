@@ -7,9 +7,9 @@ import {
   PRIORITY_LABEL,
 } from '../utils/format.js';
 import {
-  getInitials,
   getUserDisplayName,
-  resolveAvatar,
+  resolveAvatarSrc,
+  renderAvatarImg,
 } from '../utils/avatar.js';
 import { http } from '../core/http.service.js';
 import { router } from '../core/router.js';
@@ -25,12 +25,13 @@ function renderCard(inc) {
   const locName = inc.location?.name ?? '';
   const statusLabel = STATUS_LABEL[inc.status] ?? inc.status;
   const userName = getUserDisplayName(inc.user);
-  const initials = getInitials(inc.user);
   const tiempo = timeAgo(inc.created_at);
-  const avatarUrl = resolveAvatar(inc.user?.avatar);
-  const avatarHtml = avatarUrl
-    ? `<img class="ig-avatar-img" src="${avatarUrl}" alt="${userName}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" />`
-    : `<button type="button" class="feed-avatar feed-avatar-btn" aria-label="Perfil de ${userName}" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#a06bf5,#6a5cf3);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:0;padding:0;cursor:pointer">${initials}</button>`;
+  // profile_image_path is the canonical photo field; the legacy `avatar`
+  // object is kept as a fallback for older payloads.
+  const avatarSrc = resolveAvatarSrc(
+    inc.user?.profile_image_path ?? inc.user?.avatar,
+  );
+  const avatarHtml = `<img class="ig-avatar-img" src="${avatarSrc}" alt="${escapeHtml(userName)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" />`;
 
   const priorityLabel = PRIORITY_LABEL[inc.priority] ?? inc.priority ?? 'Baja';
   const priorityClass = inc.priority ?? 'low';
@@ -473,7 +474,7 @@ export default {
         const currentUser = auth.getUser();
         const composerAvatar = document.getElementById('composer-avatar');
         if (composerAvatar && currentUser) {
-          composerAvatar.textContent = getInitials(currentUser);
+          composerAvatar.innerHTML = renderAvatarImg(currentUser, 40);
         }
       } else {
         composerBar.classList.add('d-none');
