@@ -214,6 +214,38 @@
   }
 }
 
+/* Desktop only: right panel sticks and scrolls internally so it never
+   grows past the viewport. align-self: start is required for sticky to
+   work inside the Bootstrap row (default align-items: stretch would pin
+   the aside to the row height). */
+@media (min-width: 992px) {
+  .feed-aside {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100dvh - 240px);
+    overflow-y: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #c9c4e8 transparent;
+  }
+  .feed-aside::-webkit-scrollbar {
+    width: 6px;
+  }
+  .feed-aside::-webkit-scrollbar-thumb {
+    background: #c9c4e8;
+    border-radius: 999px;
+  }
+  .feed-aside::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  @supports not (height: 100dvh) {
+    .feed-aside {
+      max-height: calc(100vh - 240px);
+    }
+  }
+}
+
 /* Mobile: allow body scroll; desktop: disable for fixed regions */
 body.feed-view {
   overflow: auto;
@@ -361,13 +393,46 @@ body.feed-view {
   background: #b0a6f8;
 }
 
-/* --- Checkbox sizing --- */
-.rp-category-filters .form-check {
+/* --- Category accordion (TIPO panel) --- */
+.rp-cat-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
   padding: 0;
+}
+
+.rp-cat-children {
+  padding-left: 12px;
+  margin-bottom: 4px;
+}
+
+.rp-cat-children[hidden] {
+  display: none;
+}
+
+.rp-cat-toggle {
+  border: 0;
+  background: transparent;
+  color: #6b7180;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.rp-cat-toggle:hover {
+  color: #5e3bdb;
+}
+
+.rp-cat-toggle:focus-visible {
+  outline: 2px solid #5e3bdb;
+  outline-offset: 2px;
 }
 
 .rp-checkbox-box {

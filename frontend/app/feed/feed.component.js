@@ -320,6 +320,10 @@ export default {
     let todasLasIncidencias = [];
     let searchQuery = '';
     let observer = null;
+    // Category tree for the TIPO filter panel. Maps a category id to its
+    // own id plus every descendant id, so checking a parent category also
+    // matches incidents filed under any of its subcategories.
+    const categoryDescendants = new Map();
 
     document.body.classList.add('feed-view');
 
@@ -367,6 +371,98 @@ export default {
           return;
         }
         console.error('[feed] Error fetching stats:', error);
+      }
+    }
+
+    // ── Category filters (TIPO panel) ────────────────────────
+    // The checkboxes are rendered from the real category tree
+    // (GET /incident-categories/tree) instead of hardcoded labels, and
+    // filtering matches incidents by exact category id, so renamed or
+    // nested categories keep working.
+    function collectCategoryIds(node, acc) {
+      acc.push(node.id);
+      (node.children ?? []).forEach((child) => collectCategoryIds(child, acc));
+      return acc;
+    }
+
+    // Accordion category tree. Parents render as a row (checkbox + name +
+    // chevron toggle); subcategories render inside a collapsible container
+    // hidden by default, so a deep tree stays compact until the user opens
+    // a branch. The parent checkbox still implies its descendants for
+    // filtering (categoryDescendants); the chevron only toggles visibility.
+    function appendCategoryFilter(node, depth, container) {
+      if (node.id == null) return;
+      categoryDescendants.set(node.id, collectCategoryIds(node, []));
+
+      const children = node.children ?? [];
+      const hasChildren = children.length > 0;
+
+      const row = document.createElement('div');
+      row.className = 'rp-cat-row';
+
+      const label = document.createElement('label');
+      label.className = 'rp-checkbox-label form-check-label';
+      label.htmlFor = `rp-cat-${node.id}`;
+
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.className = 'rp-checkbox-box form-check-input';
+      box.id = `rp-cat-${node.id}`;
+      box.dataset.categoryId = String(node.id);
+
+      const name = document.createElement('span');
+      name.textContent = node.name ?? '';
+      if (depth > 0) {
+        // Visually indent subcategories under their parent. The indent +
+        // chevron affordance replaces the old "— " text prefix.
+        label.style.paddingLeft = `${depth * 20}px`;
+      }
+
+      label.append(box, name);
+      row.append(label);
+
+      if (hasChildren) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'rp-cat-toggle';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-controls', `rp-cat-children-${node.id}`);
+        toggle.setAttribute(
+          'aria-label',
+          `Mostrar subcategorías de ${node.name ?? ''}`,
+        );
+        toggle.innerHTML =
+          '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
+        row.append(toggle);
+
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'rp-cat-children';
+        childrenContainer.id = `rp-cat-children-${node.id}`;
+        childrenContainer.hidden = true;
+        children.forEach((child) =>
+          appendCategoryFilter(child, depth + 1, childrenContainer),
+        );
+        container.append(row, childrenContainer);
+      } else {
+        container.append(row);
+      }
+    }
+
+    async function loadCategoryFilters() {
+      const container = document.getElementById('rp-category-filters');
+      if (!container) return;
+      try {
+        const resp = await http.get('/incident-categories/tree');
+        const nodes = Array.isArray(resp)
+          ? resp
+          : Array.isArray(resp?.data)
+            ? resp.data
+            : [];
+        nodes.forEach((node) => appendCategoryFilter(node, 0, container));
+      } catch (error) {
+        // Degrade gracefully: without the tree there are no checkboxes, so
+        // the category filter stays disabled and the feed unfiltered.
+        console.warn('[feed] Failed to load category filters:', error);
       }
     }
 
@@ -503,19 +599,11 @@ export default {
       if (!listEl || !vacio) return;
 
       const q = searchQuery.trim().toLowerCase();
-      const checkedLabels = Array.from(
-        document.querySelectorAll('.rp-checkbox-label'),
+      const checkedIds = Array.from(
+        document.querySelectorAll('.rp-checkbox-box[data-category-id]'),
       )
-        .filter((l) => {
-          // The input sits as a sibling of the label (not a child), so
-          // querySelector('.rp-checkbox-box') from the label returns null.
-          // Defensive null-check avoids a TypeError on initial render in
-          // desktop, where the right panel is visible and the labels are
-          // in the DOM. The legacy click handler had the same guard.
-          const box = l.querySelector('.rp-checkbox-box');
-          return box?.classList.contains('checked') ?? false;
-        })
-        .map((l) => l.textContent.trim().toLowerCase());
+        .filter((box) => box.classList.contains('checked') || box.checked)
+        .map((box) => Number(box.dataset.categoryId));
 
       let filtered = todasLasIncidencias;
 
@@ -527,11 +615,17 @@ export default {
         });
       }
 
-      if (checkedLabels.length > 0) {
-        filtered = filtered.filter((inc) => {
-          const cat = (inc.category?.name ?? '').toLowerCase();
-          return checkedLabels.some((l) => cat.includes(l) || l.includes(cat));
+      if (checkedIds.length > 0) {
+        // A checked category matches its own incidents and, when it is a
+        // parent, every incident filed under one of its subcategories.
+        const matchIds = new Set();
+        checkedIds.forEach((id) => {
+          const ids = categoryDescendants.get(id);
+          if (ids) ids.forEach((did) => matchIds.add(did));
         });
+        filtered = filtered.filter(
+          (inc) => inc.category?.id != null && matchIds.has(inc.category.id),
+        );
       }
 
       disposeMiniMaps();
@@ -625,23 +719,111 @@ export default {
     }
 
     // ── Right Sidebar Category Checkbox filters ──
+    // Checkboxes are rendered dynamically from the category tree and the
+    // input lives inside its label so the delegated handler can reach it.
+    // Clicking the label stops the browser's implicit activation (which
+    // would forward a synthetic click at the input and double-toggle) and
+    // flips the native input + the visual .checked class ourselves.
     const rpCategoryFilters = document.getElementById('rp-category-filters');
+
+    // Accordion helpers: expand/collapse a parent branch. Only one branch
+    // is open at a time — opening one collapses any other open one.
+    function setCategoryExpanded(toggle, expanded) {
+      toggle.setAttribute('aria-expanded', String(expanded));
+      const target = document.getElementById(
+        toggle.getAttribute('aria-controls'),
+      );
+      if (target) target.hidden = !expanded;
+      const icon = toggle.querySelector('.fa-solid');
+      if (icon) {
+        icon.classList.toggle('fa-chevron-down', expanded);
+        icon.classList.toggle('fa-chevron-right', !expanded);
+      }
+    }
+
+    function expandCategory(toggle) {
+      rpCategoryFilters
+        .querySelectorAll('.rp-cat-toggle[aria-expanded="true"]')
+        .forEach((other) => setCategoryExpanded(other, false));
+      setCategoryExpanded(toggle, true);
+    }
+
+    // Set a checkbox to a concrete checked state, keeping the native input
+    // and the visual .checked class in sync. Used by the parent/subcategory
+    // sync below, where a box may be cleared without a click on itself.
+    function setBoxChecked(box, checked) {
+      box.checked = checked;
+      box.classList.toggle('checked', checked);
+      const label = box.closest('.rp-checkbox-label');
+      if (label) label.style.color = checked ? '#5b6172' : '#a3a8b8';
+    }
+
     if (rpCategoryFilters) {
       rpCategoryFilters.addEventListener('click', (e) => {
+        // Chevron toggle: expand/collapse a parent branch without touching
+        // its checkbox. It is a real <button>, so Enter/Space work natively.
+        const toggle = e.target.closest('.rp-cat-toggle');
+        if (toggle) {
+          if (toggle.getAttribute('aria-expanded') === 'true') {
+            setCategoryExpanded(toggle, false);
+          } else {
+            expandCategory(toggle);
+          }
+          return;
+        }
+
         const label = e.target.closest('.rp-checkbox-label');
         if (!label) return;
 
         const box = label.querySelector('.rp-checkbox-box');
         if (!box) return;
 
-        const checked = box.classList.toggle('checked');
+        const clickingBox = e.target === box;
+        if (!clickingBox) e.preventDefault();
+
+        // For a direct click on the input the native checked state is
+        // already toggled when the handler runs; for a label click we
+        // flip it ourselves after canceling the implicit activation.
+        const checked = clickingBox ? box.checked : !box.checked;
+        setBoxChecked(box, checked);
+
+        // Checking a parent reveals its subcategories (feedback that the
+        // selection implies them). Unchecking does not collapse the branch.
         if (checked) {
-          box.innerHTML =
-            '<i class="fa-solid fa-check" style="color:#fff;font-size:9px"></i>';
-          label.style.color = '#5b6172';
-        } else {
-          box.innerHTML = '';
-          label.style.color = '#a3a8b8';
+          const toggleBtn = label
+            .closest('.rp-cat-row')
+            ?.querySelector('.rp-cat-toggle');
+          if (toggleBtn && toggleBtn.getAttribute('aria-expanded') !== 'true') {
+            expandCategory(toggleBtn);
+          }
+        }
+
+        // Parent/subcategory sync: a specific selection wins over its
+        // umbrella. Checking a subcategory clears its parent (so the filter
+        // narrows to that exact subcategory), and checking a parent clears
+        // its subcategories (the parent already implies them). This keeps
+        // every check visibly effective instead of being masked by an
+        // ancestor that implies it.
+        const parentContainer = box.closest('.rp-cat-children');
+        if (checked && parentContainer) {
+          // Subcategory → clear its parent row.
+          const parentId = parentContainer.id.replace('rp-cat-children-', '');
+          const parentBox = document.getElementById(`rp-cat-${parentId}`);
+          if (parentBox?.checked) setBoxChecked(parentBox, false);
+        } else if (checked) {
+          // Parent → clear every checked subcategory inside it.
+          const controls = label
+            .closest('.rp-cat-row')
+            ?.querySelector('.rp-cat-toggle')
+            ?.getAttribute('aria-controls');
+          const childrenContainer = controls
+            ? document.getElementById(controls)
+            : null;
+          childrenContainer
+            ?.querySelectorAll('.rp-checkbox-box')
+            .forEach((sub) => {
+              if (sub.checked) setBoxChecked(sub, false);
+            });
         }
 
         // Re-render with combined search + category filters
@@ -711,7 +893,7 @@ export default {
     }
 
     // ── First load ──
-    await fetchIncidencias(1, false);
+    await Promise.all([fetchIncidencias(1, false), loadCategoryFilters()]);
     setupInfiniteScroll();
     await fetchStats();
   },
