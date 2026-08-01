@@ -7,11 +7,14 @@ namespace Database\Seeders;
 use App\Domains\Permissions\Models\Permission;
 use App\Domains\Roles\Enums\UserRole;
 use App\Domains\Roles\Models\Role;
+use Database\Seeders\Concerns\SerializesSeeding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class RolePermissionSeeder extends Seeder
 {
+    use SerializesSeeding;
+
     private const ADMIN_SISTEMA_PERMISSIONS = [
         ['resource' => 'dashboard',           'action' => 'view'],
         ['resource' => 'incidents',           'action' => 'view'],
@@ -141,22 +144,26 @@ class RolePermissionSeeder extends Seeder
             UserRole::Usuario->value => self::USUARIO_PERMISSIONS,
         ];
 
-        $roleIds = Role::whereIn('name', array_keys($rolePermissionMap))
-            ->pluck('id')
-            ->toArray();
+        // The delete/insert pair below must not interleave with a second
+        // container running the same seeder. See SerializesSeeding.
+        $this->seedExclusively(function () use ($rolePermissionMap): void {
+            $roleIds = Role::whereIn('name', array_keys($rolePermissionMap))
+                ->pluck('id')
+                ->toArray();
 
-        if (count($roleIds) > 0) {
-            DB::table('role_permission')->whereIn('role_id', $roleIds)->delete();
-        }
-
-        foreach ($rolePermissionMap as $roleName => $permissions) {
-            $role = Role::where('name', $roleName)->first();
-            if ($role) {
-                $this->assignPermissions($role->id, $permissions);
-            } else {
-                $this->command?->warn("Rol '{$roleName}' no encontrado en la base de datos.");
+            if (count($roleIds) > 0) {
+                DB::table('role_permission')->whereIn('role_id', $roleIds)->delete();
             }
-        }
+
+            foreach ($rolePermissionMap as $roleName => $permissions) {
+                $role = Role::where('name', $roleName)->first();
+                if ($role) {
+                    $this->assignPermissions($role->id, $permissions);
+                } else {
+                    $this->command?->warn("Rol '{$roleName}' no encontrado en la base de datos.");
+                }
+            }
+        });
 
         $this->command?->info('Permisos asignados a todos los roles exitosamente.');
     }

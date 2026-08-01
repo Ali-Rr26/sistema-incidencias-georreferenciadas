@@ -3,11 +3,14 @@
 namespace Database\Seeders;
 
 use App\Domains\Permissions\Models\Permission;
+use Database\Seeders\Concerns\SerializesSeeding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class PermissionSeeder extends Seeder
 {
+    use SerializesSeeding;
+
     private const PERMISSIONS = [
         // Dashboard
         ['resource' => 'dashboard',           'action' => 'view',   'name' => 'Ver Dashboard',                'description' => 'Acceso al dashboard principal'],
@@ -79,24 +82,28 @@ class PermissionSeeder extends Seeder
             $keepResources,
         );
 
-        // Borrar permisos huérfanos (los que no están en el array PERMISSIONS)
-        $existing = Permission::all();
-        foreach ($existing as $perm) {
-            $stillValid = collect($keepPairs)->contains(fn ($p) => $p['resource'] === $perm->resource && $p['action'] === $perm->action
-            );
-            if (! $stillValid) {
-                DB::table('role_permission')->where('permission_id', $perm->permission_id)->delete();
-                DB::table('menu_permission')->where('permission_id', $perm->permission_id)->delete();
-                $perm->delete();
+        // Shares RolePermissionSeeder's lock: pruning orphans deletes from
+        // role_permission, so the two seeders race. See SerializesSeeding.
+        $this->seedExclusively(function () use ($keepPairs): void {
+            // Borrar permisos huérfanos (los que no están en el array PERMISSIONS)
+            $existing = Permission::all();
+            foreach ($existing as $perm) {
+                $stillValid = collect($keepPairs)->contains(fn ($p) => $p['resource'] === $perm->resource && $p['action'] === $perm->action
+                );
+                if (! $stillValid) {
+                    DB::table('role_permission')->where('permission_id', $perm->permission_id)->delete();
+                    DB::table('menu_permission')->where('permission_id', $perm->permission_id)->delete();
+                    $perm->delete();
+                }
             }
-        }
 
-        foreach (self::PERMISSIONS as $data) {
-            Permission::updateOrCreate(
-                ['resource' => $data['resource'], 'action' => $data['action']],
-                ['name' => $data['name'], 'description' => $data['description']],
-            );
-        }
+            foreach (self::PERMISSIONS as $data) {
+                Permission::updateOrCreate(
+                    ['resource' => $data['resource'], 'action' => $data['action']],
+                    ['name' => $data['name'], 'description' => $data['description']],
+                );
+            }
+        });
 
         $this->command?->info('Permisos creados/actualizados.');
     }
