@@ -139,6 +139,7 @@ class IncidentController extends Controller
         }
 
         return (new IncidentResource($incident))
+            ->withDetail()
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -184,7 +185,9 @@ class IncidentController extends Controller
                 ->update(['notes' => $notes]);
         }
 
-        return (new IncidentResource($incident))->response();
+        return (new IncidentResource($incident))
+            ->withDetail() // enable location_path so the edit form can preselect its cascade
+            ->response();
     }
 
     public function destroy(Incident $incident): JsonResponse

@@ -31,6 +31,12 @@ uses(TestCase::class, RefreshDatabase::class);
  * Fix: `Incident::$casts` normalises `location_id` to `int`, matching
  * the precedent set by `Comment::$casts` (`incident_id`, `user_id`,
  * `parent_id` all `'integer'`).
+ *
+ * Note: `location_path` now lives behind `withDetail()` (see
+ * IncidentResource). This test enables `withDetail()` because the
+ * regression reproduces on `POST /api/incidents`, which calls
+ * `IncidentResource::withDetail()->response()` — i.e. it exercises the
+ * same code path the production bug ran through.
  */
 it('serializes location_path when location_id is hydrated as a string (POST /api/incidents)', function (): void {
     $country = Location::create(['name' => 'Ecuador', 'level' => 'country', 'parent_id' => null]);
@@ -64,7 +70,7 @@ it('serializes location_path when location_id is hydrated as a string (POST /api
     // pre-fix in-memory state (no `integer` cast on `location_id`).
     expect($incident->getAttributes()['location_id'])->toBe((string) $city->id);
 
-    $payload = (new IncidentResource($incident))->toArray(new Request);
+    $payload = (new IncidentResource($incident))->withDetail()->toArray(new Request);
 
     expect($payload)->toHaveKey('location_path')
         ->and($payload['location_path'])->toHaveCount(2)

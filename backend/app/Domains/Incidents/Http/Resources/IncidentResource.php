@@ -95,20 +95,44 @@ class IncidentResource extends JsonResource
             ])->values()->all(),
         ];
 
-        // Add location_path for progressive-loading preselection cascade
-        // Uses ancestors() to get root-to-leaf ordered chain for deterministic select preselection
-        if ($this->location_id !== null) {
-            $locationRepo = app(LocationRepository::class);
-            $ancestors = $locationRepo->ancestors($this->location_id);
-            $data['location_path'] = $ancestors->map(fn ($location) => [
-                'id' => $location->id,
-                'name' => $location->name,
-                'level' => $location->level->value,
-                'geom' => $location->geom !== null ? json_decode($location->geom->toJson()) : null,
-            ])->values()->all();
-        }
-
         if ($this->withDetail) {
+            // Add location_path for progressive-loading preselection cascade
+            // (only on detail responses — see perf investigation 2026-Q3).
+            //
+            // Two reasons this lives behind `withDetail()` instead of being
+            // unconditional:
+            //   1. N+1: `LocationRepository::ancestors()` runs 2 queries
+            //      (findById + recursive CTE) per call. The list endpoint
+            //      (`index`) serializes up to 20 incidents per page, so
+            //      unconditional inclusion means ~40 extra queries + the
+            //      serialization cost below on every list refresh.
+            //   2. Payload weight: each ancestor's geom is a full
+            //      MultiPolygon (country-level polygons are 100+ KB of
+            //      GeoJSON). For a 20-item list the ancestors alone added
+            //      ~1.1 MB to the response and ~580 ms of CPU. The list UI
+            //      never reads `location_path` — it only needs the leaf
+            //      location already present via the `location` relation —
+            //      so the cost was 100% waste.
+            //
+            // Only show()/store()/update() enable `withDetail()` (see
+            // IncidentController). The frontend's edit form is the sole
+            // consumer of `location_path` (incidencias.form.component.js
+            // reads `id`/`level` for the progressive cascade preselection).
+            if ($this->location_id !== null) {
+                $locationRepo = app(LocationRepository::class);
+                $ancestors = $locationRepo->ancestors($this->location_id);
+                $data['location_path'] = $ancestors->map(fn ($location) => [
+                    'id' => $location->id,
+                    'name' => $location->name,
+                    'level' => $location->level->value,
+                    // geom of each ancestor is intentionally omitted here:
+                    // the cascade preselection only needs id/name/level,
+                    // and including the MultiPolygon was the bulk of the
+                    // payload weight (~95% of the per-detail response).
+                    // The leaf location's geom is still on the `location`
+                    // key above for map initialisation.
+                ])->values()->all();
+            }
             // Status history — read via raw query (same as StatusHistoryController)
             // to avoid creating an Eloquent model just for a simple log table.
             $data['status_history'] = DB::table('status_history')
